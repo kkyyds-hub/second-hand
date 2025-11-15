@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  main:
+    allow-circular-references: true
+  datasource:
+    druid:
+      driver-class-name: ${demo.datasource.driver-class-name}
+      url: jdbc:mysql://${demo.datasource.host}:${demo.datasource.port}/${demo.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      username: ${demo.datasource.username}
+      password: ${demo.datasource.password}
+
+  redis:
+    host: ${demo.redis.host}
+    port: ${demo.redis.port}
+    database: ${demo.redis.database}
+
+mybatis:
+  # mapper配置文件
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.demo.entity  # 修改包名
+  configuration:
+    # 开启驼峰命名
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 添加SQL日志
+
+logging:
+  level:
+    com:
+      demo:  # 修改包名
+        mapper: debug
+        service: info
+        controller: info
+    org:
+      springframework:
+        web: debug
+
+# 应用自定义配置
+demo:
+  jwt:
+    # JWT配置
+    admin-secret-key: second hand  # 请修改为随机字符串
+    admin-ttl: 7200000  # 2小时
+    admin-token-name: token
+
+    user-secret-key: second hand  # 请修改为随机字符串
+    user-ttl: 7200000  # 2小时
+    user-token-name: authentication
+
+
+  # 微信配置（如果需要）
+  wechat:
+    appid: ${demo.wechat.appid}  # 替换为实际值
+    secret: ${demo.wechat.secret}  # 替换为实际值
