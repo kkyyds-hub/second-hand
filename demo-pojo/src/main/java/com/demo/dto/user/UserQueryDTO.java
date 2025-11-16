@@ -1,10 +1,12 @@
-package com.demo.dto;
+package com.demo.dto.user;
 
+import com.demo.dto.base.PageQueryDTO;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class UserQueryDTO {
+public class UserQueryDTO extends PageQueryDTO {
+
     private String keyword;               // 关键字搜索（用户名、手机号）
     private LocalDateTime startTime;      // 注册时间-开始
     private LocalDateTime endTime;        // 注册时间-结束
