@@ -1,6 +1,8 @@
 package com.demo.entity;
 
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,8 +14,10 @@ public class Order {
     private Long sellerId;         // 卖家ID
     private BigDecimal totalAmount; // 总金额
     private String status;         // pending-待支付, paid-已支付, shipped-已发货, completed-已完成, cancelled-已取消
-    private String shippingAddress; // 收货地址
+    private String shippingAddress;
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")// 收货地址
     private LocalDateTime createTime;
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime payTime;
     private LocalDateTime completeTime;
 }

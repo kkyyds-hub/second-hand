@@ -41,14 +41,12 @@ logging:
 # 应用自定义配置
 demo:
   jwt:
-    # JWT配置
-    admin-secret-key: second hand  # 请修改为随机字符串
-    admin-ttl: 7200000  # 2小时
+    admin-secret-key: second hand
     admin-token-name: token
-
-    user-secret-key: second hand  # 请修改为随机字符串
-    user-ttl: 7200000  # 2小时
+    admin-ttl: 7200000
+    user-secret-key: second  hand
     user-token-name: authentication
+    user-ttl: 7200000
 
 
   # 微信配置（如果需要）

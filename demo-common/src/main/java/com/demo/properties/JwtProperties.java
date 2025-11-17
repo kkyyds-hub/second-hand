@@ -5,22 +5,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "sky.jwt")
+@ConfigurationProperties(prefix = "demo.jwt")  // ✅ 改为demo.jwt
 @Data
 public class JwtProperties {
+    private String adminSecretKey;  // 对应 admin-secret-key
+    private String adminTokenName;  // 对应 admin-token-name
+    private long adminTtl;          // 对应 admin-ttl
 
-    /**
-     * 管理端员工生成jwt令牌相关配置
-     */
-    private String adminSecretKey;
-    private long adminTtl;
-    private String adminTokenName;
-
-    /**
-     * 用户端微信用户生成jwt令牌相关配置
-     */
-    private String userSecretKey;
-    private long userTtl;
-    private String userTokenName;
-
+    private String userSecretKey;    // 对应 user-secret-key
+    private String userTokenName;   // 对应 user-token-name
+    private long userTtl;           // 对应 user-ttl
 }

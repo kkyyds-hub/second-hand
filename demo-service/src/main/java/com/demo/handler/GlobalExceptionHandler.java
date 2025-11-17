@@ -16,6 +16,17 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @Slf4j
 public class GlobalExceptionHandler {
 
+
+    /**
+     * ✅ 添加通用异常处理
+     */
+    @ExceptionHandler(Exception.class)
+    public Result handleException(Exception ex) {
+        log.error("❌ 捕获到未处理异常: {}", ex.getMessage(), ex);
+        ex.printStackTrace(); // 关键：打印完整堆栈
+
+        return Result.error("服务器错误: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+    }
     /**
      * 捕获业务异常
      * @param ex
