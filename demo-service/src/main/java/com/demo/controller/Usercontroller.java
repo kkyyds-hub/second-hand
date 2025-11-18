@@ -18,12 +18,12 @@ public class Usercontroller {
     @GetMapping("/safe-token")
     public String getSafeToken() {
         try {
-            // ✅ 安全的可变Map
+            //  安全的可变Map
             Map<String, Object> claims = new LinkedHashMap<>();
             claims.put("empId", 1L);
             claims.put("username", "admin");
 
-            // ✅ 密钥处理（确保长度足够）
+            // 密钥处理（确保长度足够）
             String secretKey = "second hand";
             byte[] keyBytes = Arrays.copyOf(
                     secretKey.getBytes(StandardCharsets.UTF_8),
