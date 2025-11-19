@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface ViolationMapper {
@@ -23,4 +24,8 @@ public interface ViolationMapper {
     User SelectById(Long userId);
 
     void update(User user);
+
+    List<Map<String, Object>> getViolationStatistics();
+
+    List<Map<String, Object>> getUserViolations(Long userId);
 }

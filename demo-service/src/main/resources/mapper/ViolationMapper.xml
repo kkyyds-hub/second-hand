@@ -13,4 +13,32 @@
     <select id="SelectById" resultType="com.demo.entity.User">
         SELECT * FROM user WHERE id = #{userid}
     </select>
+
+    <!-- 获取违规类型统计数据 -->
+    <select id="getViolationStatistics" resultType="map">
+        SELECT
+        violation_type AS violationType,          <!-- 违规类型 -->
+        description AS violationTypeDesc, <!-- 违规类型描述 -->
+        COUNT(*) AS count                          <!-- 统计每个违规类型的数量 -->
+        FROM user_violation
+        GROUP BY violation_type, description
+    </select>
+    <select id="getUserViolations" resultType="java.util.Map" parameterType="java.lang.Long">
+        SELECT
+        uv.id,
+        uv.user_id AS userId,
+        u.username,                        <!-- 从 user 表中获取 username -->
+        uv.violation_type AS violationType,
+        uv.description,
+        uv.evidence_urls,
+        uv.punishment_result AS punishmentResult,
+        uv.record_time AS recordTime,
+        uv.credit_score_change AS creditScoreChange
+        FROM user_violation uv
+        JOIN user u ON uv.user_id = u.id           <!-- 使用 JOIN 连接 user 表和 user_violation 表 -->
+        WHERE uv.user_id = #{userId}
+        ORDER BY uv.record_time DESC
+    </select>
+
+
 </mapper>
