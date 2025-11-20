@@ -8,17 +8,18 @@ import java.time.LocalDateTime;
 
 @Data
 public class Product {
-    private Long id;
-    private Long userId;           // 卖家ID
-    private String title;          // 商品标题
-    private String description;    // 商品描述
-    private BigDecimal price;      // 价格
-    private String images;         // 图片URL，多个用逗号分隔
-    private Long categoryId;       // 分类ID
-    private String status;         // on_sale-在售, sold-已售, off_shelf-下架
-    private Integer viewCount = 0;
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")// 浏览量
-    private LocalDateTime createTime;
+
+    private Long id;                  // 商品ID
+    private String title;             // 商品标题
+    private String description;       // 商品描述
+    private BigDecimal price;         // 商品价格
+    private String images;            // 商品图片URL，多个用逗号分隔
+    private String category;          // 商品类别
+    private String status;            // 商品状态 (例如: "on_sale"、"sold"、"off_shelf")
+    private Integer viewCount = 0;    // 浏览量，默认为0
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
+    private LocalDateTime createTime; // 商品创建时间
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updateTime; // 商品更新时间
+    private String reason;
 }
