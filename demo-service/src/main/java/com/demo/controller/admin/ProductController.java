@@ -1,13 +1,18 @@
 package com.demo.controller.admin;
 
 import com.demo.dto.user.ProductDTO;
+import com.demo.entity.ProductViolation;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/admin/products")
@@ -42,6 +47,21 @@ public class ProductController {
             log.error("商品审核失败", e);
             return Result.error("商品审核失败");
         }
+    }
+
+    // 根据商品ID获取违规记录
+    @GetMapping("/{productId}/violations")
+    public ResponseEntity<List<ProductViolation>> getProductViolations(@PathVariable Long productId) {
+        List<ProductViolation> violations = productService.getProductViolations(productId);
+        return new ResponseEntity<>(violations, HttpStatus.OK);
+    }
+
+    // 添加商品违规记录
+    @PostMapping("/{productId}/violations")
+    public ResponseEntity<Void> addProductViolation(@PathVariable Long productId, @RequestBody ProductViolation violation) {
+        violation.setProductId(productId);
+        productService.addProductViolation(violation);
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
 }

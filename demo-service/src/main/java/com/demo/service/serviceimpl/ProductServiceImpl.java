@@ -2,7 +2,9 @@ package com.demo.service.serviceimpl;
 
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.Product;
+import com.demo.entity.ProductViolation;
 import com.demo.mapper.ProductMapper;
+import com.demo.mapper.productViolationMapper;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -21,6 +23,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductMapper productMapper;
+
+    @Autowired
+    private productViolationMapper productViolationMapper;
+
     @Override
     public PageInfo<ProductDTO> getPendingApprovalProducts(int page, int size, String productName, String category, String status) {
         PageHelper.startPage(page, size);
@@ -60,4 +66,17 @@ public class ProductServiceImpl implements ProductService {
 
 
     }
+
+    @Override
+    // 查询商品的违规记录
+    public List<ProductViolation> getProductViolations(Long productId) {
+        return productViolationMapper.findByProductId(productId);
+    }
+
+    @Override
+    public void addProductViolation(ProductViolation violation) {
+        productViolationMapper.insert(violation);
+    }
+
+
 }

@@ -9,22 +9,25 @@
         <result property="status" column="status"/>
         <result property="createTime" column="submit_time"/>
     </resultMap>
+    <update id="updateProduct" parameterType="com.demo.entity.Product">
+        UPDATE product
+        SET
+            reason = #{product.reason},
+            status = #{product.status},
+            submit_time = #{product.createTime}
+        WHERE id = #{product.id}
+    </update>
 
     <select id="getPendingApprovalProducts" resultType="com.demo.entity.Product">
+        SELECT id, name, category, status, submit_time AS createTime, reason
+        FROM product
+        WHERE id = #{productId} <!-- 使用 productId 作为查询条件 -->
+    </select>
+    <select id="getProductById" resultType="com.demo.entity.Product" parameterType="java.lang.Long">
         SELECT id, name, category, status, submit_time AS createTime
         FROM product
-        <where>
-            <if test="productName != null and productName != ''">
-                AND name LIKE CONCAT('%', #{productName}, '%')
-            </if>
-            <if test="category != null and category != ''">
-                AND category = #{category}
-            </if>
-            <if test="status != null and status != ''">
-                AND status = #{status}
-            </if>
-        </where>
-        ORDER BY submit_time DESC
+        WHERE id = #{productId}
     </select>
+
 
 </mapper>
