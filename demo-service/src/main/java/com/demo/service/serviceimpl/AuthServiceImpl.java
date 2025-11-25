@@ -39,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private static final String SMS_RATE_LIMIT_KEY_PREFIX = "auth:sms:rate:";
     private static final String EMAIL_ACTIVATION_KEY_PREFIX = "auth:email:activation:";
     private static final String THIRD_PARTY_BIND_KEY_PREFIX = "auth:oauth:";
+    private static final String THIRD_PARTY_AUTH_CODE_KEY_PREFIX = "auth:oauth:ticket:";
 
     @Autowired
     private UserMapper userMapper;
@@ -124,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse loginWithThirdParty(ThirdPartyLoginRequest request) {
         String provider = request.getProvider().toLowerCase();
-        String externalId = resolveExternalId(request);
+        String externalId = validateThirdPartyAuthorization(provider, request.getAuthorizationCode(), request.getExternalId());
         String redisKey = THIRD_PARTY_BIND_KEY_PREFIX + provider + ":" + externalId;
 
         Long userId;
@@ -194,11 +195,19 @@ public class AuthServiceImpl implements AuthService {
         return user;
     }
 
-    private String resolveExternalId(ThirdPartyLoginRequest request) {
-        if (StringUtils.hasText(request.getExternalId())) {
-            return request.getExternalId();
+    private String validateThirdPartyAuthorization(String provider, String authorizationCode, String externalIdFromClient) {
+        String authKey = THIRD_PARTY_AUTH_CODE_KEY_PREFIX + provider + ":" + authorizationCode;
+        String verifiedExternalId = stringRedisTemplate.opsForValue().get(authKey);
+        if (!StringUtils.hasText(verifiedExternalId)) {
+            throw new RegistrationException("授权码无效或已过期，请重新授权");
         }
-        return request.getProvider() + ":" + request.getAuthorizationCode();
+
+        if (StringUtils.hasText(externalIdFromClient) && !externalIdFromClient.equals(verifiedExternalId)) {
+            throw new RegistrationException("授权信息与绑定账号不一致，请重新授权");
+        }
+
+        stringRedisTemplate.delete(authKey);
+        return verifiedExternalId;
     }
 
     private String buildJwt(User user) {
