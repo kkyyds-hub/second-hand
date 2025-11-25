@@ -9,6 +9,11 @@
         </set>
     </update>
 
+    <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (username, password, mobile, email, avatar, credit_score, status, create_time, update_time)
+        VALUES (#{username}, #{password}, #{mobile}, #{email}, #{avatar}, #{creditScore}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
     <select id="selectUsers" resultType="com.demo.entity.User">
         SELECT * FROM user
         WHERE 1=1
@@ -32,6 +37,22 @@
 
         ORDER BY create_time DESC
     </select>
+
+    <select id="selectByMobile" resultType="com.demo.entity.User">
+        SELECT * FROM user WHERE mobile = #{mobile} LIMIT 1
+    </select>
+
+    <select id="selectByEmail" resultType="com.demo.entity.User">
+        SELECT * FROM user WHERE email = #{email} LIMIT 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE user
+        SET status = #{status},
+            update_time = #{updateTime}
+        WHERE id = #{userId}
+    </update>
+
     <select id="SelectById" resultType="com.demo.entity.User">
         SELECT * FROM user WHERE id = #{userid}
     </select>
