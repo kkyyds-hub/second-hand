@@ -2,6 +2,8 @@ package com.demo.controller.admin;
 
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.ProductViolation;
+import com.demo.exception.DatabaseUpdateException;
+import com.demo.exception.ProductNotFoundException;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageInfo;
@@ -25,7 +27,12 @@ public class ProductController {
 
     // 获取待审核商品列表
     @GetMapping("/pending-approval")
-    public Result<PageInfo<ProductDTO>> getPendingApprovalProducts(@RequestParam int page, @RequestParam int size, @RequestParam(required = false) String productName, @RequestParam(required = false) String category, @RequestParam(required = false) String status) {
+    public Result<PageInfo<ProductDTO>> getPendingApprovalProducts(
+            @RequestParam int page,
+            @RequestParam int size,
+            @RequestParam(required = false) String productName,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status) {
         try {
             PageInfo<ProductDTO> pageInfo = productService.getPendingApprovalProducts(page, size, productName, category, status);
             return Result.success(pageInfo);
@@ -33,13 +40,14 @@ public class ProductController {
             log.error("获取待审核商品列表失败", e);
             return Result.error("获取待审核商品列表失败");
         }
-
     }
-    //审批商品
+
+    // 审批商品
     @GetMapping("/{productId}/approve")
-    public Result<String> approveProduct(@PathVariable("productId") Long productId,
-                                         @RequestParam(value = "isApproved") boolean isApproved,
-                                         @RequestParam(value = "reason", required = false) String reason) {
+    public Result<String> approveProduct(
+            @PathVariable("productId") Long productId,
+            @RequestParam(value = "isApproved") boolean isApproved,
+            @RequestParam(value = "reason", required = false) String reason) {
         try {
             productService.approveProduct(productId, isApproved, reason);
             return Result.success("商品审核成功");
@@ -64,4 +72,29 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    // 更新商品状态
+    @GetMapping("/{productId}/update-status")
+    public Result<String> updateProductStatus(@PathVariable Long productId, @RequestParam String status) {
+        if (!isValidStatus(status)) {
+            return Result.error("无效的商品状态");
+        }
+        try {
+            productService.updateProductStatus(productId, status);
+            return Result.success("商品状态更新成功");
+        } catch (ProductNotFoundException e) {
+            log.error("商品未找到: " + productId, e);
+            return Result.error("商品未找到");
+        } catch (DatabaseUpdateException e) {
+            log.error("数据库更新失败", e);
+            return Result.error("数据库更新失败");
+        } catch (Exception e) {
+            log.error("商品状态更新失败", e);
+            return Result.error("商品状态更新失败");
+        }
+    }
+
+    private boolean isValidStatus(String status) {
+        // 假设有效的状态是：上架、已售、下架
+        return "上架".equals(status) || "已售".equals(status) || "下架".equals(status);
+    }
 }

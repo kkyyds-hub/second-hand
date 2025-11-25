@@ -14,4 +14,6 @@ public interface ProductService {
     List<ProductViolation> getProductViolations(Long productId);
 
     void addProductViolation(ProductViolation violation);
+
+    void updateProductStatus(Long productId, String status);
 }

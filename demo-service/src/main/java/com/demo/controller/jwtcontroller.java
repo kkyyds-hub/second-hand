@@ -1,5 +1,4 @@
 package com.demo.controller;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/token")
-public class Usercontroller {
+public class jwtcontroller {
     @GetMapping("/safe-token")
     public String getSafeToken() {
         try {

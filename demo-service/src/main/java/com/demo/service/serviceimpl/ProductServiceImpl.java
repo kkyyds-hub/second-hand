@@ -3,6 +3,7 @@ package com.demo.service.serviceimpl;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
+import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.productViolationMapper;
 import com.demo.service.ProductService;
@@ -74,8 +75,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    // 添加商品违规记录
     public void addProductViolation(ProductViolation violation) {
         productViolationMapper.insert(violation);
+    }
+
+    @Override
+    public void updateProductStatus(Long productId, String status) {
+
+        Product product = productMapper.getProductById(productId);
+        if (product == null){
+            throw new ProductNotFoundException("商品未找到，ID: " + productId);
+        }
+        product.setStatus(status);
+        productMapper.updateProduct(product);
+        log.info("商品状态更新成功，商品ID: {}, 新状态: {}", productId, status);
     }
 
 
