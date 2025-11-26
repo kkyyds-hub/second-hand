@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  mail:
+    username: 1194921820@qq.com
   profiles:
     active: dev
   main:
