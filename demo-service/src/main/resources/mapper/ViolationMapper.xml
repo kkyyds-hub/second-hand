@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.ViolationMapper">
     <update id="update">
-        UPDATE user
+        UPDATE users
         <set>
             status =#{status},
             update_time = #{updateTime}
@@ -11,7 +11,7 @@
 
 
     <select id="SelectById" resultType="com.demo.entity.User">
-        SELECT * FROM user WHERE id = #{userid}
+        SELECT * FROM users WHERE id = #{userid}
     </select>
 
     <!-- 获取违规类型统计数据 -->
@@ -20,7 +20,7 @@
         violation_type AS violationType,          <!-- 违规类型 -->
         description AS violationTypeDesc, <!-- 违规类型描述 -->
         COUNT(*) AS count                          <!-- 统计每个违规类型的数量 -->
-        FROM user_violation
+        FROM user_violations
         GROUP BY violation_type, description
     </select>
     <select id="getUserViolations" resultType="java.util.Map" parameterType="java.lang.Long">
@@ -30,12 +30,12 @@
         u.username,                        <!-- 从 user 表中获取 username -->
         uv.violation_type AS violationType,
         uv.description,
-        uv.evidence_urls,
-        uv.punishment_result AS punishmentResult,
+        uv.evidence,
+        uv.punish AS punishmentResult,
         uv.record_time AS recordTime,
-        uv.credit_score_change AS creditScoreChange
-        FROM user_violation uv
-        JOIN user u ON uv.user_id = u.id           <!-- 使用 JOIN 连接 user 表和 user_violation 表 -->
+        uv.credit AS creditScoreChange
+        FROM user_violations uv
+        JOIN users u ON uv.user_id = u.id           <!-- 使用 JOIN 连接 user 表和 user_violation 表 -->
         WHERE uv.user_id = #{userId}
         ORDER BY uv.record_time DESC
     </select>

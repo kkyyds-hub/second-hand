@@ -8,6 +8,9 @@ public class UserVO {
     private Long id;
     private String username;
     private String mobile;
+    private String avatar;
+    private String nickname;
+    private String bio;
     private String email;
     private LocalDateTime registerTime;
     private String lastLoginIp;

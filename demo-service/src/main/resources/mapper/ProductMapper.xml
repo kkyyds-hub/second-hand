@@ -4,28 +4,27 @@
 
     <resultMap id="ProductResultMap" type="com.demo.entity.Product">
         <result property="id" column="id"/>
-        <result property="title" column="name"/>
+        <result property="title" column="title"/>
         <result property="category" column="category"/>
         <result property="status" column="status"/>
-        <result property="createTime" column="submit_time"/>
     </resultMap>
     <update id="updateProduct" parameterType="com.demo.entity.Product">
-        UPDATE product
+        UPDATE products
         SET
             reason = #{product.reason},
             status = #{product.status},
-            submit_time = #{product.createTime}
+            create_time = #{product.createTime}
         WHERE id = #{product.id}
     </update>
 
     <select id="getPendingApprovalProducts" resultType="com.demo.entity.Product">
-        SELECT id, name, category, status, submit_time AS createTime, reason
-        FROM product
+        SELECT id, title, category, status, create_time AS createTime, reason
+        FROM products
         WHERE id = #{productId} <!-- 使用 productId 作为查询条件 -->
     </select>
     <select id="getProductById" resultType="com.demo.entity.Product" parameterType="java.lang.Long">
-        SELECT id, name, category, status, submit_time AS createTime
-        FROM product
+        SELECT id, title, category, status, create_time AS createTime
+        FROM products
         WHERE id = #{productId}
     </select>
 

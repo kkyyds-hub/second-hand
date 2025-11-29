@@ -11,6 +11,8 @@ public class User {
     private String username;
     private String password;
     private String mobile;
+    private String nickname;
+    private String bio;
     private String email;
     private String avatar;
     private Integer creditScore = 100;  // 初始信用分100

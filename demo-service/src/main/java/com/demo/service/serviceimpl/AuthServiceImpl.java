@@ -9,7 +9,7 @@ import com.demo.properties.JwtProperties;
 import com.demo.service.AuthService;
 import com.demo.utils.JwtUtil;
 import com.demo.vo.UserVO;
-import lombok.Value;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.util.Map;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -48,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private JwtProperties jwtProperties;
 
+    @Setter
     @Value("${spring.mail.username:}")
     private String mailFrom;
     @Autowired
@@ -214,4 +215,5 @@ public class AuthServiceImpl implements AuthService {
         log.info("为第三方账号 {}-{} 创建新用户，ID={}", provider, externalId, user.getId());
         return user;
     }
+
 }

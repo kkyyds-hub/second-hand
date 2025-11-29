@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.UserMapper">
     <update id="update">
-        UPDATE user
+        UPDATE users
         <set>
             status =#{status},
             update_time = #{updateTime}
@@ -10,7 +10,7 @@
     </update>
 
     <select id="selectUsers" resultType="com.demo.entity.User">
-        SELECT * FROM user
+        SELECT * FROM users
         WHERE 1=1
 
         <!-- keyword参数对应DTO的keyword字段 -->
@@ -33,6 +33,34 @@
         ORDER BY create_time DESC
     </select>
     <select id="SelectById" resultType="com.demo.entity.User">
-        SELECT * FROM user WHERE id = #{userid}
+        SELECT * FROM users WHERE id = #{userid}
     </select>
+    <select id="selectByMobile" resultType="com.demo.entity.User">
+        SELECT * FROM users WHERE mobile = #{mobile} LIMIT 1
+    </select>
+
+    <select id="selectByEmail" resultType="com.demo.entity.User">
+        SELECT * FROM users WHERE email = #{email} LIMIT 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE users
+        SET status = #{status},
+            update_time = #{updateTime}
+        WHERE id = #{userId}
+    </update>
+    <update id="updateProfile" parameterType="com.demo.entity.User">
+        UPDATE users
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="bio != null">bio = #{bio},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{userId}
+    </update>
+    <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, nickname, password, mobile, email, avatar, bio, credit_score, status, create_time, update_time)
+        VALUES (#{username}, #{nickname}, #{password}, #{mobile}, #{email}, #{avatar}, #{bio}, #{creditScore}, #{status}, #{createTime}, #{updateTime})
+    </insert>
 </mapper>
