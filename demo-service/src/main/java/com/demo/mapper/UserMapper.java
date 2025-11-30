@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import org.apache.ibatis.annotations.Param;
 
+import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,4 +29,10 @@ public interface UserMapper {
     User SelectById(Long userId);
 
     void updateProfile(User user);
+
+    void updatePassword(Long currentUserId, @NotBlank(message = "新密码不能为空") String newPassword, LocalDateTime now);
+
+    void updateEmail(Long currentUserId, String email, LocalDateTime now);
+
+    void updateMobile(Long currentUserId, String mobile, LocalDateTime now);
 }

@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.UserMapper">
-    <update id="update">
-        UPDATE users
-        <set>
-            status =#{status},
-            update_time = #{updateTime}
-        </set>
-    </update>
-
     <select id="selectUsers" resultType="com.demo.entity.User">
         SELECT * FROM users
         WHERE 1=1
@@ -57,6 +49,24 @@
             <if test="bio != null">bio = #{bio},</if>
             update_time = #{updateTime}
         </set>
+        WHERE id = #{userId}
+    </update>
+    <update id="updatePassword">
+        UPDATE users
+        SET password = #{password},
+            update_time = #{updateTime}
+        WHERE id = #{userId}
+    </update>
+    <update id="updateMobile">
+        UPDATE users
+        SET mobile = #{mobile},
+            update_time = #{updateTime}
+        WHERE id = #{userId}
+    </update>
+    <update id="updateEmail">
+        UPDATE users
+        SET email = #{email},
+            update_time = #{updateTime}
         WHERE id = #{userId}
     </update>
     <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">

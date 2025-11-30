@@ -1,8 +1,6 @@
 package com.demo.service;
 
-import com.demo.dto.user.AvatarUploadConfigRequest;
-import com.demo.dto.user.UpdateProfileRequest;
-import com.demo.dto.user.UserQueryDTO;
+import com.demo.dto.user.*;
 import com.demo.result.PageResult;
 import com.demo.vo.AvatarUploadConfigVO;
 import com.demo.vo.UserVO;
@@ -17,4 +15,14 @@ public interface UserService {
     UserVO updateProfile(UpdateProfileRequest request);
 
     AvatarUploadConfigVO generateAvatarUploadConfig(@Valid AvatarUploadConfigRequest request);
+
+    void changePassword(ChangePasswordRequest request);
+
+    UserVO bindPhone(BindPhoneRequest request);
+
+    UserVO bindEmail(BindEmailRequest request);
+
+    void unbindPhone(@Valid UnbindContactRequest request);
+
+    void unbindEmail(@Valid UnbindContactRequest request);
 }

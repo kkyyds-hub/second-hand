@@ -1,25 +1,23 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.constant.MessageConstant;
-import com.demo.dto.user.AvatarUploadConfigRequest;
-import com.demo.dto.user.UpdateProfileRequest;
-import com.demo.dto.user.UserQueryDTO;
+import com.demo.context.BaseContext;
+import com.demo.dto.user.*;
 import com.demo.entity.User;
 import com.demo.mapper.UserMapper;
 import com.demo.result.PageResult;
 import com.demo.service.UserService;
 import com.demo.vo.AvatarUploadConfigVO;
 import com.demo.vo.UserVO;
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -34,8 +32,14 @@ import java.util.stream.Collectors;
 @Transactional
 @Slf4j
 public class UserServiceImpl implements UserService {
+    private static final String SMS_CODE_KEY_PREFIX = "auth:sms:code:";
+    private static final String EMAIL_CODE_KEY_PREFIX = "auth:email:code:";
+
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public PageResult<UserVO> getUserPage(UserQueryDTO queryDTO) {
@@ -116,6 +120,120 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    @Override
+    public void changePassword(ChangePasswordRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        User user = userMapper.SelectById(currentUserId);
+        if (user == null) {
+            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
+        }
+        boolean verified = false;
+        if (StringUtils.isNotBlank(request.getOldPassword())) {
+            if (!user.getPassword().equals(request.getOldPassword())){
+                throw new RuntimeException(MessageConstant.PASSWORD_ERROR);
+            }
+            verified = true;
+        }
+        if (StringUtils.isNotBlank(request.getVerifyChannel())){
+            String code = request.getCode();
+            String channel = request.getVerifyChannel().toLowerCase();
+            if (StringUtils.isNotBlank( code)){
+                throw new RuntimeException("验证码不能为空");
+            }
+            switch ( channel){
+                case "email":
+                    verifySmsCode(user, code);
+                    break;
+                case "phone":
+                    verifyEmailCode(user, code);
+                    break;
+                default:
+                    throw new RuntimeException("不支持的验证渠道");
+            }
+            verified = true;
+            }
+        if (!verified) {
+            throw new RuntimeException("请提供当前密码或验证码进行验证");
+        }
+        userMapper.updatePassword(currentUserId, request.getNewPassword(), LocalDateTime.now());
+    }
+
+    @Override
+    public UserVO bindPhone(BindPhoneRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        User user = userMapper.SelectById(currentUserId);
+        if (user == null) {
+            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
+        }
+        String mobile = request.getValue();
+        verifySmsCode(user, request.getVerifyCode());
+        User existed = userMapper.selectByMobile(mobile);
+        if (existed != null && existed.getId().equals(currentUserId)) {
+            throw new RuntimeException("手机号已存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        userMapper.updateMobile(currentUserId, mobile, now);
+        stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + mobile);
+        user.setMobile(mobile);
+        user.setUpdateTime(now);
+        return toUserVO(user);
+    }
+
+    @Override
+    public UserVO bindEmail(BindEmailRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        User user = userMapper.SelectById(currentUserId);
+        if (user == null) {
+            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
+        }
+        String email = request.getValue();
+        verifyEmailCode(user, request.getVerifyCode());
+        User existed = userMapper.selectByEmail(email);
+        if (existed != null && existed.getId().equals(currentUserId)) {
+            throw new RuntimeException("邮箱已存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        userMapper.updateEmail(currentUserId, email, now);
+        stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + email);
+        user.setEmail(email);
+        user.setUpdateTime(now);
+        return toUserVO(user);
+    }
+
+    @Override
+    public void unbindPhone(UnbindContactRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        User user = userMapper.SelectById(currentUserId);
+        if (user == null) {
+            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
+        }
+        if (StringUtils.isBlank(user.getMobile())) {
+            throw new RuntimeException("当前账号未绑定手机号");
+        }
+
+        verifyUnbindRequest(user, request);
+        LocalDateTime now = LocalDateTime.now();
+        userMapper.updateMobile(currentUserId, null, now);
+        stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + user.getMobile());
+    }
+
+    @Override
+    public void unbindEmail(UnbindContactRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        User user = userMapper.SelectById(currentUserId);
+        if (user == null) {
+            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
+        }
+        if (StringUtils.isBlank(user.getEmail())) {
+            throw new RuntimeException("当前账号未绑定邮箱");
+        }
+
+        verifyUnbindRequest(user, request);
+        LocalDateTime now = LocalDateTime.now();
+        userMapper.updateEmail(currentUserId, null, now);
+        stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + user.getEmail());
+    }
+
 
     private List<UserVO> convertToVOList(List<User> userList) {
         return userList.stream().map(user -> {
@@ -159,5 +277,65 @@ public class UserServiceImpl implements UserService {
             }
         }
     }
+    private void verifyEmailCode(User user, String code) {
+        if (StringUtils.isBlank(user.getMobile())) {
+            throw new RuntimeException("未绑定手机号，无法使用短信验证");
+        }
+        String cacheCode = stringRedisTemplate.opsForValue().get(SMS_CODE_KEY_PREFIX + user.getMobile());
+        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
+            throw new RuntimeException("验证码错误或已过期");
+        }
+    }
+
+    private void verifySmsCode(User user, String code) {
+        if (StringUtils.isBlank(user.getEmail())) {
+            throw new RuntimeException("未绑定邮箱，无法使用邮箱验证");
+        }
+        String cacheCode = stringRedisTemplate.opsForValue().get(EMAIL_CODE_KEY_PREFIX + user.getEmail());
+        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
+            throw new RuntimeException("验证码错误或已过期");
+        }
+    }
+    private void verifyUnbindRequest(User user, UnbindContactRequest request) {
+        boolean verified = false;
+        if (StringUtils.isNotBlank(request.getCurrentPassword())) {
+            if (!request.getCurrentPassword().equals(user.getPassword())) {
+                throw new RuntimeException("当前密码不正确");
+            }
+            verified = true;
+        }
+
+        String channel = request.getVerifyChannel();
+        if (StringUtils.isBlank(channel)) {
+            throw new RuntimeException("请选择验证方式");
+        }
+
+        String code = request.getVerifyCode();
+        if (StringUtils.isBlank(code)) {
+            throw new RuntimeException("验证码不能为空");
+        }
+
+        switch (channel.toLowerCase()) {
+            case "phone":
+                verifySmsCode(user, code);
+                break;
+            case "email":
+                verifyEmailCode(user, code);
+                break;
+            default:
+                throw new RuntimeException("不支持的验证渠道");
+        }
+        verified = true;
+
+        if (!verified) {
+            throw new RuntimeException("请提供当前密码或验证码进行验证");
+        }
+    }
+    private UserVO toUserVO(User user) {
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
+    }
+
 
 }

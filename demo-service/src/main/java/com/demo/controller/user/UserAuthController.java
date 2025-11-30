@@ -1,6 +1,8 @@
 package com.demo.controller.user;
 
 import com.demo.dto.auth.*;
+import com.demo.dto.user.BindEmailRequest;
+import com.demo.dto.user.BindPhoneRequest;
 import com.demo.result.Result;
 import com.demo.service.AuthService;
 import com.demo.vo.UserVO;
