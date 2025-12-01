@@ -1,6 +1,8 @@
 package com.demo.service;
 
 import com.demo.dto.user.ProductDTO;
+import com.demo.dto.user.UserProductQueryDTO;
+import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.github.pagehelper.PageInfo;
 
@@ -16,4 +18,6 @@ public interface ProductService {
     void addProductViolation(ProductViolation violation);
 
     void updateProductStatus(Long productId, String status);
+
+    PageInfo<Product> getUserProducts(UserProductQueryDTO queryDTO);
 }

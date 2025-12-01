@@ -1,6 +1,7 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.dto.user.ProductDTO;
+import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.demo.exception.ProductNotFoundException;
@@ -90,6 +91,13 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(status);
         productMapper.updateProduct(product);
         log.info("商品状态更新成功，商品ID: {}, 新状态: {}", productId, status);
+    }
+
+    @Override
+    public PageInfo<Product> getUserProducts(UserProductQueryDTO queryDTO) {
+        PageHelper.startPage(queryDTO.getPage(), queryDTO.getSize());
+        List<Product> products = productMapper.getUserProducts(queryDTO.getUserId(), queryDTO.getStatus());
+        return new PageInfo<>(products);
     }
 
 

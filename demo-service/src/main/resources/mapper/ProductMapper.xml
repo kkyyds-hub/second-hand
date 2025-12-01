@@ -27,6 +27,15 @@
         FROM products
         WHERE id = #{productId}
     </select>
+    <select id="getUserProducts" resultType="com.demo.entity.Product">
+        SELECT id, title, description, price, images, category, status, create_time AS createTime, update_time AS updateTime, reason
+        FROM products
+        WHERE user_id = #{userId}
+        <if test="status != null and status != '' and status != '全部'">
+            AND status = #{status}
+        </if>
+        ORDER BY create_time DESC
+    </select>
 
 
 </mapper>
