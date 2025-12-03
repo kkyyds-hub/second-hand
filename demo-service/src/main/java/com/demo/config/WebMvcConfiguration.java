@@ -32,26 +32,30 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     private JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
     @Autowired
     private JwtTokenUserInterceptor jwtTokenUserInterceptor;
-/*
 
-    */
 /**
      * 注册自定义拦截器
      * @param registry
-     *//*
+     */
+@Override
+protected void addInterceptors(InterceptorRegistry registry) {
+    log.info("开始注册自定义拦截器...");
 
-    protected void addInterceptors(InterceptorRegistry registry) {
-        log.info("开始注册自定义拦截器...");
-        registry.addInterceptor(jwtTokenAdminInterceptor)
-                .addPathPatterns("/admin/**")
-                .excludePathPatterns("/admin/employee/login");
+    // 管理端拦截器，没问题
+    registry.addInterceptor(jwtTokenAdminInterceptor)
+            .addPathPatterns("/admin/**")
+            .excludePathPatterns("/admin/employee/login");
 
-        registry.addInterceptor(jwtTokenUserInterceptor)
-                .addPathPatterns("/user/**")
-                .excludePathPatterns("/user/user/login")
-                .excludePathPatterns("/user/shop/status");
-    }
-*/
+    // 用户端拦截器 —— 关键是这里
+    registry.addInterceptor(jwtTokenUserInterceptor)
+            .addPathPatterns("/user/**")
+            // 把所有认证相关的接口都排除
+            .excludePathPatterns(
+                    "/user/auth/**",     // 登录、注册、发送验证码等
+                    "/user/shop/status"  // 你本来就排除的
+            );
+}
+
 
     @Bean
     public Docket docket1(){
