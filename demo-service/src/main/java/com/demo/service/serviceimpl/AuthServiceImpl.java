@@ -2,7 +2,9 @@ package com.demo.service.serviceimpl;
 
 import com.demo.constant.JwtClaimsConstant;
 import com.demo.dto.auth.*;
+import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.entity.User;
+import com.demo.exception.BusinessException;
 import com.demo.exception.RegistrationException;
 import com.demo.mapper.UserMapper;
 import com.demo.properties.JwtProperties;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.util.Map;
@@ -46,6 +49,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private JwtProperties jwtProperties;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Setter
     @Value("${spring.mail.username:}")
@@ -110,7 +116,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.updateStatus(userId, "active", LocalDateTime.now());
         stringRedisTemplate.delete(key);
         log.info("邮箱激活完成，用户ID={}", userId);
-        User user = userMapper.SelectById(userId);
+        User user = userMapper.selectById(userId);
         return toUserVO(user);
 
     }
@@ -130,10 +136,51 @@ public class AuthServiceImpl implements AuthService {
             stringRedisTemplate.opsForValue().set(redisKey, String.valueOf(userId));
         }
 
-        User user = userMapper.SelectById(userId);
+        User user = userMapper.selectById(userId);
         UserVO userVO = toUserVO(user);
         String token = buildJwt(user);
         return new AuthResponse(token, userVO);
+    }
+
+    @Override
+    public AuthResponse loginWithPassword(PasswordLoginRequest request) {
+        String loginId = request.getLoginId();
+        String rawPassword = request.getPassword();
+
+        // 1. 先按手机号查
+        User user = userMapper.selectByMobile(loginId);
+        // 2. 如果手机号没查到，再按邮箱查
+        if (user == null) {
+            user = userMapper.selectByEmail(loginId);
+        }
+
+        // 3. 用户不存在
+        if (user == null) {
+            // 统一提示
+            throw new BusinessException("用户名或密码错误");
+        }
+
+        // 4. 校验密码、
+        String encodedPassword = user.getPassword();
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            throw new BusinessException("用户名或密码错误");
+        }
+
+        // 5. 校验账号状态（如果你有字段，比如 status / isDisabled 之类）
+        // if ("DISABLED".equals(user.getStatus())) {
+        //     throw new BusinessException("账号已被禁用");
+        // }
+
+        // 6. 生成登录结果（token + 用户信息）
+        // 这里你应该已经在第三方登录里有一套封装逻辑了，可以复用
+        // 示例：
+        AuthResponse resp = new AuthResponse();
+        // TODO: 替换为你实际的 token 生成逻辑
+        String token = "dummy-token-" + user.getId();
+        resp.setToken(token);
+        resp.setUser(toUserVO(user)); // 你之前应该有类似的封装方法
+
+        return resp;
     }
 
 

@@ -11,12 +11,11 @@ import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
-import com.demo.mapper.productViolationMapper;
+import com.demo.mapper.ProductViolationMapper;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +34,7 @@ public class ProductServiceImpl implements ProductService {
     private ProductMapper productMapper;
 
     @Autowired
-    private productViolationMapper productViolationMapper;
+    private ProductViolationMapper productViolationMapper;
     /**
      * 审核列表：分页查询待审核 / 已审核商品
      */

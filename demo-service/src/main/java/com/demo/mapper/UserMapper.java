@@ -26,7 +26,7 @@ public interface UserMapper {
                      @Param("status") String status,
                      @Param("updateTime") LocalDateTime updateTime);
 
-    User SelectById(Long userId);
+    User selectById(Long userId);
 
     void updateProfile(User user);
 

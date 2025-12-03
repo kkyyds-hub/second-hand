@@ -1,21 +1,17 @@
 package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
-import com.demo.dto.user.ProductDTO;
 import com.demo.dto.user.ProductDetailDTO;
 import com.demo.dto.user.ProductUpdateRequest;
 import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
-import com.demo.service.UserService;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/user/products")
@@ -45,7 +41,7 @@ public class UserProductController {
     @PutMapping("/user/products/{productId}")
     public Result<ProductDetailDTO> updateMyProduct(
             @PathVariable Long productId,
-            @Valid @RequestBody ProductUpdateRequest request) {
+            @Validated @RequestBody ProductUpdateRequest request) {
 
         Long currentUserId = BaseContext.getCurrentId();
         ProductDetailDTO dto = productService.updateMyProduct(currentUserId, productId, request);

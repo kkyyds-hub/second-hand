@@ -24,7 +24,7 @@
 
         ORDER BY create_time DESC
     </select>
-    <select id="SelectById" resultType="com.demo.entity.User">
+    <select id="selectById" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE id = #{userid}
     </select>
     <select id="selectByMobile" resultType="com.demo.entity.User">

@@ -1,6 +1,6 @@
 package com.demo.mapper;
 
-import com.alibaba.druid.wall.Violation;
+
 import com.demo.entity.User;
 import com.demo.entity.UserViolation;
 import org.apache.ibatis.annotations.Insert;
@@ -19,7 +19,7 @@ public interface ViolationMapper {
     int insert(UserViolation violation);
 
     @Select("SELECT * FROM user_violation WHERE user_id = #{userId} ORDER BY create_time DESC")
-    List<Violation> selectByUserId(Long userId);
+    List<UserViolation> selectByUserId(Long userId);
 
     User SelectById(Long userId);
 

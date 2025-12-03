@@ -51,7 +51,7 @@ public class UserMeController {
     }
 
     @DeleteMapping("/bindings/phone")
-    public Result<String> unbindPhone(@Valid @RequestBody UnbindContactRequest request) {
+    public Result<String> unbindPhone(@Validated @RequestBody UnbindContactRequest request) {
         log.info("解绑手机号: {}", request);
         userService.unbindPhone(request);
         return Result.success("解绑成功");

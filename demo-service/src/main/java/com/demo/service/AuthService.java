@@ -1,6 +1,7 @@
 package com.demo.service;
 
 import com.demo.dto.auth.*;
+import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.vo.UserVO;
 
 public interface AuthService {
@@ -29,4 +30,10 @@ public interface AuthService {
      * 第三方快捷登录
      */
     AuthResponse loginWithThirdParty(ThirdPartyLoginRequest request);
+
+    /**
+     * 登录
+     */
+    AuthResponse loginWithPassword(PasswordLoginRequest request);
+
 }

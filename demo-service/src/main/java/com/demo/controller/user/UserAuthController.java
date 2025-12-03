@@ -3,6 +3,7 @@ package com.demo.controller.user;
 import com.demo.dto.auth.*;
 import com.demo.dto.user.BindEmailRequest;
 import com.demo.dto.user.BindPhoneRequest;
+import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.result.Result;
 import com.demo.service.AuthService;
 import com.demo.vo.UserVO;
@@ -58,5 +59,10 @@ public class UserAuthController {
     public Result<AuthResponse> thirdPartyLogin(@Validated @RequestBody ThirdPartyLoginRequest request) {
         log.info("第三方登录: {}", request);
         return Result.success(authService.loginWithThirdParty(request));
+    }
+
+    @PostMapping("/login/password")
+    public Result<AuthResponse> loginWithPassword(@Validated @RequestBody PasswordLoginRequest request) {
+        return Result.success(authService.loginWithPassword(request));
     }
 }

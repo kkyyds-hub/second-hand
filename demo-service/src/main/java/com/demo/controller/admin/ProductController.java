@@ -43,7 +43,7 @@ public class ProductController {
     }
 
     // 审批商品
-    @GetMapping("/{productId}/approve")
+    @PostMapping("/{productId}/approve")
     public Result<String> approveProduct(
             @PathVariable("productId") Long productId,
             @RequestParam(value = "isApproved") boolean isApproved,
@@ -73,7 +73,7 @@ public class ProductController {
     }
 
     // 更新商品状态
-    @GetMapping("/{productId}/update-status")
+    @PostMapping("/{productId}/update-status")
     public Result<String> updateProductStatus(@PathVariable Long productId, @RequestParam String status) {
         if (!isValidStatus(status)) {
             return Result.error("无效的商品状态");

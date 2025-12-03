@@ -4,6 +4,7 @@ import com.demo.constant.MessageConstant;
 import com.demo.context.BaseContext;
 import com.demo.dto.user.*;
 import com.demo.entity.User;
+import com.demo.exception.BusinessException;
 import com.demo.mapper.UserMapper;
 import com.demo.result.PageResult;
 import com.demo.service.UserService;
@@ -18,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -67,14 +67,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserVO updateProfile(UpdateProfileRequest request) {
         log.info("更新用户信息: {}", request);
-        User user = userMapper.SelectById(request.getUserId());
-        if (user == null){
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
-        NicknameValidation(request.getNickname());
-        AvatarValidation(request.getAvatar());
-        BioValidation(request.getBio());
-        user.setId(request.getUserId());
+        User user = getCurrentUserOrThrow();
+        nicknameValidation(request.getNickname());
+        avatarValidation(request.getAvatar());
+        bioValidation(request.getBio());
         user.setNickname(request.getNickname());
         user.setAvatar(request.getAvatar());
         user.setBio(request.getBio());
@@ -91,16 +87,16 @@ public class UserServiceImpl implements UserService {
         String lowerFileName = normalizedFileName.toLowerCase();
 
         if (!lowerFileName.endsWith(".jpg") && !lowerFileName.endsWith(".jpeg") && !lowerFileName.endsWith(".png")) {
-            throw new RuntimeException("文件名需以 .jpg/.jpeg/.png 结尾");
+            throw new BusinessException("文件名需以 .jpg/.jpeg/.png 结尾");
         }
 
         // 补充一次 contentType 与扩展名的匹配校验
         boolean isPng = lowerFileName.endsWith(".png");
         if (isPng && !"image/png".equalsIgnoreCase(request.getContentType())) {
-            throw new RuntimeException("PNG 头像需使用 image/png 上传");
+            throw new BusinessException("PNG 头像需使用 image/png 上传");
         }
         if (!isPng && !"image/jpeg".equalsIgnoreCase(request.getContentType())) {
-            throw new RuntimeException("JPEG 头像需使用 image/jpeg 上传");
+            throw new BusinessException("JPEG 头像需使用 image/jpeg 上传");
         }
 
         String suffix = lowerFileName.substring(lowerFileName.lastIndexOf('.'));
@@ -122,55 +118,68 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        Long currentUserId = BaseContext.getCurrentId();
-        User user = userMapper.SelectById(currentUserId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
+        User user = getCurrentUserOrThrow();
+        Long currentUserId = user.getId();
         boolean verified = false;
+
+        // 1. 使用当前密码验证（如果传了）
         if (StringUtils.isNotBlank(request.getOldPassword())) {
-            if (!user.getPassword().equals(request.getOldPassword())){
-                throw new RuntimeException(MessageConstant.PASSWORD_ERROR);
+            if (!user.getPassword().equals(request.getOldPassword())) {
+                throw new BusinessException(MessageConstant.PASSWORD_ERROR);
             }
             verified = true;
         }
-        if (StringUtils.isNotBlank(request.getVerifyChannel())){
-            String code = request.getCode();
+
+        // 2. 使用验证码验证（如果指定了渠道）
+        if (StringUtils.isNotBlank(request.getVerifyChannel())) {
             String channel = request.getVerifyChannel().toLowerCase();
-            if (StringUtils.isNotBlank( code)){
-                throw new RuntimeException("验证码不能为空");
+            String code = request.getCode();
+
+            if (StringUtils.isBlank(code)) {
+                throw new BusinessException("验证码不能为空");
             }
-            switch ( channel){
+
+            switch (channel) {
                 case "email":
-                    verifySmsCode(user, code);
-                    break;
-                case "phone":
+                    // 邮箱验证码
                     verifyEmailCode(user, code);
                     break;
+                case "phone":
+                    // 短信验证码
+                    verifySmsCode(user, code);
+                    break;
                 default:
-                    throw new RuntimeException("不支持的验证渠道");
+                    throw new BusinessException("不支持的验证渠道");
             }
             verified = true;
-            }
-        if (!verified) {
-            throw new RuntimeException("请提供当前密码或验证码进行验证");
         }
+
+        if (!verified) {
+            throw new BusinessException("请提供当前密码或验证码进行验证");
+        }
+
+        // 这里暂时还没做加密，后面可以再优化为 passwordEncoder.encode(...)
         userMapper.updatePassword(currentUserId, request.getNewPassword(), LocalDateTime.now());
     }
 
+
     @Override
     public UserVO bindPhone(BindPhoneRequest request) {
-        Long currentUserId = BaseContext.getCurrentId();
-        User user = userMapper.SelectById(currentUserId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
+        User user = getCurrentUserOrThrow();
+        Long currentUserId = user.getId();
+
         String mobile = request.getValue();
-        verifySmsCode(user, request.getVerifyCode());
+
+        // 1. 校验发到“新手机号”上的验证码
+        verifySmsCodeForMobile(mobile, request.getVerifyCode());
+
+        // 2. 校验唯一性：是否被其他账号占用
         User existed = userMapper.selectByMobile(mobile);
-        if (existed != null && existed.getId().equals(currentUserId)) {
-            throw new RuntimeException("手机号已存在");
+        if (existed != null && !existed.getId().equals(currentUserId)) {
+            throw new BusinessException("该手机号已被其他账号绑定");
         }
+
+        // 3. 更新绑定关系
         LocalDateTime now = LocalDateTime.now();
         userMapper.updateMobile(currentUserId, mobile, now);
         stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + mobile);
@@ -179,19 +188,20 @@ public class UserServiceImpl implements UserService {
         return toUserVO(user);
     }
 
+
     @Override
     public UserVO bindEmail(BindEmailRequest request) {
-        Long currentUserId = BaseContext.getCurrentId();
-        User user = userMapper.SelectById(currentUserId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
+        User user = getCurrentUserOrThrow();
+        Long currentUserId = user.getId();
+
         String email = request.getValue();
-        verifyEmailCode(user, request.getVerifyCode());
+        verifyEmailCodeForEmail(email, request.getVerifyCode());
+
         User existed = userMapper.selectByEmail(email);
-        if (existed != null && existed.getId().equals(currentUserId)) {
-            throw new RuntimeException("邮箱已存在");
+        if (existed != null && !existed.getId().equals(currentUserId)) {
+            throw new BusinessException("该邮箱已被其他账号绑定");
         }
+
         LocalDateTime now = LocalDateTime.now();
         userMapper.updateEmail(currentUserId, email, now);
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + email);
@@ -200,15 +210,15 @@ public class UserServiceImpl implements UserService {
         return toUserVO(user);
     }
 
+
+
     @Override
     public void unbindPhone(UnbindContactRequest request) {
-        Long currentUserId = BaseContext.getCurrentId();
-        User user = userMapper.SelectById(currentUserId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
+        User user = getCurrentUserOrThrow();
+        Long currentUserId = user.getId();
+
         if (StringUtils.isBlank(user.getMobile())) {
-            throw new RuntimeException("当前账号未绑定手机号");
+            throw new BusinessException("当前账号未绑定手机号");
         }
 
         verifyUnbindRequest(user, request);
@@ -217,15 +227,13 @@ public class UserServiceImpl implements UserService {
         stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + user.getMobile());
     }
 
+
     @Override
     public void unbindEmail(UnbindContactRequest request) {
-        Long currentUserId = BaseContext.getCurrentId();
-        User user = userMapper.SelectById(currentUserId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
+      User user = getCurrentUserOrThrow();
+      Long currentUserId = user.getId();
         if (StringUtils.isBlank(user.getEmail())) {
-            throw new RuntimeException("当前账号未绑定邮箱");
+            throw new BusinessException("当前账号未绑定邮箱");
         }
 
         verifyUnbindRequest(user, request);
@@ -243,20 +251,22 @@ public class UserServiceImpl implements UserService {
         }).collect(Collectors.toList());
     }
 
-    private void BioValidation(@Size(max = 150, message = "简介不能超过150个字符") String bio) {
+    private void bioValidation(String bio) {
         if (bio == null) {
             return;
         }
+        if (bio.length() > 150) {
+            throw new BusinessException("简介不能超过150个字符");
+        }
         List<String> blockedWords = Arrays.asList("admin", "管理员", "违规");
         for (String word : blockedWords) {
-            //LowerCase(): 将字符串转换为小写,contains(): 判断字符串中是否包含指定的子串
             if (bio.toLowerCase().contains(word.toLowerCase())) {
-                throw new RuntimeException("昵称包含敏感词，请更换");
+                throw new BusinessException("简介包含敏感词，请更换");
             }
         }
     }
 
-    private void AvatarValidation(String avatar) {
+    private void avatarValidation(String avatar) {
         if (StringUtils.isBlank(avatar)) {
             return;
         }
@@ -264,77 +274,126 @@ public class UserServiceImpl implements UserService {
         boolean isHttp = lower.startsWith("http://") || lower.startsWith("https://");
         boolean supportedExt = lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png");
         if (!isHttp || !supportedExt) {
-            throw new RuntimeException("头像地址需为可访问的JPG/PNG链接");
+            throw new BusinessException("头像地址需为可访问的JPG/PNG链接");
         }
     }
 
-    private void NicknameValidation(@Size(min = 1, max = 20, message = "昵称长度需在1-20个字符内") String nickname) {
+    private void nicknameValidation(String nickname) {
+        if (StringUtils.isBlank(nickname)) {
+            throw new BusinessException("昵称不能为空");
+        }
+        // 长度校验更建议放在 DTO 上，这里简单兜个底
+        if (nickname.length() < 1 || nickname.length() > 20) {
+            throw new BusinessException("昵称长度需在1-20个字符内");
+        }
+
         List<String> blockedWords = Arrays.asList("admin", "管理员", "违规");
         for (String word : blockedWords) {
-            //LowerCase(): 将字符串转换为小写,contains(): 判断字符串中是否包含指定的子串
             if (nickname.toLowerCase().contains(word.toLowerCase())) {
-                throw new RuntimeException("昵称包含敏感词，请更换");
+                throw new BusinessException("昵称包含敏感词，请更换");
             }
         }
     }
-    private void verifyEmailCode(User user, String code) {
+    private void verifySmsCode(User user, String code) {
         if (StringUtils.isBlank(user.getMobile())) {
-            throw new RuntimeException("未绑定手机号，无法使用短信验证");
+            throw new BusinessException("未绑定手机号，无法使用短信验证");
         }
-        String cacheCode = stringRedisTemplate.opsForValue().get(SMS_CODE_KEY_PREFIX + user.getMobile());
-        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
+        verifySmsCodeForMobile(user.getMobile(), code);
     }
 
-    private void verifySmsCode(User user, String code) {
+    private void verifyEmailCode(User user, String code) {
         if (StringUtils.isBlank(user.getEmail())) {
-            throw new RuntimeException("未绑定邮箱，无法使用邮箱验证");
+            throw new BusinessException("未绑定邮箱，无法使用邮箱验证");
         }
-        String cacheCode = stringRedisTemplate.opsForValue().get(EMAIL_CODE_KEY_PREFIX + user.getEmail());
-        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
+        verifyEmailCodeForEmail(user.getEmail(), code);
     }
+    /**
+     * 解绑前的安全校验：
+     * - 可以用当前密码验证
+     * - 也可以用验证码验证（手机号 / 邮箱）
+     * - 至少通过一种验证，否则不允许解绑
+     */
     private void verifyUnbindRequest(User user, UnbindContactRequest request) {
         boolean verified = false;
+
+        // 1. 使用当前密码验证（如果传了）
         if (StringUtils.isNotBlank(request.getCurrentPassword())) {
             if (!request.getCurrentPassword().equals(user.getPassword())) {
-                throw new RuntimeException("当前密码不正确");
+                throw new BusinessException("当前密码不正确");
             }
             verified = true;
         }
 
+        // 2. 使用验证码验证（如果指定了验证渠道）
         String channel = request.getVerifyChannel();
-        if (StringUtils.isBlank(channel)) {
-            throw new RuntimeException("请选择验证方式");
+        if (StringUtils.isNotBlank(channel)) {
+            String code = request.getVerifyCode();
+            if (StringUtils.isBlank(code)) {
+                throw new BusinessException("验证码不能为空");
+            }
+
+            switch (channel.toLowerCase()) {
+                case "phone":
+                    verifySmsCode(user, code);
+                    break;
+                case "email":
+                    verifyEmailCode(user, code);
+                    break;
+                default:
+                    throw new BusinessException("不支持的验证渠道");
+            }
+            verified = true;
         }
 
-        String code = request.getVerifyCode();
-        if (StringUtils.isBlank(code)) {
-            throw new RuntimeException("验证码不能为空");
-        }
-
-        switch (channel.toLowerCase()) {
-            case "phone":
-                verifySmsCode(user, code);
-                break;
-            case "email":
-                verifyEmailCode(user, code);
-                break;
-            default:
-                throw new RuntimeException("不支持的验证渠道");
-        }
-        verified = true;
-
+        // 3. 两种方式都没用，则提示必须至少选择一种验证方式
         if (!verified) {
-            throw new RuntimeException("请提供当前密码或验证码进行验证");
+            throw new BusinessException("请提供当前密码或验证码进行验证");
         }
     }
+
     private UserVO toUserVO(User user) {
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;
+    }
+    /**
+     * 校验某个手机号对应的短信验证码（适用于绑定新手机号场景）
+     */
+    private void verifySmsCodeForMobile(String mobile, String code) {
+        if (StringUtils.isBlank(mobile)) {
+            throw new BusinessException("手机号不能为空");
+        }
+        String cacheCode = stringRedisTemplate.opsForValue().get(SMS_CODE_KEY_PREFIX + mobile);
+        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
+            throw new BusinessException("验证码错误或已过期");
+        }
+    }
+
+    /**
+     * 校验某个邮箱对应的验证码（适用于绑定新邮箱场景）
+     */
+    private void verifyEmailCodeForEmail(String email, String code) {
+        if (StringUtils.isBlank(email)) {
+            throw new BusinessException("邮箱不能为空");
+        }
+        String cacheCode = stringRedisTemplate.opsForValue().get(EMAIL_CODE_KEY_PREFIX + email);
+        if (StringUtils.isBlank(cacheCode) || !cacheCode.equals(code)) {
+            throw new BusinessException("验证码错误或已过期");
+        }
+    }
+    /**
+     * 获取当前登录用户，如果未登录或用户不存在则抛业务异常
+     */
+    private User getCurrentUserOrThrow() {
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new BusinessException("未登录或会话已失效");
+        }
+        User user = userMapper.selectById(currentUserId);
+        if (user == null) {
+            throw new BusinessException(MessageConstant.ID_NOT_FOUND);
+        }
+        return user;
     }
 
 
