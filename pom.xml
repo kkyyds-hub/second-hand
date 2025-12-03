@@ -3,6 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>spring-boot-starter-parent</artifactId>
         <groupId>org.springframework.boot</groupId>
@@ -18,13 +19,14 @@
         <module>demo-common</module>
         <module>demo-pojo</module>
         <module>demo-service</module>
-        <module>demo-service</module>
+        <!-- 这里你原来写了两次 demo-service，我帮你去掉了重复的那一行 -->
     </modules>
 
     <properties>
-        <java.version>21</java.version>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <!-- 统一使用 Java 17 -->
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- 依赖版本配置 -->
@@ -56,6 +58,7 @@
             </plugin>
         </plugins>
     </build>
+
     <dependencyManagement>
         <dependencies>
             <!-- ========== 数据访问层 ========== -->
@@ -135,7 +138,6 @@
                 <artifactId>aliyun-sdk-oss</artifactId>
                 <version>${aliyun.sdk.oss}</version>
             </dependency>
-
 
             <!-- ========== Excel处理 ========== -->
             <dependency>

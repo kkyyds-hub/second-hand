@@ -13,3 +13,4 @@ demo:
     host: localhost
     port: 6379
     database: 2
+    enabled: true

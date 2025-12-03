@@ -13,7 +13,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -51,8 +50,6 @@ public class AuthServiceImpl implements AuthService {
     @Setter
     @Value("${spring.mail.username:}")
     private String mailFrom;
-    @Autowired
-    private BuildProperties buildProperties;
 
     @Override
     public void sendSmsCode(SmsCodeRequest request) {

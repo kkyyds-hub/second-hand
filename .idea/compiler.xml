@@ -17,6 +17,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="demo" options="-parameters" />
       <module name="demo-common" options="-parameters" />
+      <module name="demo-platform" options="-parameters" />
       <module name="demo-pojo" options="-parameters" />
       <module name="demo-server" options="-parameters" />
     </option>

@@ -1,11 +1,14 @@
 package com.demo.service;
 
 import com.demo.dto.user.ProductDTO;
+import com.demo.dto.user.ProductDetailDTO;
+import com.demo.dto.user.ProductUpdateRequest;
 import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.github.pagehelper.PageInfo;
 
+import javax.validation.Valid;
 import java.util.List;
 
 public interface ProductService {
@@ -20,4 +23,8 @@ public interface ProductService {
     void updateProductStatus(Long productId, String status);
 
     PageInfo<Product> getUserProducts(UserProductQueryDTO queryDTO);
+
+    ProductDetailDTO getProductDetail(Long productId);
+
+    ProductDetailDTO updateMyProduct(Long currentUserId, Long productId, @Valid ProductUpdateRequest request);
 }

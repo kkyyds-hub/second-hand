@@ -22,4 +22,5 @@ public class Product {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime; // 商品更新时间
     private String reason;
+    private Long ownerId;
 }
