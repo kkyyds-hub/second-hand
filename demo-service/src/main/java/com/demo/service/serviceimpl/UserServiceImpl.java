@@ -128,7 +128,6 @@ public class UserServiceImpl implements UserService {
 
         // 1. 使用当前密码验证（如果传了）
         if (StringUtils.isNotBlank(request.getOldPassword())) {
-            // 加密密码校验一定要用 matches，而不是 equals
             if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
                 throw new BusinessException(MessageConstant.PASSWORD_ERROR);
             }

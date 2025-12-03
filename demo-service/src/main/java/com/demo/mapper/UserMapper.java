@@ -30,9 +30,16 @@ public interface UserMapper {
 
     void updateProfile(User user);
 
-    void updatePassword(Long currentUserId, @NotBlank(message = "新密码不能为空") String newPassword, LocalDateTime now);
 
-    void updateEmail(Long currentUserId, String email, LocalDateTime now);
+    void updatePassword(@Param("userId") Long userId,
+                        @Param("password") String password,
+                        @Param("updateTime") LocalDateTime updateTime);
 
-    void updateMobile(Long currentUserId, String mobile, LocalDateTime now);
+    void updateEmail(@Param("userId") Long userId,
+                     @Param("email") String email,
+                     @Param("updateTime") LocalDateTime updateTime);
+
+    void updateMobile(@Param("userId") Long userId,
+                      @Param("mobile") String mobile,
+                      @Param("updateTime") LocalDateTime updateTime);
 }
