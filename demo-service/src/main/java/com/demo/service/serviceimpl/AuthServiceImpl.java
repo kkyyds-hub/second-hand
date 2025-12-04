@@ -4,8 +4,10 @@ import com.demo.constant.JwtClaimsConstant;
 import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.entity.User;
+import com.demo.entity.UserBan;
+import com.demo.enumeration.UserStatus;
 import com.demo.exception.BusinessException;
-import com.demo.exception.RegistrationException;
+import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.properties.JwtProperties;
 import com.demo.service.AuthService;
@@ -34,9 +36,14 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthServiceImpl implements AuthService {
 
     private static final String SMS_CODE_KEY_PREFIX = "auth:sms:code:";
+    private static final String EMAIL_CODE_KEY_PREFIX = "auth:email:code:";
     private static final String SMS_RATE_LIMIT_KEY_PREFIX = "auth:sms:rate:";
     private static final String EMAIL_ACTIVATION_KEY_PREFIX = "auth:email:activation:";
     private static final String THIRD_PARTY_BIND_KEY_PREFIX = "auth:oauth:";
+    private static final String LOGIN_FAIL_KEY_PREFIX = "auth:login_fail:"; // 后面拼 userId 或用户名
+    private static final int MAX_FAIL_COUNT = 5;      // 允许最大连续失败次数
+    private static final int FAIL_WINDOW_MINUTES = 30; // 统计窗口（分钟）
+
 
     @Autowired
     private UserMapper userMapper;
@@ -52,6 +59,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserBanMapper userBanMapper;
 
     @Setter
     @Value("${spring.mail.username:}")
@@ -71,17 +81,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserVO registerByPhone(PhoneRegisterRequest request) {
         String mobile = request.getMobile();
-        validateSmsCode(mobile, request.getCode());
-        if (userMapper.selectByMobile(mobile) != null) {
-            throw new RegistrationException("手机号已存在，请直接登录");
+        String smsCode = request.getSmsCode();
+        String rawPassword = request.getPassword();
+        String nickname = request.getNickname();
+        validateSmsCode(mobile, smsCode);
+        //校验手机号是否被注册
+        User existed = userMapper.selectByMobile(mobile);
+        if (existed != null) {
+            throw new BusinessException("手机号已注册");
         }
+        // 3. 构造 User 对象（密码要加密）
         User user = buildBaseUser();
         user.setMobile(mobile);
-        user.setUsername("u" + request.getMobile());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus("active");
+        user.setNickname(nickname);
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        user.setPassword(encodedPassword);
         userMapper.insertUser(user);
-        log.info("用户 {} 注册成功", user.getUsername());
+        log.info("用户手机号 {} 注册成功，用户ID={}", mobile, user.getId());
         clearSmsCode(mobile);
         return toUserVO(user);
     }
@@ -89,20 +105,30 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserVO registerByEmail(EmailRegisterRequest request) {
-        if (userMapper.selectByEmail(request.getEmail()) != null) {
-            throw new RegistrationException("该邮箱已注册，请直接登录");
+        String email = request.getEmail();
+        String emailCode = request.getEmailCode();
+        String rawPassword = request.getPassword();
+        String nickname = request.getNickname();
+        // 1. 校验邮箱验证码
+        validateEmailCode(email, emailCode);
+        // 2. 校验邮箱是否已被注册
+        User existed = userMapper.selectByEmail(email);
+        if (existed != null) {
+            throw new BusinessException("该邮箱已被注册");
         }
 
+        // 3. 构造 User 对象
         User user = buildBaseUser();
-        user.setEmail(request.getEmail());
-        user.setUsername(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus("pending_activation");
-
+        user.setEmail(email);
+        user.setNickname(nickname);
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        user.setPassword(encodedPassword);
         userMapper.insertUser(user);
+        clearEmailCode(email);
         sendActivationMail(user);
         return toUserVO(user);
     }
+
 
 
     @Override
@@ -110,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
         String key = EMAIL_ACTIVATION_KEY_PREFIX + request.getToken();
         String userIdStr = stringRedisTemplate.opsForValue().get(key);
         if (!StringUtils.hasText(userIdStr)) {
-            throw new RegistrationException("激活链接已失效或不存在，请重新发送");
+            throw new BusinessException("激活链接已失效或不存在，请重新发送");
         }
         Long userId = Long.parseLong(userIdStr);
         userMapper.updateStatus(userId, "active", LocalDateTime.now());
@@ -158,47 +184,104 @@ public class AuthServiceImpl implements AuthService {
         if (user == null) {
             throw new BusinessException("用户名或密码错误");
         }
-
-        // 4. 校验密码 —— 这里有两种情况：
-        // 情况 A：你已经把密码用 BCrypt 加密后存库（推荐正式做法）
+        UserStatus status = UserStatus.from(user.getStatus());
+        // 先判断状态
+        switch (status) {
+            case INACTIVE:
+                throw new BusinessException("账号未激活，请先完成邮箱激活");
+            case BANNED:
+                throw new BusinessException("账号已被封禁，如有疑问请联系客服");
+            case FROZEN:
+                throw new BusinessException("账号已被暂时冻结，请稍后再试或联系管理员");
+            case ACTIVE:
+            default:
+                break;
+        }
+        
+        // 4. 校验密码
         String encodedPassword = user.getPassword();
         if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            recordLoginFail(user.getId(), loginId);
+            handleLoginRiskOnFail(user);
             throw new BusinessException("用户名或密码错误");
         }
-
-        // 如果你现在库里还都是明文密码，可以在学习阶段先用 equals：
-        // if (!Objects.equals(rawPassword, user.getPassword())) {
-        //     throw new BusinessException("用户名或密码错误");
-        // }
-
-        // 5.（可选）校验账号状态
-        // if ("DISABLED".equals(user.getStatus())) {
-        //     throw new BusinessException("账号已被禁用");
-        // }
-
+        resetLoginFailCounter(user);
         // 6. 生成 JWT 并返回
         String token = buildJwt(user);        // 这里重用你已经写好的方法
         UserVO userVO = toUserVO(user);
         return new AuthResponse(token, userVO);
     }
 
+    private void recordLoginFail(Long userId, String identifier) {
+        String key = LOGIN_FAIL_KEY_PREFIX + (userId != null ? userId : identifier);
+        Long count = stringRedisTemplate.opsForValue().increment(key);
+        if (count == 1) {
+            // 第一次失败时设置过期时间
+            stringRedisTemplate.expire(key, Duration.ofMinutes(FAIL_WINDOW_MINUTES));
+        }
+    }
 
+    private void resetLoginFailCounter(User user) {
+        String key = LOGIN_FAIL_KEY_PREFIX + user.getId();
+        stringRedisTemplate.delete(key);
+    }
+
+    private void handleLoginRiskOnFail(User user) {
+        if (user == null) {
+            return;
+        }
+        String key = LOGIN_FAIL_KEY_PREFIX + user.getId();
+        String value = stringRedisTemplate.opsForValue().get(key);
+        if (value == null) return;
+
+        int count = Integer.parseInt(value);
+        if (count >= MAX_FAIL_COUNT) {
+            // 触发风控：临时冻结账号
+            userMapper.updateStatus(user.getId(), UserStatus.FROZEN.name(), LocalDateTime.now());
+            // 记录封禁记录（临时封锁，来源 AUTO_RISK）
+            insertAutoRiskBan(user.getId(), "登录失败次数过多自动冻结");
+        }
+    }
+
+    private void insertAutoRiskBan(Long userId, String reason) {
+        LocalDateTime  now = LocalDateTime.now();
+        UserBan ban = new UserBan();
+        ban.setUserId(userId);
+        ban.setBanType("TEMP");             // 此处先做临时封禁，如需永久封禁改为 "PERM"
+        ban.setReason(reason);
+        ban.setSource("AUTO_RISK");         // 表明是风控系统自动生成
+        ban.setStartTime(now);
+        //冻结 1 小时
+        ban.setEndTime(now.plusHours(1));
+        ban.setCreatedBy(null);             // 自动封禁，没有操作人
+        ban.setCreateTime(now);
+
+        userBanMapper.insertUserBan(ban);
+    }
 
 
     private void enforceSmsRateLimit(String mobile) {
         String rateKey = SMS_RATE_LIMIT_KEY_PREFIX + mobile;
         if (stringRedisTemplate.hasKey(rateKey)) {
-            throw new RegistrationException("验证码发送过于频繁，请稍后再试");
+            throw new BusinessException("验证码发送过于频繁，请稍后再试");
         }
     }
 
     private void validateSmsCode(String mobile, String code) {
         String cacheCode = stringRedisTemplate.opsForValue().get(SMS_CODE_KEY_PREFIX + mobile);
         if (!StringUtils.hasText(cacheCode) || !cacheCode.equals(code)) {
-            throw new RegistrationException("验证码错误或已过期");
+            throw new BusinessException("验证码错误或已过期");
         }
     }
+    private void validateEmailCode(String email, String code) {
+        String cacheCode = stringRedisTemplate.opsForValue().get(EMAIL_CODE_KEY_PREFIX + email);
+        if (!StringUtils.hasText(cacheCode) || !cacheCode.equals(code)) {
+            throw new BusinessException("验证码错误或已过期");
+        }
+    }
+
     private String generateCode() {
+
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1000000));
     }
 
@@ -221,7 +304,9 @@ public class AuthServiceImpl implements AuthService {
         stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + mobile);
         stringRedisTemplate.delete(SMS_RATE_LIMIT_KEY_PREFIX + mobile);
     }
-
+    private void clearEmailCode(String email) {
+        stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + email);
+    }
     private void sendActivationMail(User user) {
         if (mailSender == null || !StringUtils.hasText(mailFrom)) {
             log.warn("未配置邮件发送服务，跳过激活邮件发送");

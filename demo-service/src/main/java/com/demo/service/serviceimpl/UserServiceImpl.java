@@ -141,7 +141,19 @@ public class UserServiceImpl implements UserService {
             if (StringUtils.isBlank(code)) {
                 throw new BusinessException("验证码不能为空");
             }
-            // 验证码校验逻辑略...
+
+            switch (channel.toLowerCase()) {
+                case "phone":
+                    // 用绑定的手机号 + Redis 里的验证码做校验
+                    verifySmsCode(user, code);
+                    break;
+                case "email":
+                    // 用绑定的邮箱 + Redis 里的验证码做校验
+                    verifyEmailCode(user, code);
+                    break;
+                default:
+                    throw new BusinessException("不支持的验证渠道");
+            }
             verified = true;
         }
 
@@ -310,7 +322,7 @@ public class UserServiceImpl implements UserService {
 
         // 1. 使用当前密码验证（如果传了）
         if (StringUtils.isNotBlank(request.getCurrentPassword())) {
-            if (!request.getCurrentPassword().equals(user.getPassword())) {
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
                 throw new BusinessException("当前密码不正确");
             }
             verified = true;

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.demo.mapper.UserBanMapper">
+
+    <insert id="insertUserBan"
+            parameterType="com.demo.entity.UserBan"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO user_bans
+        (user_id, ban_type, reason, source, start_time, end_time, created_by, create_time)
+        VALUES
+            (#{userId}, #{banType}, #{reason}, #{source}, #{startTime}, #{endTime}, #{createdBy}, #{createTime})
+    </insert>
+
+</mapper>
