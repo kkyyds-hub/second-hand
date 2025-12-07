@@ -190,6 +190,32 @@ public class ProductServiceImpl implements ProductService {
         return toProductDetailDTO(product);
     }
 
+    @Override
+    public void offShelfProductStatus(Long currentUserId, Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null) {
+            throw new ProductNotFoundException("商品未找到，ID: " + productId);
+        }
+
+        // 1. 权限校验：只能下架自己的商品
+        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
+            throw new BusinessException("无权操作该商品");
+        }
+
+        // 2. 状态流转校验：只允许审核中/上架 → 下架
+        ProductStatus current = ProductStatus.fromDbValue(product.getStatus());
+        if (current != ProductStatus.UNDER_REVIEW && current != ProductStatus.ON_SHELF) {
+            throw new BusinessException("当前状态不允许下架");
+        }
+
+        // 3. 状态更新
+        product.setStatus(ProductStatus.OFF_SHELF.getDbValue());
+        product.setUpdateTime(LocalDateTime.now());
+        productMapper.updateProduct(product);
+
+        log.info("商品下架成功，用户ID: {}, 商品ID: {}", currentUserId, productId);
+    }
+
     // ================== 私有工具方法 ==================
 
     private ProductDTO toProductDTO(Product product) {

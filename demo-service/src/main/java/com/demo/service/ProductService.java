@@ -27,4 +27,6 @@ public interface ProductService {
     ProductDetailDTO getProductDetail(Long productId);
 
     ProductDetailDTO updateMyProduct(Long currentUserId, Long productId, @Valid ProductUpdateRequest request);
+
+    void offShelfProductStatus(Long currentUserId, Long productId);
 }

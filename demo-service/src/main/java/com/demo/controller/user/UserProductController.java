@@ -38,7 +38,7 @@ public class UserProductController {
         return Result.success(productDTO);
     }
 
-    @PutMapping("/user/products/{productId}")
+    @PutMapping("/{productId}")
     public Result<ProductDetailDTO> updateMyProduct(
             @PathVariable Long productId,
             @Validated @RequestBody ProductUpdateRequest request) {
@@ -48,5 +48,11 @@ public class UserProductController {
         return Result.success(dto);
     }
 
+    @PutMapping("/{productId}/off-shelf")
+    public Result<String> offShelf(@PathVariable Long productId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        productService.offShelfProductStatus(currentUserId, productId);
+        return Result.success("下架成功");
+    }
 
 }
