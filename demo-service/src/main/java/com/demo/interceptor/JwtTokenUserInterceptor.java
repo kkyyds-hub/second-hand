@@ -2,12 +2,17 @@ package com.demo.interceptor;
 
 import com.demo.constant.JwtClaimsConstant;
 import com.demo.context.BaseContext;
+import com.demo.entity.User;
+import com.demo.enumeration.UserStatus;
+import com.demo.exception.BusinessException;
+import com.demo.mapper.UserMapper;
 import com.demo.properties.JwtProperties;
 import com.demo.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -24,6 +29,8 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtProperties jwtProperties;
 
+    @Autowired
+    private UserMapper userMapper;
     /**
      * 校验jwt
      *
@@ -33,27 +40,62 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
      * @return
      * @throws Exception
      */
+    @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //判断当前拦截到的是Controller的方法还是其他资源
+        // 1. 不是 Controller 方法，直接放行（比如访问静态资源）
         if (!(handler instanceof HandlerMethod)) {
-            //当前拦截到的不是动态方法，直接放行
             return true;
         }
 
-        //1、从请求头中获取令牌
+        // 2. 从请求头获取用户端 token
         String token = request.getHeader(jwtProperties.getUserTokenName());
+        if (!StringUtils.hasText(token)) {
+            log.warn("用户端令牌为空，请求被拒绝");
+            response.setStatus(401);
+            return false;
+        }
 
-        //2、校验令牌
         try {
-            log.info("jwt校验:{}", token);
+            // 3. 解析 JWT
+            log.info("用户端 jwt 校验: {}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
+            if (claims == null) {
+                // token 过期/非法时，JwtUtil 返回 null
+                response.setStatus(401);
+                return false;
+            }
+
             Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
-            log.info("当前用户的id：", userId);
+            log.info("当前用户id: {}", userId);
+
+            // 4. 查询数据库中的用户信息
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new BusinessException("用户不存在或已被删除");
+            }
+
+            // 5. 根据用户状态做风控拦截
+            UserStatus status = UserStatus.from(user.getStatus());
+            if (status == UserStatus.BANNED) {
+                throw new BusinessException("账号已被封禁，如有疑问请联系客服");
+            }
+            if (status == UserStatus.FROZEN) {
+                throw new BusinessException("账号已被暂时冻结，请稍后再试或联系管理员");
+            }
+            if (status == UserStatus.INACTIVE) {
+                throw new BusinessException("账号未激活，请先完成激活");
+            }
+
+            // 6. 状态正常，保存当前用户ID到上下文，放行
             BaseContext.setCurrentId(userId);
-            //3、通过，放行
             return true;
+
+        } catch (BusinessException e) {
+            // 业务异常交给全局异常处理器统一返回 JSON
+            throw e;
         } catch (Exception ex) {
-            //4、不通过，响应401状态码
+            // token 解析等非业务异常，统一当作 401 处理
+            log.warn("用户端 jwt 解析失败: {}", ex.getMessage());
             response.setStatus(401);
             return false;
         }
