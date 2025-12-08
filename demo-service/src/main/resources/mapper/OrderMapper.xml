@@ -1,8 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.OrderMapper">
+    <update id="updateForShipping">
+        UPDATE orders
+        SET
+            shipping_company = #{shippingCompany},
+            tracking_no      = #{trackingNo},
+            status           = #{status},
+            update_time      = NOW()
+        WHERE
+            id = #{id}
+          AND status = 'paid'
+    </update>
+    <update id="updateForConfirm" parameterType="com.demo.entity.Order">
+        UPDATE orders
+        SET
+            status        = #{status},
+            complete_time = #{completeTime},
+            update_time   = #{updateTime}
+        WHERE
+            id = #{id}
+          AND status = 'shipped'
+    </update>
 
-    <select id="listBuyerOrders" resultType="com.demo.vo.BuyerOrderSummary">
+
+    <select id="listBuyerOrders" resultType="com.demo.vo.order.BuyerOrderSummary">
         SELECT
         o.id          AS orderId,
         o.order_no    AS orderNo,
@@ -50,5 +72,74 @@
             </otherwise>
         </choose>
 
+    </select>
+    <select id="listSellerOrders" resultType="com.demo.vo.order.SellerOrderSummary">
+        SELECT
+        o.id               AS orderId,
+        o.order_no         AS orderNo,
+        i.product_id       AS productId,
+        p.title            AS productTitle,
+        -- 简单做法：从 images 字段中取第一个 URL，当缩略图
+        SUBSTRING_INDEX(p.images, ',', 1) AS productThumbnail,
+        i.price            AS dealPrice,
+        i.quantity         AS quantity,
+        u.nickname         AS buyerNickname,
+        o.status           AS status,
+        o.shipping_company AS shippingCompany,
+        o.tracking_no      AS trackingNo,
+        o.create_time      AS createTime,
+        o.pay_time         AS payTime
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p    ON p.id        = i.product_id
+        JOIN users u       ON u.id        = o.buyer_id
+        WHERE
+        o.seller_id = #{currentUserId}
+        /* 可选：根据 status 查询待发货、已发货等 */
+        <if test="query.status != null and query.status != ''">
+            AND o.status = #{query.status}
+        </if>
+        ORDER BY
+        o.create_time DESC
+    </select>
+    <select id="getOrderDetail" resultType="com.demo.vo.order.OrderDetail">
+        SELECT
+            -- 基础信息
+            o.id            AS orderId,
+            o.order_no      AS orderNo,
+            o.status        AS status,
+            o.total_amount  AS totalAmount,
+            o.create_time   AS createTime,
+            o.pay_time      AS payTime,
+            o.complete_time AS completeTime,
+            o.shipping_address AS shippingAddress,
+            o.shipping_company AS shippingCompany,
+            o.tracking_no      AS trackingNo,
+            -- 商品 + 明细（先按一单一个商品处理）
+            i.quantity      AS quantity,
+            i.price         AS dealPrice,
+            p.id            AS productId,
+            p.title         AS productTitle,
+            SUBSTRING_INDEX(p.images, ',', 1) AS productThumbnail,
+            p.images        AS productImages,
+
+            -- 角色信息
+            o.buyer_id      AS buyerId,
+            bu.nickname     AS buyerNickname,
+            o.seller_id     AS sellerId,
+            su.nickname     AS sellerNickname
+
+        FROM orders o
+                 JOIN order_items i ON i.order_id = o.id
+                 JOIN products p    ON p.id        = i.product_id
+                 JOIN users bu      ON bu.id       = o.buyer_id
+                 JOIN users su      ON su.id       = o.seller_id
+
+        WHERE
+            o.id = #{orderId}
+          AND (o.buyer_id = #{currentUserId}
+            OR o.seller_id = #{currentUserId})
+
+        LIMIT 1
     </select>
 </mapper>

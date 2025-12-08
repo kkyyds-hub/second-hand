@@ -2,21 +2,21 @@ package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.ShipOrderRequest;
 import com.demo.result.Result;
 import com.demo.service.OrderService;
-import com.demo.vo.BuyerOrderSummary;
+import com.demo.vo.order.BuyerOrderSummary;
+import com.demo.vo.order.OrderDetail;
+import com.demo.vo.order.SellerOrderSummary;
 import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/user/orders")
 @Api(tags = "用户订单接口")
 @Slf4j
 public class OrdersController {
@@ -30,5 +30,40 @@ public class OrdersController {
         Long currentUserId = BaseContext.getCurrentId();
         PageInfo<BuyerOrderSummary> pageInfo = orderService.buy(pageQueryDTO, currentUserId);
         return Result.success(pageInfo);
+    }
+
+    @GetMapping("/sell")
+    public Result<PageInfo<SellerOrderSummary>> getSellOrder(@Validated PageQueryDTO pageQueryDTO) {
+        log.info("获取用户出售商品: {}", pageQueryDTO);
+        Long currentUserId = BaseContext.getCurrentId();
+        PageInfo<SellerOrderSummary> pageInfo = orderService.getSellOrder(pageQueryDTO, currentUserId);
+        return Result.success(pageInfo);
+
+    }
+
+    @GetMapping("/{orderId}")
+    public Result<OrderDetail> getOrder(@PathVariable Long orderId) {
+        log.info("获取订单详情: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        OrderDetail orderDetail = orderService.getOrderDetail(orderId, currentUserId);
+        return Result.success(orderDetail);
+    }
+
+    @PostMapping("/{orderId}/ship")
+    public Result<String> ship(@PathVariable Long orderId,
+                               @Validated @RequestBody ShipOrderRequest request) {
+        log.info("卖家发货: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        orderService.shipOrder(orderId, request, currentUserId);
+        return Result.success("发货成功");
+    }
+
+    @PostMapping("/{orderId}/confirm")
+    public Result<String> confirm(@PathVariable Long orderId) {
+        log.info("用户确认收货: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        orderService.confirmOrder(orderId, currentUserId);
+        return Result.success("确认收货成功");
+        //TODO 物流轨迹/评价信息暂未实现，字段返回 null”
     }
 }
