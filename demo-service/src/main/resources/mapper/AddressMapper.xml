@@ -1,22 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.AddressMapper">
-
-    <select id="findByUserId" resultType="com.demo.entity.Address">
-        SELECT
+    <sql id="addressColumns">
+        <trim suffixOverrides=",">
             id,
             user_id AS userId,
             receiver_name AS receiverName,
             mobile,
+            province_code AS provinceCode,
             province_name AS provinceName,
+            city_code AS cityCode,
             city_name AS cityName,
+            district_code AS districtCode,
             district_name AS districtName,
             detail_address AS detailAddress,
             is_default AS isDefault,
             created_at AS createTime,
             updated_at AS updateTime
+        </trim>
+    </sql>
+    <select id="findByUserId" resultType="com.demo.entity.Address">
+        SELECT
+        <include refid="addressColumns"/>
         FROM addresses
         WHERE user_id = #{userId}
         ORDER BY is_default DESC, updated_at DESC
     </select>
+    <select id="findDefaultByUserId" resultType="com.demo.entity.Address">
+        SELECT
+        <include refid="addressColumns"/>
+        FROM addresses
+        WHERE id = #{id}
+        AND user_id = #{userId}
+    </select>
+    <select id="findLatestByUserId" resultType="com.demo.entity.Address">
+    SELECT
+    <include refid="addressColumns"/>
+    FROM addresses
+    WHERE user_id = #{userId}
+    ORDER BY created_at DESC
+    LIMIT 1
+   </select>
+
 </mapper>

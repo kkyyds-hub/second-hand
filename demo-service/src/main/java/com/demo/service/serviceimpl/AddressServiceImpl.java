@@ -7,6 +7,7 @@ import com.demo.vo.address.AddressVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
@@ -14,16 +15,17 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@Transactional
 public class AddressServiceImpl implements AddressService {
 
     @Autowired
     private AddressMapper addressMapper;
     @Override
-    public List<AddressVO> getAddress(Long currentUserId) {
-        log.info("获取用户地址, 用户ID: {}", currentUserId);
+    public List<AddressVO> listAddresses(Long userId) {
+        log.info("获取用户地址, 用户ID: {}", userId);
 
         // 1. 查询用户的所有地址
-        List<Address> addresses = addressMapper.findByUserId(currentUserId);
+        List<Address> addresses = addressMapper.findByUserId(userId);
 
         // 2. 如果没有找到地址，可以返回空列表或者特殊提示
         if (addresses.isEmpty()) {
@@ -39,6 +41,17 @@ public class AddressServiceImpl implements AddressService {
         // 4. 返回地址列表
         return addressVOs;
     }
+
+    @Override
+    public AddressVO getDefaultAddress(Long currentUserId) {
+        log.info("查询默认地址, 用户ID: {}", currentUserId);
+        Address address = addressMapper.findDefaultByUserId(currentUserId);
+        if (address == null) {
+            address = addressMapper.findLatestByUserId(currentUserId);
+        }
+        return address == null ? null : convertToAddressVO(address);
+    }
+
     private AddressVO convertToAddressVO(Address address) {
         AddressVO addressVO = new AddressVO();
         addressVO.setId(address.getId());
@@ -51,4 +64,5 @@ public class AddressServiceImpl implements AddressService {
         addressVO.setIsDefault(address.getIsDefault());
         return addressVO;
     }
+
 }

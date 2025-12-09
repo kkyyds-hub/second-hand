@@ -8,4 +8,8 @@ import java.util.List;
 @Mapper
 public interface AddressMapper {
     List<Address> findByUserId(Long currentUserId);
+
+    Address findDefaultByUserId(Long currentUserId);
+
+    Address findLatestByUserId(Long currentUserId);
 }

@@ -16,8 +16,11 @@ public class Address {
     private Long userId;                // 用户ID
     private String receiverName;        // 收货人姓名
     private String mobile;              // 联系电话
+    private String provinceCode;        // 省份行政区划代码
     private String provinceName;        // 省份名称
+    private String cityCode;            // 城市行政区划代码
     private String cityName;            // 城市名称
+    private String districtCode;        // 区县行政区划代码
     private String districtName;        // 区县名称
     private String detailAddress;       // 详细地址
     private Boolean isDefault;          // 是否为默认地址
