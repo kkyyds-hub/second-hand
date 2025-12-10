@@ -1,24 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.AddressMapper">
+    <!-- 公共列映射：数据库列 -> Address 实体字段 -->
     <sql id="addressColumns">
         <trim suffixOverrides=",">
             id,
-            user_id AS userId,
-            receiver_name AS receiverName,
+            user_id        AS userId,
+            receiver_name  AS receiverName,
             mobile,
-            province_code AS provinceCode,
-            province_name AS provinceName,
-            city_code AS cityCode,
-            city_name AS cityName,
-            district_code AS districtCode,
-            district_name AS districtName,
+            province_code  AS provinceCode,
+            province_name  AS provinceName,
+            city_code      AS cityCode,
+            city_name      AS cityName,
+            district_code  AS districtCode,
+            district_name  AS districtName,
             detail_address AS detailAddress,
-            is_default AS isDefault,
-            created_at AS createTime,
-            updated_at AS updateTime
+            is_default     AS isDefault,
+            created_at     AS createTime,
+            updated_at     AS updateTime
         </trim>
     </sql>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO addresses (
+            user_id,
+            receiver_name,
+            mobile,
+            province_code,
+            province_name,
+            city_code,
+            city_name,
+            district_code,
+            district_name,
+            detail_address,
+            is_default,
+            created_at,
+            updated_at
+        )
+        VALUES (
+                   #{userId},
+                   #{receiverName},
+                   #{mobile},
+                   #{provinceCode},
+                   #{provinceName},
+                   #{cityCode},
+                   #{cityName},
+                   #{districtCode},
+                   #{districtName},
+                   #{detailAddress},
+                   #{isDefault},
+                   NOW(),
+                   NOW()
+               )
+    </insert>
+
+    <update id="clearDefaultByUserId">
+        UPDATE addresses
+        SET is_default = 0,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND is_default = 1
+    </update>
+    <update id="update">
+        UPDATE addresses
+        SET receiver_name  = #{receiverName},
+            mobile         = #{mobile},
+            province_code  = #{provinceCode},
+            province_name  = #{provinceName},
+            city_code      = #{cityCode},
+            city_name      = #{cityName},
+            district_code  = #{districtCode},
+            district_name  = #{districtName},
+            detail_address = #{detailAddress},
+            is_default     = #{isDefault},
+            updated_at     = NOW()
+        WHERE id      = #{id}
+          AND user_id = #{userId}
+    </update>
+    <update id="updateIsDefaultByIdAndUserId">
+        UPDATE addresses
+        SET is_default = #{isDefault},
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </update>
+    <delete id="deleteByIdAndUserId">
+        DELETE FROM addresses
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </delete>
+
+    <!-- ① 查询用户全部地址：默认地址优先，其余按更新时间倒序 -->
     <select id="findByUserId" resultType="com.demo.entity.Address">
         SELECT
         <include refid="addressColumns"/>
@@ -26,20 +97,30 @@
         WHERE user_id = #{userId}
         ORDER BY is_default DESC, updated_at DESC
     </select>
+
+    <!-- ② 查询用户默认地址 -->
     <select id="findDefaultByUserId" resultType="com.demo.entity.Address">
         SELECT
         <include refid="addressColumns"/>
         FROM addresses
-        WHERE id = #{id}
-        AND user_id = #{userId}
+        WHERE user_id = #{userId}
+        AND is_default = 1
+        LIMIT 1
     </select>
-    <select id="findLatestByUserId" resultType="com.demo.entity.Address">
-    SELECT
-    <include refid="addressColumns"/>
-    FROM addresses
-    WHERE user_id = #{userId}
-    ORDER BY created_at DESC
-    LIMIT 1
-   </select>
 
+    <!-- ③ 查询用户最近一条地址记录（作为没有默认地址时的兜底） -->
+    <select id="findLatestByUserId" resultType="com.demo.entity.Address">
+        SELECT
+        <include refid="addressColumns"/>
+        FROM addresses
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+    <select id="findById" resultType="com.demo.entity.Address">
+        SELECT
+        <include refid="addressColumns"/>
+        FROM addresses
+        WHERE id = #{id}
+    </select>
 </mapper>
