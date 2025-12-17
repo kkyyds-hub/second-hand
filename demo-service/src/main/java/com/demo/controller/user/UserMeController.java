@@ -21,11 +21,13 @@ public class UserMeController {
 
     @Autowired
     private UserService userService;
+
     @PatchMapping("/profile")
     public Result<UserVO> updateProfile(@Validated @RequestBody UpdateProfileRequest request) {
         log.info("更新用户信息: {}", request);
         return Result.success(userService.updateProfile(request));
     }
+
     @PostMapping("/upload-config")
     public Result<AvatarUploadConfigVO> getAvatarUploadConfig(@Validated @RequestBody AvatarUploadConfigRequest request) {
         log.info("获取头像上传配置: {}", request);
@@ -38,6 +40,7 @@ public class UserMeController {
         userService.changePassword(request);
         return Result.success("修改密码成功");
     }
+
     @PostMapping("/bindings/phone")
     public Result<UserVO> bindPhone(@Validated @RequestBody BindPhoneRequest request) {
         log.info("绑定手机号: {}", request);
@@ -63,5 +66,4 @@ public class UserMeController {
         userService.unbindEmail(request);
         return Result.success("解绑成功");
     }
-    }
-
+}

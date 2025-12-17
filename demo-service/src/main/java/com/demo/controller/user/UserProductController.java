@@ -24,9 +24,15 @@ public class UserProductController {
 
     @GetMapping
     public Result<PageInfo<Product>> getProducts(@Validated UserProductQueryDTO queryDTO) {
-        log.info("获取用户商品列表");
-        PageInfo<Product> pageInfo = productService.getUserProducts(queryDTO);
+        Long currentUserId = BaseContext.getCurrentId();
 
+        // 核心：忽略前端传来的 userId，强制以当前登录用户为准
+        queryDTO.setUserId(currentUserId);
+
+        log.info("获取用户商品列表, currentUserId={}, page={}, size={}, status={}",
+                currentUserId, queryDTO.getPage(), queryDTO.getSize(), queryDTO.getStatus());
+
+        PageInfo<Product> pageInfo = productService.getUserProducts(queryDTO);
         return Result.success(pageInfo);
     }
 

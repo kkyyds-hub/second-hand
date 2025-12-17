@@ -2,33 +2,80 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.ProductMapper">
 
-    <resultMap id="ProductResultMap" type="com.demo.entity.Product">
-        <result property="id" column="id"/>
-        <result property="title" column="title"/>
-        <result property="category" column="category"/>
-        <result property="status" column="status"/>
-    </resultMap>
+    <!-- 统一列清单：所有查询都用它，避免漏字段（尤其是 ownerId） -->
+    <sql id="productColumns">
+        <trim suffixOverrides=",">
+            id,
+            user_id AS ownerId,
+            title,
+            description,
+            price,
+            images,
+            category,
+            status,
+            view_count AS viewCount,
+            reason,
+            create_time AS createTime,
+            update_time AS updateTime
+        </trim>
+    </sql>
+
+    <!-- 更新商品：动态 set，谁不为 null 就更新谁；永远更新 update_time -->
     <update id="updateProduct" parameterType="com.demo.entity.Product">
         UPDATE products
-        SET
-            reason = #{product.reason},
-            status = #{product.status},
-            create_time = #{product.createTime}
-        WHERE id = #{product.id}
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="images != null">images = #{images},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="reason != null">reason = #{reason},</if>
+
+            <!-- 时间：优先用传入的 updateTime；没传就用 NOW() -->
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateTime == null">update_time = NOW(),</if>
+        </set>
+        WHERE id = #{id}
     </update>
 
+    <!-- 后台：待审核商品列表（动态筛选）
+         规则：不传 status 时默认只查 under_review，符合“待审核”语义 -->
     <select id="getPendingApprovalProducts" resultType="com.demo.entity.Product">
-        SELECT id, title, category, status, create_time AS createTime, reason
+        SELECT
+        <include refid="productColumns"/>
         FROM products
-        WHERE id = #{productId} <!-- 使用 productId 作为查询条件 -->
+        <where>
+            <if test="productName != null and productName != ''">
+                AND title LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+
+            <if test="status != null and status != '' and status != '全部'">
+                AND status = #{status}
+            </if>
+            <if test="status == null or status == '' or status == '全部'">
+                AND status = 'under_review'
+            </if>
+        </where>
+        ORDER BY create_time DESC
     </select>
-    <select id="getProductById" resultType="com.demo.entity.Product" parameterType="java.lang.Long">
-        SELECT id, title, category, status, create_time AS createTime
+
+    <!-- 根据商品ID查询（必须带 ownerId，否则权限校验必炸） -->
+    <select id="getProductById" resultType="com.demo.entity.Product">
+        SELECT
+        <include refid="productColumns"/>
         FROM products
         WHERE id = #{productId}
+        LIMIT 1
     </select>
+
+    <!-- 查询用户自己的商品列表 -->
     <select id="getUserProducts" resultType="com.demo.entity.Product">
-        SELECT id, title, description, price, images, category, status, create_time AS createTime, update_time AS updateTime, reason
+        SELECT
+        <include refid="productColumns"/>
         FROM products
         WHERE user_id = #{userId}
         <if test="status != null and status != '' and status != '全部'">
@@ -36,6 +83,5 @@
         </if>
         ORDER BY create_time DESC
     </select>
-
 
 </mapper>

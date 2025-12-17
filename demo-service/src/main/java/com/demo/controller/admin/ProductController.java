@@ -2,6 +2,7 @@ package com.demo.controller.admin;
 
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.ProductViolation;
+import com.demo.exception.BusinessException;
 import com.demo.exception.DatabaseUpdateException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.result.Result;
@@ -33,9 +34,18 @@ public class ProductController {
             @RequestParam(required = false) String productName,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String status) {
+
         try {
-            PageInfo<ProductDTO> pageInfo = productService.getPendingApprovalProducts(page, size, productName, category, status);
+            // 核心：把 status 统一成 dbValue（或 null=不筛选）
+            String statusDb = normalizeStatus(status);
+
+            PageInfo<ProductDTO> pageInfo = productService.getPendingApprovalProducts(
+                    page, size, productName, category, statusDb
+            );
             return Result.success(pageInfo);
+        } catch (BusinessException e) {
+            // 关键：给出“清晰错误”，别吞掉
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             log.error("获取待审核商品列表失败", e);
             return Result.error("获取待审核商品列表失败");
@@ -75,14 +85,19 @@ public class ProductController {
     // 更新商品状态
     @PostMapping("/{productId}/update-status")
     public Result<String> updateProductStatus(@PathVariable Long productId, @RequestParam String status) {
-        if (!isValidStatus(status)) {
-            return Result.error("无效的商品状态");
-        }
         try {
-            productService.updateProductStatus(productId, status);
+            // 核心：这里不再用“中文 isValidStatus”，而是统一转 dbValue，再传给 service
+            String statusDb = normalizeStatus(status);
+            if (statusDb == null) {
+                return Result.error("status 不能为空");
+            }
+
+            productService.updateProductStatus(productId, statusDb);
             return Result.success("商品状态更新成功");
+        } catch (BusinessException e) {
+            return Result.error(e.getMessage());
         } catch (ProductNotFoundException e) {
-            log.error("商品未找到: " + productId, e);
+            log.error("商品未找到: {}", productId, e);
             return Result.error("商品未找到");
         } catch (DatabaseUpdateException e) {
             log.error("数据库更新失败", e);
@@ -93,8 +108,44 @@ public class ProductController {
         }
     }
 
-    private boolean isValidStatus(String status) {
-        // 假设有效的状态是：上架、已售、下架
-        return "上架".equals(status) || "已售".equals(status) || "下架".equals(status);
+    /**
+     * 后台入参 status 统一规范化：
+     * - 允许 dbValue：on_sale / sold / off_shelf / under_review
+     * - 兼容中文：上架 / 已售 / 下架 / 审核中（兼容旧测试，不影响内部口径）
+     * - 允许“全部/空”表示不筛选（返回 null）
+     */
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank() || "全部".equals(status)) {
+            return null;
+        }
+        status = status.trim();
+
+        // 1) 兼容中文（旧接口/旧测试不至于全挂）
+        switch (status) {
+            case "上架":
+            case "在售":
+                return "on_sale";
+            case "已售":
+                return "sold";
+            case "下架":
+                return "off_shelf";
+            case "审核中":
+            case "待审核":
+                return "under_review";
+            default:
+                // 2) 允许直接传 dbValue
+                if (isDbStatus(status)) {
+                    return status;
+                }
+                throw new BusinessException("非法商品状态: " + status
+                        + "，允许: on_sale/sold/off_shelf/under_review 或 上架/已售/下架/审核中");
+        }
+    }
+
+    private boolean isDbStatus(String status) {
+        return "on_sale".equals(status)
+                || "sold".equals(status)
+                || "off_shelf".equals(status)
+                || "under_review".equals(status);
     }
 }

@@ -2,17 +2,21 @@ package com.demo.mapper;
 
 import com.demo.entity.Product;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Mapper
 public interface ProductMapper {
-    List<Product> getPendingApprovalProducts(String productName, String category, String status);
 
-    Product getProductById(Long productId);
+    List<Product> getPendingApprovalProducts(@Param("productName") String productName,
+                                             @Param("category") String category,
+                                             @Param("status") String status);
+
+    Product getProductById(@Param("productId") Long productId);
 
     void updateProduct(Product product);
 
-    List<Product> getUserProducts(@NotNull(message = "用户ID不能为空") Long userId, String status);
+    List<Product> getUserProducts(@Param("userId") Long userId,
+                                  @Param("status") String status);
 }

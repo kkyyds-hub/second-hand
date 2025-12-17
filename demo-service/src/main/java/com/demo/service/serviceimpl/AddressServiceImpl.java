@@ -29,16 +29,12 @@ public class AddressServiceImpl implements AddressService {
     public List<AddressVO> listAddresses(Long userId) {
         log.info("获取用户地址, 用户ID: {}", userId);
 
-        // 1. 查询用户的所有地址
         List<Address> addresses = addressMapper.findByUserId(userId);
-
-        // 2. 如果没有找到地址，可以返回空列表
-        if (addresses.isEmpty()) {
+        if (addresses == null || addresses.isEmpty()) {
             log.info("用户没有地址信息");
             return List.of();
         }
 
-        // 3. 将地址实体转换为 AddressVO
         return addresses.stream()
                 .map(this::convertToAddressVO)
                 .collect(Collectors.toList());
@@ -46,12 +42,23 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public AddressVO getDefaultAddress(Long currentUserId) {
-        log.info("查询默认地址, 用户ID: {}", currentUserId);
-        Address address = addressMapper.findDefaultByUserId(currentUserId);
-        if (address == null) {
-            address = addressMapper.findLatestByUserId(currentUserId);
-        }
+        log.info("查询默认地址(兜底最近一条), 用户ID: {}", currentUserId);
+
+        Address address = findDefaultOrLatestAddress(currentUserId);
         return address == null ? null : convertToAddressVO(address);
+    }
+
+    /**
+     * 兜底策略：
+     * 1) 优先返回默认地址（is_default = 1）
+     * 2) 若不存在默认地址，则返回最近一条地址记录（兜底）
+     */
+    private Address findDefaultOrLatestAddress(Long userId) {
+        Address defaultAddress = addressMapper.findDefaultByUserId(userId);
+        if (defaultAddress != null) {
+            return defaultAddress;
+        }
+        return addressMapper.findLatestByUserId(userId);
     }
 
     @Override
@@ -129,11 +136,13 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public void deleteAddress(Long currentUserId, Long addressId) {
         log.info("删除收货地址, 用户ID: {}, 收货地址ID: {}", currentUserId, addressId);
+
         // 1. 查询并校验归属
         Address address = addressMapper.findById(addressId);
         if (address == null || !Objects.equals(address.getUserId(), currentUserId)) {
             throw new BusinessException("地址不存在或无权修改");
         }
+
         int rows = addressMapper.deleteByIdAndUserId(addressId, currentUserId);
         if (rows == 0) {
             throw new BusinessException("地址不存在或无权修改");
@@ -195,7 +204,6 @@ public class AddressServiceImpl implements AddressService {
     public AddressVO getAddressById(Long currentUserId, Long addressId) {
         Address address = addressMapper.findById(addressId);
         if (address == null || !Objects.equals(address.getUserId(), currentUserId)) {
-            // 找不到或无权限，根据你全局异常处理返回错误码 0 + 提示信息
             throw new BusinessException("地址不存在或无权查看该地址");
         }
         return convertToAddressVO(address);
