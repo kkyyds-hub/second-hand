@@ -12,6 +12,7 @@ import com.demo.exception.BusinessException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ProductViolationMapper;
+import com.demo.result.PageResult;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -39,11 +40,11 @@ public class ProductServiceImpl implements ProductService {
      * 审核列表：分页查询待审核 / 已审核商品
      */
     @Override
-    public PageInfo<ProductDTO> getPendingApprovalProducts(int page,
-                                                           int size,
-                                                           String productName,
-                                                           String category,
-                                                           String status) {
+    public PageResult<ProductDTO> getPendingApprovalProducts(int page,
+                                                             int size,
+                                                             String productName,
+                                                             String category,
+                                                             String status) {
         PageHelper.startPage(page, size);
         List<Product> productList =
                 productMapper.getPendingApprovalProducts(productName, category, status);
@@ -51,8 +52,13 @@ public class ProductServiceImpl implements ProductService {
         List<ProductDTO> dtoList = productList.stream()
                 .map(this::toProductDTO)
                 .collect(Collectors.toList());
-
-        return new PageInfo<>(dtoList);
+        PageInfo<ProductDTO> pageInfo = new PageInfo<>(dtoList);
+        return new PageResult<>(
+                pageInfo.getList(),
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
     }
 
     /**
@@ -122,12 +128,19 @@ public class ProductServiceImpl implements ProductService {
      * 查询用户自己的商品列表
      */
     @Override
-    public PageInfo<Product> getUserProducts(UserProductQueryDTO queryDTO) {
+    public PageResult<Product> getUserProducts(UserProductQueryDTO queryDTO) {
         // 这里你也可以直接用 BaseContext.getCurrentId()，避免前端传 userId
         PageHelper.startPage(queryDTO.getPage(), queryDTO.getSize());
         List<Product> products =
                 productMapper.getUserProducts(queryDTO.getUserId(), queryDTO.getStatus());
-        return new PageInfo<>(products);
+
+        PageInfo<Product> pageInfo = new PageInfo<>(products);
+        return new PageResult<>(
+                pageInfo.getList(),
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
     }
 
     /**

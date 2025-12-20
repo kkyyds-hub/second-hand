@@ -12,7 +12,6 @@ import javax.validation.constraints.NotNull;
 public class UserProductQueryDTO extends PageQueryDTO {
 
     /** 用户 ID，必填 */
-    @NotNull(message = "用户ID不能为空")
     private Long userId;
 
     /** 商品状态，允许为空表示全部 */

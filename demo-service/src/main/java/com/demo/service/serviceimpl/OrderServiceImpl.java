@@ -6,6 +6,7 @@ import com.demo.entity.Order;
 import com.demo.enumeration.OrderStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
+import com.demo.result.PageResult;
 import com.demo.service.OrderService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
@@ -26,10 +27,16 @@ public class OrderServiceImpl implements OrderService {
     private OrderMapper orderMapper;
 
     @Override
-    public PageInfo<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
+    public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
         pageValidated(pageQueryDTO);
         List<BuyerOrderSummary> list = orderMapper.listBuyerOrders(currentUserId, pageQueryDTO);
-        return new PageInfo<>(list);
+        PageInfo<BuyerOrderSummary> pageInfo = new PageInfo<>(list);
+        return new PageResult<>(
+                pageInfo.getList(),
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
     }
 
     @Override
@@ -123,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
 
     private void pageValidated(PageQueryDTO pageQueryDTO) {
         Integer page = pageQueryDTO.getPage();
-        Integer size = pageQueryDTO.getSize();
+        Integer size = pageQueryDTO.getPageSize();
         if (page == null || page < 1) {
             page = 1;
         }

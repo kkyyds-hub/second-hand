@@ -168,8 +168,11 @@ public class AddressServiceImpl implements AddressService {
         addressVO.setReceiverName(address.getReceiverName());
         addressVO.setMobile(address.getMobile());
         addressVO.setProvinceName(address.getProvinceName());
+        addressVO.setProvinceCode(address.getProvinceCode());
         addressVO.setCityName(address.getCityName());
+        addressVO.setCityCode(address.getCityCode());
         addressVO.setDistrictName(address.getDistrictName());
+        addressVO.setDistrictCode(address.getDistrictCode());
         addressVO.setDetailAddress(address.getDetailAddress());
         addressVO.setIsDefault(address.getIsDefault());
         return addressVO;

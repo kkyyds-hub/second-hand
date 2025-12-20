@@ -7,12 +7,13 @@ import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.github.pagehelper.PageInfo;
+import com.demo.result.PageResult;
 
 import javax.validation.Valid;
 import java.util.List;
 
 public interface ProductService {
-    PageInfo<ProductDTO> getPendingApprovalProducts(int page, int size, String productName, String category, String status);
+    PageResult<ProductDTO> getPendingApprovalProducts(int page, int pageSize, String productName, String category, String status);
 
     void approveProduct(Long productId, boolean isApproved, String reason);
 
@@ -22,7 +23,7 @@ public interface ProductService {
 
     void updateProductStatus(Long productId, String status);
 
-    PageInfo<Product> getUserProducts(UserProductQueryDTO queryDTO);
+    PageResult<Product> getUserProducts(UserProductQueryDTO queryDTO);
 
     ProductDetailDTO getProductDetail(Long productId);
 

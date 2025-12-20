@@ -9,10 +9,26 @@ import javax.validation.constraints.Min;
 public class PageQueryDTO {
     @Min(value = 1, message = "页码不能小于1")
     private Integer page = 1;
+
+    // 新契约字段：pageSize
+    @Min(value = 1, message = "每页大小不能小于1")
+    @Max(value = 100, message = "每页大小不能超过100")
+    private Integer pageSize;
+
+    // 旧字段：size（先保留兼容）
+    @Deprecated
     @Min(value = 1, message = "每页大小不能小于1")
     @Max(value = 100, message = "每页大小不能超过100")
     private Integer size = 10;
+
     private String status;
     private String sortField = "createTime";
     private String sortOrder = "desc";
+
+    // 统一读取口径：优先 pageSize，其次 size，最后默认 10
+    public Integer getPageSize() {
+        if (pageSize != null) return pageSize;
+        if (size != null) return size;
+        return 10;
+    }
 }

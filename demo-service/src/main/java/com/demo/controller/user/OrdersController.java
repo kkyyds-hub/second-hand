@@ -9,6 +9,8 @@ import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
 import com.github.pagehelper.PageInfo;
+import com.demo.result.PageResult;
+
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,21 +27,25 @@ public class OrdersController {
     private OrderService orderService;
 
     @GetMapping("/buy")
-    public Result<PageInfo<BuyerOrderSummary>> buy(@Validated PageQueryDTO pageQueryDTO) {
+    public Result<PageResult<BuyerOrderSummary>> buy(@Validated PageQueryDTO pageQueryDTO) {
         log.info("用户购买商品: {}", pageQueryDTO);
         Long currentUserId = BaseContext.getCurrentId();
-        PageInfo<BuyerOrderSummary> pageInfo = orderService.buy(pageQueryDTO, currentUserId);
-        return Result.success(pageInfo);
+        PageResult<BuyerOrderSummary> pageResult = orderService.buy(pageQueryDTO, currentUserId);
+        return Result.success(pageResult);
     }
 
-    @GetMapping("/sell")
-    public Result<PageInfo<SellerOrderSummary>> getSellOrder(@Validated PageQueryDTO pageQueryDTO) {
+
+    public Result<PageResult<SellerOrderSummary>> getSellOrder(@Validated PageQueryDTO pageQueryDTO) {
         log.info("获取用户出售商品: {}", pageQueryDTO);
         Long currentUserId = BaseContext.getCurrentId();
-        PageInfo<SellerOrderSummary> pageInfo = orderService.getSellOrder(pageQueryDTO, currentUserId);
-        return Result.success(pageInfo);
 
+        var pageInfo = orderService.getSellOrder(pageQueryDTO, currentUserId);
+        PageResult<SellerOrderSummary> pageResult =
+                new PageResult<>(pageInfo.getList(), pageInfo.getTotal(), pageInfo.getPageNum(), pageInfo.getPageSize());
+
+        return Result.success(pageResult);
     }
+
 
     @GetMapping("/{orderId}")
     public Result<OrderDetail> getOrder(@PathVariable Long orderId) {

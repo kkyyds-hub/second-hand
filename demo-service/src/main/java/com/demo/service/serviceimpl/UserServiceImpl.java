@@ -48,7 +48,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public PageResult<UserVO> getUserPage(UserQueryDTO queryDTO) {
         log.info("分页查询用户: {}", queryDTO);
-        PageHelper.startPage(queryDTO.getPage(), queryDTO.getSize());
+        PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
 
         // 2. 执行普通查询（PageHelper会自动分页）
         List<User> userList = userMapper.selectUsers(queryDTO);
@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
                 userVOList,
                 pageInfo.getTotal(),
                 queryDTO.getPage(),
-                queryDTO.getSize()
+                queryDTO.getPageSize()
         );
     }
 

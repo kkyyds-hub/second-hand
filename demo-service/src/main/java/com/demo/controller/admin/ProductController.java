@@ -8,6 +8,7 @@ import com.demo.exception.ProductNotFoundException;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageInfo;
+import com.demo.result.PageResult;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,29 +29,25 @@ public class ProductController {
 
     // 获取待审核商品列表
     @GetMapping("/pending-approval")
-    public Result<PageInfo<ProductDTO>> getPendingApprovalProducts(
-            @RequestParam int page,
-            @RequestParam int size,
+    public Result<PageResult<ProductDTO>> getPendingApprovalProducts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize,
+            @RequestParam(value = "size", required = false) Integer size,
             @RequestParam(required = false) String productName,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String status) {
-
         try {
-            // 核心：把 status 统一成 dbValue（或 null=不筛选）
-            String statusDb = normalizeStatus(status);
+            int ps = (pageSize != null) ? pageSize : (size != null ? size : 10);
 
-            PageInfo<ProductDTO> pageInfo = productService.getPendingApprovalProducts(
-                    page, size, productName, category, statusDb
-            );
-            return Result.success(pageInfo);
-        } catch (BusinessException e) {
-            // 关键：给出“清晰错误”，别吞掉
-            return Result.error(e.getMessage());
+            PageResult<ProductDTO> pageResult = productService.getPendingApprovalProducts(page, ps, productName, category, status);
+            return Result.success(pageResult);
+
         } catch (Exception e) {
             log.error("获取待审核商品列表失败", e);
             return Result.error("获取待审核商品列表失败");
         }
     }
+
 
     // 审批商品
     @PostMapping("/{productId}/approve")

@@ -25,7 +25,7 @@ public class UserController {
     @GetMapping
     @ApiOperation("用户分页查询")
     public Result<PageResult<UserVO>> getUsers(@Valid UserQueryDTO queryDTO) {
-        log.info("用户分页查询: page={}, size={}", queryDTO.getPage(), queryDTO.getSize());
+        log.info("用户分页查询: page={}, pageSize={}", queryDTO.getPage(), queryDTO.getPageSize());
         PageResult<UserVO> pageResult = userService.getUserPage(queryDTO);
         return Result.success(pageResult);
     }

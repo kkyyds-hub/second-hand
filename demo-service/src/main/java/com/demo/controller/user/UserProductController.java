@@ -8,6 +8,9 @@ import com.demo.entity.Product;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageInfo;
+import com.demo.result.PageResult;
+import com.github.pagehelper.PageInfo;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -23,18 +26,17 @@ public class UserProductController {
     private ProductService productService;
 
     @GetMapping
-    public Result<PageInfo<Product>> getProducts(@Validated UserProductQueryDTO queryDTO) {
+    public Result<PageResult<Product>> getProducts(@Validated UserProductQueryDTO queryDTO) {
+        log.info("获取用户商品列表");
         Long currentUserId = BaseContext.getCurrentId();
 
-        // 核心：忽略前端传来的 userId，强制以当前登录用户为准
+        // 统一从登录态注入，前端不传 userId
         queryDTO.setUserId(currentUserId);
 
-        log.info("获取用户商品列表, currentUserId={}, page={}, size={}, status={}",
-                currentUserId, queryDTO.getPage(), queryDTO.getSize(), queryDTO.getStatus());
-
-        PageInfo<Product> pageInfo = productService.getUserProducts(queryDTO);
-        return Result.success(pageInfo);
+        PageResult<Product> pageResult = productService.getUserProducts(queryDTO);
+        return Result.success(pageResult);
     }
+
 
     //商品详情跳转
     @GetMapping("/{productId}")
