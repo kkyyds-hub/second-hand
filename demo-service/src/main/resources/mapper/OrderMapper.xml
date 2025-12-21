@@ -28,27 +28,27 @@
         SELECT
         o.id          AS orderId,
         o.order_no    AS orderNo,
-        o.product_id  AS productId,
+        i.product_id  AS productId,
         p.title       AS productTitle,
-        p.images      AS productThumbnail,  <!-- 如果以后有 thumbnail 字段，可以改成 p.thumbnail -->
-        o.deal_price  AS dealPrice,
-        o.quantity    AS quantity,
+        p.images      AS productThumbnail,  <!-- 保持你原来的口径 -->
+        i.price       AS dealPrice,
+        i.quantity    AS quantity,
         u.nickname    AS sellerNickname,
         o.status      AS status,
         o.create_time AS createTime,
         o.pay_time    AS payTime
         FROM orders o
-        JOIN products p ON o.product_id = p.id
-        JOIN users    u ON o.seller_id = u.id
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p    ON p.id       = i.product_id
+        JOIN users u       ON o.seller_id = u.id
         WHERE o.buyer_id = #{buyerId}
-        <!-- 如果有逻辑删除字段，这里可以加：AND o.is_deleted = 0 -->
 
         <!-- 状态过滤：PageQueryDTO.status 不为空才加条件 -->
         <if test="query.status != null and query.status != ''">
             AND o.status = #{query.status}
         </if>
 
-        <!-- 排序字段白名单，防止 SQL 注入；把 createTime/payTime 映射到具体列名 -->
+        <!-- 排序字段白名单 -->
         <choose>
             <when test="query.sortField == 'createTime'">
                 ORDER BY o.create_time
@@ -56,13 +56,12 @@
             <when test="query.sortField == 'payTime'">
                 ORDER BY o.pay_time
             </when>
-            <!-- 其他字段一律默认按 create_time 排序 -->
             <otherwise>
                 ORDER BY o.create_time
             </otherwise>
         </choose>
 
-        <!-- 排序方向，仅允许 asc / desc，两种之外默认 desc -->
+        <!-- 排序方向 -->
         <choose>
             <when test="query.sortOrder == 'asc'">
                 ASC
@@ -71,8 +70,8 @@
                 DESC
             </otherwise>
         </choose>
-
     </select>
+
     <select id="listSellerOrders" resultType="com.demo.vo.order.SellerOrderSummary">
         SELECT
         o.id               AS orderId,

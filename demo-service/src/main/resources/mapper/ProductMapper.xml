@@ -6,7 +6,7 @@
     <sql id="productColumns">
         <trim suffixOverrides=",">
             id,
-            user_id AS ownerId,
+            owner_id AS ownerId,
             title,
             description,
             price,
@@ -19,6 +19,7 @@
             update_time AS updateTime
         </trim>
     </sql>
+
 
     <!-- 更新商品：动态 set，谁不为 null 就更新谁；永远更新 update_time -->
     <update id="updateProduct" parameterType="com.demo.entity.Product">
@@ -77,11 +78,12 @@
         SELECT
         <include refid="productColumns"/>
         FROM products
-        WHERE user_id = #{userId}
+        WHERE owner_id = #{userId}
         <if test="status != null and status != '' and status != '全部'">
             AND status = #{status}
         </if>
         ORDER BY create_time DESC
     </select>
+
 
 </mapper>

@@ -40,11 +40,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageInfo<SellerOrderSummary> getSellOrder(PageQueryDTO pageQueryDTO, Long currentUserId) {
-        pageValidated(pageQueryDTO);
-        List<SellerOrderSummary> list = orderMapper.listSellerOrders(currentUserId, pageQueryDTO);
-        return new PageInfo<>(list);
+    public PageResult<SellerOrderSummary> getSellOrder(PageQueryDTO dto, Long uid) {
+        PageHelper.startPage(dto.getPage(), dto.getPageSize());
+
+        List<SellerOrderSummary> list = orderMapper.listSellerOrders(uid, dto);
+
+        PageInfo<SellerOrderSummary> pageInfo = new PageInfo<>(list);
+        return new PageResult<>(
+                pageInfo.getList(),
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
     }
+
 
     @Override
     public OrderDetail getOrderDetail(Long orderId , Long currentUserId) {

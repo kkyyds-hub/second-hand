@@ -35,16 +35,15 @@ public class OrdersController {
     }
 
 
+    @GetMapping("/sell")
     public Result<PageResult<SellerOrderSummary>> getSellOrder(@Validated PageQueryDTO pageQueryDTO) {
         log.info("获取用户出售商品: {}", pageQueryDTO);
         Long currentUserId = BaseContext.getCurrentId();
 
-        var pageInfo = orderService.getSellOrder(pageQueryDTO, currentUserId);
-        PageResult<SellerOrderSummary> pageResult =
-                new PageResult<>(pageInfo.getList(), pageInfo.getTotal(), pageInfo.getPageNum(), pageInfo.getPageSize());
-
+        PageResult<SellerOrderSummary> pageResult = orderService.getSellOrder(pageQueryDTO, currentUserId);
         return Result.success(pageResult);
     }
+
 
 
     @GetMapping("/{orderId}")

@@ -12,7 +12,7 @@ public interface OrderService {
 
     PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId);
 
-    PageInfo<SellerOrderSummary> getSellOrder(PageQueryDTO pageQueryDTO, Long currentUserId);
+    PageResult<SellerOrderSummary> getSellOrder(PageQueryDTO pageQueryDTO, Long currentUserId);
 
     OrderDetail getOrderDetail(Long orderId, Long currentUserId);
 

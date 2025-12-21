@@ -1,6 +1,8 @@
 package com.demo.dto.Violation;
 import lombok.Builder;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -20,7 +22,7 @@ public class ViolationRecordDTO {
         private String description;    // 违规描述
         private List<String> evidenceUrls; // 证据链接
         private String punishmentResult;  // 处罚结果
-        private String recordTime;     // 记录时间
+        private LocalDateTime recordTime;// 记录时间
         private Integer creditScoreChange; // 信用分变化
     }
 }
