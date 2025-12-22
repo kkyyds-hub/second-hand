@@ -2,6 +2,8 @@ package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.CreateOrderRequest;
+import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
 import com.demo.result.Result;
 import com.demo.service.OrderService;
@@ -70,5 +72,14 @@ public class OrdersController {
         orderService.confirmOrder(orderId, currentUserId);
         return Result.success("确认收货成功");
         //TODO 物流轨迹/评价信息暂未实现，字段返回 null”
+    }
+
+    @PostMapping
+    public Result<CreateOrderResponse> createOrder(@Validated @RequestBody CreateOrderRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        log.info("创建订单: userId={}, request={}", currentUserId, request);
+
+        CreateOrderResponse response = orderService.createOrder(request, currentUserId);
+        return Result.success(response);
     }
 }

@@ -29,4 +29,9 @@ public interface ProductService {
     void offShelfProductStatus(Long currentUserId, Long productId);
 
     ProductDetailDTO createProduct(Long currentUserId, ProductCreateRequest request);
+
+    PageResult<MarketProductSummaryDTO> getMarketProductList(MarketProductQueryDTO queryDTO);
+
+    MarketProductDetailDTO getMarketProductDetail(Long productId);
+
 }

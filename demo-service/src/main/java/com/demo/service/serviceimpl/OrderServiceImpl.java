@@ -1,13 +1,19 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.CreateOrderRequest;
+import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
 import com.demo.entity.Order;
+import com.demo.entity.OrderItem;
+import com.demo.entity.Product;
 import com.demo.enumeration.OrderStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
+import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
 import com.demo.service.OrderService;
+import com.demo.service.ProductService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -15,6 +21,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +32,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderMapper orderMapper;
+
+    @Autowired
+    private ProductMapper productMapper;
 
     @Override
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
@@ -135,6 +145,87 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("确认收货失败，订单状态可能已变更");
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId) {
+
+        // 0) 基础参数（一般由 @Validated 做，这里只做关键兜底）
+        if (request == null || request.getProductId() == null) {
+            throw new BusinessException("商品ID不能为空");
+        }
+
+        Long productId = request.getProductId();
+
+        // 1) 查商品：拿到卖家ID与价格（注意要限定未删除；status你可以在这里校验）
+        Product product = productMapper.getProductById(productId); // 用你项目里真实的方法名替换
+        if (product == null || product.getIsDeleted() == 1) {
+            throw new BusinessException("商品不存在");
+        }
+        if (!"on_sale".equals(product.getStatus())) {
+            throw new BusinessException("商品非在售状态，无法下单");
+        }
+
+        Long sellerId = product.getOwnerId(); // 你表里是 owner_id
+        if (sellerId == null) {
+            throw new BusinessException("商品数据异常：缺少卖家信息");
+        }
+
+        // 2) 不能买自己的商品（这里才是你想做的“权限/业务校验”）
+        if (Objects.equals(sellerId, currentUserId)) {
+            throw new BusinessException("不能购买自己发布的商品");
+        }
+
+        // 3) 原子占用商品（防重复购买的核心）：抢到=1，抢不到=0
+        int rows = orderMapper.markProductSoldIfOnSale(productId);
+        if (rows == 0) {
+            throw new BusinessException("商品已被购买或不可购买，请刷新后重试");
+        }
+
+        // 4) 插入 orders（你的 XML 已 useGeneratedKeys 回填 id） :contentReference[oaicite:1]{index=1}
+        Order order = new Order();
+        order.setOrderNo(generateOrderNo(currentUserId));
+        order.setBuyerId(currentUserId);
+        order.setSellerId(sellerId);
+        order.setTotalAmount(product.getPrice());     // Day3 固定 quantity=1
+        order.setStatus("pending");                   // 与你项目的 dbValue 对齐（如有枚举就用枚举）
+        order.setShippingAddress(request.getShippingAddress());
+        // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder 会插入这些字段） :contentReference[oaicite:2]{index=2}
+
+        int inserted = orderMapper.insertOrder(order);
+        if (inserted != 1 || order.getId() == null) {
+            throw new BusinessException("创建订单失败");
+        }
+
+        // 5) 插入 order_items :contentReference[oaicite:3]{index=3}
+        OrderItem item = new OrderItem();
+        item.setOrderId(order.getId());
+        item.setProductId(productId);
+        item.setPrice(product.getPrice());
+        item.setQuantity(1);
+
+        int itemInserted = orderMapper.insertOrderItem(item);
+        if (itemInserted != 1) {
+            throw new BusinessException("创建订单明细失败");
+        }
+
+        // 6) 返回响应（时间你 SQL 用 NOW()，这里返回当前时间即可；若要严格一致可再查一次订单）
+        CreateOrderResponse resp = new CreateOrderResponse();
+        resp.setOrderId(order.getId());
+        resp.setOrderNo(order.getOrderNo());
+        resp.setStatus(order.getStatus());
+        resp.setTotalAmount(order.getTotalAmount());
+        resp.setCreateTime(LocalDateTime.now());
+        return resp;
+    }
+
+    private String generateOrderNo(Long buyerId) {
+        String time = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int rnd = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000);
+        return time + (buyerId % 10000) + rnd;
+    }
+
 
 
     private void pageValidated(PageQueryDTO pageQueryDTO) {

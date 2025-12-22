@@ -1,6 +1,8 @@
 package com.demo.service;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.CreateOrderRequest;
+import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
 import com.demo.result.PageResult;
 import com.demo.vo.order.BuyerOrderSummary;
@@ -19,4 +21,6 @@ public interface OrderService {
     void shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId);
 
     void confirmOrder(Long orderId, Long currentUserId);
+
+    CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId);
 }

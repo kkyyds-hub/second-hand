@@ -22,7 +22,33 @@
             id = #{id}
           AND status = 'shipped'
     </update>
+    <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (
+            order_no, buyer_id, seller_id, total_amount, status,
+            shipping_address, shipping_company, tracking_no, shipping_remark,
+            create_time, pay_time, complete_time, update_time
+        ) VALUES (
+                     #{orderNo}, #{buyerId}, #{sellerId}, #{totalAmount}, #{status},
+                     #{shippingAddress}, #{shippingCompany}, #{trackingNo}, #{shippingRemark},
+                     NOW(), NULL, NULL, NOW()
+                 )
+    </insert>
+    <insert id="insertOrderItem" >
+        INSERT INTO order_items (
+            order_id, product_id, price, quantity, create_time, update_time
+        ) VALUES (
+                     #{orderId}, #{productId}, #{price}, #{quantity}, NOW(), NOW()
+                 )
+    </insert>
 
+    <update id="markProductSoldIfOnSale">
+        UPDATE products
+        SET status = 'sold',
+            update_time = NOW()
+        WHERE id = #{productId}
+          AND status = 'on_sale'
+          AND is_deleted = 0
+    </update>
 
     <select id="listBuyerOrders" resultType="com.demo.vo.order.BuyerOrderSummary">
         SELECT

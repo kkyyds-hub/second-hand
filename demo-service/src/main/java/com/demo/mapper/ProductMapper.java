@@ -1,5 +1,7 @@
 package com.demo.mapper;
 
+import com.demo.entity.Order;
+import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,4 +27,11 @@ public interface ProductMapper {
                               @Param("reason") String reason);
 
     int insertProduct(Product product);
+
+    List<Product> getMarketProductList(@Param("keyword") String keyword,
+                                       @Param("category") String category);
+
+    Product getMarketProductById(@Param("productId") Long productId);
+
+
 }

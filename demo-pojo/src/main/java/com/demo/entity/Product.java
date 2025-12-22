@@ -23,4 +23,5 @@ public class Product {
     private LocalDateTime updateTime; // 商品更新时间
     private String reason;
     private Long ownerId;
+    private int isDeleted;
 }

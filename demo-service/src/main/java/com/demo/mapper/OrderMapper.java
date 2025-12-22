@@ -2,6 +2,7 @@ package com.demo.mapper;
 
 import com.demo.dto.base.PageQueryDTO;
 import com.demo.entity.Order;
+import com.demo.entity.OrderItem;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -29,4 +30,10 @@ public interface OrderMapper {
     int updateForShipping(Order order);
 
     int updateForConfirm(Order orderToUpdate);
+
+    int insertOrder(@Param("order") Order order);
+
+    int insertOrderItem(@Param("item") OrderItem Item);
+
+    int markProductSoldIfOnSale(@Param("productId") Long productId);
 }

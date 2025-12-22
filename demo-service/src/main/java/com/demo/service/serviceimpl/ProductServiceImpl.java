@@ -256,6 +256,75 @@ public class ProductServiceImpl implements ProductService {
 
     }
 
+    @Override
+    public PageResult<MarketProductSummaryDTO> getMarketProductList(MarketProductQueryDTO queryDTO) {
+        PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
+        List<Product> productList = productMapper.getMarketProductList(queryDTO.getKeyword(), queryDTO.getCategory());
+        PageInfo<Product> pageInfo = new PageInfo<>(productList);
+
+        List<MarketProductSummaryDTO> summaryList = productList.stream()
+                .map(p -> {
+                    MarketProductSummaryDTO dto = new MarketProductSummaryDTO();
+                    dto.setProductId(p.getId());
+                    dto.setTitle(p.getTitle());
+                    dto.setPrice(p.getPrice());
+                    dto.setCategory(p.getCategory());
+                    dto.setOwnerId(p.getOwnerId());
+                    dto.setCreateTime(p.getCreateTime());
+                    dto.setThumbnail(extractFirstImage(p.getImages()));
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList()); // 更兼容（避免 JDK 版本问题）
+
+        return new PageResult<>(
+                summaryList,
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
+    }
+
+    @Override
+    public MarketProductDetailDTO getMarketProductDetail(Long productId) {
+        if (productId == null) {
+            throw new BusinessException("productId 不能为空");
+        }
+
+        Product product = productMapper.getMarketProductById(productId);
+        if (product == null) {
+            throw new BusinessException("商品不存在或不可查看");
+        }
+
+        MarketProductDetailDTO dto = new MarketProductDetailDTO();
+        dto.setProductId(product.getId());
+        dto.setTitle(product.getTitle());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setCategory(product.getCategory());
+        dto.setOwnerId(product.getOwnerId());
+        dto.setCreateTime(product.getCreateTime());
+        dto.setImageUrls(splitImages(product.getImages()));
+        return dto;
+    }
+
+    private String extractFirstImage(String images) {
+        if (images == null || images.isBlank()) return null;
+        for (String s : images.split(",")) {
+            if (s != null && !s.trim().isEmpty()) return s.trim();
+        }
+        return null;
+    }
+
+    private java.util.List<String> splitImages(String images) {
+        if (images == null || images.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+        return java.util.Arrays.stream(images.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // ================== 私有工具方法 ==================
 
     private ProductDTO toProductDTO(Product product) {
