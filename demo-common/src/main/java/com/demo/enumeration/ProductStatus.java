@@ -3,7 +3,7 @@ package com.demo.enumeration;
 public enum ProductStatus {
 
     UNDER_REVIEW("under_review", "审核中"),
-    ON_SHELF("on_shelf", "上架"),
+    ON_SHELF("on_sale", "上架"),
     OFF_SHELF("off_shelf", "下架"),
     SOLD("sold", "已售");
 

@@ -1,9 +1,6 @@
 package com.demo.service;
 
-import com.demo.dto.user.ProductDTO;
-import com.demo.dto.user.ProductDetailDTO;
-import com.demo.dto.user.ProductUpdateRequest;
-import com.demo.dto.user.UserProductQueryDTO;
+import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.github.pagehelper.PageInfo;
@@ -30,4 +27,6 @@ public interface ProductService {
     ProductDetailDTO updateMyProduct(Long currentUserId, Long productId, @Valid ProductUpdateRequest request);
 
     void offShelfProductStatus(Long currentUserId, Long productId);
+
+    ProductDetailDTO createProduct(Long currentUserId, ProductCreateRequest request);
 }

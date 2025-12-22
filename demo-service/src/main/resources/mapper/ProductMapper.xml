@@ -19,6 +19,16 @@
             update_time AS updateTime
         </trim>
     </sql>
+    <insert id="insertProduct" parameterType="com.demo.entity.Product"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO products (
+            owner_id, title, description, price, images, category,
+            status, view_count, reason, create_time, update_time
+        ) VALUES (
+                     #{ownerId}, #{title}, #{description}, #{price}, #{images}, #{category},
+                     #{status}, #{viewCount}, #{reason}, NOW(), NOW()
+                 )
+    </insert>
 
 
     <!-- 更新商品：动态 set，谁不为 null 就更新谁；永远更新 update_time -->
@@ -39,6 +49,14 @@
         </set>
         WHERE id = #{id}
     </update>
+    <update id="updateStatusAndReason">
+        UPDATE products
+        SET status = #{status},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
 
     <!-- 后台：待审核商品列表（动态筛选）
          规则：不传 status 时默认只查 under_review，符合“待审核”语义 -->

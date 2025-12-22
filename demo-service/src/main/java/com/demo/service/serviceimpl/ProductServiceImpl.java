@@ -1,10 +1,7 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.context.BaseContext;
-import com.demo.dto.user.ProductDTO;
-import com.demo.dto.user.ProductDetailDTO;
-import com.demo.dto.user.ProductUpdateRequest;
-import com.demo.dto.user.UserProductQueryDTO;
+import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.demo.enumeration.ProductStatus;
@@ -67,26 +64,27 @@ public class ProductServiceImpl implements ProductService {
      * isApproved = false -> 审核拒绝，商品下架（OFF_SHELF），记录原因
      */
     @Override
+    @Transactional
     public void approveProduct(Long productId, boolean isApproved, String reason) {
+
+        // 可选：先查一遍确保存在
         Product product = productMapper.getProductById(productId);
         if (product == null) {
-            throw new ProductNotFoundException("商品未找到，ID: " + productId);
+            throw new BusinessException("商品不存在");
         }
 
-        if (isApproved) {
-            product.setStatus(ProductStatus.ON_SHELF.getDbValue());
-            product.setReason(null);
+        if (Boolean.TRUE.equals(isApproved)) {
+            productMapper.updateStatusAndReason(productId,
+                    ProductStatus.ON_SHELF.getDbValue(), // on_sale
+                    null);
         } else {
-            product.setStatus(ProductStatus.OFF_SHELF.getDbValue());
-            product.setReason(reason);
+            if (reason == null || reason.isBlank()) {
+                throw new BusinessException("驳回原因不能为空");
+            }
+            productMapper.updateStatusAndReason(productId,
+                    ProductStatus.OFF_SHELF.getDbValue(), // off_shelf
+                    reason);
         }
-        product.setUpdateTime(LocalDateTime.now());
-        productMapper.updateProduct(product);
-
-        log.info("商品审核完成，商品ID: {}, 审核结果: {}, 原因: {}",
-                productId,
-                isApproved ? "通过" : "未通过",
-                reason);
     }
 
     /**
@@ -130,7 +128,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public PageResult<Product> getUserProducts(UserProductQueryDTO queryDTO) {
         // 这里你也可以直接用 BaseContext.getCurrentId()，避免前端传 userId
-        PageHelper.startPage(queryDTO.getPage(), queryDTO.getSize());
+        PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
         List<Product> products =
                 productMapper.getUserProducts(queryDTO.getUserId(), queryDTO.getStatus());
 
@@ -227,6 +225,35 @@ public class ProductServiceImpl implements ProductService {
         productMapper.updateProduct(product);
 
         log.info("商品下架成功，用户ID: {}, 商品ID: {}", currentUserId, productId);
+    }
+
+    @Override
+    public ProductDetailDTO createProduct(Long currentUserId, ProductCreateRequest request) {
+        Product product = new Product();
+        product.setOwnerId(currentUserId);
+        product.setTitle(request.getTitle());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setCategory(request.getCategory());
+
+        // 2) images: List<String> -> "a,b,c"
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            product.setImages(String.join(",", request.getImages()));
+        } else {
+            product.setImages(null);
+        }
+        product.setStatus(ProductStatus.UNDER_REVIEW.getDbValue());
+        product.setViewCount(0);
+        product.setReason(null);
+        // 4) 落库（useGeneratedKeys 会把 product.id 回填）
+        productMapper.insertProduct(product);
+        Product dbProduct = productMapper.getProductById(product.getId());
+        if (dbProduct == null) {
+            throw new BusinessException("商品创建失败，请重试");
+        }
+
+        return toProductDetailDTO(dbProduct);
+
     }
 
     // ================== 私有工具方法 ==================

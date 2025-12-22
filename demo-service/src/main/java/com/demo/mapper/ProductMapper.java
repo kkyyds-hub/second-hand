@@ -19,4 +19,10 @@ public interface ProductMapper {
 
     List<Product> getUserProducts(@Param("userId") Long userId,
                                   @Param("status") String status);
+
+    int updateStatusAndReason(@Param("id") Long id,
+                              @Param("status") String status,
+                              @Param("reason") String reason);
+
+    int insertProduct(Product product);
 }

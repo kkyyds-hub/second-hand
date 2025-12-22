@@ -1,6 +1,7 @@
 package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
+import com.demo.dto.user.ProductCreateRequest;
 import com.demo.dto.user.ProductDetailDTO;
 import com.demo.dto.user.ProductUpdateRequest;
 import com.demo.dto.user.UserProductQueryDTO;
@@ -61,6 +62,13 @@ public class UserProductController {
         Long currentUserId = BaseContext.getCurrentId();
         productService.offShelfProductStatus(currentUserId, productId);
         return Result.success("下架成功");
+    }
+
+    @PostMapping
+    public Result<ProductDetailDTO> createProduct(@Validated @RequestBody ProductCreateRequest request) {
+        Long currentUserId = BaseContext.getCurrentId();
+        ProductDetailDTO dto = productService.createProduct(currentUserId, request);
+        return Result.success(dto);
     }
 
 
