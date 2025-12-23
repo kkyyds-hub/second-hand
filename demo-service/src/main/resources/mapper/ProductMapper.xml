@@ -15,6 +15,7 @@
             status,
             view_count AS viewCount,
             reason,
+            is_deleted AS isDeleted,
             create_time AS createTime,
             update_time AS updateTime
         </trim>

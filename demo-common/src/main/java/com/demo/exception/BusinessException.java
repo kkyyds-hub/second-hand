@@ -1,18 +1,7 @@
 package com.demo.exception;
-
-public class BusinessException extends RuntimeException {
-    private Integer code; // 可选：业务错误码
-
-    public BusinessException(String message) {
-        super(message);
-    }
-
-    public BusinessException(Integer code, String message) {
-        super(message);
-        this.code = code;
-    }
-
-    public Integer getCode() {
-        return code;
-    }
+public class BusinessException extends BaseException {
+    private Integer code;
+    public BusinessException(String message) { super(message); }
+    public BusinessException(Integer code, String message) { super(message); this.code = code; }
+    public Integer getCode() { return code; }
 }

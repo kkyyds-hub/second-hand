@@ -31,9 +31,9 @@ public interface OrderMapper {
 
     int updateForConfirm(Order orderToUpdate);
 
-    int insertOrder(@Param("order") Order order);
+    int insertOrder( Order order);
 
-    int insertOrderItem(@Param("item") OrderItem Item);
+    int insertOrderItem( OrderItem Item);
 
     int markProductSoldIfOnSale(@Param("productId") Long productId);
 }
