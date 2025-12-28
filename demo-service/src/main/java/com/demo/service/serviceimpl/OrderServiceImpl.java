@@ -222,19 +222,16 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String payOrder(Long orderId, Long currentUserId) {
-        // 1) 先尝试“条件更新”：pending -> paid
+        // 1) 先尝试条件更新：pending -> paid
         int rows = orderMapper.updateForPay(orderId, currentUserId);
         if (rows == 1) {
             return "支付成功";
         }
 
-        // 2) rows==0：要么不是 pending，要么不是买家本人，要么订单不存在
+        // 2) rows==0：再查当前状态做幂等/非法分流
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
             throw new BusinessException("订单不存在或无权操作该订单");
-        }
-        if (!Objects.equals(detail.getBuyerId(), currentUserId)) {
-            throw new BusinessException("只有买家本人可以支付");
         }
 
         OrderStatus s = OrderStatus.fromDbValue(detail.getStatus());
@@ -242,15 +239,16 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单状态异常");
         }
 
-        // 幂等口径：已是 paid/shipped/completed -> 当成功返回（不崩）
+        // 幂等：已支付/已进入后续状态 -> 直接返回成功提示（不要抛异常）
         if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             return "订单已支付，无需重复操作";
         }
+
         if (s == OrderStatus.CANCELLED) {
             throw new BusinessException("订单已取消，无法支付");
         }
 
-        // 理论上 pending 时 rows 应该=1；这里兜底并发/脏数据
+        // 理论上 pending 时 rows 应该=1，走到这里多半是并发/脏数据/where条件不一致
         throw new BusinessException("支付失败，订单状态不允许支付：" + detail.getStatus());
     }
 
