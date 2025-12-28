@@ -36,4 +36,14 @@ public interface OrderMapper {
     int insertOrderItem( OrderItem Item);
 
     int markProductSoldIfOnSale(@Param("productId") Long productId);
+
+    int updateForPay(@Param("orderId") Long orderId,
+                     @Param("buyerId") Long buyerId);
+
+    int updateForCancel(@Param("orderId") Long orderId,
+                        @Param("buyerId") Long buyerId,
+                        @Param("reason") String reason);
+
+    int releaseProductsForOrder(@Param("orderId") Long orderId);
+
 }

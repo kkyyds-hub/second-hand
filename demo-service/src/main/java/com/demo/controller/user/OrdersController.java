@@ -2,6 +2,7 @@ package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
@@ -81,5 +82,22 @@ public class OrdersController {
 
         CreateOrderResponse response = orderService.createOrder(request, currentUserId);
         return Result.success(response);
+    }
+
+    @PostMapping("/{orderId}/pay")
+    public Result<String> pay(@PathVariable Long orderId) {
+        log.info("买家支付订单: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        String msg = orderService.payOrder(orderId, currentUserId);
+        return Result.success(msg);
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public Result<String> cancel(@PathVariable Long orderId,
+                                 @RequestBody(required = false) CancelOrderRequest request) {
+        log.info("买家取消订单: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        String msg = orderService.cancelOrder(orderId, request, currentUserId);
+        return Result.success(msg);
     }
 }

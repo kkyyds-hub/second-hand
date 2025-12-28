@@ -41,6 +41,8 @@
                  )
     </insert>
 
+
+
     <update id="markProductSoldIfOnSale">
         UPDATE products
         SET status = 'sold',
@@ -167,4 +169,35 @@
 
         LIMIT 1
     </select>
+
+    <update id="updateForPay">
+        UPDATE orders
+        SET status = 'paid',
+            pay_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{orderId}
+          AND buyer_id = #{buyerId}
+          AND status = 'pending'
+    </update>
+
+    <update id="updateForCancel">
+        UPDATE orders
+        SET status = 'cancelled',
+            cancel_time = NOW(),
+            cancel_reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{orderId}
+          AND buyer_id = #{buyerId}
+          AND status = 'pending'
+    </update>
+
+    <update id="releaseProductsForOrder">
+        UPDATE products
+        SET status = 'on_sale',
+            update_time = NOW()
+        WHERE id = #{productId}
+          AND status = 'sold'
+          AND is_deleted = 0
+    </update>
+
 </mapper>

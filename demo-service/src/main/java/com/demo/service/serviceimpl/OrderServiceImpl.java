@@ -1,6 +1,7 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
@@ -13,7 +14,6 @@ import com.demo.mapper.OrderMapper;
 import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
 import com.demo.service.OrderService;
-import com.demo.service.ProductService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -218,6 +218,84 @@ public class OrderServiceImpl implements OrderService {
         resp.setCreateTime(LocalDateTime.now());
         return resp;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String payOrder(Long orderId, Long currentUserId) {
+        // 1) 先尝试“条件更新”：pending -> paid
+        int rows = orderMapper.updateForPay(orderId, currentUserId);
+        if (rows == 1) {
+            return "支付成功";
+        }
+
+        // 2) rows==0：要么不是 pending，要么不是买家本人，要么订单不存在
+        OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
+        if (detail == null) {
+            throw new BusinessException("订单不存在或无权操作该订单");
+        }
+        if (!Objects.equals(detail.getBuyerId(), currentUserId)) {
+            throw new BusinessException("只有买家本人可以支付");
+        }
+
+        OrderStatus s = OrderStatus.fromDbValue(detail.getStatus());
+        if (s == null) {
+            throw new BusinessException("订单状态异常");
+        }
+
+        // 幂等口径：已是 paid/shipped/completed -> 当成功返回（不崩）
+        if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            return "订单已支付，无需重复操作";
+        }
+        if (s == OrderStatus.CANCELLED) {
+            throw new BusinessException("订单已取消，无法支付");
+        }
+
+        // 理论上 pending 时 rows 应该=1；这里兜底并发/脏数据
+        throw new BusinessException("支付失败，订单状态不允许支付：" + detail.getStatus());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String cancelOrder(Long orderId, CancelOrderRequest request, Long currentUserId) {
+        String reason = (request == null || request.getReason() == null || request.getReason().trim().isEmpty())
+                ? "buyer_cancel"
+                : request.getReason().trim();
+
+        // 1) 先尝试“条件更新”：pending -> cancelled
+        int rows = orderMapper.updateForCancel(orderId, currentUserId, reason);
+        if (rows == 1) {
+            // 2) 取消成功后释放商品：sold -> on_sale（你现在 sold 充当“锁定”）
+            orderMapper.releaseProductsForOrder(orderId);
+            return "取消成功";
+        }
+
+        // 3) rows==0：判断幂等 or 不允许取消
+        OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
+        if (detail == null) {
+            throw new BusinessException("订单不存在或无权操作该订单");
+        }
+        if (!Objects.equals(detail.getBuyerId(), currentUserId)) {
+            throw new BusinessException("只有买家本人可以取消");
+        }
+
+        OrderStatus s = OrderStatus.fromDbValue(detail.getStatus());
+        if (s == null) {
+            throw new BusinessException("订单状态异常");
+        }
+
+        // 幂等口径：已 cancelled -> 当成功返回
+        if (s == OrderStatus.CANCELLED) {
+            return "订单已取消，无需重复操作";
+        }
+
+        // 已支付后不允许取消（后续退款/售后再做）
+        if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            throw new BusinessException("订单已支付，当前不允许取消（后续走退款/售后）");
+        }
+
+        throw new BusinessException("取消失败，订单状态不允许取消：" + detail.getStatus());
+    }
+
 
     private String generateOrderNo(Long buyerId) {
         String time = java.time.LocalDateTime.now()
