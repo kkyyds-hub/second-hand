@@ -192,12 +192,34 @@
     </update>
 
     <update id="releaseProductsForOrder">
-        UPDATE products
-        SET status = 'on_sale',
+        UPDATE products p
+            JOIN order_items oi ON oi.product_id = p.id
+        SET
+            p.status = 'on_sale',
+            p.update_time = NOW()
+        WHERE oi.order_id = #{orderId}
+          AND p.status = 'sold'
+          AND p.is_deleted = 0
+    </update>
+
+    <select id="findTimeoutPendingOrderIds" resultType="java.lang.Long">
+        SELECT id
+        FROM orders
+        WHERE status = 'pending'
+          AND create_time <![CDATA[ <= ]]> #{deadline}
+        ORDER BY create_time ASC
+        LIMIT #{limit}
+    </select>
+
+    <update id="closeTimeoutOrder">
+        UPDATE orders
+        SET status = 'cancelled',
+            cancel_time = NOW(),
+            cancel_reason = 'timeout',
             update_time = NOW()
-        WHERE id = #{productId}
-          AND status = 'sold'
-          AND is_deleted = 0
+        WHERE id = #{orderId}
+          AND status = 'pending'
+          AND create_time <![CDATA[ <= ]]> #{deadline}
     </update>
 
 </mapper>

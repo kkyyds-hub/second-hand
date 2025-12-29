@@ -9,6 +9,7 @@ import com.demo.vo.order.SellerOrderSummary;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -45,5 +46,11 @@ public interface OrderMapper {
                         @Param("reason") String reason);
 
     int releaseProductsForOrder(@Param("orderId") Long orderId);
+
+    List<Long> findTimeoutPendingOrderIds(@Param("deadline") LocalDateTime deadline,
+                                          @Param("limit") Integer limit);
+
+    int closeTimeoutOrder(@Param("orderId") Long orderId);
+
 
 }
