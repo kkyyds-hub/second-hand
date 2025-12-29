@@ -50,7 +50,9 @@ public interface OrderMapper {
     List<Long> findTimeoutPendingOrderIds(@Param("deadline") LocalDateTime deadline,
                                           @Param("limit") Integer limit);
 
-    int closeTimeoutOrder(@Param("orderId") Long orderId);
+    int closeTimeoutOrder(@Param("orderId") Long orderId,
+                          @Param("deadline") LocalDateTime deadline);
+
 
 
 }
