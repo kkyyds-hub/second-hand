@@ -21,13 +21,11 @@ public class OrderTimeoutJob {
     // 每分钟执行一次：关闭超时未支付订单
     @Scheduled(fixedDelay = 60_000)
     public void closeTimeoutPendingOrders() {
-
-        // 1) 计算超时时间点：现在往前 15 分钟
-        LocalDateTime deadline = LocalDateTime.now().minusMinutes(15);
-
-        // 2) 查询超时的 pending 订单ID列表
-        log.info("timeout close start, deadline={}, limit={}", deadline, 200);
-        List<Long> orderIds = orderMapper.findTimeoutPendingOrderIds(deadline, 200); // 200 是一轮最多处理数量（可调）
+        int limit = 200;
+        int timeoutMinutes = 15;
+        LocalDateTime deadline = LocalDateTime.now().minusMinutes(timeoutMinutes);
+        log.info("timeout close start, deadline={}, limit={}", deadline, limit);
+        List<Long> orderIds = orderMapper.findTimeoutPendingOrderIds(deadline, limit); // 200 是一轮最多处理数量（可调）
         if (orderIds == null || orderIds.isEmpty()) {
             log.debug("timeout close no pending orders, deadline={}", deadline);
             return;
@@ -38,7 +36,6 @@ public class OrderTimeoutJob {
             try {
                 boolean ok = orderTimeoutService.closeTimeoutOrderAndRelease(orderId, deadline);
                 if (ok) closed++;
-                log.info("timeout close success, orderId={}, closed={}", orderId, closed);
             } catch (Exception e) {
                 log.error("timeout close failed, orderId={}", orderId, e);
             }
