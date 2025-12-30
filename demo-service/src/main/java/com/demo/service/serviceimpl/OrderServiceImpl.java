@@ -9,6 +9,7 @@ import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
 import com.demo.enumeration.OrderStatus;
+import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.mapper.ProductMapper;
@@ -162,9 +163,10 @@ public class OrderServiceImpl implements OrderService {
         if (product == null || product.getIsDeleted() == 1) {
             throw new BusinessException("商品不存在");
         }
-        if (!"on_sale".equals(product.getStatus())) {
+        if (!ProductStatus.ON_SHELF.getDbValue().equals(product.getStatus())) {
             throw new BusinessException("商品非在售状态，无法下单");
         }
+
 
         Long sellerId = product.getOwnerId(); // 你表里是 owner_id
         if (sellerId == null) {
@@ -188,7 +190,7 @@ public class OrderServiceImpl implements OrderService {
         order.setBuyerId(currentUserId);
         order.setSellerId(sellerId);
         order.setTotalAmount(product.getPrice());     // Day3 固定 quantity=1
-        order.setStatus("pending");                   // 与你项目的 dbValue 对齐（如有枚举就用枚举）
+        order.setStatus(OrderStatus.PENDING.getDbValue());                // 与你项目的 dbValue 对齐（如有枚举就用枚举）
         order.setShippingAddress(request.getShippingAddress());
         // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder 会插入这些字段） :contentReference[oaicite:2]{index=2}
 

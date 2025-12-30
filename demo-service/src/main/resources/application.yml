@@ -57,3 +57,9 @@ demo:
     secret: ${demo.wechat.secret}  # 替换为实际值
   redis:
     enabled: false  # 若本地未启动Redis，可改为false以跳过Redis相关Bean创建
+
+order:
+  timeout:
+    pending-minutes: 15
+    batch-size: 200
+    fixed-delay-ms: 60000

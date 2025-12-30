@@ -20,6 +20,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+
+@Validated
 @RestController
 @RequestMapping("/user/orders")
 @Api(tags = "用户订单接口")
@@ -93,8 +97,8 @@ public class OrdersController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    public Result<String> cancel(@PathVariable Long orderId,
-                                 @RequestBody(required = false) CancelOrderRequest request) {
+    public Result<String> cancel(@PathVariable @Min(value = 1, message = "orderId 必须大于0") Long orderId,
+                                 @Valid @RequestBody(required = false) CancelOrderRequest request) {
         log.info("买家取消订单: {}", orderId);
         Long currentUserId = BaseContext.getCurrentId();
         String msg = orderService.cancelOrder(orderId, request, currentUserId);

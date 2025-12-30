@@ -1,5 +1,7 @@
 package com.demo.enumeration;
 
+import java.util.EnumSet;
+
 public enum OrderStatus {
 
     PENDING("pending", "待付款"),
@@ -8,14 +10,7 @@ public enum OrderStatus {
     COMPLETED("completed", "已完成"),
     CANCELLED("cancelled", "已取消");
 
-    /**
-     * 存在数据库中的值
-     */
     private final String dbValue;
-
-    /**
-     * 中文描述（用于前端展示、日志、报表等）
-     */
     private final String description;
 
     OrderStatus(String dbValue, String description) {
@@ -31,11 +26,6 @@ public enum OrderStatus {
         return description;
     }
 
-    /**
-     * 从数据库中的字符串值转换为枚举
-     * @param dbValue 数据库里的 status（如 "pending"）
-     * @return 对应的 OrderStatus，没有匹配时返回 null
-     */
     public static OrderStatus fromDbValue(String dbValue) {
         if (dbValue == null) return null;
         for (OrderStatus status : values()) {
@@ -44,5 +34,31 @@ public enum OrderStatus {
             }
         }
         return null;
+    }
+
+    // ====== 状态机口径冻结（后续所有 Service 判断都走这里） ======
+
+    public boolean canPay() {
+        return this == PENDING;
+    }
+
+    public boolean canCancelByBuyer() {
+        return this == PENDING;
+    }
+
+    public boolean canShip() {
+        return this == PAID;
+    }
+
+    public boolean canConfirm() {
+        return this == SHIPPED;
+    }
+
+    public boolean isTerminal() {
+        return this == COMPLETED || this == CANCELLED;
+    }
+
+    public boolean isPaidOrLater() {
+        return EnumSet.of(PAID, SHIPPED, COMPLETED).contains(this);
     }
 }
