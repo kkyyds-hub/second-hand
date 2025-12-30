@@ -6,7 +6,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 买家“我的订单列表”使用的订单摘要视图
+ * 买家“我的订单列表”使用的订单摘要视图（买入列表）
+ *
+ * Day5 补齐：
+ * - shippingCompany / trackingNo：买家也要能看到物流信息
+ * - shipTime：发货时间（建议新增 orders.ship_time）
+ * - completeTime：确认收货/订单完成时间（对应 orders.complete_time）
  */
 @Data
 public class BuyerOrderSummary {
@@ -25,9 +30,14 @@ public class BuyerOrderSummary {
 
     /**
      * 订单状态（pending/paid/shipped/completed/cancelled）
-     * 也可以在序列化时直接返回枚举的 dbValue
      */
     private String status;
+
+    // ===== Day5：物流信息（买家列表也要展示） =====
+    private String shippingCompany;   // 物流公司（未发货可为 null）
+    private String trackingNo;        // 运单号（未发货可为 null）
+    private LocalDateTime shipTime;   // 发货时间（未发货可为 null）
+    private LocalDateTime completeTime; // 完成/确认收货时间（未完成可为 null）
 
     private LocalDateTime createTime; // 下单时间
     private LocalDateTime payTime;    // 支付时间（未支付则为 null）

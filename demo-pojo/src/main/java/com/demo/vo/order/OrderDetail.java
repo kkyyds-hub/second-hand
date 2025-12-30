@@ -7,94 +7,65 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 订单详情视图对象，对应接口文档中的 OrderDetail
+ * 订单详情视图对象
+ *
+ * Day5 关键字段：
+ * - shippingCompany / trackingNo / shippingRemark
+ * - shipTime（建议新增 orders.ship_time）
+ * - completeTime（orders.complete_time，确认收货即完成）
  */
 @Data
 public class OrderDetail {
 
     // ========= 基础信息 =========
-    /** 订单ID */
-    private Long orderId;
+    private Long orderId;              // 订单ID
+    private String orderNo;            // 订单号
+    private String status;             // 订单状态（pending/paid/shipped/completed/cancelled 等）
 
-    /** 订单号 */
-    private String orderNo;
+    private BigDecimal totalAmount;    // 订单总金额
+    private Integer quantity;          // 商品总数量
+    private BigDecimal dealPrice;      // 成交单价/成交价（按你订单设计）
 
-    /** 订单状态（pending/paid/shipped/completed/cancelled 等） */
-    private String status;
+    private LocalDateTime createTime;  // 下单时间
+    private LocalDateTime payTime;     // 支付时间
 
-    /** 订单总金额（totalAmount） */
-    private BigDecimal totalAmount;
+    private LocalDateTime shipTime;      // 发货时间（建议新增 orders.ship_time）
+    private LocalDateTime completeTime;  // 完成时间（确认收货/订单完成，对应 orders.complete_time）
 
-    /** 商品总数量（quantity） */
-    private Integer quantity;
-
-    /** 成交单价/成交价（dealPrice，按你订单设计来，通常是单件成交价） */
-    private BigDecimal dealPrice;
-
-    /** 创建时间 */
-    private LocalDateTime createTime;
-
-    /** 支付时间 */
-    private LocalDateTime payTime;
-
-    /** 完成时间（收货/确认完成） */
-    private LocalDateTime completeTime;
-    private LocalDateTime updateTime;
-
-    /** 收货地址快照（shippingAddress） */
-    private String shippingAddress;
+    private LocalDateTime updateTime;  // 最后更新时间（可选）
+    private String shippingAddress;    // 收货地址快照
 
     // ========= 商品信息 =========
-    /** 商品ID */
     private Long productId;
-
-    /** 商品标题 */
     private String productTitle;
-
-    /** 商品缩略图 */
     private String productThumbnail;
 
-    /** 商品图片列表（前端期望的是数组） */
+    /**
+     * 商品图片列表（注意：当前用 String 存储）
+     * - 如果 DB 是逗号分隔：前端自行 split
+     * - 如果 DB 是 JSON 字符串：前端 JSON.parse
+     * 建议后续统一为 List<String>，但 Day5 不强制动这一块
+     */
     private String productImages;
 
     // ========= 角色信息 =========
-    /** 买家ID */
     private Long buyerId;
-
-    /** 买家昵称 */
     private String buyerNickname;
 
-    /** 卖家ID */
     private Long sellerId;
-
-    /** 卖家昵称 */
     private String sellerNickname;
 
     // ========= 物流信息 =========
-    /** 物流公司 */
-    private String shippingCompany;
+    private String shippingCompany;    // 物流公司
+    private String trackingNo;         // 运单号
+    private String shippingRemark;     // 发货备注（可选）
 
-    /** 运单号 */
-    private String trackingNo;
-
-    /**
-     * 物流轨迹列表：logisticsTrace[]
-     * 每一条包含节点时间、地点、状态
-     */
+    // ========= 物流轨迹（可选，非 Day5 必交付） =========
     private List<LogisticsTraceItemVO> logisticsTrace;
 
-    // ========= 沟通 / 评价信息 =========
-    /** 聊天会话ID（用于消息记录） */
+    // ========= 沟通 / 评价信息（可选，非 Day5 必交付） =========
     private Long chatSessionId;
-
-    /** 是否可以评价（allowReview） */
     private Boolean allowReview;
-
-    /** 买家评价内容（简单版本，后续可扩展为独立 VO） */
     private String buyerReview;
-
-    /** 卖家回复内容 */
     private String sellerReply;
-
-
 }
