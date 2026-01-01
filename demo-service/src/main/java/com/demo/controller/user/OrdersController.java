@@ -70,7 +70,7 @@ public class OrdersController {
         return Result.success("发货成功");
     }
 
-    @PostMapping("/{orderId}/confirm")
+    @PostMapping("/{orderId}/confirm-receipt")
     public Result<String> confirm(@PathVariable Long orderId) {
         log.info("用户确认收货: {}", orderId);
         Long currentUserId = BaseContext.getCurrentId();

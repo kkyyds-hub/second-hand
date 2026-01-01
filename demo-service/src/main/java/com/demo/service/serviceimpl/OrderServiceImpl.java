@@ -100,8 +100,10 @@ public class OrderServiceImpl implements OrderService {
         // 4. 组装 Order 作为更新入参（只放 orders 表需要的字段）
         Order orderToUpdate = new Order();
         orderToUpdate.setId(detail.getOrderId());
+        orderToUpdate.setSellerId(currentUserId);                 // 供 SQL where 使用（建议）
         orderToUpdate.setShippingCompany(request.getShippingCompany());
         orderToUpdate.setTrackingNo(request.getTrackingNo());
+        orderToUpdate.setShippingRemark(request.getRemark());     // Day5：把备注落库
         orderToUpdate.setStatus(OrderStatus.SHIPPED.getDbValue());
         orderToUpdate.setUpdateTime(LocalDateTime.now());
 
@@ -137,6 +139,7 @@ public class OrderServiceImpl implements OrderService {
         // 4. 组装 Order 做更新
         Order orderToUpdate = new Order();
         orderToUpdate.setId(detail.getOrderId());
+        orderToUpdate.setBuyerId(currentUserId);                  // 供 SQL where 使用（建议）
         orderToUpdate.setStatus(OrderStatus.COMPLETED.getDbValue());
         orderToUpdate.setCompleteTime(LocalDateTime.now());
         orderToUpdate.setUpdateTime(LocalDateTime.now());

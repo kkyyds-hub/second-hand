@@ -20,12 +20,16 @@
         SET
         shipping_company = #{shippingCompany},
         tracking_no      = #{trackingNo},
+        shipping_remark  = #{shippingRemark},
+        ship_time        = NOW(),
         status           = #{status},
         update_time      = NOW()
         WHERE
         id = #{id}
+        AND seller_id = #{sellerId}
         AND status = #{OS_PAID}
     </update>
+
 
     <update id="updateForConfirm" parameterType="com.demo.entity.Order">
         <include refid="bindStatus"/>
@@ -36,8 +40,10 @@
         update_time   = #{updateTime}
         WHERE
         id = #{id}
+        AND buyer_id = #{buyerId}
         AND status = #{OS_SHIPPED}
     </update>
+
 
     <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id">
         <include refid="bindStatus"/>
@@ -83,6 +89,10 @@
         i.quantity    AS quantity,
         u.nickname    AS sellerNickname,
         o.status      AS status,
+        o.shipping_company AS shippingCompany,
+        o.tracking_no      AS trackingNo,
+        o.ship_time        AS shipTime,
+        o.complete_time    AS completeTime,
         o.create_time AS createTime,
         o.pay_time    AS payTime
         FROM orders o
@@ -133,6 +143,8 @@
         i.quantity         AS quantity,
         u.nickname         AS buyerNickname,
         o.status           AS status,
+        o.ship_time        AS shipTime,
+        o.complete_time    AS completeTime,
         o.shipping_company AS shippingCompany,
         o.tracking_no      AS trackingNo,
         o.create_time      AS createTime,
@@ -164,6 +176,10 @@
         o.shipping_address AS shippingAddress,
         o.shipping_company AS shippingCompany,
         o.tracking_no      AS trackingNo,
+        o.ship_time        AS shipTime,
+        o.shipping_remark  AS shippingRemark,
+        o.update_time      AS updateTime,
+
         -- 商品 + 明细（先按一单一个商品处理）
         i.quantity      AS quantity,
         i.price         AS dealPrice,
