@@ -8,9 +8,8 @@ import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
-import com.github.pagehelper.PageInfo;
 import com.demo.result.PageResult;
-import com.github.pagehelper.PageInfo;
+
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

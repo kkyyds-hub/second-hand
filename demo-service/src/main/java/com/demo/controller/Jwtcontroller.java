@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/dev/token")
 @Profile("dev")
-public class jwtcontroller {
+public class Jwtcontroller {
     @GetMapping("/safe-token")
     public String generateToken() {
         try {

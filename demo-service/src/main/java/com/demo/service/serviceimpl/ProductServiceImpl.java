@@ -178,12 +178,14 @@ public class ProductServiceImpl implements ProductService {
             throw new BusinessException("无权修改该商品");
         }
 
-        // 状态校验
+        // 状态校验：sold 禁止编辑；on_sale/under_review/off_shelf 允许编辑
         ProductStatus status = ProductStatus.fromDbValue(product.getStatus());
         if (status == ProductStatus.SOLD) {
             throw new BusinessException("商品已售出，不能编辑");
         }
-        if (status != ProductStatus.ON_SHELF && status != ProductStatus.UNDER_REVIEW) {
+        if (status != ProductStatus.ON_SHELF
+                && status != ProductStatus.UNDER_REVIEW
+                && status != ProductStatus.OFF_SHELF) {
             throw new BusinessException("当前状态不允许编辑");
         }
 
@@ -191,14 +193,32 @@ public class ProductServiceImpl implements ProductService {
         product.setTitle(request.getTitle());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
+
+        // images：null=不改；[] 或全空=清空；否则 join 存库
+        if (request.getImages() != null) {
+            if (request.getImages().isEmpty()) {
+                product.setImages("");
+            } else {
+                List<String> cleaned = request.getImages().stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
+                product.setImages(cleaned.isEmpty() ? "" : String.join(",", cleaned));
+            }
+        }
+
         product.setUpdateTime(LocalDateTime.now());
-
-        // 修改后重新进入审核中
-        product.setStatus(ProductStatus.UNDER_REVIEW.getDbValue());
-
         productMapper.updateProduct(product);
 
-        return toProductDetailDTO(product);
+        // 编辑后统一进入审核中，并清空历史驳回原因（否则前端会一直显示旧 reason）
+        productMapper.updateStatusAndReason(productId, ProductStatus.UNDER_REVIEW.getDbValue(), null);
+
+        Product dbProduct = productMapper.getProductById(productId);
+        if (dbProduct == null) {
+            throw new BusinessException("更新失败，请重试");
+        }
+        return toProductDetailDTO(dbProduct);
     }
 
     @Override
@@ -343,11 +363,15 @@ public class ProductServiceImpl implements ProductService {
         dto.setTitle(product.getTitle());
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
+        dto.setImageUrls(splitImages(product.getImages()));
         dto.setStatus(product.getStatus());
         dto.setCategory(product.getCategory());
         dto.setCreateTime(product.getCreateTime());
-        // dto.setSubmitTime(...) 如果有这个字段，按你的定义补
-        // 图片、违规信息等可以后面再补充
+        dto.setUpdateTime(product.getUpdateTime());
+        dto.setReviewRemark(product.getReason());
+        // submitTime：你当前没有单独字段，先用 updateTime 兜底（符合“最近一次提交审核时间”的直觉）
+        dto.setSubmitTime(product.getUpdateTime() != null ? product.getUpdateTime() : product.getCreateTime());
         return dto;
     }
+
 }
