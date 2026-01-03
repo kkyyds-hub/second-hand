@@ -59,6 +59,24 @@
         WHERE id = #{id}
           AND is_deleted = 0
     </update>
+    <update id="softDeleteByOwner">
+        UPDATE products
+        SET is_deleted = 1,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+          AND is_deleted = 0
+    </update>
+    <update id="updateStatusAndReasonByOwner">
+        UPDATE products
+        SET status = #{status},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+          AND is_deleted = 0
+    </update>
+
 
 
     <!-- 后台：待审核商品列表（动态筛选）

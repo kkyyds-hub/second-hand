@@ -34,4 +34,8 @@ public interface ProductService {
 
     MarketProductDetailDTO getMarketProductDetail(Long productId);
 
+    void deleteMyProduct(Long currentUserId, Long productId);
+
+
+    ProductDetailDTO resubmitProduct(Long currentUserId, Long productId);
 }

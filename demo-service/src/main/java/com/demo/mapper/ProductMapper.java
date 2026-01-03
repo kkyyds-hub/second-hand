@@ -34,4 +34,11 @@ public interface ProductMapper {
     Product getMarketProductById(@Param("productId") Long productId);
 
 
+    int softDeleteByOwner(@Param("id") Long id, @Param("ownerId") Long ownerId);
+
+    int updateStatusAndReasonByOwner(@Param("id") Long id,
+                                     @Param("ownerId") Long ownerId,
+                                     @Param("status") String status,
+                                     @Param("reason") String reason);
+
 }

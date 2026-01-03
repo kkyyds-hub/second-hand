@@ -327,6 +327,57 @@ public class ProductServiceImpl implements ProductService {
         return dto;
     }
 
+    @Override
+    public void deleteMyProduct(Long currentUserId, Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null){
+            throw new ProductNotFoundException("商品不存在或已被删除");
+        }
+        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
+            throw new BusinessException("无权操作该商品");
+        }
+        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
+        if (st == ProductStatus.SOLD) throw new BusinessException("已售商品不可删除");
+        if (st == ProductStatus.ON_SHELF) throw new BusinessException("在售商品请先下架再删除");
+
+        // 4. db update (soft delete)
+        int rows = productMapper.softDeleteByOwner(productId, currentUserId);
+        if (rows == 0) throw new BusinessException("删除失败，请重试");
+    }
+
+    @Override
+    public ProductDetailDTO resubmitProduct(Long currentUserId, Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null) throw new BusinessException("商品不存在或已被删除");
+        if (!Objects.equals(product.getOwnerId(), currentUserId)) throw new BusinessException("无权操作该商品");
+
+        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
+
+        if (st == ProductStatus.SOLD) throw new BusinessException("已售商品不可提审");
+        if (st == ProductStatus.ON_SHELF) throw new BusinessException("在售商品无需提审");
+
+        //已是审核中，直接返回
+        if (st == ProductStatus.UNDER_REVIEW) {
+            return toProductDetailDTO(product);
+        }
+
+        // 只允许下架状态发起重提审
+        if (st != ProductStatus.OFF_SHELF) {
+            throw new BusinessException("当前状态无法重新提交审核");
+        }
+
+        int rows = productMapper.updateStatusAndReasonByOwner(
+                productId, currentUserId,
+                ProductStatus.UNDER_REVIEW.getDbValue(),
+                null
+        );
+        if (rows == 0) throw new BusinessException("商品状态更新失败");
+
+        Product db = productMapper.getProductById(productId);
+        return toProductDetailDTO(db);
+    }
+
+
     private String extractFirstImage(String images) {
         if (images == null || images.isBlank()) return null;
         for (String s : images.split(",")) {
@@ -369,7 +420,6 @@ public class ProductServiceImpl implements ProductService {
         dto.setCreateTime(product.getCreateTime());
         dto.setUpdateTime(product.getUpdateTime());
         dto.setReviewRemark(product.getReason());
-        // submitTime：你当前没有单独字段，先用 updateTime 兜底（符合“最近一次提交审核时间”的直觉）
         dto.setSubmitTime(product.getUpdateTime() != null ? product.getUpdateTime() : product.getCreateTime());
         return dto;
     }
