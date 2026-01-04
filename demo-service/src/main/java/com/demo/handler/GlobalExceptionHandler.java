@@ -6,7 +6,11 @@ import com.demo.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import javax.validation.ConstraintViolationException;
+import java.util.Optional;
 import java.sql.SQLIntegrityConstraintViolationException;
 
 /**
@@ -16,6 +20,40 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @Slf4j
 public class GlobalExceptionHandler {
 
+
+    /**
+     * 处理 @RequestBody 校验失败（例如 RejectProductRequest）
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        String msg = Optional.ofNullable(ex.getBindingResult().getFieldError())
+                .map(FieldError::getDefaultMessage)
+                .orElse("参数校验失败");
+        return Result.error(msg);
+    }
+
+    /**
+     * 处理 @RequestParam / @ModelAttribute 绑定校验失败
+     */
+    @ExceptionHandler(BindException.class)
+    public Result handleBindException(BindException ex) {
+        String msg = Optional.ofNullable(ex.getBindingResult().getFieldError())
+                .map(FieldError::getDefaultMessage)
+                .orElse("参数校验失败");
+        return Result.error(msg);
+    }
+
+    /**
+     * 处理方法参数上的约束校验失败（@RequestParam + @Validated 这类）
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Result handleConstraintViolation(ConstraintViolationException ex) {
+        String msg = ex.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getMessage())
+                .orElse("参数校验失败");
+        return Result.error(msg);
+    }
 
     /**
      * ✅ 添加通用异常处理

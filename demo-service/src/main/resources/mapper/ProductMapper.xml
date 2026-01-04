@@ -94,12 +94,18 @@
                 AND category = #{category}
             </if>
 
-            <if test="status != null and status != '' and status != '全部'">
-                AND status = #{status}
-            </if>
-            <if test="status == null or status == '' or status == '全部'">
-                AND status = 'under_review'
-            </if>
+            <choose>
+                <when test="status == null or status == ''">
+                    AND status = 'under_review'
+                </when>
+                <when test="status == '全部'">
+
+                </when>
+                <otherwise>
+                    AND status = #{status}
+                </otherwise>
+            </choose>
+
         </where>
         ORDER BY create_time DESC
     </select>

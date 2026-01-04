@@ -1,5 +1,6 @@
 package com.demo.controller.admin;
 
+import com.demo.dto.admin.RejectProductRequest;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.ProductViolation;
 import com.demo.exception.BusinessException;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -36,20 +38,37 @@ public class ProductController {
             @RequestParam(required = false) String productName,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String status) {
-        try {
             int ps = (pageSize != null) ? pageSize : (size != null ? size : 10);
 
             PageResult<ProductDTO> pageResult = productService.getPendingApprovalProducts(page, ps, productName, category, status);
             return Result.success(pageResult);
 
-        } catch (Exception e) {
-            log.error("获取待审核商品列表失败", e);
-            return Result.error("获取待审核商品列表失败");
-        }
+
+    }
+    /**
+     * Day7：审核通过（PUT）
+     */
+    @PutMapping("/{productId}/approve")
+    public Result<String> approveProductV2(@PathVariable("productId") Long productId) {
+        // 先复用旧 service：true=通过，reason=null
+        productService.approveProduct(productId, true, null);
+        return Result.success("商品审核通过");
+    }
+
+    /**
+     * Day7：审核驳回（PUT + DTO）
+     */
+    @PutMapping("/{productId}/reject")
+    public Result<String> rejectProductV2(@PathVariable("productId") Long productId,
+                                          @Valid @RequestBody RejectProductRequest request) {
+        // 先复用旧 service：false=驳回，reason=request.reason
+        productService.approveProduct(productId, false, request.getReason());
+        return Result.success("商品审核驳回");
     }
 
 
     // 审批商品
+    @Deprecated
     @PostMapping("/{productId}/approve")
     public Result<String> approveProduct(
             @PathVariable("productId") Long productId,
@@ -112,32 +131,24 @@ public class ProductController {
      * - 允许“全部/空”表示不筛选（返回 null）
      */
     private String normalizeStatus(String status) {
-        if (status == null || status.isBlank() || "全部".equals(status)) {
-            return null;
-        }
+        if (status == null) return null;
         status = status.trim();
+        if (status.isEmpty() || "全部".equals(status)) return null;
 
-        // 1) 兼容中文（旧接口/旧测试不至于全挂）
         switch (status) {
             case "上架":
-            case "在售":
-                return "on_sale";
-            case "已售":
-                return "sold";
-            case "下架":
-                return "off_shelf";
+            case "在售": return "on_sale";
+            case "已售": return "sold";
+            case "下架": return "off_shelf";
             case "审核中":
-            case "待审核":
-                return "under_review";
+            case "待审核": return "under_review";
             default:
-                // 2) 允许直接传 dbValue
-                if (isDbStatus(status)) {
-                    return status;
-                }
+                if (isDbStatus(status)) return status;
                 throw new BusinessException("非法商品状态: " + status
                         + "，允许: on_sale/sold/off_shelf/under_review 或 上架/已售/下架/审核中");
         }
     }
+
 
     private boolean isDbStatus(String status) {
         return "on_sale".equals(status)
