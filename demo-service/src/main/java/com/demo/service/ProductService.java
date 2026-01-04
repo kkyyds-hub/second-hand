@@ -38,4 +38,8 @@ public interface ProductService {
 
 
     ProductDetailDTO resubmitProduct(Long currentUserId, Long productId);
+
+    ProductDetailDTO onShelfProduct(Long currentUserId, Long productId);
+
+    ProductDetailDTO withdrawProduct(Long currentUserId, Long productId);
 }

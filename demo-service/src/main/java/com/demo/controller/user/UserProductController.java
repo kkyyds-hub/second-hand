@@ -83,6 +83,16 @@ public class UserProductController {
         return Result.success(productService.resubmitProduct(currentUserId, productId));
     }
 
+    @PutMapping("/{productId}/on-shelf")
+    public Result<ProductDetailDTO> onShelf(@PathVariable("productId") Long productId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        return Result.success(productService.onShelfProduct(currentUserId, productId));
+    }
+    @PutMapping("/{productId}/withdraw")
+    public Result<ProductDetailDTO> withdraw(@PathVariable("productId") Long productId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        return Result.success(productService.withdrawProduct(currentUserId, productId));
+    }
 
 
 }

@@ -377,6 +377,80 @@ public class ProductServiceImpl implements ProductService {
         return toProductDetailDTO(db);
     }
 
+    @Override
+    public ProductDetailDTO onShelfProduct(Long currentUserId, Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null) throw new BusinessException("商品不存在或已被删除");
+        if (!Objects.equals(product.getOwnerId(), currentUserId)) throw new BusinessException("无权操作该商品");
+
+        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
+
+        if (st == ProductStatus.SOLD) throw new BusinessException("已售商品不可上架");
+        if (st == ProductStatus.ON_SHELF) throw new BusinessException("在售商品无需上架");
+
+        //已是审核中，直接返回
+        if (st == ProductStatus.UNDER_REVIEW) {
+            return toProductDetailDTO(product);
+        }
+
+        // 只允许下架状态发起重提审
+        if (st != ProductStatus.OFF_SHELF) {
+            throw new BusinessException("当前状态无法重新上架");
+        }
+
+        int rows = productMapper.updateStatusAndReasonByOwner(
+                productId, currentUserId,
+                ProductStatus.UNDER_REVIEW.getDbValue(),
+                null
+        );
+        if (rows == 0) throw new BusinessException("商品状态更新失败");
+
+        Product db = productMapper.getProductById(productId);
+        return toProductDetailDTO(db);
+    }
+
+    @Override
+    public ProductDetailDTO withdrawProduct(Long currentUserId, Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null) {
+            throw new BusinessException("商品不存在或已被删除");
+        }
+        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
+            throw new BusinessException("无权操作该商品");
+        }
+
+        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
+        // - sold：报错
+        if (st == ProductStatus.SOLD) throw new BusinessException("已售商品不可撤回");
+        // - on_sale：报错（提示要下架请用 off-shelf）
+        if (st == ProductStatus.ON_SHELF) throw new BusinessException("在售商品需先下架");
+        // - off_shelf：报错（无需撤回）
+        if (st == ProductStatus.OFF_SHELF) throw new BusinessException("商品已撤回");
+        // - under_review：允许继续往下走
+        // - status：ProductStatus.OFF_SHELF.getDbValue()
+        if (st != ProductStatus.UNDER_REVIEW) {
+            throw new BusinessException("当前状态无需撤回审核");
+        }
+        // - reason：建议固定字符串，如 "seller_withdraw"（或你统一的常量）
+        String reason = "seller_withdraw";
+
+        // - 复用：productMapper.updateStatusAndReasonByOwner(...)
+
+        int rows = productMapper.updateStatusAndReasonByOwner(
+                productId,
+                currentUserId,
+                ProductStatus.OFF_SHELF.getDbValue(),
+                reason
+        );
+        if (rows == 0) {
+            throw new BusinessException("商品状态更新失败");
+        }
+
+        Product db = productMapper.getProductById(productId);
+        return toProductDetailDTO(db);
+    }
+
+
 
     private String extractFirstImage(String images) {
         if (images == null || images.isBlank()) return null;
