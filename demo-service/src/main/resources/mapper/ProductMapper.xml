@@ -99,7 +99,7 @@
                     AND status = 'under_review'
                 </when>
                 <when test="status == '全部'">
-
+                    <!-- 查询全部状态，不添加 status 条件 -->
                 </when>
                 <otherwise>
                     AND status = #{status}

@@ -8,7 +8,6 @@ import com.demo.exception.DatabaseUpdateException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
-import com.github.pagehelper.PageInfo;
 import com.demo.result.PageResult;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
