@@ -66,16 +66,16 @@ public class OrdersController {
                                @Validated @RequestBody ShipOrderRequest request) {
         log.info("卖家发货: {}", orderId);
         Long currentUserId = BaseContext.getCurrentId();
-        orderService.shipOrder(orderId, request, currentUserId);
-        return Result.success("发货成功");
+        String msg = orderService.shipOrder(orderId, request, currentUserId);
+        return Result.success(msg);
     }
 
     @PostMapping("/{orderId}/confirm-receipt")
     public Result<String> confirm(@PathVariable Long orderId) {
         log.info("用户确认收货: {}", orderId);
         Long currentUserId = BaseContext.getCurrentId();
-        orderService.confirmOrder(orderId, currentUserId);
-        return Result.success("确认收货成功");
+        String msg = orderService.confirmOrder(orderId, currentUserId);
+        return Result.success(msg);
         //TODO 物流轨迹/评价信息暂未实现，字段返回 null”
     }
 

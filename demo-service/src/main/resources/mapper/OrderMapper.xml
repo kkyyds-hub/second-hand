@@ -100,6 +100,7 @@
         JOIN products p    ON p.id       = i.product_id
         JOIN users u       ON o.seller_id = u.id
         WHERE o.buyer_id = #{buyerId}
+        AND u.is_deleted = 0
 
         <!-- 状态过滤：PageQueryDTO.status 不为空才加条件 -->
         <if test="query.status != null and query.status != ''">
@@ -155,6 +156,7 @@
         JOIN users u       ON u.id        = o.buyer_id
         WHERE
         o.seller_id = #{currentUserId}
+        AND u.is_deleted = 0
         <if test="query.status != null and query.status != ''">
             AND o.status = #{query.status}
         </if>
@@ -204,7 +206,8 @@
         o.id = #{orderId}
         AND (o.buyer_id = #{currentUserId}
         OR o.seller_id = #{currentUserId})
-
+        AND bu.is_deleted = 0
+        AND su.is_deleted = 0
         LIMIT 1
     </select>
 

@@ -20,9 +20,9 @@ public interface OrderService {
 
     OrderDetail getOrderDetail(Long orderId, Long currentUserId);
 
-    void shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId);
+    String shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId);
 
-    void confirmOrder(Long orderId, Long currentUserId);
+    String confirmOrder(Long orderId, Long currentUserId);
 
     CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId);
 

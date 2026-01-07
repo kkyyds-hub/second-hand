@@ -46,8 +46,7 @@ public class OrderServiceImpl implements OrderService {
                 pageInfo.getList(),
                 pageInfo.getTotal(),
                 pageInfo.getPageNum(),
-                pageInfo.getPageSize()
-        );
+                pageInfo.getPageSize());
     }
 
     @Override
@@ -61,13 +60,11 @@ public class OrderServiceImpl implements OrderService {
                 pageInfo.getList(),
                 pageInfo.getTotal(),
                 pageInfo.getPageNum(),
-                pageInfo.getPageSize()
-        );
+                pageInfo.getPageSize());
     }
 
-
     @Override
-    public OrderDetail getOrderDetail(Long orderId , Long currentUserId) {
+    public OrderDetail getOrderDetail(Long orderId, Long currentUserId) {
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
             throw new BusinessException("订单不存在或无权查看该订单");
@@ -76,7 +73,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId) {
+    public String shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId) {
         // 1. 先查订单详情（同时校验与当前用户有关）
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
@@ -93,29 +90,58 @@ public class OrderServiceImpl implements OrderService {
         if (currentStatus == null) {
             throw new BusinessException("订单状态异常");
         }
+
+        // 幂等性：如果订单已经发货或已完成，直接返回（不抛异常）
+        if (currentStatus == OrderStatus.SHIPPED || currentStatus == OrderStatus.COMPLETED) {
+            return "订单已发货，无需重复操作";
+        }
+        // 状态校验：只能从 paid -> shipped
         if (currentStatus != OrderStatus.PAID) {
             throw new BusinessException("订单当前状态不允许发货，只能对已付款订单发货");
         }
-
         // 4. 组装 Order 作为更新入参（只放 orders 表需要的字段）
         Order orderToUpdate = new Order();
         orderToUpdate.setId(detail.getOrderId());
-        orderToUpdate.setSellerId(currentUserId);                 // 供 SQL where 使用（建议）
+        orderToUpdate.setSellerId(currentUserId); // 供 SQL where 使用（建议）
         orderToUpdate.setShippingCompany(request.getShippingCompany());
         orderToUpdate.setTrackingNo(request.getTrackingNo());
-        orderToUpdate.setShippingRemark(request.getRemark());     // Day5：把备注落库
+        orderToUpdate.setShippingRemark(request.getRemark()); // Day5：把备注落库
         orderToUpdate.setStatus(OrderStatus.SHIPPED.getDbValue());
         orderToUpdate.setUpdateTime(LocalDateTime.now());
 
         // 5. 执行更新 + 乐观校验
         int rows = orderMapper.updateForShipping(orderToUpdate);
-        if (rows == 0) {
-            throw new BusinessException("发货失败，订单状态可能已变更");
+        if (rows == 1) {
+            return "发货成功"; // 发货成功，直接返回
         }
+
+        // rows==0：重新查询获取最新状态（可能被其他线程修改）
+        OrderDetail latestDetail = orderMapper.getOrderDetail(orderId, currentUserId);
+        // 简化：如果第一次查询已通过，这里为 null 的概率极低（除非并发删除）
+        if (latestDetail == null) {
+            throw new BusinessException("操作失败，订单可能已被删除或订单关联的用户已被删除");
+        }
+
+        OrderStatus s = OrderStatus.fromDbValue(latestDetail.getStatus());
+        if (s == null) {
+            throw new BusinessException("订单状态异常");
+        }
+
+        // 幂等：已发货/已完成 -> 直接返回
+        if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            return "订单已发货，无需重复操作";
+        }
+
+        if (s == OrderStatus.CANCELLED) {
+            throw new BusinessException("订单已取消，无法发货");
+        }
+
+        // 其他情况
+        throw new BusinessException("发货失败，订单状态不允许发货：" + latestDetail.getStatus());
     }
 
     @Override
-    public void confirmOrder(Long orderId, Long currentUserId) {
+    public String confirmOrder(Long orderId, Long currentUserId) {
         // 1. 查询订单详情（买家/卖家都能查到）
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
@@ -132,6 +158,12 @@ public class OrderServiceImpl implements OrderService {
         if (currentStatus == null) {
             throw new BusinessException("订单状态异常");
         }
+        // 幂等性：如果订单已经完成，直接返回（不抛异常）
+        if (currentStatus == OrderStatus.COMPLETED) {
+            return "订单已确认收货，无需重复操作"; // 稍后改为返回提示信息
+        }
+
+        // 状态校验：只能从 shipped -> completed
         if (currentStatus != OrderStatus.SHIPPED) {
             throw new BusinessException("订单当前状态不允许确认收货，只能对已发货订单确认收货");
         }
@@ -139,15 +171,38 @@ public class OrderServiceImpl implements OrderService {
         // 4. 组装 Order 做更新
         Order orderToUpdate = new Order();
         orderToUpdate.setId(detail.getOrderId());
-        orderToUpdate.setBuyerId(currentUserId);                  // 供 SQL where 使用（建议）
+        orderToUpdate.setBuyerId(currentUserId); // 供 SQL where 使用（建议）
         orderToUpdate.setStatus(OrderStatus.COMPLETED.getDbValue());
         orderToUpdate.setCompleteTime(LocalDateTime.now());
         orderToUpdate.setUpdateTime(LocalDateTime.now());
 
         int rows = orderMapper.updateForConfirm(orderToUpdate);
-        if (rows == 0) {
-            throw new BusinessException("确认收货失败，订单状态可能已变更");
+        if (rows == 1) {
+            return "确认收货成功"; // 稍后改为返回提示信息
         }
+
+        // rows==0：重新查询获取最新状态（可能被其他线程修改）
+        OrderDetail latestDetail = orderMapper.getOrderDetail(orderId, currentUserId);
+        if (latestDetail == null) {
+            throw new BusinessException("操作失败，订单可能已被删除或订单关联的用户已被删除");
+        }
+
+        OrderStatus s = OrderStatus.fromDbValue(latestDetail.getStatus());
+        if (s == null) {
+            throw new BusinessException("订单状态异常");
+        }
+
+        // 幂等：已确认 -> 直接返回
+        if (s == OrderStatus.COMPLETED) {
+            return "订单已确认收货，无需重复操作"; // 稍后改为返回提示信息
+        }
+
+        if (s == OrderStatus.CANCELLED) {
+            throw new BusinessException("订单已取消，无法确认收货");
+        }
+
+        // 其他情况
+        throw new BusinessException("确认收货失败，订单状态不允许确认收货：" + latestDetail.getStatus());
     }
 
     @Override
@@ -170,7 +225,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("商品非在售状态，无法下单");
         }
 
-
         Long sellerId = product.getOwnerId(); // 你表里是 owner_id
         if (sellerId == null) {
             throw new BusinessException("商品数据异常：缺少卖家信息");
@@ -187,22 +241,22 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("商品已被购买或不可购买，请刷新后重试");
         }
 
-        // 4) 插入 orders（你的 XML 已 useGeneratedKeys 回填 id） :contentReference[oaicite:1]{index=1}
+        // 4) 插入 orders（你的 XML 已 useGeneratedKeys 回填 id）
         Order order = new Order();
         order.setOrderNo(generateOrderNo(currentUserId));
         order.setBuyerId(currentUserId);
         order.setSellerId(sellerId);
-        order.setTotalAmount(product.getPrice());     // Day3 固定 quantity=1
-        order.setStatus(OrderStatus.PENDING.getDbValue());                // 与你项目的 dbValue 对齐（如有枚举就用枚举）
+        order.setTotalAmount(product.getPrice()); // Day3 固定 quantity=1
+        order.setStatus(OrderStatus.PENDING.getDbValue()); // 与你项目的 dbValue 对齐（如有枚举就用枚举）
         order.setShippingAddress(request.getShippingAddress());
-        // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder 会插入这些字段） :contentReference[oaicite:2]{index=2}
-
+        // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder
+        
         int inserted = orderMapper.insertOrder(order);
         if (inserted != 1 || order.getId() == null) {
             throw new BusinessException("创建订单失败");
         }
 
-        // 5) 插入 order_items :contentReference[oaicite:3]{index=3}
+        // 5) 插入 order_items 
         OrderItem item = new OrderItem();
         item.setOrderId(order.getId());
         item.setProductId(productId);
@@ -299,15 +353,12 @@ public class OrderServiceImpl implements OrderService {
         throw new BusinessException("取消失败，订单状态不允许取消：" + detail.getStatus());
     }
 
-
     private String generateOrderNo(Long buyerId) {
         String time = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000);
         return time + (buyerId % 10000) + rnd;
     }
-
-
 
     private void pageValidated(PageQueryDTO pageQueryDTO) {
         Integer page = pageQueryDTO.getPage();
@@ -321,4 +372,3 @@ public class OrderServiceImpl implements OrderService {
         PageHelper.startPage(page, size);
     }
 }
-
