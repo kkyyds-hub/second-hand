@@ -1,39 +1,3 @@
----
-name: Day 8 系统加固与搜索优化
-overview: 完善 payOrder/shipOrder/confirmReceipt 的幂等性处理（前置校验+rows==0双重保障），优化 ProductMapper 模糊搜索索引（FULLTEXT ngram），补充 is_deleted=0 收口检查
-todos:
-  - id: idempotent-ship-precheck
-    content: shipOrder 前置状态校验幂等化：第一次查询 detail 后，如果状态已是 SHIPPED/COMPLETED，直接返回
-    status: pending
-  - id: idempotent-ship-rows
-    content: shipOrder rows==0 幂等化：重新查询状态，已发货/已完成返回成功提示
-    status: pending
-  - id: idempotent-confirm-precheck
-    content: confirmOrder 前置状态校验幂等化：第一次查询 detail 后，如果状态已是 COMPLETED，直接返回
-    status: pending
-  - id: idempotent-confirm-rows
-    content: confirmOrder rows==0 幂等化：重新查询状态，已确认返回成功提示
-    status: pending
-  - id: modify-service-signature
-    content: 修改 shipOrder/confirmOrder 方法签名：从 void 改为 String，返回幂等提示信息
-    status: pending
-  - id: modify-controller-response
-    content: 修改 Controller 层：使用 service 返回的提示信息，而不是硬编码"发货成功"/"确认收货成功"
-    status: pending
-  - id: optimize-product-fulltext
-    content: 为 products 表添加 FULLTEXT 索引（ngram 分词器支持中文），修改 SQL 使用 MATCH...AGAINST
-    status: pending
-  - id: check-is-deleted-users
-    content: 检查 OrderMapper 中所有 JOIN users 表的查询，补充 u.is_deleted=0 条件
-    status: pending
-  - id: create-postman-tests
-    content: 创建 Postman 幂等性测试集，覆盖前置校验和 rows==0 两种幂等场景
-    status: pending
-    dependencies:
-      - idempotent-ship-precheck
-      - idempotent-confirm-precheck
----
-
 # Day 8: 系统加固与搜索优化（增强版）
 
 ## 1. 幂等性复查与修复（双重保障）

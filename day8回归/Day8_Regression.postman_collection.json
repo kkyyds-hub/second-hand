@@ -1,0 +1,1028 @@
+{
+	"info": {
+		"_postman_id": "day8-regression-collection",
+		"name": "Day8 Regression",
+		"description": "Day8 系统加固与搜索优化回归测试集合\n覆盖：幂等性测试、搜索优化、订单完整流程、异常场景",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01-Auth",
+			"item": [
+				{
+					"name": "Buyer Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response has token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('token');",
+									"    pm.environment.set(\"token_buyer\", jsonData.data.token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"loginId\": \"{{buyer_username}}\",\n    \"password\": \"{{buyer_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/auth/login/password",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "auth", "login", "password"]
+						}
+					}
+				},
+				{
+					"name": "Seller Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response has token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('token');",
+									"    pm.environment.set(\"token_seller\", jsonData.data.token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"loginId\": \"{{seller_username}}\",\n    \"password\": \"{{seller_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/auth/login/password",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "auth", "login", "password"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02-Search",
+			"item": [
+				{
+					"name": "Search by Keyword in Title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response structure is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('list');",
+									"    pm.expect(jsonData.data).to.have.property('total');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/market/products?keyword=手机&page=1&pageSize=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "market", "products"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "手机"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search by Keyword in Description",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response structure is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('list');",
+									"    pm.expect(jsonData.data).to.have.property('total');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/market/products?keyword=二手&page=1&pageSize=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "market", "products"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "二手"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Market Product List (No Keyword)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response structure is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('list');",
+									"    if (jsonData.data.list && jsonData.data.list.length > 0) {",
+									"        pm.environment.set(\"productId\", jsonData.data.list[0].productId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/market/products?page=1&pageSize=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "market", "products"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "03-Order-E2E",
+			"item": [
+				{
+					"name": "Get Buyer Address List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response has address list\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    if (jsonData.data && jsonData.data.length > 0) {",
+									"        var addr = jsonData.data[0];",
+									"        pm.environment.set(\"addressId\", addr.id);",
+									"        var addrStr = (addr.provinceName || '') + (addr.cityName || '') + (addr.districtName || '') + (addr.detailAddress || '');",
+									"        pm.environment.set(\"shippingAddress\", addrStr);",
+									"    } else {",
+									"        pm.environment.set(\"shippingAddress\", \"北京市朝阳区测试街道123号\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/addresses",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "addresses"]
+						}
+					}
+				},
+				{
+					"name": "Create Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.have.property('orderId');",
+									"    pm.expect(jsonData.data.status).to.eql('pending');",
+									"    pm.environment.set(\"orderId\", jsonData.data.orderId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"shippingAddress\": \"{{shippingAddress}}\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"]
+						}
+					}
+				},
+				{
+					"name": "Pay Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Payment successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('支付成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}/pay",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}", "pay"]
+						}
+					}
+				},
+				{
+					"name": "Get Order Detail (After Pay)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order status is paid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data.status).to.eql('paid');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}"]
+						}
+					}
+				},
+				{
+					"name": "Ship Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Shipping successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('发货成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shippingCompany\": \"SF\",\n    \"trackingNo\": \"SF1234567890\",\n    \"remark\": \"测试发货备注\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}/ship",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}", "ship"]
+						}
+					}
+				},
+				{
+					"name": "Get Order Detail (After Ship)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order status is shipped\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data.status).to.eql('shipped');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}"]
+						}
+					}
+				},
+				{
+					"name": "Confirm Receipt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Confirm receipt successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('确认收货成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}/confirm-receipt",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}", "confirm-receipt"]
+						}
+					}
+				},
+				{
+					"name": "Get Order Detail (After Confirm)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order status is completed\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data.status).to.eql('completed');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "04-Idempotency",
+			"item": [
+				{
+					"name": "Create Order for Idempotency",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    if (jsonData.data && jsonData.data.orderId) {",
+									"        pm.environment.set(\"orderId_idempotency\", jsonData.data.orderId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"shippingAddress\": \"{{shippingAddress}}\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"]
+						}
+					}
+				},
+				{
+					"name": "Pay Order (First Time)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"First payment successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('支付成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/pay",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "pay"]
+						}
+					}
+				},
+				{
+					"name": "Pay Order (Second Time - Idempotency Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Idempotency: Returns idempotent message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.eql('订单已支付，无需重复操作');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/pay",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "pay"]
+						}
+					}
+				},
+				{
+					"name": "Ship Order (First Time)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"First shipment successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('发货成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shippingCompany\": \"SF\",\n    \"trackingNo\": \"SF9876543210\",\n    \"remark\": \"幂等性测试\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/ship",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "ship"]
+						}
+					}
+				},
+				{
+					"name": "Ship Order (Second Time - Idempotency Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Idempotency: Returns idempotent message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.eql('订单已发货，无需重复操作');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shippingCompany\": \"SF\",\n    \"trackingNo\": \"SF9876543210\",\n    \"remark\": \"幂等性测试\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/ship",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "ship"]
+						}
+					}
+				},
+				{
+					"name": "Confirm Receipt (First Time)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"First confirm successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.include('确认收货成功');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/confirm-receipt",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "confirm-receipt"]
+						}
+					}
+				},
+				{
+					"name": "Confirm Receipt (Second Time - Idempotency Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Idempotency: Returns idempotent message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    pm.expect(jsonData.data).to.eql('订单已确认收货，无需重复操作');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_idempotency}}/confirm-receipt",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_idempotency}}", "confirm-receipt"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "05-Negative",
+			"item": [
+				{
+					"name": "Create Order for Negative Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    if (jsonData.data && jsonData.data.orderId) {",
+									"        pm.environment.set(\"orderId_negative\", jsonData.data.orderId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"shippingAddress\": \"{{shippingAddress}}\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"]
+						}
+					}
+				},
+				{
+					"name": "Cancel Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order cancelled\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_negative}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_negative}}", "cancel"]
+						}
+					}
+				},
+				{
+					"name": "Ship Cancelled Order (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+									"});",
+									"pm.test(\"Error: Cannot ship cancelled order\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.code === 0 || jsonData.code !== 1) {",
+									"        pm.expect(jsonData.msg).to.include('不允许');",
+									"    } else {",
+									"        pm.expect(jsonData.data).to.include('不允许');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shippingCompany\": \"SF\",\n    \"trackingNo\": \"SF1111111111\",\n    \"remark\": \"异常测试\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_negative}}/ship",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_negative}}", "ship"]
+						}
+					}
+				},
+				{
+					"name": "Create Order for Unauthorized Ship Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.code).to.eql(1);",
+									"    if (jsonData.data && jsonData.data.orderId) {",
+									"        pm.environment.set(\"orderId_unauth\", jsonData.data.orderId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"shippingAddress\": \"{{shippingAddress}}\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"]
+						}
+					}
+				},
+				{
+					"name": "Pay Order for Unauthorized Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_unauth}}/pay",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_unauth}}", "pay"]
+						}
+					}
+				},
+				{
+					"name": "Ship Order with Buyer Token (Should Fail)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var token = pm.environment.get('token_buyer');",
+									"if (token) {",
+									"    pm.request.headers.add({",
+									"        key: 'authentication',",
+									"        value: token",
+									"    });",
+									"}"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+									"});",
+									"pm.test(\"Error: Only seller can ship\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.code === 0 || jsonData.code !== 1) {",
+									"        pm.expect(jsonData.msg).to.include('卖家');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shippingCompany\": \"SF\",\n    \"trackingNo\": \"SF2222222222\",\n    \"remark\": \"非卖家发货测试\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/{{orderId_unauth}}/ship",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "{{orderId_unauth}}", "ship"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"var url = pm.request.url.toString();",
+					"var token = '';",
+					"",
+					"if (url.includes('/auth/login')) {",
+					"    return;",
+					"}",
+					"",
+					"if (url.includes('/ship')) {",
+					"    token = pm.environment.get('token_seller');",
+					"} else {",
+					"    token = pm.environment.get('token_buyer');",
+					"}",
+					"",
+					"if (token) {",
+					"    pm.request.headers.add({",
+					"        key: 'authentication',",
+					"        value: token",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": []
+}
+

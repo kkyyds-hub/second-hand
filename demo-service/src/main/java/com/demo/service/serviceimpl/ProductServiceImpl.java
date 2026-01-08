@@ -67,25 +67,39 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void approveProduct(Long productId, boolean isApproved, String reason) {
 
-        // 可选：先查一遍确保存在
-        Product product = productMapper.getProductById(productId);
-        if (product == null) {
-            throw new BusinessException("商品不存在");
+        if (Boolean.TRUE.equals(isApproved)) {
+            int rows = productMapper.updateStatusAndReasonIfUnderReview(
+                    productId,
+                    ProductStatus.ON_SHELF.getDbValue(), // dbValue = on_sale
+                    null
+            );
+            if (rows == 0) {
+                // 可选：为了错误更精确，再查一次
+                Product p = productMapper.getProductById(productId);
+                if (p == null || p.getIsDeleted() == 1) throw new BusinessException("商品不存在或已被删除");
+                throw new BusinessException("仅审核中商品可通过，当前状态: " + p.getStatus());
+            }
+            return;
         }
 
-        if (Boolean.TRUE.equals(isApproved)) {
-            productMapper.updateStatusAndReason(productId,
-                    ProductStatus.ON_SHELF.getDbValue(), // on_sale
-                    null);
-        } else {
-            if (reason == null || reason.isBlank()) {
-                throw new BusinessException("驳回原因不能为空");
-            }
-            productMapper.updateStatusAndReason(productId,
-                    ProductStatus.OFF_SHELF.getDbValue(), // off_shelf
-                    reason);
+        // reject：trim + 校验
+        String r = (reason == null) ? null : reason.trim();
+        if (r == null || r.isEmpty()) throw new BusinessException("驳回原因不能为空");
+        if (r.length() > 200) throw new BusinessException("驳回原因长度不能超过200");
+
+        int rows = productMapper.updateStatusAndReasonIfUnderReview(
+                productId,
+                ProductStatus.OFF_SHELF.getDbValue(),
+                r
+        );
+        if (rows == 0) {
+            Product p = productMapper.getProductById(productId);
+            if (p == null || p.getIsDeleted() == 1) throw new BusinessException("商品不存在或已被删除");
+            throw new BusinessException("仅审核中商品可驳回，当前状态: " + p.getStatus());
         }
     }
+
+
 
     /**
      * 查询商品的违规记录

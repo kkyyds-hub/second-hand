@@ -77,7 +77,15 @@
           AND is_deleted = 0
     </update>
 
-
+    <update id="updateStatusAndReasonIfUnderReview">
+        UPDATE products
+        SET status = #{status},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{productId}
+          AND is_deleted = 0
+          AND status = 'under_review'
+    </update>
 
     <!-- 后台：待审核商品列表（动态筛选）
          规则：不传 status 时默认只查 under_review，符合“待审核”语义 -->
@@ -133,20 +141,29 @@
         ORDER BY create_time DESC
     </select>
 
-    <select id="getMarketProductList" resultType="com.demo.entity.Product">
-        SELECT <include refid="productColumns"/>
-        FROM products p
-        WHERE p.status = 'on_sale'
-        AND p.is_deleted = 0
-        <if test="keyword != null and keyword != ''">
-            AND (p.title LIKE CONCAT('%', #{keyword}, '%')
-            OR p.description LIKE CONCAT('%', #{keyword}, '%'))
-        </if>
-        <if test="category != null and category != ''">
-            AND p.category = #{category}
-        </if>
-        ORDER BY p.create_time DESC
-    </select>
+   <select id="getMarketProductList" resultType="com.demo.entity.Product">
+    SELECT <include refid="productColumns"/>
+    FROM products p
+    WHERE p.status = 'on_sale'
+      AND p.is_deleted = 0
+    <if test="keyword != null and keyword != ''">
+        AND MATCH(p.title, p.description) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
+    </if>
+    <if test="category != null and category != ''">
+        AND p.category = #{category}
+    </if>
+
+    <choose>
+        <when test="keyword != null and keyword != ''">
+            ORDER BY MATCH(p.title, p.description) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) DESC,
+                     p.create_time DESC
+        </when>
+        <otherwise>
+            ORDER BY p.create_time DESC
+        </otherwise>
+    </choose>
+</select>
+
 
     <select id="getMarketProductById" resultType="com.demo.entity.Product">
         SELECT <include refid="productColumns"/>

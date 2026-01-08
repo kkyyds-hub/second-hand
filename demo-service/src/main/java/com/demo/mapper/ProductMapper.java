@@ -41,4 +41,9 @@ public interface ProductMapper {
                                      @Param("status") String status,
                                      @Param("reason") String reason);
 
+    int updateStatusAndReasonIfUnderReview(@Param("productId") Long productId,
+                                           @Param("status") String status,
+                                           @Param("reason") String reason);
+
+
 }

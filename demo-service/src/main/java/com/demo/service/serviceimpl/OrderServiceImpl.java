@@ -112,31 +112,31 @@ public class OrderServiceImpl implements OrderService {
         // 5. 执行更新 + 乐观校验
         int rows = orderMapper.updateForShipping(orderToUpdate);
         if (rows == 1) {
-            return "发货成功"; // 发货成功，直接返回
+            return "发货成功";
         }
 
-        // rows==0：重新查询获取最新状态（可能被其他线程修改）
+        // rows==0：重新查询最新状态（并发/重复请求）
         OrderDetail latestDetail = orderMapper.getOrderDetail(orderId, currentUserId);
-        // 简化：如果第一次查询已通过，这里为 null 的概率极低（除非并发删除）
         if (latestDetail == null) {
-            throw new BusinessException("操作失败，订单可能已被删除或订单关联的用户已被删除");
+            throw new BusinessException("操作失败，订单可能已被删除或无权访问");
         }
 
-        OrderStatus s = OrderStatus.fromDbValue(latestDetail.getStatus());
-        if (s == null) {
+        OrderStatus latestStatus = OrderStatus.fromDbValue(latestDetail.getStatus());
+        if (latestStatus == null) {
             throw new BusinessException("订单状态异常");
         }
 
-        // 幂等：已发货/已完成 -> 直接返回
-        if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+       //  幂等：已发货/已完成 -> 成功返回
+        if (latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
             return "订单已发货，无需重复操作";
         }
 
-        if (s == OrderStatus.CANCELLED) {
+       // 已取消 -> 明确报错
+        if (latestStatus == OrderStatus.CANCELLED) {
             throw new BusinessException("订单已取消，无法发货");
         }
 
-        // 其他情况
+
         throw new BusinessException("发货失败，订单状态不允许发货：" + latestDetail.getStatus());
     }
 
@@ -250,7 +250,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.PENDING.getDbValue()); // 与你项目的 dbValue 对齐（如有枚举就用枚举）
         order.setShippingAddress(request.getShippingAddress());
         // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder
-        
+
         int inserted = orderMapper.insertOrder(order);
         if (inserted != 1 || order.getId() == null) {
             throw new BusinessException("创建订单失败");
