@@ -36,40 +36,40 @@ Environment 中已预配置以下变量（可在 Postman 中手动修改）：
 #### 方式一：按文件夹顺序执行（推荐）
 
 1. **01-Auth** - 先执行登录获取 token
-    - Buyer Login
-    - Seller Login
+   - Buyer Login
+   - Seller Login
 
 2. **02-Search** - 搜索功能测试
-    - Search by Keyword in Title
-    - Search by Keyword in Description
-    - Get Market Product List (No Keyword) - 自动提取 productId
+   - Search by Keyword in Title
+   - Search by Keyword in Description
+   - Get Market Product List (No Keyword) - 自动提取 productId
 
 3. **03-Order-E2E** - 完整订单流程
-    - Get Buyer Address List - 自动提取地址信息
-    - Create Order
-    - Pay Order
-    - Get Order Detail (After Pay)
-    - Ship Order（使用 seller token）
-    - Get Order Detail (After Ship)
-    - Confirm Receipt
-    - Get Order Detail (After Confirm)
+   - Get Buyer Address List - 自动提取地址信息
+   - Create Order
+   - Pay Order
+   - Get Order Detail (After Pay)
+   - Ship Order（使用 seller token）
+   - Get Order Detail (After Ship)
+   - Confirm Receipt
+   - Get Order Detail (After Confirm)
 
 4. **04-Idempotency** - 幂等性测试（核心测试）
-    - Create Order for Idempotency
-    - Pay Order (First Time)
-    - Pay Order (Second Time - Idempotency Test) - **断言返回 "订单已支付，无需重复操作"**
-    - Ship Order (First Time)
-    - Ship Order (Second Time - Idempotency Test) - **断言返回 "订单已发货，无需重复操作"**
-    - Confirm Receipt (First Time)
-    - Confirm Receipt (Second Time - Idempotency Test) - **断言返回 "订单已确认收货，无需重复操作"**
+   - Create Order for Idempotency
+   - Pay Order (First Time)
+   - Pay Order (Second Time - Idempotency Test) - **断言返回 "订单已支付，无需重复操作"**
+   - Ship Order (First Time)
+   - Ship Order (Second Time - Idempotency Test) - **断言返回 "订单已发货，无需重复操作"**
+   - Confirm Receipt (First Time)
+   - Confirm Receipt (Second Time - Idempotency Test) - **断言返回 "订单已确认收货，无需重复操作"**
 
 5. **05-Negative** - 异常场景测试
-    - Create Order for Negative Test
-    - Cancel Order
-    - Ship Cancelled Order (Should Fail) - **断言失败**
-    - Create Order for Unauthorized Ship Test
-    - Pay Order for Unauthorized Test
-    - Ship Order with Buyer Token (Should Fail) - **断言失败（非卖家发货）**
+   - Create Order for Negative Test
+   - Cancel Order
+   - Ship Cancelled Order (Should Fail) - **断言失败**
+   - Create Order for Unauthorized Ship Test
+   - Pay Order for Unauthorized Test
+   - Ship Order with Buyer Token (Should Fail) - **断言失败（非卖家发货）**
 
 #### 方式二：运行整个 Collection
 

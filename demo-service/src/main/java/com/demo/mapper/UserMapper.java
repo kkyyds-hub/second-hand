@@ -26,10 +26,11 @@ public interface UserMapper {
                      @Param("status") String status,
                      @Param("updateTime") LocalDateTime updateTime);
 
-    User selectById(Long userId);
+    User selectById(@Param("userId") Long userId);
 
     void updateProfile(User user);
 
+    Integer selectIsSellerById(@Param("userId") Long userId);
 
     void updatePassword(@Param("userId") Long userId,
                         @Param("password") String password,

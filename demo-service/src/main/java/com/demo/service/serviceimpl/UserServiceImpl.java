@@ -246,6 +246,17 @@ public class UserServiceImpl implements UserService {
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + user.getEmail());
     }
 
+    @Override
+    public void requireSeller(Long userId) {
+        if (userId == null) {
+            throw new BusinessException("未登录或会话已失效");
+        }
+        Integer isSeller = userMapper.selectIsSellerById(userId);
+        if (isSeller == null || !isSeller.equals(1)) {
+            throw new BusinessException("仅卖家可执行该操作");
+        }
+    }
+
 
     private List<UserVO> convertToVOList(List<User> userList) {
         return userList.stream().map(user -> {

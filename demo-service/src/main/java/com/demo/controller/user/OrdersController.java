@@ -11,17 +11,15 @@ import com.demo.service.OrderService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
-import com.github.pagehelper.PageInfo;
 import com.demo.result.PageResult;
-
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
+import com.demo.service.UserService;
 
 @Validated
 @RestController
@@ -32,6 +30,9 @@ public class OrdersController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/buy")
     public Result<PageResult<BuyerOrderSummary>> buy(@Validated PageQueryDTO pageQueryDTO) {
@@ -46,7 +47,7 @@ public class OrdersController {
     public Result<PageResult<SellerOrderSummary>> getSellOrder(@Validated PageQueryDTO pageQueryDTO) {
         log.info("获取用户出售商品: {}", pageQueryDTO);
         Long currentUserId = BaseContext.getCurrentId();
-
+        userService.requireSeller(currentUserId);
         PageResult<SellerOrderSummary> pageResult = orderService.getSellOrder(pageQueryDTO, currentUserId);
         return Result.success(pageResult);
     }
@@ -66,6 +67,7 @@ public class OrdersController {
                                @Validated @RequestBody ShipOrderRequest request) {
         log.info("卖家发货: {}", orderId);
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         String msg = orderService.shipOrder(orderId, request, currentUserId);
         return Result.success(msg);
     }

@@ -5,7 +5,7 @@ import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
+import java.util.Map;
 import java.util.List;
 
 @Mapper
@@ -45,5 +45,5 @@ public interface ProductMapper {
                                            @Param("status") String status,
                                            @Param("reason") String reason);
 
-
+    Map<String, Long> countProductsBySellerId(@Param("sellerId") Long sellerId);
 }

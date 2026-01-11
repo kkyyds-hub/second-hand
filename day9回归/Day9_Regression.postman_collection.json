@@ -1,0 +1,688 @@
+{
+  "info": {
+    "_postman_id": "dc185b02-21b6-4ca8-b339-6436f6b78f49",
+    "name": "Day9 Regression (Seller Gate + Summary)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "var url = pm.request.url.toString();",
+          "// Skip auth injection for login endpoints",
+          "if (url.includes('/user/auth/login')) { return; }",
+          "// Decide token by endpoint type (seller vs buyer)",
+          "var token = \"\";",
+          "var isSellerEndpoint = url.includes('/user/seller') || url.includes('/user/products') || url.includes('/user/orders/sell');",
+          "token = isSellerEndpoint ? pm.environment.get('token_seller') : pm.environment.get('token_buyer');",
+          "// If request already sets authentication explicitly (negative tests), respect it",
+          "var h = pm.request.headers.get('authentication');",
+          "if (h && h !== '{{authentication}}') { return; }",
+          "if (token) { pm.request.headers.upsert({ key: \"authentication\", value: token }); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"token saved\", function () {",
+                  "  pm.expect(jsonData.data).to.have.property(\"token\");",
+                  "  pm.environment.set(\"token_buyer\", jsonData.data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{buyer_username}}\",\n  \"password\": \"{{buyer_password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Seller Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"token saved\", function () {",
+                  "  pm.expect(jsonData.data).to.have.property(\"token\");",
+                  "  pm.environment.set(\"token_seller\", jsonData.data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{seller_username}}\",\n  \"password\": \"{{seller_password}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02-Seller-Summary",
+      "item": [
+        {
+          "name": "Get Seller Summary (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "console.log(\"Seller Summary Response:\", pm.response.text());",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"has summary fields\", function () {",
+                  "  var d = jsonData.data || {};",
+                  "  var keys = ['totalProducts','underReviewProducts','onSaleProducts','offShelfProducts','soldProducts','totalOrders','paidOrders','shippedOrders','completedOrders','cancelledOrders'];",
+                  "  keys.forEach(function(k){ pm.expect(d).to.have.property(k); pm.expect(typeof d[k]).to.eql(\"number\"); });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/seller/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "seller",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Summary with Buyer Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "console.log(\"Seller Summary (Buyer Token) Response:\", pm.response.text());",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/seller/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "seller",
+                "summary"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03-Seller-Access-Control",
+      "item": [
+        {
+          "name": "Get My Products (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"list exists\", function () {",
+                  "  var page = jsonData.data || {};",
+                  "  pm.expect(page).to.have.property(\"list\");",
+                  "  pm.expect(page.list).to.be.an(\"array\");",
+                  "  if (page.list.length > 0 && page.list[0].id != null) {",
+                  "    pm.environment.set(\"seedProductId\", page.list[0].id);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/products?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Products with Buyer Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sell Orders (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"list exists\", function () {",
+                  "  var page = jsonData.data || {};",
+                  "  pm.expect(page).to.have.property(\"list\");",
+                  "  pm.expect(page.list).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/sell?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "sell"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sell Orders with Buyer Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/sell?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "sell"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04-Seller-Product-CRUD",
+      "item": [
+        {
+          "name": "Create Product (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"productId saved\", function () {",
+                  "  pm.expect(jsonData.data).to.have.property(\"productId\");",
+                  "  pm.environment.set(\"productId_created\", jsonData.data.productId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DAY9-NEW-{{$timestamp}}\",\n  \"description\": \"Day9 regression create\",\n  \"price\": 1.23,\n  \"images\": [\"https://img.example.com/product/day9-new.jpg\"],\n  \"category\": \"regression\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Product (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"productId matches\", function () {",
+                  "  pm.expect(jsonData.data).to.have.property(\"productId\");",
+                  "  pm.expect(jsonData.data.productId).to.eql(Number(pm.environment.get(\"productId_created\")));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{productId_created}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{productId_created}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DAY9-UPDATED-{{$timestamp}}\",\n  \"description\": \"Day9 regression update\",\n  \"price\": 2.34,\n  \"images\": [\"https://img.example.com/product/day9-updated.jpg\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Off-shelf Product (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"msg == 下架成功\", function () { pm.expect(jsonData.data).to.eql(\"下架成功\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{productId_created}}/off-shelf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{productId_created}}",
+                "off-shelf"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Product (Seller Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(jsonData.code).to.eql(1); });",
+                  "pm.test(\"msg == 删除成功\", function () { pm.expect(jsonData.data).to.eql(\"删除成功\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{productId_created}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{productId_created}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05-Negative (Buyer Blocked)",
+      "item": [
+        {
+          "name": "Create Product with Buyer Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DAY9-BUYER-TRY-{{$timestamp}}\",\n  \"description\": \"should be blocked\",\n  \"price\": 1.11,\n  \"images\": [\"https://img.example.com/product/day9-block.jpg\"],\n  \"category\": \"regression\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Off-shelf with Buyer Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{seedProductId}}/off-shelf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{seedProductId}}",
+                "off-shelf"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sell Orders with Buyer Token (Repeat, Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(jsonData.code).to.eql(0); });",
+                  "pm.test(\"msg == 仅卖家可执行该操作\", function () { pm.expect(jsonData.msg).to.eql(\"仅卖家可执行该操作\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/sell?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "sell"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

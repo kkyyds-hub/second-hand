@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface OrderMapper {
@@ -53,6 +54,7 @@ public interface OrderMapper {
     int closeTimeoutOrder(@Param("orderId") Long orderId,
                           @Param("deadline") LocalDateTime deadline);
 
+    Map<String, Long> countOrdersBySellerId(@Param("sellerId") Long sellerId);
 
 
 }

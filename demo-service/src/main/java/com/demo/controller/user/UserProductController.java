@@ -9,7 +9,7 @@ import com.demo.entity.Product;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
 import com.demo.result.PageResult;
-
+import com.demo.service.UserService;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +25,14 @@ public class UserProductController {
     @Autowired
     private ProductService productService;
 
+    @Autowired
+    private UserService userService;
+
     @GetMapping
     public Result<PageResult<Product>> getProducts(@Validated UserProductQueryDTO queryDTO) {
         log.info("获取用户商品列表");
         Long currentUserId = BaseContext.getCurrentId();
-
+        userService.requireSeller(currentUserId);
         // 统一从登录态注入，前端不传 userId
         queryDTO.setUserId(currentUserId);
 
@@ -52,6 +55,7 @@ public class UserProductController {
             @Validated @RequestBody ProductUpdateRequest request) {
 
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         ProductDetailDTO dto = productService.updateMyProduct(currentUserId, productId, request);
         return Result.success(dto);
     }
@@ -59,6 +63,7 @@ public class UserProductController {
     @PutMapping("/{productId}/off-shelf")
     public Result<String> offShelf(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         productService.offShelfProductStatus(currentUserId, productId);
         return Result.success("下架成功");
     }
@@ -66,6 +71,7 @@ public class UserProductController {
     @PostMapping
     public Result<ProductDetailDTO> createProduct(@Validated @RequestBody ProductCreateRequest request) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         ProductDetailDTO dto = productService.createProduct(currentUserId, request);
         return Result.success(dto);
     }
@@ -73,6 +79,7 @@ public class UserProductController {
     @DeleteMapping("/{productId}")
     public Result<String> deleteMyProduct(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         productService.deleteMyProduct(currentUserId, productId);
         return Result.success("删除成功");
     }
@@ -80,17 +87,20 @@ public class UserProductController {
     @PutMapping("/{productId}/resubmit")
     public Result<ProductDetailDTO> resubmit(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         return Result.success(productService.resubmitProduct(currentUserId, productId));
     }
 
     @PutMapping("/{productId}/on-shelf")
     public Result<ProductDetailDTO> onShelf(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         return Result.success(productService.onShelfProduct(currentUserId, productId));
     }
     @PutMapping("/{productId}/withdraw")
     public Result<ProductDetailDTO> withdraw(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
+        userService.requireSeller(currentUserId);
         return Result.success(productService.withdrawProduct(currentUserId, productId));
     }
 

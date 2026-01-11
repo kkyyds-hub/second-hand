@@ -25,14 +25,19 @@
         ORDER BY create_time DESC
     </select>
     <select id="selectById" resultType="com.demo.entity.User">
-        SELECT * FROM users WHERE id = #{userid}
+        SELECT * FROM users WHERE id = #{userId}
     </select>
+
     <select id="selectByMobile" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE mobile = #{mobile} LIMIT 1
     </select>
 
     <select id="selectByEmail" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE email = #{email} LIMIT 1
+    </select>
+
+    <select id="selectIsSellerById" resultType="java.lang.Integer">
+        SELECT is_seller FROM users WHERE id = #{userId}
     </select>
 
     <update id="updateStatus">
@@ -49,7 +54,7 @@
             <if test="bio != null">bio = #{bio},</if>
             update_time = #{updateTime}
         </set>
-        WHERE id = #{userId}
+        WHERE id = #{id}
     </update>
     <update id="updatePassword">
         UPDATE users

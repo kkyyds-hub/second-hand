@@ -20,6 +20,15 @@
             update_time AS updateTime
         </trim>
     </sql>
+    <!-- 商品状态口径冻结：统一从枚举取 dbValue，避免硬编码漂移 -->
+    <sql id="bindProductStatus">
+        <bind name="PS_UNDER_REVIEW" value="@com.demo.enumeration.ProductStatus@UNDER_REVIEW.getDbValue()"/>
+        <bind name="PS_ON_SALE" value="@com.demo.enumeration.ProductStatus@ON_SHELF.getDbValue()"/>
+        <bind name="PS_OFF_SHELF" value="@com.demo.enumeration.ProductStatus@OFF_SHELF.getDbValue()"/>
+        <bind name="PS_SOLD" value="@com.demo.enumeration.ProductStatus@SOLD.getDbValue()"/>
+    </sql>
+
+
     <insert id="insertProduct" parameterType="com.demo.entity.Product"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO products (
@@ -144,8 +153,8 @@
    <select id="getMarketProductList" resultType="com.demo.entity.Product">
     SELECT <include refid="productColumns"/>
     FROM products p
-    WHERE p.status = 'on_sale'
-      AND p.is_deleted = 0
+       WHERE p.status = #{PS_ON_SALE}
+       AND p.is_deleted = 0
     <if test="keyword != null and keyword != ''">
         AND MATCH(p.title, p.description) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
     </if>
@@ -169,8 +178,22 @@
         SELECT <include refid="productColumns"/>
         FROM products p
         WHERE p.id = #{productId}
-        AND p.status = 'on_sale'
+        WHERE p.status = #{PS_ON_SALE}
         AND p.is_deleted = 0
+    </select>
+
+    <select id="countProductsBySellerId" resultType="java.util.HashMap">
+        <include refid="bindProductStatus"/>
+
+        SELECT
+        CAST(COUNT(*) AS SIGNED) AS total,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_UNDER_REVIEW} THEN 1 ELSE 0 END), 0) AS SIGNED) AS under_review,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_ON_SALE} THEN 1 ELSE 0 END), 0) AS SIGNED) AS on_sale,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_OFF_SHELF} THEN 1 ELSE 0 END), 0) AS SIGNED) AS off_shelf,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_SOLD} THEN 1 ELSE 0 END), 0) AS SIGNED) AS sold
+        FROM products
+        WHERE owner_id = #{sellerId}
+        AND is_deleted = 0
     </select>
 
 

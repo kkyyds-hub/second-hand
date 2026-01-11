@@ -17,6 +17,7 @@ public class User {
     private String avatar;
     private Integer creditScore = 100;  // 初始信用分100
     private String status = "active";
+    private Integer isSeller;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")// active-正常, banned-封禁
     private LocalDateTime createTime;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
