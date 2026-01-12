@@ -1,5 +1,6 @@
 package com.demo.mapper;
 
+import com.demo.dto.seller.SellerProductCountDTO;
 import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
@@ -45,5 +46,5 @@ public interface ProductMapper {
                                            @Param("status") String status,
                                            @Param("reason") String reason);
 
-    Map<String, Long> countProductsBySellerId(@Param("sellerId") Long sellerId);
+    SellerProductCountDTO countProductsBySellerId(@Param("sellerId") Long sellerId);
 }

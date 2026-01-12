@@ -1,6 +1,7 @@
 package com.demo.mapper;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.seller.SellerOrderCountDTO;
 import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.vo.order.BuyerOrderSummary;
@@ -8,10 +9,8 @@ import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface OrderMapper {
@@ -54,7 +53,7 @@ public interface OrderMapper {
     int closeTimeoutOrder(@Param("orderId") Long orderId,
                           @Param("deadline") LocalDateTime deadline);
 
-    Map<String, Long> countOrdersBySellerId(@Param("sellerId") Long sellerId);
+    SellerOrderCountDTO countOrdersBySellerId(@Param("sellerId") Long sellerId);
 
 
 }

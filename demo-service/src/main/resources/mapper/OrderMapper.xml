@@ -268,19 +268,19 @@
         AND create_time <![CDATA[ <= ]]> #{deadline}
     </update>
 
-    <select id="countOrdersBySellerId" resultType="java.util.HashMap">
+    <select id="countOrdersBySellerId" resultType="com.demo.dto.seller.SellerOrderCountDTO">
         <include refid="bindStatus"/>
-
         SELECT
-        CAST(COUNT(*) AS SIGNED) AS total,
-        CAST(COALESCE(SUM(CASE WHEN status = #{OS_PENDING}   THEN 1 ELSE 0 END), 0) AS SIGNED) AS pending,
-        CAST(COALESCE(SUM(CASE WHEN status = #{OS_PAID}      THEN 1 ELSE 0 END), 0) AS SIGNED) AS paid,
-        CAST(COALESCE(SUM(CASE WHEN status = #{OS_SHIPPED}   THEN 1 ELSE 0 END), 0) AS SIGNED) AS shipped,
-        CAST(COALESCE(SUM(CASE WHEN status = #{OS_COMPLETED} THEN 1 ELSE 0 END), 0) AS SIGNED) AS completed,
-        CAST(COALESCE(SUM(CASE WHEN status = #{OS_CANCELLED} THEN 1 ELSE 0 END), 0) AS SIGNED) AS cancelled
+        CAST(COUNT(*) AS SIGNED) AS totalOrders,
+        CAST(COALESCE(SUM(CASE WHEN status = #{OS_PENDING}   THEN 1 ELSE 0 END), 0) AS SIGNED) AS pendingOrders,
+        CAST(COALESCE(SUM(CASE WHEN status = #{OS_PAID}      THEN 1 ELSE 0 END), 0) AS SIGNED) AS paidOrders,
+        CAST(COALESCE(SUM(CASE WHEN status = #{OS_SHIPPED}   THEN 1 ELSE 0 END), 0) AS SIGNED) AS shippedOrders,
+        CAST(COALESCE(SUM(CASE WHEN status = #{OS_COMPLETED} THEN 1 ELSE 0 END), 0) AS SIGNED) AS completedOrders,
+        CAST(COALESCE(SUM(CASE WHEN status = #{OS_CANCELLED} THEN 1 ELSE 0 END), 0) AS SIGNED) AS cancelledOrders
         FROM orders
         WHERE seller_id = #{sellerId}
     </select>
+
 
 
 </mapper>

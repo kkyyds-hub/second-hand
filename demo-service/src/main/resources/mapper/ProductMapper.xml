@@ -182,19 +182,19 @@
         AND p.is_deleted = 0
     </select>
 
-    <select id="countProductsBySellerId" resultType="java.util.HashMap">
+    <select id="countProductsBySellerId" resultType="com.demo.dto.seller.SellerProductCountDTO">
         <include refid="bindProductStatus"/>
 
         SELECT
-        CAST(COUNT(*) AS SIGNED) AS total,
-        CAST(COALESCE(SUM(CASE WHEN status = #{PS_UNDER_REVIEW} THEN 1 ELSE 0 END), 0) AS SIGNED) AS under_review,
-        CAST(COALESCE(SUM(CASE WHEN status = #{PS_ON_SALE} THEN 1 ELSE 0 END), 0) AS SIGNED) AS on_sale,
-        CAST(COALESCE(SUM(CASE WHEN status = #{PS_OFF_SHELF} THEN 1 ELSE 0 END), 0) AS SIGNED) AS off_shelf,
-        CAST(COALESCE(SUM(CASE WHEN status = #{PS_SOLD} THEN 1 ELSE 0 END), 0) AS SIGNED) AS sold
+        CAST(COUNT(*) AS SIGNED) AS totalProducts,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_UNDER_REVIEW} THEN 1 ELSE 0 END), 0) AS SIGNED) AS underReviewProducts,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_ON_SALE}      THEN 1 ELSE 0 END), 0) AS SIGNED) AS onSaleProducts,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_OFF_SHELF}    THEN 1 ELSE 0 END), 0) AS SIGNED) AS offShelfProducts,
+        CAST(COALESCE(SUM(CASE WHEN status = #{PS_SOLD}         THEN 1 ELSE 0 END), 0) AS SIGNED) AS soldProducts
         FROM products
         WHERE owner_id = #{sellerId}
-        AND is_deleted = 0
     </select>
+
 
 
 </mapper>
