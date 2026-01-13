@@ -1,15 +1,18 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.constant.CreditPolicyConstants;
 import com.demo.context.BaseContext;
 import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
+import com.demo.enumeration.CreditLevel;
 import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ProductViolationMapper;
 import com.demo.result.PageResult;
+import com.demo.service.CreditService;
 import com.demo.service.ProductService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -33,6 +36,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductViolationMapper productViolationMapper;
+
+    @Autowired
+    private CreditService creditService;
+
     /**
      * 审核列表：分页查询待审核 / 已审核商品
      */
@@ -279,6 +286,23 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(ProductStatus.UNDER_REVIEW.getDbValue());
         product.setViewCount(0);
         product.setReason(null);
+        // ===== Day10：发布信用策略（P0）=====
+        UserCreditDTO credit = creditService.getCredit(currentUserId);
+        CreditLevel level = CreditLevel.fromDbValue(credit.getCreditLevel());
+
+        // LV1：禁止发布
+        if (level == CreditLevel.LV1) {
+            throw new BusinessException("信用等级过低（LV1），暂不可发布商品");
+        }
+
+        // LV2：限制活跃商品数
+        if (level == CreditLevel.LV2) {
+            long activeCount = productMapper.countActiveProductsByOwnerId(currentUserId);
+            if (activeCount >= CreditPolicyConstants.MAX_ACTIVE_PRODUCTS_LV2) {
+                throw new BusinessException("信用等级为 LV2，活跃商品数量已达上限：" + CreditPolicyConstants.MAX_ACTIVE_PRODUCTS_LV2);
+            }
+        }
+
         // 4) 落库（useGeneratedKeys 会把 product.id 回填）
         productMapper.insertProduct(product);
         Product dbProduct = productMapper.getProductById(product.getId());

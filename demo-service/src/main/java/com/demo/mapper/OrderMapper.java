@@ -55,5 +55,7 @@ public interface OrderMapper {
 
     SellerOrderCountDTO countOrdersBySellerId(@Param("sellerId") Long sellerId);
 
+    Order selectOrderBasicById(@Param("orderId") Long orderId);
+
 
 }

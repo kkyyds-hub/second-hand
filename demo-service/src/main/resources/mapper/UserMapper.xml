@@ -74,6 +74,17 @@
             update_time = #{updateTime}
         WHERE id = #{userId}
     </update>
+
+    <update id="updateCredit">
+        UPDATE users
+        SET credit_score = #{creditScore},
+            credit_level = #{creditLevel},
+            credit_updated_at = #{creditUpdatedAt},
+            update_time = #{creditUpdatedAt}
+        WHERE id = #{userId}
+    </update>
+
+
     <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (username, nickname, password, mobile, email, avatar, bio, credit_score, status, create_time, update_time)
         VALUES (#{username}, #{nickname}, #{password}, #{mobile}, #{email}, #{avatar}, #{bio}, #{creditScore}, #{status}, #{createTime}, #{updateTime})

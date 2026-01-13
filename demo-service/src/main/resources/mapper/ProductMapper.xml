@@ -154,6 +154,7 @@
     SELECT <include refid="productColumns"/>
     FROM products p
        WHERE p.status = #{PS_ON_SALE}
+       <include refid="bindProductStatus"/>
        AND p.is_deleted = 0
     <if test="keyword != null and keyword != ''">
         AND MATCH(p.title, p.description) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
@@ -175,12 +176,15 @@
 
 
     <select id="getMarketProductById" resultType="com.demo.entity.Product">
+        <include refid="bindProductStatus"/>
         SELECT <include refid="productColumns"/>
         FROM products p
         WHERE p.id = #{productId}
-        WHERE p.status = #{PS_ON_SALE}
+        AND p.status = #{PS_ON_SALE}
         AND p.is_deleted = 0
+        LIMIT 1
     </select>
+
 
     <select id="countProductsBySellerId" resultType="com.demo.dto.seller.SellerProductCountDTO">
         <include refid="bindProductStatus"/>
@@ -193,6 +197,15 @@
         CAST(COALESCE(SUM(CASE WHEN status = #{PS_SOLD}         THEN 1 ELSE 0 END), 0) AS SIGNED) AS soldProducts
         FROM products
         WHERE owner_id = #{sellerId}
+    </select>
+
+    <select id="countActiveProductsByOwnerId" resultType="java.lang.Long">
+        <include refid="bindProductStatus"/>
+        SELECT CAST(COUNT(*) AS SIGNED)
+        FROM products
+        WHERE owner_id = #{ownerId}
+        AND is_deleted = 0
+        AND status IN (#{PS_UNDER_REVIEW}, #{PS_ON_SALE})
     </select>
 
 

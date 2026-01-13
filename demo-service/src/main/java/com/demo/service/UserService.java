@@ -27,5 +27,4 @@ public interface UserService {
     void unbindEmail(@Valid UnbindContactRequest request);
 
     void requireSeller(Long userId);
-
 }

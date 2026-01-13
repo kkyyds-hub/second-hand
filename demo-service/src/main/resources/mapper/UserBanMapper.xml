@@ -15,4 +15,12 @@
             (#{userId}, #{banType}, #{reason}, #{source}, #{startTime}, #{endTime}, #{createdBy}, #{createTime})
     </insert>
 
+    <update id="closeActiveBans">
+        UPDATE user_bans
+        SET end_time = #{now}
+        WHERE user_id = #{userId}
+          AND (end_time IS NULL OR end_time > #{now})
+    </update>
+
+
 </mapper>

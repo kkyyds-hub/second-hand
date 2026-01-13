@@ -43,4 +43,11 @@ public interface UserMapper {
     void updateMobile(@Param("userId") Long userId,
                       @Param("mobile") String mobile,
                       @Param("updateTime") LocalDateTime updateTime);
+
+    int updateCredit(@Param("userId") Long userId,
+                     @Param("creditScore") Integer creditScore,
+                     @Param("creditLevel") String creditLevel,
+                     @Param("creditUpdatedAt") LocalDateTime creditUpdatedAt);
+
+
 }

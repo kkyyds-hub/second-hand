@@ -16,6 +16,8 @@ public class User {
     private String email;
     private String avatar;
     private Integer creditScore = 100;  // 初始信用分100
+    private String creditLevel = "lv3";  // 默认信用等级 lv3（对应 DEFAULT_SCORE=100）
+    private LocalDateTime creditUpdatedAt;  // 信用分更新时间
     private String status = "active";
     private Integer isSeller;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")// active-正常, banned-封禁

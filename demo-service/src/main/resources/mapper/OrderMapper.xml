@@ -280,6 +280,17 @@
         FROM orders
         WHERE seller_id = #{sellerId}
     </select>
+    
+    <select id="selectOrderBasicById" resultType="com.demo.entity.Order">
+        SELECT
+            id,
+            buyer_id  AS buyerId,
+            seller_id AS sellerId,
+            status
+        FROM orders
+        WHERE id = #{orderId}
+        LIMIT 1
+    </select>
 
 
 

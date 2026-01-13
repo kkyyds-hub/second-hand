@@ -47,4 +47,7 @@ public interface ProductMapper {
                                            @Param("reason") String reason);
 
     SellerProductCountDTO countProductsBySellerId(@Param("sellerId") Long sellerId);
+
+    Long countActiveProductsByOwnerId(@Param("ownerId") Long ownerId);
+
 }

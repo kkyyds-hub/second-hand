@@ -12,20 +12,23 @@
 
 
     <select id="SelectById" resultType="com.demo.entity.User">
-        SELECT * FROM users WHERE id = #{userid}
+        SELECT * FROM users WHERE id = #{userId}
     </select>
 
+
     <!-- 获取违规类型统计数据 -->
-    <select id="getViolationStatistics" resultType="map">
-        SELECT
+    <select id="getViolationStatistics" resultType="java.util.HashMap">
+
+    SELECT
         violation_type AS violationType,          <!-- 违规类型 -->
         description AS violationTypeDesc, <!-- 违规类型描述 -->
         COUNT(*) AS count                          <!-- 统计每个违规类型的数量 -->
         FROM user_violations
         GROUP BY violation_type, description
     </select>
-    <select id="getUserViolations" resultType="java.util.Map" parameterType="java.lang.Long">
-        SELECT
+    <select id="getUserViolations" resultType="java.util.HashMap" parameterType="java.lang.Long">
+
+    SELECT
         uv.id,
         uv.user_id AS userId,
         u.username,                        <!-- 从 user 表中获取 username -->

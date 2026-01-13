@@ -1,12 +1,20 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.constant.CreditConstants;
 import com.demo.constant.MessageConstant;
+import com.demo.context.BaseContext;
 import com.demo.dto.Violation.ViolationRecordDTO;
 import com.demo.dto.Violation.ViolationReportRequest;
 import com.demo.dto.Violation.ViolationStatisticsResponseDTO;
 import com.demo.entity.User;
+import com.demo.entity.UserBan;
 import com.demo.entity.UserViolation;
+import com.demo.enumeration.CreditReasonType;
+import com.demo.exception.BusinessException;
+import com.demo.mapper.UserBanMapper;
+import com.demo.mapper.UserMapper;
 import com.demo.mapper.ViolationMapper;
+import com.demo.service.CreditService;
 import com.demo.service.ViolationService;
 import com.github.pagehelper.PageHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -32,18 +40,31 @@ public class ViolationServiceImpl implements ViolationService {
     @Autowired
     private ViolationMapper violationMapper;
 
+    @Autowired
+    private CreditService creditService;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private UserBanMapper userBanMapper;
+
     @Override
     public void unbanUser(Long userId) {
-        User user = violationMapper.SelectById(userId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
-        if ("active".equals(user.getStatus())) {
-            throw new RuntimeException(MessageConstant.ALREADY_EXISTS);
-        }
-        user.setStatus("active");
-        user.setUpdateTime(LocalDateTime.now());
-        violationMapper.update(user);
+        User user = userMapper.selectById(userId);
+        if (user == null) throw new BusinessException("用户不存在");
+        if (!"banned".equalsIgnoreCase(user.getStatus())) throw new BusinessException("用户未处于封禁状态");
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1) 关闭有效封禁记录
+        userBanMapper.closeActiveBans(userId, now);
+
+        // 2) 恢复状态
+        userMapper.updateStatus(userId, "active", now);
+
+        // 3) 重算（会把 BAN_ACTIVE 影响移除）
+        creditService.recalcUserCredit(userId, CreditReasonType.RECALC, null);
     }
 
     @Override
@@ -62,19 +83,29 @@ public class ViolationServiceImpl implements ViolationService {
 
     @Override
     public void banUser(Long userId, String reason) {
-        User user = violationMapper.SelectById(userId);
-        if (user == null) {
-            throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
-        }
-        if ("banned".equals(user.getStatus())) {
-            throw new RuntimeException(MessageConstant.ALREADY_EXISTS);
-        }
+        User user = userMapper.selectById(userId);
+        if (user == null) throw new BusinessException("用户不存在");
+        if ("banned".equalsIgnoreCase(user.getStatus())) throw new BusinessException("用户已处于封禁状态");
 
-        user.setStatus("banned");
-        user.setUpdateTime(LocalDateTime.now());
-        violationMapper.update(user);
+        LocalDateTime now = LocalDateTime.now();
 
-        log.info("用户封禁成功: userId={}, reason={}", userId, reason);
+        // 1) 写入封禁记录（信用统计看的是 user_bans）
+        UserBan ban = new UserBan();
+        ban.setUserId(userId);
+        ban.setBanType("PERM");
+        ban.setReason(reason);
+        ban.setSource("ADMIN");
+        ban.setStartTime(now);
+        ban.setEndTime(null);
+        ban.setCreatedBy(BaseContext.getCurrentId());
+        ban.setCreateTime(now);
+        userBanMapper.insertUserBan(ban);
+
+        // 2) 更新用户状态
+        userMapper.updateStatus(userId, "banned", now);
+
+        // 3) 触发信用重算并落日志（BAN_ACTIVE）
+        creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());
     }
 
     @Override
@@ -92,12 +123,25 @@ public class ViolationServiceImpl implements ViolationService {
         }
 
         violation.setPunish(request.getPunishmentResult());
-        violation.setCreateTime(LocalDateTime.now());
 
+        // Step3：关键点1：写入违规扣分（必须写到 user_violations.credit，否则 Step2 统计不到）
+        // 这里用 Day10 的默认扣分常量 -10（你也可以后续扩展：不同违规类型不同分值）
+        violation.setCredit(CreditConstants.DELTA_USER_VIOLATION);
+
+        // Step3：关键点2：record_time/create_time 都补齐（避免 DB/DTO 显示混乱）
+        LocalDateTime now = LocalDateTime.now();
+        violation.setRecordTime(now);
+        violation.setCreateTime(now);
+
+        // 插入（useGeneratedKeys 会回填 violation.id）
         violationMapper.insert(violation);
 
-        log.info("违规记录已上报: userId={}, type={}", request.getUserId(), request.getViolationType());
+        // Step3：关键点3：插入成功后立刻触发重算
+        creditService.recalcUserCredit(request.getUserId(), CreditReasonType.USER_VIOLATION, violation.getId());
+
+        log.info("违规记录已上报: userId={}, type={}, violationId={}", request.getUserId(), request.getViolationType(), violation.getId());
     }
+
 
     @Override
     public ViolationStatisticsResponseDTO getViolationStatistics() {

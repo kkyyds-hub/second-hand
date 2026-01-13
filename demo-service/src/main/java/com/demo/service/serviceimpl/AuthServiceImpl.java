@@ -5,12 +5,14 @@ import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.entity.User;
 import com.demo.entity.UserBan;
+import com.demo.enumeration.CreditReasonType;
 import com.demo.enumeration.UserStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.properties.JwtProperties;
 import com.demo.service.AuthService;
+import com.demo.service.CreditService;
 import com.demo.utils.JwtUtil;
 import com.demo.vo.UserVO;
 import lombok.Setter;
@@ -47,6 +49,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private CreditService creditService;
+
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
@@ -257,6 +263,9 @@ public class AuthServiceImpl implements AuthService {
         ban.setCreateTime(now);
 
         userBanMapper.insertUserBan(ban);
+        // 封禁记录插入后，active_bans 统计会变化，立即重算
+        creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());
+
     }
 
 

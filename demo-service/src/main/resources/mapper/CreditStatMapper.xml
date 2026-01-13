@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.CreditStatMapper">
+
+    <sql id="bindStatus">
+        <bind name="OS_COMPLETED" value="@com.demo.enumeration.OrderStatus@COMPLETED.getDbValue()"/>
+        <bind name="OS_CANCELLED" value="@com.demo.enumeration.OrderStatus@CANCELLED.getDbValue()"/>
+    </sql>
+    <sql id="bindReasonType">
+        <bind name="RT_ADMIN_ADJUST" value="@com.demo.enumeration.CreditReasonType@ADMIN_ADJUST.getDbValue()"/>
+    </sql>
+
+    <select id="sumAdminAdjustDelta" resultType="java.lang.Integer">
+        <include refid="bindReasonType"/>
+        SELECT CAST(COALESCE(SUM(delta), 0) AS SIGNED)
+        FROM user_credit_logs
+        WHERE user_id = #{userId}
+        AND reason_type = #{RT_ADMIN_ADJUST}
+    </select>
+
+    <select id="countCompletedAsBuyer" resultType="java.lang.Long">
+        <include refid="bindStatus"/>
+        SELECT CAST(COUNT(*) AS SIGNED)
+        FROM orders
+        WHERE buyer_id = #{userId}
+        AND status = #{OS_COMPLETED}
+    </select>
+
+    <select id="countCompletedAsSeller" resultType="java.lang.Long">
+        <include refid="bindStatus"/>
+        SELECT CAST(COUNT(*) AS SIGNED)
+        FROM orders
+        WHERE seller_id = #{userId}
+        AND status = #{OS_COMPLETED}
+    </select>
+
+    <select id="countCancelledAsBuyer" resultType="java.lang.Long">
+        <include refid="bindStatus"/>
+        SELECT CAST(COUNT(*) AS SIGNED)
+        FROM orders
+        WHERE buyer_id = #{userId}
+        AND status = #{OS_CANCELLED}
+    </select>
+
+    <select id="sumViolationCreditDelta" resultType="java.lang.Integer">
+        SELECT CAST(COALESCE(SUM(uv.credit), 0) AS SIGNED)
+        FROM user_violations uv
+        WHERE uv.user_id = #{userId}
+    </select>
+
+    <select id="countActiveBans" resultType="java.lang.Integer">
+        SELECT CAST(COUNT(*) AS SIGNED)
+        FROM user_bans
+        WHERE user_id = #{userId}
+          AND start_time <![CDATA[ <= ]]> #{now}
+          AND (end_time IS NULL OR end_time <![CDATA[ > ]]> #{now})
+    </select>
+
+</mapper>

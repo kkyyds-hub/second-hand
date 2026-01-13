@@ -8,12 +8,14 @@ import com.demo.dto.user.ShipOrderRequest;
 import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
+import com.demo.enumeration.CreditReasonType;
 import com.demo.enumeration.OrderStatus;
 import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
+import com.demo.service.CreditService;
 import com.demo.service.OrderService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
@@ -36,6 +38,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductMapper productMapper;
+
+    @Autowired
+    private CreditService creditService;
 
     @Override
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
@@ -141,6 +146,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String confirmOrder(Long orderId, Long currentUserId) {
         // 1. 查询订单详情（买家/卖家都能查到）
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
@@ -178,7 +184,10 @@ public class OrderServiceImpl implements OrderService {
 
         int rows = orderMapper.updateForConfirm(orderToUpdate);
         if (rows == 1) {
-            return "确认收货成功"; // 稍后改为返回提示信息
+            // Step3：订单完成会影响买家/卖家的 completed 统计，因此两边都重算
+            creditService.recalcUserCredit(detail.getBuyerId(), CreditReasonType.ORDER_COMPLETED, orderId);
+            creditService.recalcUserCredit(detail.getSellerId(), CreditReasonType.ORDER_COMPLETED, orderId);
+            return "确认收货成功";
         }
 
         // rows==0：重新查询获取最新状态（可能被其他线程修改）
@@ -321,10 +330,13 @@ public class OrderServiceImpl implements OrderService {
         // 1) 先尝试“条件更新”：pending -> cancelled
         int rows = orderMapper.updateForCancel(orderId, currentUserId, reason);
         if (rows == 1) {
-            // 2) 取消成功后释放商品：sold -> on_sale（你现在 sold 充当“锁定”）
             orderMapper.releaseProductsForOrder(orderId);
+            // Step3：订单取消会影响买家 cancelled 统计，因此重算买家
+            creditService.recalcUserCredit(currentUserId, CreditReasonType.ORDER_CANCELLED, orderId);
+
             return "取消成功";
         }
+
 
         // 3) rows==0：判断幂等 or 不允许取消
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
