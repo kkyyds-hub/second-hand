@@ -22,15 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Transactional
@@ -69,6 +66,7 @@ public class ViolationServiceImpl implements ViolationService {
 
     @Override
     public void reviewBan(Long userId, boolean isApproved, String reason) {
+        // 保持你现有写法：如果你已把 SelectById 放在 ViolationMapper 里就能用
         User user = violationMapper.SelectById(userId);
         if (user == null) {
             throw new RuntimeException(MessageConstant.ID_NOT_FOUND);
@@ -124,46 +122,59 @@ public class ViolationServiceImpl implements ViolationService {
 
         violation.setPunish(request.getPunishmentResult());
 
-        // Step3：关键点1：写入违规扣分（必须写到 user_violations.credit，否则 Step2 统计不到）
-        // 这里用 Day10 的默认扣分常量 -10（你也可以后续扩展：不同违规类型不同分值）
+        // 写入违规扣分（必须写到 user_violations.credit，否则 Step2 统计不到）
         violation.setCredit(CreditConstants.DELTA_USER_VIOLATION);
 
-        // Step3：关键点2：record_time/create_time 都补齐（避免 DB/DTO 显示混乱）
+        // record_time/create_time 补齐
         LocalDateTime now = LocalDateTime.now();
         violation.setRecordTime(now);
         violation.setCreateTime(now);
 
-        // 插入（useGeneratedKeys 会回填 violation.id）
+        // 插入
         violationMapper.insert(violation);
 
-        // Step3：关键点3：插入成功后立刻触发重算
+        // 插入成功后立刻触发重算
         creditService.recalcUserCredit(request.getUserId(), CreditReasonType.USER_VIOLATION, violation.getId());
 
         log.info("违规记录已上报: userId={}, type={}, violationId={}", request.getUserId(), request.getViolationType(), violation.getId());
     }
 
-
+    /**
+     * 注意：这里兼容 Mapper 返回：
+     * - List<Map<String,Object>>
+     * - List<ViolationsStatisticsDTO>（或任何 DTO）
+     */
     @Override
     public ViolationStatisticsResponseDTO getViolationStatistics() {
-        List<Map<String, Object>> statisticsList = violationMapper.getViolationStatistics();
 
-        long totalViolations = statisticsList.stream()
-                .mapToLong(stat -> asLong(stat.get("count"), 0L))
-                .sum();
+        // 用 List<?> 承接，兼容 Map / DTO 两种形态
+        List<?> statisticsList = violationMapper.getViolationStatistics();
+
+        long totalViolations = 0L;
+        if (statisticsList != null) {
+            for (Object stat : statisticsList) {
+                Object cntObj = getAnyObj(stat, "count", "cnt", "total", "num");
+                totalViolations += asLong(cntObj, 0L);
+            }
+        }
 
         List<ViolationStatisticsResponseDTO.ViolationTypeDistribution> distributionList = new ArrayList<>();
-        for (Map<String, Object> stat : statisticsList) {
-            long count = asLong(stat.get("count"), 0L);
-            double percentage = totalViolations == 0 ? 0.0 : ((double) count / (double) totalViolations) * 100.0;
 
-            ViolationStatisticsResponseDTO.ViolationTypeDistribution d =
-                    new ViolationStatisticsResponseDTO.ViolationTypeDistribution();
-            d.setViolationType(asString(stat.get("violationType")));
-            d.setViolationTypeDesc(asString(stat.get("violationTypeDesc")));
-            d.setCount(count);
-            d.setPercentage(percentage);
+        if (statisticsList != null) {
+            for (Object stat : statisticsList) {
+                long count = asLong(getAnyObj(stat, "count", "cnt", "total", "num"), 0L);
+                double percentage = totalViolations == 0 ? 0.0 : ((double) count / (double) totalViolations) * 100.0;
 
-            distributionList.add(d);
+                ViolationStatisticsResponseDTO.ViolationTypeDistribution d =
+                        new ViolationStatisticsResponseDTO.ViolationTypeDistribution();
+
+                d.setViolationType(asString(getAnyObj(stat, "violationType", "violation_type", "type")));
+                d.setViolationTypeDesc(asString(getAnyObj(stat, "violationTypeDesc", "violation_type_desc", "typeDesc", "desc")));
+                d.setCount(count);
+                d.setPercentage(percentage);
+
+                distributionList.add(d);
+            }
         }
 
         ViolationStatisticsResponseDTO response = new ViolationStatisticsResponseDTO();
@@ -171,75 +182,54 @@ public class ViolationServiceImpl implements ViolationService {
         return response;
     }
 
+    /**
+     * 注意：这里兼容 Mapper 返回：
+     * - List<Map<String,Object>>
+     * - List<UserViolationDTO>（或任何 DTO）
+     */
     @Override
     public ViolationRecordDTO getUserViolations(Long userId, int page, int size) {
         PageHelper.startPage(page, size);
-        List<Map<String, Object>> violationRecords = violationMapper.getUserViolations(userId);
 
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // 用 List<?> 承接，兼容 Map / DTO 两种形态
+        List<?> violationRecords = violationMapper.getUserViolations(userId);
+
         List<ViolationRecordDTO.ViolationRecord> recordList = new ArrayList<>();
 
-        for (Map<String, Object> record : violationRecords) {
-            Object rtObj = record.get("recordTime");
-            LocalDateTime recordTime = null;
+        if (violationRecords != null) {
+            for (Object record : violationRecords) {
 
-            if (rtObj != null) {
-                if (rtObj instanceof LocalDateTime) {
-                    recordTime = (LocalDateTime) rtObj;
-                } else if (rtObj instanceof Timestamp) {
-                    recordTime = ((Timestamp) rtObj).toLocalDateTime();
-                } else if (rtObj instanceof String) {
-                    String s = ((String) rtObj).trim();
-                    if (!s.isEmpty()) {
-                        // 兼容 "yyyy-MM-dd HH:mm:ss" 与 "yyyy-MM-ddTHH:mm:ss"
-                        if (s.contains(" ") && !s.contains("T")) {
-                            s = s.replace(" ", "T");
-                        }
-                        recordTime = LocalDateTime.parse(s);
-                    }
-                } else {
-                    // 兜底：转字符串再尝试 parse（不保证一定成功）
-                    String s = String.valueOf(rtObj).trim();
-                    if (!s.isEmpty()) {
-                        if (s.contains(" ") && !s.contains("T")) {
-                            s = s.replace(" ", "T");
-                        }
-                        try {
-                            recordTime = LocalDateTime.parse(s);
-                        } catch (Exception ignore) {
-                            // 保持 null，不要再抛异常影响接口返回
-                        }
-                    }
-                }
+                // recordTime：兼容 LocalDateTime/Timestamp/String
+                LocalDateTime recordTime = toLocalDateTime(getAnyObj(record, "recordTime", "record_time"));
+
+                // orderId：不确定字段名/类型，统一 String.valueOf
+                Object orderIdObj = getAnyObj(record, "orderId", "order_id", "refId", "ref_id");
+                String orderId = (orderIdObj == null) ? null : String.valueOf(orderIdObj);
+
+                ViolationRecordDTO.ViolationRecord violationRecord = ViolationRecordDTO.ViolationRecord.builder()
+                        .id(asLong(getAnyObj(record, "id"), null))
+                        .userId(asLong(getAnyObj(record, "userId", "user_id"), null))
+                        .username(asString(getAnyObj(record, "username")))
+                        .violationType(asString(getAnyObj(record, "violationType", "violation_type")))
+                        .violationTypeDesc(asString(getAnyObj(record, "violationTypeDesc", "violation_type_desc")))
+                        .orderId(orderId)
+                        .description(asString(getAnyObj(record, "description")))
+                        // evidenceUrls 兼容：List<String> / "a,b,c" / null
+                        .evidenceUrls(asStringList(getAnyObj(record, "evidenceUrls", "evidence", "evidence_urls")))
+                        .punishmentResult(asString(getAnyObj(record, "punishmentResult", "punish")))
+                        .recordTime(recordTime)
+                        // creditScoreChange 兼容：creditScoreChange / credit
+                        .creditScoreChange(asInteger(getAnyObj(record, "creditScoreChange", "credit")))
+                        .build();
+
+                recordList.add(violationRecord);
             }
-
-            // 2) orderId：不要强转 String，统一 String.valueOf 更稳
-            Object orderIdObj = record.get("orderId");
-            String orderId = (orderIdObj == null) ? null : String.valueOf(orderIdObj);
-
-            // 3) 构建对象
-            ViolationRecordDTO.ViolationRecord violationRecord = ViolationRecordDTO.ViolationRecord.builder()
-                    .id((Long) record.get("id"))
-                    .userId((Long) record.get("userId"))
-                    .username((String) record.get("username"))
-                    .violationType((String) record.get("violationType"))
-                    .violationTypeDesc((String) record.get("violationTypeDesc"))
-                    .orderId(orderId)
-                    .description((String) record.get("description"))
-                    .evidenceUrls((List<String>) record.get("evidenceUrls"))
-                    .punishmentResult((String) record.get("punishmentResult"))
-                    .recordTime(recordTime)
-                    .creditScoreChange((Integer) record.get("creditScoreChange"))
-                    .build();
-
-            recordList.add(violationRecord);
         }
 
         ViolationRecordDTO dto = new ViolationRecordDTO();
         dto.setList(recordList);
         return dto;
     }
-
 
     private void softDeleteUser(User user) {
         user.setStatus("deleted");
@@ -248,16 +238,103 @@ public class ViolationServiceImpl implements ViolationService {
         log.info("用户已软删除: userId={}", user.getId());
     }
 
-    // -------------------- 安全转换工具：避免 ClassCastException --------------------
+    // =========================================================
+    // 兼容 Map/DTO 的“统一取值”工具：解决你这次的类型不兼容根因
+    // =========================================================
 
-    private static Object getAny(Map<String, Object> map, String... keys) {
-        if (map == null || keys == null) return null;
+    /**
+     * 从一个对象中按 key 顺序取值：
+     * - 如果 obj 是 Map：直接 map.get(key)
+     * - 如果 obj 是 DTO：优先 getter(getXxx/isXxx)，其次字段反射
+     */
+    private static Object getAnyObj(Object obj, String... keys) {
+        if (obj == null || keys == null) return null;
+
+        // Map 直接取
+        if (obj instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) obj;
+            for (String k : keys) {
+                if (k == null) continue;
+                if (map.containsKey(k)) return map.get(k);
+            }
+            return null;
+        }
+
+        // DTO / POJO 反射取
         for (String k : keys) {
             if (k == null) continue;
-            if (map.containsKey(k)) return map.get(k);
+
+            Object v = getProp(obj, k);
+            if (v != null) return v;
+
+            // 兼容 snake_case -> camelCase
+            if (k.contains("_")) {
+                String camel = snakeToCamel(k);
+                v = getProp(obj, camel);
+                if (v != null) return v;
+            }
+        }
+
+        return null;
+    }
+
+    private static Object getProp(Object bean, String name) {
+        if (bean == null || name == null || name.isEmpty()) return null;
+
+        Class<?> c = bean.getClass();
+        String cap = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+
+        // 1) getter: getXxx()
+        try {
+            Method m = c.getMethod("get" + cap);
+            return m.invoke(bean);
+        } catch (Exception ignore) {}
+
+        // 2) boolean getter: isXxx()
+        try {
+            Method m = c.getMethod("is" + cap);
+            return m.invoke(bean);
+        } catch (Exception ignore) {}
+
+        // 3) 字段：name
+        try {
+            Field f = findField(c, name);
+            if (f != null) {
+                f.setAccessible(true);
+                return f.get(bean);
+            }
+        } catch (Exception ignore) {}
+
+        return null;
+    }
+
+    private static Field findField(Class<?> c, String name) {
+        Class<?> cur = c;
+        while (cur != null && cur != Object.class) {
+            try {
+                return cur.getDeclaredField(name);
+            } catch (NoSuchFieldException ignore) {}
+            cur = cur.getSuperclass();
         }
         return null;
     }
+
+    private static String snakeToCamel(String s) {
+        if (s == null) return null;
+        StringBuilder sb = new StringBuilder();
+        boolean up = false;
+        for (char ch : s.toCharArray()) {
+            if (ch == '_') {
+                up = true;
+            } else {
+                sb.append(up ? Character.toUpperCase(ch) : ch);
+                up = false;
+            }
+        }
+        return sb.toString();
+    }
+
+    // -------------------- 安全转换工具：避免 ClassCastException --------------------
 
     private static String asString(Object v) {
         if (v == null) return null;
@@ -310,26 +387,52 @@ public class ViolationServiceImpl implements ViolationService {
             return out;
         }
 
-        // DB 里常见是 "a,b,c" 或者 "a, b, c"
+        // DB 常见： "a,b,c"
         if (v instanceof String) {
             String s = ((String) v).trim();
             if (s.isEmpty()) return Collections.emptyList();
-            return Arrays.stream(s.split(","))
-                    .map(String::trim)
-                    .filter(x -> !x.isEmpty())
-                    .toList();
+            String[] arr = s.split(",");
+            List<String> out = new ArrayList<>();
+            for (String x : arr) {
+                String t = x == null ? "" : x.trim();
+                if (!t.isEmpty()) out.add(t);
+            }
+            return out;
         }
 
         return Collections.singletonList(String.valueOf(v));
     }
 
-    private static String formatDateTime(Object v, DateTimeFormatter fmt) {
+    private static LocalDateTime toLocalDateTime(Object v) {
         if (v == null) return null;
-        if (v instanceof LocalDateTime) return ((LocalDateTime) v).format(fmt);
-        if (v instanceof Timestamp) return ((Timestamp) v).toLocalDateTime().format(fmt);
+        if (v instanceof LocalDateTime) return (LocalDateTime) v;
+        if (v instanceof Timestamp) return ((Timestamp) v).toLocalDateTime();
 
-        // 某些驱动直接给 String 或 Date
+        // 某些驱动直接给 String
+        if (v instanceof String) {
+            String s = ((String) v).trim();
+            if (s.isEmpty()) return null;
+            // 兼容 "yyyy-MM-dd HH:mm:ss" -> "yyyy-MM-ddTHH:mm:ss"
+            if (s.contains(" ") && !s.contains("T")) {
+                s = s.replace(" ", "T");
+            }
+            try {
+                return LocalDateTime.parse(s);
+            } catch (Exception ignore) {
+                return null;
+            }
+        }
+
+        // 兜底：转字符串再尝试 parse
         String s = String.valueOf(v).trim();
-        return s.isEmpty() ? null : s;
+        if (s.isEmpty()) return null;
+        if (s.contains(" ") && !s.contains("T")) {
+            s = s.replace(" ", "T");
+        }
+        try {
+            return LocalDateTime.parse(s);
+        } catch (Exception ignore) {
+            return null;
+        }
     }
 }

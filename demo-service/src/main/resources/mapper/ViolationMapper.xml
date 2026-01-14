@@ -17,32 +17,32 @@
 
 
     <!-- 获取违规类型统计数据 -->
-    <select id="getViolationStatistics" resultType="java.util.HashMap">
-
-    SELECT
-        violation_type AS violationType,          <!-- 违规类型 -->
-        description AS violationTypeDesc, <!-- 违规类型描述 -->
-        COUNT(*) AS count                          <!-- 统计每个违规类型的数量 -->
+    <select id="getViolationStatistics" resultType="com.demo.dto.admin.ViolationStatisticsDTO">
+        SELECT
+            violation_type AS violationType,
+            CAST(COUNT(*) AS SIGNED) AS cnt,
+            CAST(COALESCE(SUM(credit), 0) AS SIGNED) AS creditSum
         FROM user_violations
-        GROUP BY violation_type, description
+        GROUP BY violation_type
+        ORDER BY cnt DESC
     </select>
-    <select id="getUserViolations" resultType="java.util.HashMap" parameterType="java.lang.Long">
 
-    SELECT
-        uv.id,
-        uv.user_id AS userId,
-        u.username,                        <!-- 从 user 表中获取 username -->
-        uv.violation_type AS violationType,
-        uv.description,
-        uv.evidence,
-        uv.punish AS punishmentResult,
-        uv.record_time AS recordTime,
-        uv.credit AS creditScoreChange
-        FROM user_violations uv
-        JOIN users u ON uv.user_id = u.id           <!-- 使用 JOIN 连接 user 表和 user_violation 表 -->
-        WHERE uv.user_id = #{userId}
-        ORDER BY uv.record_time DESC
+    <select id="getUserViolations" resultType="com.demo.dto.admin.UserViolationDTO">
+        SELECT
+            id,
+            user_id AS userId,
+            violation_type AS violationType,
+            description,
+            evidence,
+            punish,
+            credit,
+            record_time AS recordTime,
+            create_time AS createTime
+        FROM user_violations
+        WHERE user_id = #{userId}
+        ORDER BY record_time DESC
     </select>
+
 
 
 </mapper>

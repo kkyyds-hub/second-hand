@@ -1,6 +1,8 @@
 package com.demo.mapper;
 
 
+import com.demo.dto.admin.UserViolationDTO;
+import com.demo.dto.admin.ViolationStatisticsDTO;
 import com.demo.entity.User;
 import com.demo.entity.UserViolation;
 import org.apache.ibatis.annotations.*;
@@ -25,7 +27,8 @@ public interface ViolationMapper {
 
     void update(User user);
 
-    List<Map<String, Object>> getViolationStatistics();
+    List<ViolationStatisticsDTO> getViolationStatistics();
 
-    List<Map<String, Object>> getUserViolations(Long userId);
+    List<UserViolationDTO> getUserViolations(@Param("userId") Long userId);
+
 }
