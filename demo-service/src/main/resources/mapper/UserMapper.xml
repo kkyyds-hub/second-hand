@@ -85,8 +85,15 @@
     </update>
 
 
-    <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (username, nickname, password, mobile, email, avatar, bio, credit_score, status, create_time, update_time)
-        VALUES (#{username}, #{nickname}, #{password}, #{mobile}, #{email}, #{avatar}, #{bio}, #{creditScore}, #{status}, #{createTime}, #{updateTime})
+    <insert id="insertUser" parameterType="com.demo.entity.User">
+        INSERT INTO users
+        (username, nickname, password, mobile, email, avatar, bio,
+         credit_score, credit_level, credit_updated_at,
+         status, create_time, update_time)
+        VALUES
+            (#{username}, #{nickname}, #{password}, #{mobile}, #{email}, #{avatar}, #{bio},
+             #{creditScore}, #{creditLevel}, #{creditUpdatedAt},
+             #{status}, #{createTime}, #{updateTime})
     </insert>
+
 </mapper>

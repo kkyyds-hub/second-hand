@@ -77,9 +77,9 @@ public class AdminCreditController {
         log.setCreateTime(LocalDateTime.now());
 
         userCreditLogMapper.insert(log);
-
         // 调整后重算，保证最终分数口径统一（并产生 recalc 流水）
-        creditService.recalcUserCredit(userId, CreditReasonType.ADMIN_ADJUST, log.getId());
+        // 这里必须用 RECALC：避免把 admin_adjust “写两次”并被统计口径重复计入
+        creditService.recalcUserCredit(userId, CreditReasonType.RECALC, log.getId());
         return Result.success(creditService.getCredit(userId));
     }
 }

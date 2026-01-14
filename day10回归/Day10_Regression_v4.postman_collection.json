@@ -1,0 +1,2422 @@
+{
+  "info": {
+    "_postman_id": "8427f253-8f9e-46c4-ade3-e01f26a35016",
+    "name": "Day10 Regression (Credit Strategy & Triggers) v6 - Resettable",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto inject token headers by request URL",
+          "var url = pm.request.url.toString();",
+          "",
+          "// Skip login endpoints",
+          "if (url.includes('/user/auth/login') || url.includes('/admin/employee/login')) {",
+          "  return;",
+          "}",
+          "",
+          "// Admin endpoints -> header: token",
+          "if (url.includes('/admin/')) {",
+          "  var tAdmin = pm.environment.get('token_admin');",
+          "  if (tAdmin) pm.request.headers.upsert({ key: 'token', value: tAdmin });",
+          "  return;",
+          "}",
+          "",
+          "// If request already sets authentication explicitly, do not override",
+          "var existing = pm.request.headers.get('authentication');",
+          "if (existing && existing !== '{{authentication}}') {",
+          "  return;",
+          "}",
+          "",
+          "// User endpoints -> header: authentication",
+          "var isSeller = url.includes('/user/seller')",
+          "  || url.includes('/user/products')",
+          "  || url.includes('/user/orders/sell')",
+          "  || url.includes('/user/orders/') && url.includes('/ship');",
+          "",
+          "var token = isSeller ? pm.environment.get('token_seller') : pm.environment.get('token_buyer');",
+          "if (token) pm.request.headers.upsert({ key: 'authentication', value: token });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\": \"{{buyer_username}}\", \"password\": \"{{buyer_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.environment.set(\"token_buyer\", j.data.token);",
+                  "pm.environment.set(\"buyerId\", j.data.user.id);",
+                  "pm.environment.set('buyer_id', pm.environment.get('buyerId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\": \"{{seller_username}}\", \"password\": \"{{seller_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "",
+                  "pm.environment.set(\"token_seller\", j.data.token);",
+                  "pm.environment.set(\"sellerId\", j.data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employee/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employee",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\": \"{{admin_username}}\", \"password\": \"{{admin_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "",
+                  "pm.environment.set(\"token_admin\", j.data.token);",
+                  "pm.environment.set(\"adminId\", j.data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller LV1 Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\": \"{{seller_lv1_username}}\", \"password\": \"{{seller_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "",
+                  "pm.environment.set(\"token_seller_lv1\", j.data.token);",
+                  "pm.environment.set(\"sellerLv1Id\", j.data.user.id);",
+                  "pm.environment.set('seller_lv1_id', pm.environment.get('sellerLv1Id'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller LV2 Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\": \"{{seller_lv2_username}}\", \"password\": \"{{seller_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "",
+                  "pm.environment.set(\"token_seller_lv2\", j.data.token);",
+                  "pm.environment.set(\"sellerLv2Id\", j.data.user.id);",
+                  "pm.environment.set('seller_lv2_id', pm.environment.get('sellerLv2Id'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "00-Reset (Idempotent pre-clean)",
+      "item": [
+        {
+          "name": "Admin Ensure Buyer Unbanned (idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{buyerId}}/unban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{buyerId}}",
+                "unban"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "// idempotent: allow success or '未处于封禁状态'",
+                  "pm.test('unban ok or already active', ()=> {",
+                  "  if (j.code === 1) return;",
+                  "  pm.expect(j.code).to.eql(0);",
+                  "  pm.expect((j.msg||'') + (j.message||'')).to.match(/未处于封禁状态|not banned|未封禁/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Ensure Seller LV1 Unbanned (idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{sellerLv1Id}}/unban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{sellerLv1Id}}",
+                "unban"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "// idempotent: allow success or '未处于封禁状态'",
+                  "pm.test('unban ok or already active', ()=> {",
+                  "  if (j.code === 1) return;",
+                  "  pm.expect(j.code).to.eql(0);",
+                  "  pm.expect((j.msg||'') + (j.message||'')).to.match(/未处于封禁状态|not banned|未封禁/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Ensure Seller LV2 Unbanned (idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{sellerLv2Id}}/unban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{sellerLv2Id}}",
+                "unban"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "// idempotent: allow success or '未处于封禁状态'",
+                  "pm.test('unban ok or already active', ()=> {",
+                  "  if (j.code === 1) return;",
+                  "  pm.expect(j.code).to.eql(0);",
+                  "  pm.expect((j.msg||'') + (j.message||'')).to.match(/未处于封禁状态|not banned|未封禁/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Recalc Seller LV1 Credit (baseline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/recalc?userId={{sellerLv1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "recalc"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{sellerLv1Id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Get Seller LV1 Credit (compute delta to target)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit?userId={{sellerLv1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{sellerLv1Id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var score = parseInt(j.data.creditScore, 10);",
+                  "var target = 20; // force LV1",
+                  "pm.environment.set('seller_lv1_score_now', score);",
+                  "pm.environment.set('seller_lv1_delta', target - score);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Adjust Seller LV1 Credit (to LV1 target=20)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\": {{sellerLv1Id}}, \"delta\": {{seller_lv1_delta}}, \"note\": \"Day10 reset -> LV1(20)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/adjust",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "adjust"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Recalc Seller LV2 Credit (baseline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/recalc?userId={{sellerLv2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "recalc"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{sellerLv2Id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Get Seller LV2 Credit (compute delta to target)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit?userId={{sellerLv2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{sellerLv2Id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var score = parseInt(j.data.creditScore, 10);",
+                  "var target = 65; // force LV2",
+                  "pm.environment.set('seller_lv2_score_now', score);",
+                  "pm.environment.set('seller_lv2_delta', target - score);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Adjust Seller LV2 Credit (to LV2 target=65)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token_admin}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\": {{sellerLv2Id}}, \"delta\": {{seller_lv2_delta}}, \"note\": \"Day10 reset -> LV2(65)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/adjust",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "adjust"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-P0 Publish Policy (LV1 block, LV2 limit)",
+      "item": [
+        {
+          "name": "LV1 Publish Blocked",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv1}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-LV1-Blocked {{$timestamp}}\", \"price\": 19.9, \"description\": \"lv1 publish should be blocked\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test(\"blocked (code == 0)\", function () { pm.expect(j.code).to.eql(0); });"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Init: avoid stale ids across runs",
+                  "[\"lv2_p1\",\"lv2_p2\",\"lv2_p3\",\"lv2_cleanup_ids\",\"lv2_cleanup_cursor\"].forEach(function(k){ pm.environment.unset(k); });",
+                  "console.log(\"[INIT] cleared lv2_p1/lv2_p2/lv2_p3\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup - List Active (reset)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products?page=1&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", () => pm.expect(j.code).to.eql(1));",
+                  "var list = (j.data && (j.data.list || j.data.records)) || [];",
+                  "var guard = parseInt(pm.environment.get(\"lv2_cleanup_guard\") || \"0\", 10) + 1;",
+                  "pm.environment.set(\"lv2_cleanup_guard\", String(guard));",
+                  "pm.test(\"lv2 cleanup guard < 30\", () => pm.expect(guard).to.be.below(30));",
+                  "var active = list.filter(p => p && (p.status === \"under_review\" || p.status === \"on_sale\"));",
+                  "if (active.length === 0) {",
+                  "  pm.environment.unset(\"lv2_cleanup_product_id\");",
+                  "  pm.environment.unset(\"lv2_cleanup_status\");",
+                  "  pm.environment.unset(\"lv2_cleanup_guard\");",
+                  "  pm.execution.setNextRequest(\"LV2 Publish #1 (should succeed)\");",
+                  "} else {",
+                  "  var p = active[0];",
+                  "  var pid = p.id || p.productId;",
+                  "  pm.environment.set(\"lv2_cleanup_product_id\", pid);",
+                  "  pm.environment.set(\"lv2_cleanup_status\", p.status);",
+                  "  if (p.status === \"on_sale\") {",
+                  "    pm.execution.setNextRequest(\"LV2 Cleanup - OffShelf Active\");",
+                  "  } else {",
+                  "    pm.execution.setNextRequest(\"LV2 Cleanup - Delete Active\");",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup - OffShelf Active",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_cleanup_product_id}}/off-shelf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_cleanup_product_id}}",
+                "off-shelf"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", () => pm.expect(j.code).to.eql(1));",
+                  "pm.execution.setNextRequest(\"LV2 Cleanup - Delete Active\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup - Delete Active",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_cleanup_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_cleanup_product_id}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", () => pm.expect(j.code).to.eql(1));",
+                  "pm.execution.setNextRequest(\"LV2 Cleanup - List Active (reset)\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Publish #1 (should succeed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-LV2-LimitTest-1 {${timestamp}}\", \"price\": 10.9, \"description\": \"lv2 limit test\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) {",
+                  "  console.log(\"[LV2 Publish #1 (should succeed)] FAIL:\", j.msg, pm.response.text());",
+                  "  pm.environment.unset(\"lv2_p1\");",
+                  "} else {",
+                  "  var pid = null;",
+                  "  if (j.data) { pid = j.data.productId || j.data.id || null; }",
+                  "  if (pid) { pm.environment.set(\"lv2_p1\", pid); } else { pm.environment.unset(\"lv2_p1\"); }",
+                  "  console.log(\"[LV2 Publish #1 (should succeed)] set lv2_p1 =\", pid);",
+                  "}",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test(\"lv2_p1 exists\", function () { pm.expect(pm.environment.get(\"lv2_p1\")).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Publish #2 (should succeed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-LV2-LimitTest-2 {${timestamp}}\", \"price\": 11.9, \"description\": \"lv2 limit test\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) {",
+                  "  console.log(\"[LV2 Publish #2 (should succeed)] FAIL:\", j.msg, pm.response.text());",
+                  "  pm.environment.unset(\"lv2_p2\");",
+                  "} else {",
+                  "  var pid = null;",
+                  "  if (j.data) { pid = j.data.productId || j.data.id || null; }",
+                  "  if (pid) { pm.environment.set(\"lv2_p2\", pid); } else { pm.environment.unset(\"lv2_p2\"); }",
+                  "  console.log(\"[LV2 Publish #2 (should succeed)] set lv2_p2 =\", pid);",
+                  "}",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test(\"lv2_p2 exists\", function () { pm.expect(pm.environment.get(\"lv2_p2\")).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Publish #3 (should succeed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-LV2-LimitTest-3 {${timestamp}}\", \"price\": 12.9, \"description\": \"lv2 limit test\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) {",
+                  "  console.log(\"[LV2 Publish #3 (should succeed)] FAIL:\", j.msg, pm.response.text());",
+                  "  pm.environment.unset(\"lv2_p3\");",
+                  "} else {",
+                  "  var pid = null;",
+                  "  if (j.data) { pid = j.data.productId || j.data.id || null; }",
+                  "  if (pid) { pm.environment.set(\"lv2_p3\", pid); } else { pm.environment.unset(\"lv2_p3\"); }",
+                  "  console.log(\"[LV2 Publish #3 (should succeed)] set lv2_p3 =\", pid);",
+                  "}",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test(\"lv2_p3 exists\", function () { pm.expect(pm.environment.get(\"lv2_p3\")).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Publish #4 (should fail by limit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-LV2-LimitTest-4 {{$timestamp}}\", \"price\": 13.9, \"description\": \"should be blocked by lv2 active limit\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 0\", function () { pm.expect(j.code).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Withdraw #1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p1}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p1}}",
+                "withdraw"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Delete #1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Withdraw #2",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p2}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p2}}",
+                "withdraw"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Delete #2",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p2}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Withdraw #3",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p3}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p3}}",
+                "withdraw"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LV2 Cleanup Delete #3",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller_lv2}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/products/{{lv2_p3}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products",
+                "{{lv2_p3}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "if (j.code !== 1) { console.log(\"[FAIL]\", pm.info.requestName, \"msg=\", j.msg, \"resp=\", pm.response.text()); }",
+                  "pm.test(\"code == 1\", function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-P1 Credit Visible & Admin Control",
+      "item": [
+        {
+          "name": "Admin Recalc Buyer Credit (baseline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "token",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/recalc?userId={{buyerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "recalc"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{buyerId}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Get Credit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.environment.set(\"buyer_credit_before\", j.data.creditScore);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Get Credit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit/logs?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test(\"logs is array\", ()=> pm.expect(j.data).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Get Buyer Credit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit?userId={{buyerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{buyerId}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Adjust Buyer Credit (+delta)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/adjust",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "adjust"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\": \"{{buyerId}}\", \"delta\": \"{{admin_adjust_delta}}\", \"reason\": \"Day10 admin adjust\", \"refId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Get Credit After Adjust",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "",
+                  "var before = parseInt(pm.environment.get(\"buyer_credit_before\"), 10);",
+                  "var delta = parseInt(pm.environment.get(\"admin_adjust_delta\"), 10);",
+                  "var after = j.data.creditScore;",
+                  "",
+                  "pm.test(\"creditScore increased by delta\", ()=> pm.expect(after).to.eql(before + delta));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Logs Contains admin_adjust",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit/logs?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "",
+                  "var logs = j.data || [];",
+                  "var found = logs.some(l => l.reasonType === \"admin_adjust\");",
+                  "pm.test(\"contains admin_adjust log\", ()=> pm.expect(found).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-Step3 Triggers (order/violation/ban)",
+      "item": [
+        {
+          "name": "Create Product (for completed order)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-E2E-Completed {{$timestamp}}\", \"price\": 99.9, \"description\": \"E2E completed order product\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.environment.set(\"product_completed\", j.data.productId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Approve Product (completed)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/{{product_completed}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "{{product_completed}}",
+                "approve"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Create Order (completed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\": \"{{product_completed}}\", \"shippingAddress\": \"Day10 Regression Address\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "if (j.code === 1 && j.data && j.data.orderId) { pm.environment.set(\"order_completed\", j.data.orderId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Pay Order (completed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{order_completed}}/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "{{order_completed}}",
+                "pay"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Ship Order (completed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{order_completed}}/ship",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "{{order_completed}}",
+                "ship"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shippingCompany\": \"SF\", \"trackingNo\": \"SF123456\", \"remark\": \"Day10 regression ship\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Confirm Receipt (completed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{order_completed}}/confirm-receipt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "{{order_completed}}",
+                "confirm-receipt"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Logs Contains order_completed (refId=orderId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit/logs?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "",
+                  "var orderId = parseInt(pm.environment.get(\"order_completed\"), 10);",
+                  "var logs = j.data || [];",
+                  "var found = logs.some(l => l.reasonType === \"order_completed\" && l.refId === orderId);",
+                  "pm.test(\"contains order_completed log with refId\", ()=> pm.expect(found).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Product (for cancelled order)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Day10-E2E-Cancelled {{$timestamp}}\", \"price\": 88.8, \"description\": \"E2E cancelled order product\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.environment.set(\"product_cancelled\", j.data.productId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Approve Product (cancelled)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/{{product_cancelled}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "{{product_cancelled}}",
+                "approve"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Create Order (cancelled)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\": \"{{product_cancelled}}\", \"shippingAddress\": \"Day10 Regression Address\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "if (j.code === 1 && j.data && j.data.orderId) { pm.environment.set(\"order_cancelled\", j.data.orderId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Cancel Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{order_cancelled}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "orders",
+                "{{order_cancelled}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\": \"buyer_cancel\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Logs Contains order_cancelled (refId=orderId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit/logs?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "",
+                  "var orderId = parseInt(pm.environment.get(\"order_cancelled\"), 10);",
+                  "var logs = j.data || [];",
+                  "var found = logs.some(l => l.reasonType === \"order_cancelled\" && l.refId === orderId);",
+                  "pm.test(\"contains order_cancelled log with refId\", ()=> pm.expect(found).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Report User Violation (buyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/user-violations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "user-violations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\": \"{{buyerId}}\", \"violationType\": \"spam\", \"description\": \"Day10 regression user violation\", \"evidenceUrls\": [\"https://example.com/e1.png\"], \"punishmentResult\": \"warning\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Logs Contains user_violation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit/logs?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "",
+                  "var logs = j.data || [];",
+                  "var found = logs.some(l => l.reasonType === \"user_violation\");",
+                  "pm.test(\"contains user_violation log\", ()=> pm.expect(found).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Ban Buyer (approved)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{buyerId}}/ban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{buyerId}}",
+                "ban"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\": \"Day10 regression ban\", \"isApproved\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Get Credit (should be blocked after ban)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 0\", ()=> pm.expect(j.code).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Logs Contains ban_active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "token",
+                "value": "{{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/credit/logs?userId={{buyerId}}&limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "credit",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{buyerId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));",
+                  "var logs = j.data || [];",
+                  "var hit = logs.some(x => (x.reasonType || x.reason_type) === 'ban_active' || (x.reasonType || x.reason_type) === 'BAN_ACTIVE');",
+                  "pm.test(\"contains ban_active log\", ()=> pm.expect(hit).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Unban Buyer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{buyerId}}/unban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{buyerId}}",
+                "unban"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Get Credit (after unban)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/credit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "credit"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", ()=> pm.response.to.have.status(200));",
+                  "var j=pm.response.json();",
+                  "pm.test(\"code == 1\", ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

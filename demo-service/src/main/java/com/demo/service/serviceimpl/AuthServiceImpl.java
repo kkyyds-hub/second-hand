@@ -5,6 +5,7 @@ import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.entity.User;
 import com.demo.entity.UserBan;
+import com.demo.enumeration.CreditLevel;
 import com.demo.enumeration.CreditReasonType;
 import com.demo.enumeration.UserStatus;
 import com.demo.exception.BusinessException;
@@ -296,12 +297,19 @@ public class AuthServiceImpl implements AuthService {
 
     private User buildBaseUser() {
         User user = new User();
-        user.setCreditScore(100);
         LocalDateTime now = LocalDateTime.now();
+
+        int defaultScore = 100;
+        user.setCreditScore(defaultScore);
+        user.setCreditLevel(CreditLevel.fromScore(defaultScore).getDbValue()); // 新增
+        user.setCreditUpdatedAt(now);                                         // 新增
+        user.setStatus("active");                                             // 强烈建议新增（你 insertUser 会写 status）
+
         user.setCreateTime(now);
         user.setUpdateTime(now);
         return user;
     }
+
 
     private UserVO toUserVO(User user) {
         UserVO userVO = new UserVO();

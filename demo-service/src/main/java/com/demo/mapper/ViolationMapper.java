@@ -19,7 +19,8 @@ public interface ViolationMapper {
 
 
     @Select("SELECT * FROM user_violations WHERE user_id = #{userId} ORDER BY record_time DESC")
-    List<UserViolation> selectByUserId(Long userId);
+    List<UserViolation> selectByUserId(@Param("userId") Long userId);
+
 
 
     User SelectById(@Param("userId") Long userId);

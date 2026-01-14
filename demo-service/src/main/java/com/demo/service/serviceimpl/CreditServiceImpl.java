@@ -71,7 +71,14 @@ public class CreditServiceImpl implements CreditService {
         CreditReasonType rt = (reason == null) ? CreditReasonType.RECALC : reason;
         int delta = after - before;
 
-        if (rt == CreditReasonType.RECALC || delta != 0) {
+        boolean forceLog =
+                rt == CreditReasonType.BAN_ACTIVE
+                        || rt == CreditReasonType.ORDER_COMPLETED
+                        || rt == CreditReasonType.ORDER_CANCELLED
+                        || rt == CreditReasonType.USER_VIOLATION
+                        || rt == CreditReasonType.PRODUCT_VIOLATION;
+
+        if (rt == CreditReasonType.RECALC || delta != 0 || forceLog) {
             UserCreditLog log = new UserCreditLog();
             log.setUserId(userId);
             log.setDelta(delta);
@@ -79,7 +86,6 @@ public class CreditServiceImpl implements CreditService {
             log.setRefId(refId);
             log.setScoreBefore(before);
             log.setScoreAfter(after);
-            // create_time 由 SQL NOW()/DEFAULT 生成，不强依赖 Java 赋值
             userCreditLogMapper.insert(log);
         }
 
