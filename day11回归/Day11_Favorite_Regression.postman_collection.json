@@ -1,0 +1,345 @@
+{
+  "info": {
+    "_postman_id": "c8a2f4d1-7b7d-4a0b-9a11-11f4a7c8a211",
+    "name": "Day11 Regression - Favorites (MP + SoftDelete)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto inject buyer token for /user/** endpoints (except login)",
+          "var url = pm.request.url.toString();",
+          "if (url.includes('/user/auth/login')) return;",
+          "",
+          "// If request already sets authentication explicitly, do not override",
+          "var existing = pm.request.headers.get('authentication');",
+          "if (existing && existing !== '{{authentication}}') return;",
+          "",
+          "var t = pm.environment.get('token_buyer');",
+          "if (t) pm.request.headers.upsert({ key: 'authentication', value: t });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login (Password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "auth",
+                "login",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{buyer_username}}\",\"password\":\"{{buyer_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "pm.environment.set('token_buyer', j.data.token);",
+                  "if (j.data && j.data.user && j.data.user.id) pm.environment.set('buyerId', j.data.user.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-Favorites",
+      "item": [
+        {
+          "name": "00 - Preclean: Ensure Unfavorited (idempotent)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites/{{favorite_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites",
+                "{{favorite_product_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var fav = (j.data && typeof j.data === 'object' && 'favorited' in j.data) ? j.data.favorited : (typeof j.data === 'boolean' ? j.data : null);",
+                  "if (fav !== null) pm.test('favorited == false', ()=> pm.expect(fav).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01 - Add Favorite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites/{{favorite_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites",
+                "{{favorite_product_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var fav = (j.data && typeof j.data === 'object' && 'favorited' in j.data) ? j.data.favorited : (typeof j.data === 'boolean' ? j.data : null);",
+                  "if (fav !== null) pm.test('favorited == true', ()=> pm.expect(fav).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - List Favorites (Should Contain productId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});",
+                  "var list = (j.data && j.data.list) ? j.data.list : [];",
+                  "var ids = list.map(x => String(x.productId || x.id || ''));",
+                  "pm.test('list contains productId', ()=> pm.expect(ids).to.include(String(pm.environment.get('favorite_product_id'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Add Favorite Again (idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites/{{favorite_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites",
+                "{{favorite_product_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var fav = (j.data && typeof j.data === 'object' && 'favorited' in j.data) ? j.data.favorited : (typeof j.data === 'boolean' ? j.data : null);",
+                  "if (fav !== null) pm.test('favorited == true', ()=> pm.expect(fav).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Remove Favorite",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites/{{favorite_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites",
+                "{{favorite_product_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var fav = (j.data && typeof j.data === 'object' && 'favorited' in j.data) ? j.data.favorited : (typeof j.data === 'boolean' ? j.data : null);",
+                  "if (fav !== null) pm.test('favorited == false', ()=> pm.expect(fav).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Remove Favorite Again (idempotent)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites/{{favorite_product_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites",
+                "{{favorite_product_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var fav = (j.data && typeof j.data === 'object' && 'favorited' in j.data) ? j.data.favorited : (typeof j.data === 'boolean' ? j.data : null);",
+                  "if (fav !== null) pm.test('favorited == false', ()=> pm.expect(fav).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - List Favorites (Should NOT Contain productId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/favorites?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "favorites"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var list = (j.data && j.data.list) ? j.data.list : [];",
+                  "var ids = list.map(x => String(x.productId || x.id || ''));",
+                  "pm.test('list NOT contains productId', ()=> pm.expect(ids).to.not.include(String(pm.environment.get('favorite_product_id'))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

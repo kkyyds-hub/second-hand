@@ -25,6 +25,8 @@ public class MessageConstant {
     public static final String ORDER_NOT_FOUND = "订单不存在";
     public static final String ID_NOT_FOUND = "用户不存在";
     public static final String BANNED_EXISTS = "用户用户已被封禁";
+    public static final String PRODUCT_NOT_FOUND = "商品不存在或已被删除";
+    public static final String FAVORITE_ONLY_ON_SALE = "仅在售商品允许收藏";
 
     public static final String ALREADY_EXISTS = "已存在";
 }

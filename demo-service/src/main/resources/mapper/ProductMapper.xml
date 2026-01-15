@@ -208,6 +208,15 @@
         AND status IN (#{PS_UNDER_REVIEW}, #{PS_ON_SALE})
     </select>
 
+    <select id="listByIds" resultType="com.demo.entity.Product">
+        select id, title, price, images, status
+        from products
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
 
 
 </mapper>

@@ -50,4 +50,7 @@ public interface ProductMapper {
 
     Long countActiveProductsByOwnerId(@Param("ownerId") Long ownerId);
 
+    List<Product> listByIds(@Param("ids") List<Long> ids);
+
+
 }

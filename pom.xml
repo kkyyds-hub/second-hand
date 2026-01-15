@@ -28,7 +28,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
+        <mybatis-plus>3.5.5</mybatis-plus>
         <!-- 依赖版本配置 -->
         <mybatis.spring>2.2.0</mybatis.spring>
         <lombok>1.18.32</lombok>
@@ -63,9 +63,9 @@
         <dependencies>
             <!-- ========== 数据访问层 ========== -->
             <dependency>
-                <groupId>org.mybatis.spring.boot</groupId>
-                <artifactId>mybatis-spring-boot-starter</artifactId>
-                <version>${mybatis.spring}</version>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <version>${mybatis-plus}</version>
             </dependency>
 
             <dependency>
