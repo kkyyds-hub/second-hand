@@ -27,6 +27,13 @@ public class MessageConstant {
     public static final String BANNED_EXISTS = "用户用户已被封禁";
     public static final String PRODUCT_NOT_FOUND = "商品不存在或已被删除";
     public static final String FAVORITE_ONLY_ON_SALE = "仅在售商品允许收藏";
-
     public static final String ALREADY_EXISTS = "已存在";
+    // ===== Day12 Review =====
+    public static final String REVIEW_NO_PERMISSION = "无权评价该订单";
+    public static final String REVIEW_ORDER_NOT_COMPLETED = "订单未完成，无法评价";
+    public static final String REVIEW_ALREADY_EXISTS = "该订单已评价";
+    public static final String REVIEW_RATING_INVALID = "评分必须为1~5";
+    public static final String REVIEW_CONTENT_INVALID = "评价内容不少于10个字，且不超过500字";
+    public static final String REVIEW_ANON_NAME = "匿名用户";
+
 }

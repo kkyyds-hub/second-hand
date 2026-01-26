@@ -7,13 +7,7 @@ package com.demo.constant;
  * 注意：这是 reason 维度，不是 status 维度。
  */
 public final class ProductReason {
-
     private ProductReason() {}
-
     /** 卖家撤回审核 */
     public static final String SELLER_WITHDRAW = "seller_withdraw";
-
-    // 后续你可以按需扩展，例如：
-    // public static final String ADMIN_REJECT = "admin_reject";
-    // public static final String SELLER_OFF_SHELF = "seller_off_shelf";
 }

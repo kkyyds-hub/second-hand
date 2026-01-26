@@ -81,14 +81,21 @@ public class GlobalExceptionHandler {
     public Result exceptiobHandler(SQLIntegrityConstraintViolationException ex){
         log.error("异常信息：{}", ex.getMessage());
         String message = ex.getMessage();
-        if (message.contains("Duplicate entry")) {
+        if (message != null && message.contains("Duplicate entry")) {
+
+            // Day12：评价幂等唯一键冲突，必须返回稳定文案，便于回归断言
+            if (message.contains("uniq_order_role")) {
+                return Result.error(MessageConstant.REVIEW_ALREADY_EXISTS); // "该订单已评价"
+            }
+
+            // 其他场景沿用旧逻辑
             String[] split = message.split(" ");
-            String msg = split[2] + MessageConstant.ALREADY_EXISTS;
+            String msg = split.length > 2 ? split[2] + MessageConstant.ALREADY_EXISTS : MessageConstant.ALREADY_EXISTS;
             return Result.error(msg);
         }else {
             return Result.error(MessageConstant.UNKNOWN_ERROR);
         }
-
     }
+
 
 }
