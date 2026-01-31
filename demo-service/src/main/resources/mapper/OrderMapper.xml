@@ -292,6 +292,18 @@
         LIMIT 1
     </select>
 
-
+<!-- 查询订单商品明细（评价创建时取 product_id） -->
+<select id="selectItemsByOrderId" resultType="com.demo.entity.OrderItem">
+    SELECT
+        id,
+        order_id   AS orderId,
+        product_id AS productId,
+        price,
+        quantity,
+        create_time AS createTime
+    FROM order_items
+    WHERE order_id = #{orderId}
+    LIMIT 1
+</select>
 
 </mapper>

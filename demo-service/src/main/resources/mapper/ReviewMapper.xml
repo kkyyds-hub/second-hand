@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.ReviewMapper">
+
+    <resultMap id="BaseResultMap" type="com.demo.entity.Review">
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="buyerId" column="buyer_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="role" column="role"/>
+        <result property="rating" column="rating"/>
+        <result property="content" column="content"/>
+        <result property="isAnonymous" column="is_anonymous"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 插入评价 -->
+    <insert id="insertReview" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reviews (
+            order_id, product_id, buyer_id, seller_id, role,
+            rating, content, is_anonymous, is_deleted,
+            create_time, update_time
+        ) VALUES (
+            #{orderId}, #{productId}, #{buyerId}, #{sellerId}, #{role},
+            #{rating}, #{content}, #{isAnonymous}, 0,
+            NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 按 order_id + role 查询（幂等检查） -->
+    <select id="selectByOrderIdAndRole" resultMap="BaseResultMap">
+        SELECT * FROM reviews
+        WHERE order_id = #{orderId}
+          AND role = #{role}
+          AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 查询买家发出的评价（分页由 PageHelper 处理） -->
+    <select id="listByBuyerId" resultMap="BaseResultMap">
+        SELECT * FROM reviews
+        WHERE buyer_id = #{buyerId}
+          AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询商品评价列表（分页由 PageHelper 处理） -->
+    <select id="listByProductId" resultMap="BaseResultMap">
+        SELECT * FROM reviews
+        WHERE product_id = #{productId}
+          AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

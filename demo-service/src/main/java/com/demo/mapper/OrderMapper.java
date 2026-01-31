@@ -57,5 +57,9 @@ public interface OrderMapper {
 
     Order selectOrderBasicById(@Param("orderId") Long orderId);
 
+    /**
+ * 查询订单的商品明细（用于评价等：取第一条得到 product_id）
+ */
+List<OrderItem> selectItemsByOrderId(@Param("orderId") Long orderId);
 
 }

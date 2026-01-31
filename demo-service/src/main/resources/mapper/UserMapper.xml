@@ -25,7 +25,7 @@
         ORDER BY create_time DESC
     </select>
     <select id="selectById" resultType="com.demo.entity.User">
-        SELECT * FROM users WHERE id = #{userId}
+    SELECT * FROM users WHERE id = #{id} AND is_deleted = 0 LIMIT 1
     </select>
 
     <select id="selectByMobile" resultType="com.demo.entity.User">
