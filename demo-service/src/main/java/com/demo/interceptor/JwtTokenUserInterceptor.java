@@ -77,7 +77,11 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
             // 5. 根据用户状态做风控拦截
             UserStatus status = UserStatus.from(user.getStatus());
             if (status == UserStatus.BANNED) {
-                throw new BusinessException("账号已被封禁，如有疑问请联系客服");
+                // Day13 冻结：banned 允许读（GET），禁止写（POST/PUT/DELETE）
+                String method = request.getMethod();
+                if (!"GET".equalsIgnoreCase(method)) {
+                    throw new BusinessException("账号已被封禁，如有疑问请联系客服");
+                }
             }
             if (status == UserStatus.FROZEN) {
                 throw new BusinessException("账号已被暂时冻结，请稍后再试或联系管理员");

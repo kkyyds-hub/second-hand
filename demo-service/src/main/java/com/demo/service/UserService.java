@@ -27,4 +27,19 @@ public interface UserService {
     void unbindEmail(@Valid UnbindContactRequest request);
 
     void requireSeller(Long userId);
+
+    /**
+     * Day13 Step7 - 封禁用户
+     */
+    String banUser(Long userId);
+
+    /**
+     * Day13 Step7 - 解封用户
+     */
+    String unbanUser(Long userId);
+
+    /**
+     * Day13 Step7 - 导出用户 CSV
+     */
+    String exportUsersCSV(String keyword, java.time.LocalDateTime startTime, java.time.LocalDateTime endTime);
 }

@@ -1,12 +1,10 @@
 package com.demo.mapper;
 
 import com.demo.dto.seller.SellerProductCountDTO;
-import com.demo.entity.Order;
-import com.demo.entity.OrderItem;
+import com.demo.dto.statistics.ProductPublishCountDTO;
 import com.demo.entity.Product;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import java.util.Map;
 import java.util.List;
 
 @Mapper
@@ -52,5 +50,9 @@ public interface ProductMapper {
 
     List<Product> listByIds(@Param("ids") List<Long> ids);
 
+    /**
+     * Day13 Step7 - 统计指定日期的商品发布量（按 category 分组）
+     */
+    List<ProductPublishCountDTO> countProductPublishByDate(@Param("date") java.time.LocalDate date);
 
 }

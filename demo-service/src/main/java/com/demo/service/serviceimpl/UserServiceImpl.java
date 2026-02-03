@@ -411,5 +411,83 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Override
+    public String banUser(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if ("banned".equals(user.getStatus())) {
+            return "用户已处于封禁状态";
+        }
+
+        int rows = userMapper.updateStatus(userId, "banned", LocalDateTime.now());
+        if (rows != 1) {
+            throw new BusinessException("操作失败");
+        }
+
+        log.info("用户封禁成功：userId={}", userId);
+        return "用户封禁成功";
+    }
+
+    @Override
+    public String unbanUser(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if ("active".equals(user.getStatus())) {
+            return "用户已处于正常状态";
+        }
+
+        int rows = userMapper.updateStatus(userId, "active", LocalDateTime.now());
+        if (rows != 1) {
+            throw new BusinessException("操作失败");
+        }
+
+        log.info("用户解封成功：userId={}", userId);
+        return "用户解封成功";
+    }
+
+    @Override
+    public String exportUsersCSV(String keyword, LocalDateTime startTime, LocalDateTime endTime) {
+        List<User> users = userMapper.exportAllUsers(keyword, startTime, endTime);
+
+        StringBuilder csv = new StringBuilder();
+        // CSV 表头（文档 5.5.2 固定列顺序）
+        csv.append("id,username,mobile,email,nickname,status,credit_score,credit_level,create_time,update_time\n");
+
+        for (User user : users) {
+            csv.append(user.getId()).append(",");
+            csv.append(escapeCsv(user.getUsername())).append(",");
+            csv.append(escapeCsv(user.getMobile())).append(",");
+            csv.append(escapeCsv(user.getEmail())).append(",");
+            csv.append(escapeCsv(user.getNickname())).append(",");
+            csv.append(escapeCsv(user.getStatus())).append(",");
+            csv.append(user.getCreditScore()).append(",");
+            csv.append(escapeCsv(user.getCreditLevel())).append(",");
+            csv.append(user.getCreateTime() != null ? user.getCreateTime().toString() : "").append(",");
+            csv.append(user.getUpdateTime() != null ? user.getUpdateTime().toString() : "");
+            csv.append("\n");
+        }
+
+        log.info("用户导出成功：count={}", users.size());
+        return csv.toString();
+    }
+
+    /**
+     * CSV 字段转义（处理逗号、引号、换行）
+     */
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
 
 }

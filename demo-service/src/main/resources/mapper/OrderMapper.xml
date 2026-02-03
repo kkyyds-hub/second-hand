@@ -306,4 +306,43 @@
     LIMIT 1
 </select>
 
+    <!-- Day13 Step2 - 根据订单号查询订单 -->
+    <select id="selectOrderByOrderNo" resultType="com.demo.entity.Order">
+        SELECT
+            id,
+            order_no      AS orderNo,
+            buyer_id      AS buyerId,
+            seller_id     AS sellerId,
+            total_amount  AS totalAmount,
+            status,
+            pay_time      AS payTime,
+            create_time   AS createTime
+        FROM orders
+        WHERE order_no = #{orderNo}
+        LIMIT 1
+    </select>
+
+    <!-- Day13 Step2 - 支付回调：pending -> paid（幂等） -->
+    <update id="updateForPayByOrderNo">
+        <include refid="bindStatus"/>
+        UPDATE orders
+        SET status = #{OS_PAID},
+            pay_time = NOW(),
+            update_time = NOW()
+        WHERE order_no = #{orderNo}
+          AND status = #{OS_PENDING}
+    </update>
+
+    <!-- Day13 Step7 - 统计指定日期的成交订单量与GMV -->
+    <select id="countOrderAndGMVByDate" resultType="com.demo.dto.statistics.OrderGmvStatsDTO">
+    <include refid="bindStatus"/>
+        SELECT
+            COUNT(*) AS orderCount,
+            COALESCE(SUM(total_amount), 0) AS gmv
+        FROM orders
+        WHERE DATE(pay_time) = #{date}
+          AND pay_time IS NOT NULL
+          AND status != #{OS_CANCELLED}
+    </select>
+
 </mapper>

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 /**
  * 订单实体，对应 orders 表
+ * Day13 补齐：ship_time, cancel_time, cancel_reason
  */
 @Data
 public class Order {
@@ -35,13 +36,18 @@ public class Order {
 
     // 收货信息
     private String shippingAddress;   // 收货地址快照
-    private String shippingCompany;   // 物流公司（新加）
-    private String trackingNo;        // 运单号（新加）
-    private String shippingRemark;    // 发货备注（可选，新加）
+    private String shippingCompany;   // 物流公司
+    private String trackingNo;        // 运单号
+    private String shippingRemark;    // 发货备注（可选）
 
-    // 时间信息
+    // 时间信息（Day13 补齐全套）
     private LocalDateTime createTime;   // 下单时间
     private LocalDateTime payTime;      // 支付时间
-    private LocalDateTime completeTime; // 完成时间（确认收货等）
-    private LocalDateTime updateTime;   // 最后更新时间（新加，可选）
+    private LocalDateTime shipTime;     // 发货时间（Day13 新增）
+    private LocalDateTime completeTime; // 完成时间（确认收货）
+    private LocalDateTime cancelTime;   // 取消时间（Day13 新增）
+    private LocalDateTime updateTime;   // 最后更新时间
+
+    // 取消原因（Day13 新增）
+    private String cancelReason;        // 如 buyer_cancel / timeout 等
 }

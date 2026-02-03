@@ -49,5 +49,11 @@ public interface UserMapper {
                      @Param("creditLevel") String creditLevel,
                      @Param("creditUpdatedAt") LocalDateTime creditUpdatedAt);
 
+    /**
+     * Day13 Step7 - 用户导出（全部用户）
+     */
+    List<User> exportAllUsers(@Param("keyword") String keyword,
+                              @Param("startTime") LocalDateTime startTime,
+                              @Param("endTime") LocalDateTime endTime);
 
 }

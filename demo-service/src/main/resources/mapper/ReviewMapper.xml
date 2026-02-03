@@ -56,4 +56,12 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- Day13 Step4 - 防刷：统计买家在指定时间后创建的评价数量 -->
+    <select id="countByBuyerIdSince" resultType="int">
+        SELECT COUNT(*) FROM reviews
+        WHERE buyer_id = #{buyerId}
+          AND create_time >= #{since}
+          AND is_deleted = 0
+    </select>
+
 </mapper>

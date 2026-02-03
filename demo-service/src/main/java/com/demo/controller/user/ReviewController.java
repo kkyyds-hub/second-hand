@@ -12,7 +12,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/user/reviews")
@@ -39,16 +38,5 @@ public class ReviewController {
     public Result<PageResult<ReviewItemDTO>> listMyReviews(PageQueryDTO query) {
         Long currentUserId = BaseContext.getCurrentId();
         return Result.success(reviewService.listMyReviews(currentUserId, query));
-    }
-
-    /**
-     * 商品评价列表（分页）
-     * 路径：/user/market/products/{productId}/reviews
-     */
-    @GetMapping("/market/products/{productId}/reviews")
-    public Result<PageResult<ReviewItemDTO>> listProductReviews(
-            @PathVariable @Min(1) Long productId,
-            PageQueryDTO query) {
-        return Result.success(reviewService.listProductReviews(productId, query));
     }
 }

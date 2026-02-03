@@ -1,6 +1,7 @@
 package com.demo.service;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.payment.PaymentCallbackRequest;
 import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
@@ -29,5 +30,10 @@ public interface OrderService {
     String payOrder(Long orderId, Long currentUserId);
 
     String cancelOrder(Long orderId, CancelOrderRequest request, Long currentUserId);
+
+    /**
+     * Day13 Step2 - 处理支付回调（幂等 + 占位验签）
+     */
+    String handlePaymentCallback(PaymentCallbackRequest request);
 
 }

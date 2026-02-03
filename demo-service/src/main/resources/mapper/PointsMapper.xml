@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.PointsMapper">
+
+    <!-- 插入积分流水 -->
+    <insert id="insertPoints" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO points_ledger (
+            user_id, biz_type, biz_id, points, create_time
+        ) VALUES (
+            #{userId}, #{bizType}, #{bizId}, #{points}, NOW()
+        )
+    </insert>
+
+    <!-- 查询用户积分流水 -->
+    <select id="listPointsByUserId" resultType="com.demo.entity.PointsLedger">
+        SELECT
+            id, user_id AS userId, biz_type AS bizType, biz_id AS bizId,
+            points, create_time AS createTime
+        FROM points_ledger
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询用户积分总额 -->
+    <select id="sumPointsByUserId" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(points), 0)
+        FROM points_ledger
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>

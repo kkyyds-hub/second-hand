@@ -35,5 +35,9 @@ public class MessageConstant {
     public static final String REVIEW_RATING_INVALID = "评分必须为1~5";
     public static final String REVIEW_CONTENT_INVALID = "评价内容不少于10个字，且不超过500字";
     public static final String REVIEW_ANON_NAME = "匿名用户";
+    public static final String REVIEW_CONTENT_TOO_SHORT = "评价内容不少于10个字";
+    public static final String REVIEW_CONTENT_TOO_LONG = "评价内容不超过500字";
+    public static final String REVIEW_TOO_FREQUENT = "评价过于频繁，请稍后再试";
+    public static final String MESSAGE_NO_PERMISSION = "无权在该订单中发送消息";
 
 }

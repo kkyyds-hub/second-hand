@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.OrderFlagMapper">
+
+    <!-- Day13 Step7 - 插入订单标记 -->
+    <insert id="insertOrderFlag" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO order_flags (
+            order_id, type, remark, created_by, create_time
+        ) VALUES (
+            #{orderId}, #{type}, #{remark}, #{createdBy}, NOW()
+        )
+    </insert>
+
+    <!-- 根据订单ID和类型查询标记 -->
+    <select id="selectByOrderIdAndType" resultType="com.demo.entity.OrderFlag">
+        SELECT
+            id, order_id AS orderId, type, remark,
+            created_by AS createdBy, create_time AS createTime
+        FROM order_flags
+        WHERE order_id = #{orderId}
+          AND type = #{type}
+        LIMIT 1
+    </select>
+
+</mapper>

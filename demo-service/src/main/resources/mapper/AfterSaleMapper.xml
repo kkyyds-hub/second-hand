@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.AfterSaleMapper">
+
+    <!-- Day13 Step5 - 插入售后记录 -->
+    <insert id="insertAfterSale" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO after_sales (
+            order_id, buyer_id, seller_id, reason, status,
+            seller_remark, platform_remark, create_time, update_time
+        ) VALUES (
+            #{orderId}, #{buyerId}, #{sellerId}, #{reason}, #{status},
+            #{sellerRemark}, #{platformRemark}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 插入售后凭证 -->
+    <insert id="insertEvidence" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO after_sale_evidences (
+            after_sale_id, image_url, sort, create_time
+        ) VALUES (
+            #{afterSaleId}, #{imageUrl}, #{sort}, NOW()
+        )
+    </insert>
+
+    <!-- 批量插入凭证 -->
+    <insert id="batchInsertEvidences">
+        INSERT INTO after_sale_evidences (
+            after_sale_id, image_url, sort, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.afterSaleId}, #{item.imageUrl}, #{item.sort}, NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据订单 ID 查询售后记录 -->
+    <select id="selectByOrderId" resultType="com.demo.entity.AfterSale">
+        SELECT
+            id, order_id AS orderId, buyer_id AS buyerId, seller_id AS sellerId,
+            reason, status, seller_remark AS sellerRemark,
+            platform_remark AS platformRemark,
+            create_time AS createTime, update_time AS updateTime
+        FROM after_sales
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <!-- 根据 ID 查询售后记录 -->
+    <select id="selectById" resultType="com.demo.entity.AfterSale">
+        SELECT
+            id, order_id AS orderId, buyer_id AS buyerId, seller_id AS sellerId,
+            reason, status, seller_remark AS sellerRemark,
+            platform_remark AS platformRemark,
+            create_time AS createTime, update_time AS updateTime
+        FROM after_sales
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <!-- 卖家响应：更新状态和卖家备注 -->
+    <update id="updateSellerDecision">
+        UPDATE after_sales
+        SET status = #{status},
+            seller_remark = #{sellerRemark},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 买家提交纠纷：更新状态为 DISPUTED -->
+    <update id="updateToDisputed">
+        UPDATE after_sales
+        SET status = 'DISPUTED',
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 平台裁决：更新状态和平台备注 -->
+    <update id="updatePlatformArbitrate">
+        UPDATE after_sales
+        SET status = #{status},
+            platform_remark = #{platformRemark},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询售后凭证列表 -->
+    <select id="selectEvidencesByAfterSaleId" resultType="com.demo.entity.AfterSaleEvidence">
+        SELECT
+            id, after_sale_id AS afterSaleId, image_url AS imageUrl,
+            sort, create_time AS createTime
+        FROM after_sale_evidences
+        WHERE after_sale_id = #{afterSaleId}
+        ORDER BY sort ASC
+    </select>
+
+</mapper>

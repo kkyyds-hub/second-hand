@@ -40,6 +40,9 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private CreditService creditService;
 
+    @Autowired
+    private com.demo.service.SensitiveWordService sensitiveWordService;
+
     /**
      * 审核列表：分页查询待审核 / 已审核商品
      */
@@ -215,6 +218,16 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
 
+        // Day13 Step6 - 敏感词检测（编辑时）
+        String checkText = (request.getTitle() != null ? request.getTitle() : "") + " " +
+                          (request.getDescription() != null ? request.getDescription() : "");
+        if (sensitiveWordService.containsSensitiveWord(checkText)) {
+            String matched = sensitiveWordService.getMatchedWords(checkText);
+            log.warn("商品编辑包含敏感词：productId={}, words={}", productId, matched);
+            // 高风险：阻断上架，保持 under_review
+            throw new BusinessException("商品内容包含敏感词，无法提交：" + matched);
+        }
+
         // images：null=不改；[] 或全空=清空；否则 join 存库
         if (request.getImages() != null) {
             if (request.getImages().isEmpty()) {
@@ -270,6 +283,16 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDetailDTO createProduct(Long currentUserId, ProductCreateRequest request) {
+        // Day13 Step6 - 敏感词检测（创建时）
+        String checkText = (request.getTitle() != null ? request.getTitle() : "") + " " +
+                          (request.getDescription() != null ? request.getDescription() : "");
+        if (sensitiveWordService.containsSensitiveWord(checkText)) {
+            String matched = sensitiveWordService.getMatchedWords(checkText);
+            log.warn("商品创建包含敏感词：userId={}, words={}", currentUserId, matched);
+            // 高风险：阻断发布
+            throw new BusinessException("商品内容包含敏感词，无法发布：" + matched);
+        }
+
         Product product = new Product();
         product.setOwnerId(currentUserId);
         product.setTitle(request.getTitle());

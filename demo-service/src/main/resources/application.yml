@@ -20,6 +20,11 @@ spring:
     port: ${demo.redis.port}
     database: ${demo.redis.database}
 
+  # MongoDB（站内消息等），未安装时先空着，见 application-dev.yml
+  data:
+    mongodb:
+      uri: ${demo.mongodb.uri:}
+
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.demo.entity
@@ -61,3 +66,7 @@ order:
     pending-minutes: 15
     batch-size: 200
     fixed-delay-ms: 60000
+
+# Day13 Step8 - 积分配置
+points:
+  order-complete: 1  # 订单完成买卖双方各获得积分数

@@ -14,3 +14,7 @@ demo:
     port: 6379
     database: 2
     enabled: true
+
+  # MongoDB（站内消息），安装脚本已配置用户 root / 密码 1234
+  mongodb:
+    uri: mongodb://root:1234@localhost:27017/demo

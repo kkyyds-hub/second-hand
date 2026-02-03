@@ -217,6 +217,15 @@
         </foreach>
     </select>
 
-
+    <!-- Day13 Step7 - 统计指定日期的商品发布量（按 category 分组） -->
+    <select id="countProductPublishByDate" resultType="com.demo.dto.statistics.ProductPublishCountDTO">
+        SELECT
+            category,
+            COUNT(*) AS count
+        FROM products
+        WHERE DATE(create_time) = #{date}
+          AND is_deleted = 0
+        GROUP BY category
+    </select>
 
 </mapper>

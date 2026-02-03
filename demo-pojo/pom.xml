@@ -33,5 +33,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- MongoDB 注解 @Document/@CompoundIndex/@Id 等在 demo-pojo 编译期需要 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+    <scope>provided</scope>
+</dependency>
+
     </dependencies>
 </project>

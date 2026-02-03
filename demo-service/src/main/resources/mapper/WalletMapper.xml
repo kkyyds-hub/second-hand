@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.WalletMapper">
+
+    <!-- 查询用户钱包 -->
+    <select id="selectByUserId" resultType="com.demo.entity.UserWallet">
+        SELECT
+            user_id AS userId,
+            balance,
+            update_time AS updateTime
+        FROM user_wallets
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 初始化用户钱包 -->
+    <insert id="insertWallet">
+        INSERT INTO user_wallets (user_id, balance, update_time)
+        VALUES (#{userId}, #{balance}, NOW())
+    </insert>
+
+    <!-- 插入余额流水 -->
+    <insert id="insertTransaction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wallet_transactions (
+            user_id, biz_type, biz_id, amount, balance_after, remark, create_time
+        ) VALUES (
+            #{userId}, #{bizType}, #{bizId}, #{amount}, #{balanceAfter}, #{remark}, NOW()
+        )
+    </insert>
+
+    <!-- 查询用户流水 -->
+    <select id="listTransactionsByUserId" resultType="com.demo.entity.WalletTransaction">
+        SELECT
+            id, user_id AS userId, biz_type AS bizType, biz_id AS bizId,
+            amount, balance_after AS balanceAfter, remark, create_time AS createTime
+        FROM wallet_transactions
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 插入提现申请 -->
+    <insert id="insertWithdrawRequest" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO withdraw_requests (
+            user_id, amount, status, bank_card_no, create_time, update_time
+        ) VALUES (
+            #{userId}, #{amount}, #{status}, #{bankCardNo}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 查询用户提现记录 -->
+    <select id="listWithdrawRequestsByUserId" resultType="com.demo.entity.WithdrawRequest">
+        SELECT
+            id, user_id AS userId, amount, status, bank_card_no AS bankCardNo,
+            create_time AS createTime, update_time AS updateTime
+        FROM withdraw_requests
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

@@ -54,7 +54,16 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public Long createReview(Long currentUserId, ReviewCreateRequest request) {
         Long orderId = request.getOrderId();
-
+        String content = request.getContent();
+        if (content != null) {
+            int len = content.trim().length();
+            if (len < 10) {
+                throw new BusinessException(MessageConstant.REVIEW_CONTENT_TOO_SHORT);
+            }
+            if (len > 500) {
+                throw new BusinessException(MessageConstant.REVIEW_CONTENT_TOO_LONG);
+            }
+        }
         // 1. 订单必须存在
         Order order = orderMapper.selectOrderBasicById(orderId);
         if (order == null) {
@@ -78,6 +87,13 @@ public class ReviewServiceImpl implements ReviewService {
             throw new BusinessException(MessageConstant.REVIEW_ALREADY_EXISTS);
         }
 
+        // Day13 Step4 - 防刷：同一买家 24 小时内最多 20 条评价
+        java.time.LocalDateTime twentyFourHoursAgo = java.time.LocalDateTime.now().minusHours(24);
+        int recentCount = reviewMapper.countByBuyerIdSince(currentUserId, twentyFourHoursAgo);
+        if (recentCount >= 20) {
+            throw new BusinessException(MessageConstant.REVIEW_TOO_FREQUENT);
+        }
+
         // 5. 获取 product_id 和 seller_id（从订单）
         Long productId = getProductIdFromOrder(orderId);
         Long sellerId = order.getSellerId();
@@ -90,7 +106,7 @@ public class ReviewServiceImpl implements ReviewService {
         review.setSellerId(sellerId);
         review.setRole(roleCode);
         review.setRating(request.getRating());
-        review.setContent(request.getContent());
+        review.setContent(content);
         review.setIsAnonymous(request.getIsAnonymous() ? ReviewConstants.ANON_YES : ReviewConstants.ANON_NO);
 
         // 7. 插入（捕获唯一键冲突）

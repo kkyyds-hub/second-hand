@@ -29,4 +29,10 @@ public interface ReviewMapper {
      * 分页查询商品评价列表（按 product_id + is_deleted，按 create_time DESC）
      */
     List<Review> listByProductId(@Param("productId") Long productId);
+
+    /**
+     * Day13 Step4 - 防刷：统计买家在指定时间后创建的评价数量
+     */
+    int countByBuyerIdSince(@Param("buyerId") Long buyerId, 
+                            @Param("since") java.time.LocalDateTime since);
 }

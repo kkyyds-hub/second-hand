@@ -42,6 +42,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private CreditService creditService;
 
+    @Autowired
+    private com.demo.service.PointsService pointsService;
+
     @Override
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
         pageValidated(pageQueryDTO);
@@ -187,6 +190,10 @@ public class OrderServiceImpl implements OrderService {
             // Step3：订单完成会影响买家/卖家的 completed 统计，因此两边都重算
             creditService.recalcUserCredit(detail.getBuyerId(), CreditReasonType.ORDER_COMPLETED, orderId);
             creditService.recalcUserCredit(detail.getSellerId(), CreditReasonType.ORDER_COMPLETED, orderId);
+
+            // Day13 Step8：订单完成发放积分
+            pointsService.grantPointsForOrderComplete(orderId, detail.getBuyerId(), detail.getSellerId());
+
             return "确认收货成功";
         }
 
@@ -363,6 +370,60 @@ public class OrderServiceImpl implements OrderService {
         }
 
         throw new BusinessException("取消失败，订单状态不允许取消：" + detail.getStatus());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String handlePaymentCallback(com.demo.dto.payment.PaymentCallbackRequest request) {
+        // 1) 占位验签（Day13 冻结：sign 非空 + timestamp 在 5 分钟内）
+        if (request.getSign() == null || request.getSign().trim().isEmpty()) {
+            throw new BusinessException("签名不能为空");
+        }
+        long now = System.currentTimeMillis() / 1000;
+        long diff = Math.abs(now - request.getTimestamp());
+        if (diff > 300) { // 5分钟 = 300秒
+            throw new BusinessException("回调时间戳超时（超过5分钟）");
+        }
+
+        // 2) 只有 status=SUCCESS 才触发订单状态更新
+        if (!"SUCCESS".equalsIgnoreCase(request.getStatus())) {
+            return "回调状态非成功，不做处理";
+        }
+
+        // 3) 根据 orderNo 查询订单
+        Order order = orderMapper.selectOrderByOrderNo(request.getOrderNo());
+        if (order == null) {
+            throw new BusinessException("订单不存在：" + request.getOrderNo());
+        }
+
+        // 4) 幂等：若已 paid/shipped/completed，直接返回成功
+        OrderStatus s = OrderStatus.fromDbValue(order.getStatus());
+        if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            return "订单已支付，回调幂等成功";
+        }
+
+        // 5) 若已取消，提示不可支付
+        if (s == OrderStatus.CANCELLED) {
+            throw new BusinessException("订单已取消，无法支付");
+        }
+
+        // 6) 尝试更新 pending -> paid（条件更新）
+        int rows = orderMapper.updateForPayByOrderNo(request.getOrderNo());
+        if (rows == 1) {
+            return "支付回调处理成功";
+        }
+
+        // 7) rows==0：可能并发/重复回调，再次查询做幂等判断
+        Order latest = orderMapper.selectOrderByOrderNo(request.getOrderNo());
+        if (latest == null) {
+            throw new BusinessException("订单不存在（可能已被删除）");
+        }
+        OrderStatus latestStatus = OrderStatus.fromDbValue(latest.getStatus());
+        if (latestStatus == OrderStatus.PAID || latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
+            return "订单已支付，回调幂等成功";
+        }
+
+        throw new BusinessException("支付回调处理失败，订单状态不允许支付：" + latest.getStatus());
     }
 
     private String generateOrderNo(Long buyerId) {
