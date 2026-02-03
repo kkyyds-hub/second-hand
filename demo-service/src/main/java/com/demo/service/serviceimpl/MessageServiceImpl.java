@@ -1,5 +1,6 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.constant.MessageConstant;
 import com.demo.dto.message.MessageDTO;
 import com.demo.dto.message.SendMessageRequest;
 import com.demo.entity.Message;
@@ -9,7 +10,6 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.repository.MessageRepository;
 import com.demo.result.PageResult;
-import com.demo.constant.MessageConstant;
 import com.demo.service.MessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -58,16 +58,21 @@ public class MessageServiceImpl implements MessageService {
         boolean isSeller = Objects.equals(currentUserId, order.getSellerId());
         if (!isBuyer && !isSeller) {
             throw new BusinessException(MessageConstant.MESSAGE_NO_PERMISSION);
-
         }
 
-        // 3. 订单状态不得为 cancelled（取消后禁止沟通）
+        // 2.1 toUserId 必须是订单另一方
+        Long expectedToUserId = isBuyer ? order.getSellerId() : order.getBuyerId();
+        if (!Objects.equals(request.getToUserId(), expectedToUserId)) {
+            throw new BusinessException(MessageConstant.MESSAGE_NO_PERMISSION);
+        }
+
+        // 3. 订单状态不得为 cancelled
         OrderStatus status = OrderStatus.fromDbValue(order.getStatus());
         if (status == OrderStatus.CANCELLED) {
             throw new BusinessException("订单已取消，无法发送消息");
         }
 
-        // 4. 频控：单用户单会话 1 秒内最多 3 条（简单实现：查询最近 1 秒内发送的消息数）
+        // 4. 频控：单用户单会话 1 秒内最多 3 条
         LocalDateTime oneSecondAgo = LocalDateTime.now().minusSeconds(1);
         Query frequencyQuery = new Query();
         frequencyQuery.addCriteria(
@@ -90,12 +95,11 @@ public class MessageServiceImpl implements MessageService {
         message.setRead(false);
         message.setCreateTime(LocalDateTime.now());
 
-        // 6. 幂等：clientMsgId 唯一（捕获重复键异常）
+        // 6. 幂等：clientMsgId 唯一
         try {
             messageRepository.save(message);
         } catch (DuplicateKeyException e) {
-            log.warn("消息幂等：clientMsgId={}, orderId={}", request.getClientMsgId(), orderId);
-            // 查询已存在的消息并返回
+            log.warn("消息幂等: clientMsgId={}, orderId={}", request.getClientMsgId(), orderId);
             Query query = new Query();
             query.addCriteria(
                     Criteria.where("orderId").is(orderId)
@@ -109,7 +113,7 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException("消息发送失败");
         }
 
-        log.info("消息发送成功：messageId={}, orderId={}, from={}, to={}",
+        log.info("消息发送成功: messageId={}, orderId={}, from={}, to={}",
                 message.getId(), orderId, currentUserId, request.getToUserId());
 
         return convertToDTO(message);
@@ -130,7 +134,7 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException(MessageConstant.MESSAGE_NO_PERMISSION);
         }
 
-        // 3. 分页查询（按 createTime 升序，便于聊天展示）
+        // 3. 分页查询（按 createTime 升序）
         Pageable pageable = PageRequest.of(page - 1, pageSize);
         Page<Message> messagePage = messageRepository.findByOrderIdOrderByCreateTimeAsc(orderId, pageable);
 
@@ -161,7 +165,7 @@ public class MessageServiceImpl implements MessageService {
             throw new BusinessException(MessageConstant.MESSAGE_NO_PERMISSION);
         }
 
-        // 3. 批量更新：将该订单中发给当前用户的未读消息标记为已读
+        // 3. 批量更新为已读
         Query query = new Query();
         query.addCriteria(
                 Criteria.where("orderId").is(orderId)
@@ -171,8 +175,8 @@ public class MessageServiceImpl implements MessageService {
         Update update = new Update().set("read", true);
         long count = mongoTemplate.updateMulti(query, update, Message.class).getModifiedCount();
 
-        log.info("标记订单会话已读：orderId={}, userId={}, count={}", orderId, currentUserId, count);
-        return "已标记 " + count + " 条消息为已读";
+        log.info("标记订单会话已读: orderId={}, userId={}, count={}", orderId, currentUserId, count);
+        return "已标记" + count + "条消息为已读";
     }
 
     private MessageDTO convertToDTO(Message message) {

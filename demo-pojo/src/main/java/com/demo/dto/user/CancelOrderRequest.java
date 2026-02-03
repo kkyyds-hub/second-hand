@@ -12,8 +12,8 @@ public class CancelOrderRequest {
 
     /**
      * 取消原因（可选）
-     * 建议传：buyer_cancel / wrong_info / no_need 等短码
+     * 建议值：buyer_cancel / wrong_info / no_need 等
      */
-    @Size(max = 64, message = "取消原因长度不能超过64")
+    @Size(max = 100, message = "取消原因长度不能超过100")
     private String reason;
 }

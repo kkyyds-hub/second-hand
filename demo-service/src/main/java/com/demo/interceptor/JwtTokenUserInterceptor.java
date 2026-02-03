@@ -11,6 +11,7 @@ import com.demo.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.time.LocalDate;
 
 /**
  * jwt令牌校验的拦截器
@@ -31,6 +33,11 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
+    private static final String DAU_KEY_PREFIX = "dau:";
     /**
      * 校验jwt
      *
@@ -92,6 +99,16 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
             // 6. 状态正常，保存当前用户ID到上下文，放行
             BaseContext.setCurrentId(userId);
+
+            // Day13 DAU 口径：用户调用任一 /user/** GET 接口视为当天活跃（Redis SET 去重）
+            if ("GET".equalsIgnoreCase(request.getMethod()) && stringRedisTemplate != null) {
+                String key = DAU_KEY_PREFIX + LocalDate.now();
+                try {
+                    stringRedisTemplate.opsForSet().add(key, String.valueOf(userId));
+                } catch (Exception e) {
+                    log.warn("DAU 记录失败: userId={}, err={}", userId, e.getMessage());
+                }
+            }
             return true;
 
         } catch (BusinessException e) {

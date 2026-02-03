@@ -18,8 +18,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -59,17 +59,20 @@ public class AfterSaleServiceImpl implements AfterSaleService {
             throw new BusinessException("订单未完成，无法申请售后");
         }
 
-        // 4. complete_time 距当前时间不超过 7 天
+        // 4. complete_time 距当前时间不超过 7 天（按 7*24 小时）
         LocalDateTime completeTime = order.getCompleteTime();
         if (completeTime == null) {
             throw new BusinessException("订单完成时间异常");
         }
-        long daysSinceComplete = ChronoUnit.DAYS.between(completeTime, LocalDateTime.now());
-        if (daysSinceComplete > 7) {
+        Duration duration = Duration.between(completeTime, LocalDateTime.now());
+        if (duration.isNegative()) {
+            throw new BusinessException("订单完成时间异常");
+        }
+        if (duration.toHours() > 24L * 7) {
             throw new BusinessException("已超过确认收货7天，无法申请售后");
         }
 
-        // 5. 同一订单仅允许存在 1 条售后（幂等检查）
+        // 5. 同一订单仅允许存在 1 条售后
         AfterSale existing = afterSaleMapper.selectByOrderId(orderId);
         if (existing != null) {
             throw new BusinessException("该订单已存在售后申请");
@@ -87,11 +90,11 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         try {
             afterSaleMapper.insertAfterSale(afterSale);
         } catch (DuplicateKeyException e) {
-            log.warn("售后唯一键冲突：orderId={}", orderId, e);
+            log.warn("售后唯一键冲突: orderId={}", orderId, e);
             throw new BusinessException("该订单已存在售后申请");
         }
 
-        // 8. 插入凭证（最多 3 张）
+        // 8. 插入凭证（最多3张）
         if (request.getEvidenceImages() != null && !request.getEvidenceImages().isEmpty()) {
             List<AfterSaleEvidence> evidences = new ArrayList<>();
             int sort = 1;
@@ -109,7 +112,7 @@ public class AfterSaleServiceImpl implements AfterSaleService {
             }
         }
 
-        log.info("售后申请成功：afterSaleId={}, orderId={}, buyerId={}",
+        log.info("售后申请成功: afterSaleId={}, orderId={}, buyerId={}",
                 afterSale.getId(), orderId, currentUserId);
         return afterSale.getId();
     }
@@ -134,15 +137,18 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         }
 
         // 4. 更新状态和备注
-        String newStatus = request.getApproved() ? "SELLER_APPROVED" : "SELLER_REJECTED";
+        String newStatus = request.getApproved() ? "CLOSED" : "SELLER_REJECTED";
         String remark = request.getRemark() != null ? request.getRemark().trim() : "";
+        if (request.getApproved()) {
+            remark = remark.isEmpty() ? "APPROVED" : "APPROVED: " + remark;
+        }
 
         int rows = afterSaleMapper.updateSellerDecision(afterSaleId, newStatus, remark);
         if (rows != 1) {
             throw new BusinessException("处理失败");
         }
 
-        log.info("卖家处理售后：afterSaleId={}, sellerId={}, approved={}",
+        log.info("卖家处理售后: afterSaleId={}, sellerId={}, approved={}",
                 afterSaleId, currentUserId, request.getApproved());
 
         return request.getApproved() ? "已同意退货退款" : "已拒绝退货退款";
@@ -173,7 +179,7 @@ public class AfterSaleServiceImpl implements AfterSaleService {
             throw new BusinessException("提交纠纷失败");
         }
 
-        log.info("买家提交纠纷：afterSaleId={}, buyerId={}, content={}",
+        log.info("买家提交纠纷: afterSaleId={}, buyerId={}, content={}",
                 afterSaleId, currentUserId, request.getContent());
 
         return "纠纷已提交，等待平台介入";
@@ -193,16 +199,18 @@ public class AfterSaleServiceImpl implements AfterSaleService {
             throw new BusinessException("售后状态不允许裁决");
         }
 
-        // 3. 更新状态和备注
-        String newStatus = request.getApproved() ? "PLATFORM_APPROVED" : "PLATFORM_REJECTED";
+        // 3. 更新状态为 CLOSED，并记录裁决结果到备注
+        String newStatus = "CLOSED";
         String remark = request.getRemark() != null ? request.getRemark().trim() : "";
+        String decision = request.getApproved() ? "APPROVED" : "REJECTED";
+        remark = remark.isEmpty() ? decision : decision + ": " + remark;
 
         int rows = afterSaleMapper.updatePlatformArbitrate(afterSaleId, newStatus, remark);
         if (rows != 1) {
             throw new BusinessException("裁决失败");
         }
 
-        log.info("平台裁决售后：afterSaleId={}, approved={}", afterSaleId, request.getApproved());
+        log.info("平台裁决售后: afterSaleId={}, approved={}", afterSaleId, request.getApproved());
 
         return request.getApproved() ? "裁决通过，支持退货退款" : "裁决驳回";
     }

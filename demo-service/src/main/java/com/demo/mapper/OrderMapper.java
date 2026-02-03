@@ -1,10 +1,12 @@
 package com.demo.mapper;
 
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.admin.AdminOrderQueryDTO;
 import com.demo.dto.seller.SellerOrderCountDTO;
 import com.demo.dto.statistics.OrderGmvStatsDTO;
 import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
+import com.demo.dto.admin.AdminOrderDTO;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -24,6 +26,8 @@ public interface OrderMapper {
             @Param("currentUserId") Long currentUserId,
             @Param("query") PageQueryDTO pageQueryDTO
     );
+
+    List<AdminOrderDTO> listAdminOrders(@Param("query") AdminOrderQueryDTO query);
 
     OrderDetail getOrderDetail(@Param("orderId") Long orderId,
                                @Param("currentUserId") Long currentUserId
