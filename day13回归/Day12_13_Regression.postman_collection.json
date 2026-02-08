@@ -1,0 +1,1084 @@
+{
+  "info": {
+    "_postman_id": "a2d8d2a9-9d4a-4c5c-8a61-7c2a13a0b4b9",
+    "name": "Day12+Day13 Regression (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto inject tokens for /user/** and /admin/**",
+          "var url = pm.request.url.toString();",
+          "",
+          "if (url.includes('/admin/') && !url.includes('/admin/employee/login')) {",
+          "  var tAdmin = pm.environment.get('token_admin');",
+          "  if (tAdmin) pm.request.headers.upsert({ key: 'token', value: tAdmin });",
+          "}",
+          "",
+          "if (url.includes('/user/') && !url.includes('/user/auth/')) {",
+          "  var wantsSeller = url.includes('/ship') || url.includes('/seller-decision');",
+          "  var tBuyer = pm.environment.get('token_buyer');",
+          "  var tSeller = pm.environment.get('token_seller');",
+          "  var t = wantsSeller ? (tSeller || tBuyer) : tBuyer;",
+          "  if (t) pm.request.headers.upsert({ key: 'authentication', value: t });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login (Password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "auth", "login", "password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{buyer_username}}\",\"password\":\"{{buyer_password}}\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_buyer', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('buyerId', j.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+        ,
+        {
+          "name": "Seller Login (Password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/auth/login/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "auth", "login", "password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{seller_username}}\",\"password\":\"{{seller_password}}\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_seller', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('sellerId', j.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employee/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "employee", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{admin_loginId}}\",\"password\":\"{{admin_password}}\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_admin', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('adminId', j.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-Day13 Order Flow",
+      "item": [
+        {
+          "name": "01 - Create Order (Buyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId_on_sale}},\"shippingAddress\":\"回归测试地址 1 号\",\"quantity\":1}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var ok = j && j.code === 1;",
+                  "if (ok) {",
+                  "  pm.environment.set('orderId_new', j.data.orderId);",
+                  "  pm.environment.set('orderNo_new', j.data.orderNo);",
+                  "  pm.test('create order ok', ()=> pm.expect(j.data.orderId).to.be.ok);",
+                  "} else {",
+                  "  var allowed = ['商品已被购买或不可购买，请刷新后重试','商品非在售状态，无法下单','不能购买自己发布的商品','商品不存在'];",
+                  "  pm.test('create order allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Pay Order (Idempotent or Success)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{orderId_paid}}/pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "orders", "{{orderId_paid}}", "pay"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Ship Order (Seller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authentication", "value": "{{token_seller}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{orderId_paid}}/ship",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "orders", "{{orderId_paid}}", "ship"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shippingCompany\":\"{{shipping_company}}\",\"trackingNo\":\"{{tracking_no}}\",\"remark\":\"回归发货\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Confirm Receipt (Buyer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{orderId_shipped}}/confirm-receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "orders", "{{orderId_shipped}}", "confirm-receipt"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Cancel Order (Buyer, Idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/orders/{{orderId_cancelled}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "orders", "{{orderId_cancelled}}", "cancel"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\":\"buyer_cancel\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Payment Callback (Mock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "callback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"channel\":\"mock\",\"orderNo\":\"{{orderNo_paid}}\",\"tradeNo\":\"MOCK_T20260203_0001\",\"amount\":199.00,\"status\":\"SUCCESS\",\"timestamp\":{{timestamp}},\"sign\":\"placeholder\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('timestamp', Math.floor(Date.now()/1000));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-Day13 Messages (Mongo)",
+      "item": [
+        {
+          "name": "01 - Send Message (Buyer -> Seller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/messages/orders/{{orderId_message}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "messages", "orders", "{{orderId_message}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"toUserId\":{{sellerId_fixed}},\"content\":\"回归消息测试\",\"clientMsgId\":\"{{clientMsgId}}\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('clientMsgId', 'MSG-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - List Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/messages/orders/{{orderId_message}}?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "messages", "orders", "{{orderId_message}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/messages/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "messages", "unread-count"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Mark As Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/messages/orders/{{orderId_message}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "messages", "orders", "{{orderId_message}}", "read"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-Day12 Reviews",
+      "item": [
+        {
+          "name": "01 - Create Review (Buyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "reviews"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":{{orderId_completed}},\"rating\":5,\"content\":\"物流很快，商品描述一致，沟通顺畅。\",\"isAnonymous\":true}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var ok = j && j.code === 1;",
+                  "if (ok) {",
+                  "  pm.test('review created', ()=> pm.expect(j.data).to.be.ok);",
+                  "} else {",
+                  "  pm.test('review already exists', ()=> pm.expect(j.msg).to.eql('该订单已评价'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - My Reviews (Page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/reviews/mine?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "reviews", "mine"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Product Reviews (Page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/market/products/{{review_productId}}/reviews?page=1&pageSize=10&sortField=createTime&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "market", "products", "{{review_productId}}", "reviews"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" },
+                { "key": "sortField", "value": "createTime" },
+                { "key": "sortOrder", "value": "desc" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-Day13 After-Sale",
+      "item": [
+        {
+          "name": "01 - Create After-Sale (Buyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/after-sales",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "after-sales"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":{{orderId_for_after_sale}},\"reason\":\"商品有质量问题\",\"evidenceImages\":[\"https://img.example.com/e1.png\"]}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var ok = j && j.code === 1;",
+                  "if (ok) {",
+                  "  pm.environment.set('afterSaleId', j.data);",
+                  "  pm.test('afterSaleId exists', ()=> pm.expect(j.data).to.be.ok);",
+                  "} else {",
+                  "  var allowed = ['该订单已存在售后申请','已超过确认收货7天，无法申请售后','订单未完成，无法申请售后'];",
+                  "  pm.test('allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Seller Decision (Reject)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authentication", "value": "{{token_seller}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/after-sales/{{afterSaleId}}/seller-decision",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "after-sales", "{{afterSaleId}}", "seller-decision"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"approved\":false,\"remark\":\"不同意\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.code === 1) {",
+                  "  pm.test('seller decision ok', ()=> pm.expect(j.data).to.be.ok);",
+                  "} else {",
+                  "  var allowed = ['售后记录不存在','售后状态不允许处理','只有卖家本人可以处理'];",
+                  "  pm.test('allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Buyer Dispute",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/after-sales/{{afterSaleId}}/dispute",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "after-sales", "{{afterSaleId}}", "dispute"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"不同意卖家处理，申请平台介入\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.code === 1) {",
+                  "  pm.test('dispute ok', ()=> pm.expect(j.data).to.be.ok);",
+                  "} else {",
+                  "  var allowed = ['售后记录不存在','只能对卖家拒绝的售后提交纠纷','只有买家本人可以提交纠纷'];",
+                  "  pm.test('allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Admin Arbitrate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/after-sales/{{afterSaleId}}/arbitrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "after-sales", "{{afterSaleId}}", "arbitrate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"approved\":true,\"remark\":\"平台支持退款\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.code === 1) {",
+                  "  pm.test('arbitrate ok', ()=> pm.expect(j.data).to.be.ok);",
+                  "} else {",
+                  "  var allowed = ['售后记录不存在','售后状态不允许裁决'];",
+                  "  pm.test('allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06-Day13 Admin Orders",
+      "item": [
+        {
+          "name": "01 - Admin List Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders?page=1&pageSize=10&status=paid&sortField=createTime&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" },
+                { "key": "status", "value": "paid" },
+                { "key": "sortField", "value": "createTime" },
+                { "key": "sortOrder", "value": "desc" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Admin Flag Order (Idempotent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/{{orderId_paid}}/flags",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "orders", "{{orderId_paid}}", "flags"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"suspicious\",\"remark\":\"回归标记\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07-Day13 Statistics",
+      "item": [
+        {
+          "name": "01 - DAU",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/statistics/dau?date=2026-02-03",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "statistics", "dau"],
+              "query": [
+                { "key": "date", "value": "2026-02-03" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Product Publish Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/statistics/product-publish?date=2026-02-03",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "statistics", "product-publish"],
+              "query": [
+                { "key": "date", "value": "2026-02-03" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Order GMV",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "token", "value": "{{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/statistics/order-gmv?date=2026-02-03",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "statistics", "order-gmv"],
+              "query": [
+                { "key": "date", "value": "2026-02-03" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08-Day13 Wallet & Points",
+      "item": [
+        {
+          "name": "01 - Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/wallet/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "wallet", "balance"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Wallet Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/wallet/transactions?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "wallet", "transactions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Wallet Withdraw Apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/wallet/withdraw",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "wallet", "withdraw"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\":{{withdraw_amount}},\"bankCardNo\":\"{{bank_card_no}}\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Points Total",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/points/total",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "points", "total"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Points Ledger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/points/ledger?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "points", "ledger"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> {",
+                  "  pm.expect(j.data).to.have.property('total');",
+                  "  pm.expect(j.data).to.have.property('list');",
+                  "  pm.expect(j.data).to.have.property('page');",
+                  "  pm.expect(j.data).to.have.property('pageSize');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

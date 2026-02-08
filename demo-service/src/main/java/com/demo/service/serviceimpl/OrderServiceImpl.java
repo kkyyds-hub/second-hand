@@ -9,6 +9,7 @@ import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.entity.Product;
 import com.demo.enumeration.CreditReasonType;
+import com.demo.mq.producer.OrderEventProducer;
 import com.demo.enumeration.OrderStatus;
 import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
@@ -17,6 +18,7 @@ import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
 import com.demo.service.CreditService;
 import com.demo.service.OrderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -25,12 +27,23 @@ import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.demo.entity.MessageOutbox;
+import com.demo.service.OutboxService;
+import com.demo.dto.mq.EventMessage;
+import com.demo.dto.mq.OrderCreatedPayload;
+import com.demo.dto.mq.OrderEventType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.UUID;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
@@ -44,6 +57,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private com.demo.service.PointsService pointsService;
+
+    @Autowired
+    private OrderEventProducer orderEventProducer;
+
+    @Autowired
+    private OutboxService outboxService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
     @Override
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
@@ -120,6 +143,16 @@ public class OrderServiceImpl implements OrderService {
         // 5. 执行更新 + 乐观校验
         int rows = orderMapper.updateForShipping(orderToUpdate);
         if (rows == 1) {
+            safePublish("ORDER_STATUS_CHANGED(ship)", () ->
+                    orderEventProducer.sendOrderStatusChanged(
+                            detail.getOrderId(),
+                            detail.getOrderNo(),
+                            currentStatus.getDbValue(),
+                            OrderStatus.SHIPPED.getDbValue(),
+                            currentUserId
+                    )
+            );
+
             return "发货成功";
         }
 
@@ -134,12 +167,12 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单状态异常");
         }
 
-       //  幂等：已发货/已完成 -> 成功返回
+        //  幂等：已发货/已完成 -> 成功返回
         if (latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
             return "订单已发货，无需重复操作";
         }
 
-       // 已取消 -> 明确报错
+        // 已取消 -> 明确报错
         if (latestStatus == OrderStatus.CANCELLED) {
             throw new BusinessException("订单已取消，无法发货");
         }
@@ -193,6 +226,16 @@ public class OrderServiceImpl implements OrderService {
 
             // Day13 Step8：订单完成发放积分
             pointsService.grantPointsForOrderComplete(orderId, detail.getBuyerId(), detail.getSellerId());
+
+            safePublish("ORDER_STATUS_CHANGED(confirm)", () ->
+                    orderEventProducer.sendOrderStatusChanged(
+                            detail.getOrderId(),
+                            detail.getOrderNo(),
+                            currentStatus.getDbValue(),
+                            OrderStatus.COMPLETED.getDbValue(),
+                            currentUserId
+                    )
+            );
 
             return "确认收货成功";
         }
@@ -257,7 +300,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("商品已被购买或不可购买，请刷新后重试");
         }
 
-        // 4) 插入 orders（你的 XML 已 useGeneratedKeys 回填 id）
+        // 4) 插入 orders（XML 已 useGeneratedKeys 回填 id）
         Order order = new Order();
         order.setOrderNo(generateOrderNo(currentUserId));
         order.setBuyerId(currentUserId);
@@ -283,8 +326,48 @@ public class OrderServiceImpl implements OrderService {
         if (itemInserted != 1) {
             throw new BusinessException("创建订单明细失败");
         }
+        // 发送订单创建事件（失败不影响主交易，后续由 Outbox/任务兜底）
+        safePublish("ORDER_CREATED", () -> orderEventProducer.sendOrderCreated(order, product));
 
-        // 6) 返回响应（时间你 SQL 用 NOW()，这里返回当前时间即可；若要严格一致可再查一次订单）
+        // ====== Outbox 入库：ORDER_CREATED ======
+        OrderCreatedPayload payload = new OrderCreatedPayload();
+        payload.setOrderId(order.getId());
+        payload.setOrderNo(order.getOrderNo());
+        payload.setBuyerId(order.getBuyerId());
+        payload.setSellerId(order.getSellerId());
+        payload.setProductId(product.getId());
+        payload.setQuantity(1);
+        payload.setPrice(product.getPrice());
+        payload.setTotalAmount(order.getTotalAmount());
+        payload.setCreateTime(LocalDateTime.now());
+
+        EventMessage<OrderCreatedPayload> message = new EventMessage<>();
+        message.setEventId(UUID.randomUUID().toString());
+        message.setEventType(OrderEventType.ORDER_CREATED.getCode());
+        message.setRoutingKey("order.created");
+        message.setBizId(order.getId());
+        message.setOccurredAt(LocalDateTime.now());
+        message.setPayload(payload);
+
+        MessageOutbox outbox = new MessageOutbox();
+        outbox.setEventId(message.getEventId());
+        outbox.setEventType(message.getEventType());
+        outbox.setRoutingKey(message.getRoutingKey());
+        outbox.setExchangeName("order.events.exchange");
+        outbox.setBizId(order.getId());
+        outbox.setPayloadJson(toJsonSafely(message));
+        outbox.setStatus("NEW");
+        outbox.setRetryCount(0);
+        outbox.setNextRetryTime(null);
+
+        outboxService.save(outbox);
+
+
+        // 发送订单超时延迟消息（失败不影响主交易，仍有 DB 扫描 Job 兜底）
+        safePublish("ORDER_TIMEOUT_DELAY", () -> orderEventProducer.sendOrderTimeoutDelay(order));
+
+
+        // 6) 返回响应（SQL 用 NOW()，这里返回当前时间即可；若要严格一致可再查一次订单）
         CreateOrderResponse resp = new CreateOrderResponse();
         resp.setOrderId(order.getId());
         resp.setOrderNo(order.getOrderNo());
@@ -379,6 +462,7 @@ public class OrderServiceImpl implements OrderService {
         if (request.getSign() == null || request.getSign().trim().isEmpty()) {
             throw new BusinessException("签名不能为空");
         }
+        //时间戳校验
         long now = System.currentTimeMillis() / 1000;
         long diff = Math.abs(now - request.getTimestamp());
         if (diff > 300) { // 5分钟 = 300秒
@@ -410,6 +494,39 @@ public class OrderServiceImpl implements OrderService {
         // 6) 尝试更新 pending -> paid（条件更新）
         int rows = orderMapper.updateForPayByOrderNo(request.getOrderNo());
         if (rows == 1) {
+            safePublish("ORDER_PAID", () -> orderEventProducer.sendOrderPaid(order, request.getAmount(), request.getChannel()));
+            // ====== Outbox 入库：ORDER_PAID ======
+            EventMessage<com.demo.dto.mq.OrderPaidPayload> paidMsg = new EventMessage<>();
+            paidMsg.setEventId(UUID.randomUUID().toString());
+            paidMsg.setEventType(OrderEventType.ORDER_PAID.getCode());
+            paidMsg.setRoutingKey("order.paid");
+            paidMsg.setBizId(order.getId());
+            paidMsg.setOccurredAt(LocalDateTime.now());
+
+            com.demo.dto.mq.OrderPaidPayload paidPayload = new com.demo.dto.mq.OrderPaidPayload();
+            paidPayload.setOrderId(order.getId());
+            paidPayload.setOrderNo(order.getOrderNo());
+            paidPayload.setBuyerId(order.getBuyerId());
+            paidPayload.setPayAmount(request.getAmount());
+            paidPayload.setPayMethod(request.getChannel());
+            paidPayload.setPayTime(LocalDateTime.now());
+
+            paidMsg.setPayload(paidPayload);
+
+            MessageOutbox paidOutbox = new MessageOutbox();
+            paidOutbox.setEventId(paidMsg.getEventId());
+            paidOutbox.setEventType(paidMsg.getEventType());
+            paidOutbox.setRoutingKey(paidMsg.getRoutingKey());
+            paidOutbox.setExchangeName("order.events.exchange");
+            paidOutbox.setBizId(order.getId());
+            paidOutbox.setPayloadJson(toJsonSafely(paidMsg));
+            paidOutbox.setStatus("NEW");
+            paidOutbox.setRetryCount(0);
+            paidOutbox.setNextRetryTime(null);
+
+            outboxService.save(paidOutbox);
+
+
             return "支付回调处理成功";
         }
 
@@ -431,6 +548,29 @@ public class OrderServiceImpl implements OrderService {
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000);
         return time + (buyerId % 10000) + rnd;
+    }
+
+    /**
+     * 安全序列化为 JSON
+     * - 失败时抛 BusinessException，保证事务回滚
+     */
+    private String toJsonSafely(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("消息序列化失败，请检查字段是否可序列化");
+        }
+    }
+
+    /**
+     * MQ 发送失败不应阻塞主交易，避免把业务成功误判为“服务器错误”。
+     */
+    private void safePublish(String scene, Runnable action) {
+        try {
+            action.run();
+        } catch (Exception ex) {
+            log.error("MQ publish failed, scene={}", scene, ex);
+        }
     }
 
     private void pageValidated(PageQueryDTO pageQueryDTO) {

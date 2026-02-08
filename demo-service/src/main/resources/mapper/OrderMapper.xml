@@ -338,7 +338,8 @@
             id,
             buyer_id  AS buyerId,
             seller_id AS sellerId,
-            status
+            status,
+            complete_time AS completeTime
         FROM orders
         WHERE id = #{orderId}
         LIMIT 1

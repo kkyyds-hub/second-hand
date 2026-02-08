@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.MqConsumeLogMapper">
+
+    <!-- 根据 consumer + eventId 查询（幂等判断） -->
+    <select id="selectByConsumerAndEventId" resultType="com.demo.entity.MqConsumeLog">
+        SELECT
+            id,
+            consumer,
+            event_id   AS eventId,
+            status,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM mq_consume_log
+        WHERE consumer = #{consumer}
+          AND event_id = #{eventId}
+            LIMIT 1
+    </select>
+
+    <!-- 插入消费日志（标记已处理） -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mq_consume_log (
+            consumer,
+            event_id,
+            status,
+            created_at,
+            updated_at
+        ) VALUES (
+                     #{consumer},
+                     #{eventId},
+                     #{status},
+                     NOW(),
+                     NOW()
+                 )
+    </insert>
+
+    <!-- 更新状态（可选，用于失败/重试记录） -->
+    <update id="updateStatus">
+        UPDATE mq_consume_log
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

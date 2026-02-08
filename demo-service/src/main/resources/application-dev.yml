@@ -15,6 +15,15 @@ demo:
     database: 2
     enabled: true
 
-  # MongoDB（站内消息），安装脚本已配置用户 root / 密码 1234
+  # MongoDB（站内消息）无认证直连
   mongodb:
-    uri: mongodb://root:1234@localhost:27017/demo
+    uri: mongodb://localhost:27017/demo
+
+  # Day14 RabbitMQ（开发机默认本地容器/本机服务）
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    prefetch: 20

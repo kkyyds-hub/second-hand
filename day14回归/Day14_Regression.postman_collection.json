@@ -1,0 +1,1226 @@
+{
+  "info": {
+    "_postman_id": "161aee1f-0ab0-42ee-b4bc-c134749cdb7d",
+    "name": "Day14 Regression (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login (Password)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{buyer_username}}\",\"password\":\"{{buyer_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_buyer', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('buyerId', j.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Login (Password)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"loginId\":\"{{seller_username}}\",\"password\":\"{{seller_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('token exists', ()=> pm.expect(j.data && j.data.token).to.be.ok);",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_seller', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('sellerId', j.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-RabbitMQ Topology",
+      "item": [
+        {
+          "name": "RabbitMQ Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/overview",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('overview has version', ()=> pm.expect(j.rabbitmq_version).to.be.ok);",
+                  "pm.test('overview has object totals', ()=> pm.expect(j.object_totals).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exchange Exists: order.events.exchange",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/exchanges/%2F/{{exchange_order_events}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('exchange name match', ()=> pm.expect(j.name).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('exchange type is topic', ()=> pm.expect(j.type).to.eql('topic'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: inventory.update.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_inventory_update}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_inventory_update');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};",
+                  "pm.test('DLX configured', ()=> pm.expect(args['x-dead-letter-exchange']).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('DLQ routing configured', ()=> pm.expect(args['x-dead-letter-routing-key']).to.eql(pm.environment.get('rk_dlq')));",
+                  "pm.test('consumers >= 1', ()=> pm.expect(Number(j.consumers || 0)).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: order.fulfillment.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_order_fulfillment}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_order_fulfillment');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};",
+                  "pm.test('DLX configured', ()=> pm.expect(args['x-dead-letter-exchange']).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('DLQ routing configured', ()=> pm.expect(args['x-dead-letter-routing-key']).to.eql(pm.environment.get('rk_dlq')));",
+                  "pm.test('consumers >= 1', ()=> pm.expect(Number(j.consumers || 0)).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: order.status.sync.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_order_status_sync}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_order_status_sync');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};",
+                  "pm.test('DLX configured', ()=> pm.expect(args['x-dead-letter-exchange']).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('DLQ routing configured', ()=> pm.expect(args['x-dead-letter-routing-key']).to.eql(pm.environment.get('rk_dlq')));",
+                  "pm.test('consumers >= 1', ()=> pm.expect(Number(j.consumers || 0)).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: order.timeout.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_order_timeout}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_order_timeout');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};",
+                  "pm.test('DLX configured', ()=> pm.expect(args['x-dead-letter-exchange']).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('DLQ routing configured', ()=> pm.expect(args['x-dead-letter-routing-key']).to.eql(pm.environment.get('rk_dlq')));",
+                  "pm.test('consumers >= 1', ()=> pm.expect(Number(j.consumers || 0)).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: order.timeout.delay.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_order_timeout_delay}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_order_timeout_delay');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};",
+                  "var ttl = Number(pm.environment.get('expected_delay_ttl_ms'));\npm.test('delay TTL match', ()=> pm.expect(Number(args['x-message-ttl'])).to.eql(ttl));",
+                  "pm.test('delay queue dead-letter exchange', ()=> pm.expect(args['x-dead-letter-exchange']).to.eql(pm.environment.get('exchange_order_events')));",
+                  "pm.test('delay queue dead-letter routing', ()=> pm.expect(args['x-dead-letter-routing-key']).to.eql(pm.environment.get('rk_order_timeout')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Queue: order.dlq.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/queues/%2F/{{queue_order_dlq}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "var q = pm.environment.get('queue_order_dlq');",
+                  "pm.test('queue name match', ()=> pm.expect(j.name).to.eql(q));",
+                  "pm.test('queue durable', ()=> pm.expect(j.durable).to.eql(true));",
+                  "var args = j.arguments || {};"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.created -> inventory.update.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_inventory_update}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_order_created');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.paid -> order.fulfillment.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_order_fulfillment}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_order_paid');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.status.changed -> order.status.sync.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_order_status_sync}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_order_status_changed');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.timeout -> order.timeout.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_order_timeout}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_order_timeout');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.timeout.delay -> order.timeout.delay.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_order_timeout_delay}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_order_timeout_delay');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Binding: order.dlq -> order.dlq.queue",
+          "request": {
+            "method": "GET",
+            "url": "{{rabbit_mgmt_url}}/api/bindings/%2F/e/{{exchange_order_events}}/q/{{queue_order_dlq}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{rabbit_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{rabbit_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var arr = pm.response.json();",
+                  "var rk = pm.environment.get('rk_dlq');",
+                  "pm.test('binding list not empty', ()=> pm.expect(Array.isArray(arr) && arr.length > 0).to.eql(true));",
+                  "var has = Array.isArray(arr) && arr.some(function(b){ return b && b.routing_key === rk; });",
+                  "pm.test('routing key bound', ()=> pm.expect(has).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-Day14 Event Flow",
+      "item": [
+        {
+          "name": "Find Candidate Product (Buyer)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/market/products?page=1&pageSize=20",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> { pm.expect(j.data).to.have.property('total'); pm.expect(j.data).to.have.property('list'); });",
+                  "var list = (j.data && j.data.list) || [];",
+                  "var buyerId = Number(pm.environment.get('buyerId') || 0);",
+                  "var picked = list.find(function(it){ return !buyerId || Number(it.ownerId) !== buyerId; }) || list[0];",
+                  "if (picked && picked.productId) pm.environment.set(\"productId_event\", String(picked.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Order (Buyer, Dynamic or Fallback)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId_event}},\"shippingAddress\":\"Day14???? {{timestamp_seed}}\",\"quantity\":1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('timestamp_seed', Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j && j.code === 1) {",
+                  "  pm.environment.set('create_order_ok', 'true');",
+                  "  if (j.data && j.data.orderId) pm.environment.set('orderId_event', String(j.data.orderId));",
+                  "  if (j.data && j.data.orderNo) pm.environment.set('orderNo_event', j.data.orderNo);",
+                  "  if (j.data && j.data.totalAmount != null) pm.environment.set('orderAmount_event', String(j.data.totalAmount));",
+                  "  pm.test('create order success', ()=> pm.expect(j.data && j.data.orderId).to.be.ok);",
+                  "} else {",
+                  "  pm.environment.set('create_order_ok', 'false');",
+                  "  var allowed = ['??????????????????','????????????','???????????','?????'];",
+                  "  pm.test('create order allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Unread Count (Before Callback)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/unread-count",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('unread is number', ()=> pm.expect(Number(j.data)).to.be.a('number'));",
+                  "pm.environment.set('seller_unread_before', String(Number(j.data || 0)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Callback (ORDER_PAID Trigger)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/payment/callback",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"channel\":\"mock\",\"orderNo\":\"{{orderNo_event}}\",\"tradeNo\":\"{{tradeNo_event}}\",\"amount\":{{orderAmount_event}},\"status\":\"SUCCESS\",\"timestamp\":{{timestamp}},\"sign\":\"placeholder\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('timestamp', Math.floor(Date.now() / 1000));",
+                  "pm.environment.set('tradeNo_event', 'MOCK_D14_' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('callback result text exists', ()=> pm.expect((j.data || '').length).to.be.above(0));",
+                  "pm.environment.set('callback_result', j.data || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Unread Count (After Callback)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/unread-count",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "var before = Number(pm.environment.get('seller_unread_before') || 0);",
+                  "var after = Number(j.data || 0);",
+                  "pm.environment.set('seller_unread_after', String(after));",
+                  "pm.test('unread count non-decreasing', ()=> pm.expect(after).to.be.at.least(before));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller List Order Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/orders/{{orderId_event}}?page=1&pageSize=50",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> { pm.expect(j.data).to.have.property('total'); pm.expect(j.data).to.have.property('list'); pm.expect(j.data).to.have.property('page'); pm.expect(j.data).to.have.property('pageSize'); });",
+                  "var list = (j.data && j.data.list) || [];",
+                  "var orderNo = pm.environment.get('orderNo_event') || '';",
+                  "var hit = list.some(function(m){ var c = (m && m.content) || ''; return c.indexOf('?????') >= 0 || (orderNo && c.indexOf(orderNo) >= 0); });",
+                  "if (hit) pm.environment.set('paid_tip_seen', 'true');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ship Order (Seller)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_event}}/ship",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "authentication",
+                "value": "{{token_seller}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shippingCompany\":\"{{shipping_company}}\",\"trackingNo\":\"{{tracking_no_dynamic}}\",\"remark\":\"Day14????\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('tracking_no_dynamic', 'D14' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.code === 1) {",
+                  "  pm.environment.set('ship_ok', 'true');",
+                  "  pm.test('ship success', ()=> pm.expect(true).to.eql(true));",
+                  "} else {",
+                  "  pm.environment.set('ship_ok', 'false');",
+                  "  var allowed = ['??????????????????????','??????????','?????????????','??????????'];",
+                  "  pm.test('ship allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Unread Count (After Ship)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/unread-count",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.environment.set('buyer_unread_after_ship', String(Number(j.data || 0)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm Receipt (Buyer)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_event}}/confirm-receipt",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.code === 1) {",
+                  "  pm.environment.set('confirm_ok', 'true');",
+                  "  pm.test('confirm success', ()=> pm.expect(true).to.eql(true));",
+                  "} else {",
+                  "  pm.environment.set('confirm_ok', 'false');",
+                  "  var allowed = ['??????????????????????????','????????????','?????????????','????????????'];",
+                  "  pm.test('confirm allowed fail', ()=> pm.expect(allowed).to.include(j.msg));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Unread Count (After Confirm)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/unread-count",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_seller}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.environment.set('seller_unread_after_confirm', String(Number(j.data || 0)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer List Order Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/orders/{{orderId_event}}?page=1&pageSize=50",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('PageResult fields exist', ()=> { pm.expect(j.data).to.have.property('total'); pm.expect(j.data).to.have.property('list'); pm.expect(j.data).to.have.property('page'); pm.expect(j.data).to.have.property('pageSize'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order Detail (Buyer)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/orders/{{orderId_event}}",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "pm.test('status field exists', ()=> pm.expect(j.data && j.data.status).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Callback Repeat (Idempotent)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/payment/callback",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"channel\":\"mock\",\"orderNo\":\"{{orderNo_event}}\",\"tradeNo\":\"{{tradeNo_event_repeat}}\",\"amount\":{{orderAmount_event}},\"status\":\"SUCCESS\",\"timestamp\":{{timestamp}},\"sign\":\"placeholder\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('timestamp', Math.floor(Date.now() / 1000));",
+                  "pm.environment.set('tradeNo_event_repeat', 'MOCK_D14_R_' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Timeout Fixture Detail (Buyer)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/orders/{{orderId_timeout_fixture}}",
+            "header": [
+              {
+                "key": "authentication",
+                "value": "{{token_buyer}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', ()=> pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', ()=> pm.expect(j.code).to.eql(1));",
+                  "if (pm.environment.get('orderId_timeout_fixture') === '900024') {",
+                  "  pm.test('fixture status is cancelled', ()=> pm.expect(j.data && j.data.status).to.eql('cancelled'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

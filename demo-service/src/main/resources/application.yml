@@ -25,6 +25,23 @@ spring:
     mongodb:
       uri: ${demo.mongodb.uri:}
 
+  # RabbitMQ（Day14 异步消息），未安装时可先不填，见 application-dev.yml
+  rabbitmq:
+    host: ${demo.rabbitmq.host:}
+    port: ${demo.rabbitmq.port:5672}
+    username: ${demo.rabbitmq.username:}
+    password: ${demo.rabbitmq.password:}
+    virtual-host: ${demo.rabbitmq.virtual-host:/}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: ${demo.rabbitmq.prefetch:20}
+        default-requeue-rejected: false
+
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.demo.entity
@@ -60,6 +77,26 @@ demo:
     secret: ${demo.wechat.secret}  # 替换为实际值
   redis:
     enabled: false  # 若本地未启动Redis，可改为false以跳过Redis相关Bean创建
+
+  # Day14 RabbitMQ（仅配置项；队列/交换机声明与业务骨架后续落地）
+  rabbitmq:
+    enabled: true
+    exchange:
+      order-events: order.events.exchange
+    routing-key:
+      order-created: order.created
+      order-paid: order.paid
+      order-status-changed: order.status.changed
+      order-timeout: order.timeout
+      order-timeout-delay: order.timeout.delay
+      dlq: order.dlq
+    queue:
+      order-timeout: order.timeout.queue
+      inventory-update: inventory.update.queue
+      order-fulfillment: order.fulfillment.queue
+      order-status-sync: order.status.sync.queue
+      dlq: order.dlq.queue
+      order-timeout-delay: order.timeout.delay.queue
 
 order:
   timeout:
