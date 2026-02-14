@@ -7,9 +7,11 @@ import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
 import com.demo.result.Result;
+import com.demo.service.LogisticsService;
 import com.demo.service.OrderService;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
+import com.demo.vo.order.OrderLogisticsVO;
 import com.demo.vo.order.SellerOrderSummary;
 import com.demo.result.PageResult;
 import io.swagger.annotations.Api;
@@ -33,6 +35,9 @@ public class OrdersController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LogisticsService logisticsService;
 
     @GetMapping("/buy")
     public Result<PageResult<BuyerOrderSummary>> buy(@Validated PageQueryDTO pageQueryDTO) {
@@ -60,6 +65,15 @@ public class OrdersController {
         Long currentUserId = BaseContext.getCurrentId();
         OrderDetail orderDetail = orderService.getOrderDetail(orderId, currentUserId);
         return Result.success(orderDetail);
+    }
+
+    @GetMapping("/{orderId}/logistics")
+    public Result<OrderLogisticsVO> getOrderLogistics(@PathVariable Long orderId) {
+        // 订单维度物流查询：买家/卖家均可访问，权限由 Service 内复用订单查询兜底
+        log.info("获取订单物流: {}", orderId);
+        Long currentUserId = BaseContext.getCurrentId();
+        OrderLogisticsVO logisticsVO = logisticsService.getOrderLogistics(orderId, currentUserId);
+        return Result.success(logisticsVO);
     }
 
     @PostMapping("/{orderId}/ship")

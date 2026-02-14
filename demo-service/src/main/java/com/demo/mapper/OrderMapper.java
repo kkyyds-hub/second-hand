@@ -63,6 +63,11 @@ public interface OrderMapper {
     Order selectOrderBasicById(@Param("orderId") Long orderId);
 
     /**
+     * Step7：提醒任务专用查询（只取提醒所需字段，避免复用方法字段缺失）。
+     */
+    Order selectOrderForReminder(@Param("orderId") Long orderId);
+
+    /**
  * 查询订单的商品明细（用于评价等：取第一条得到 product_id）
  */
 List<OrderItem> selectItemsByOrderId(@Param("orderId") Long orderId);
@@ -81,5 +86,20 @@ List<OrderItem> selectItemsByOrderId(@Param("orderId") Long orderId);
      * Day13 Step7 - 统计指定日期的成交订单量与GMV
      */
     OrderGmvStatsDTO countOrderAndGMVByDate(@Param("date") java.time.LocalDate date);
+
+        /**
+     * day15：关闭“已支付但超时未发货”订单（paid -> cancelled）
+     *
+     * 条件更新口径（非常关键）：
+     * 1) 订单当前状态必须是 paid
+     * 2) pay_time 必须 <= deadline（支付时间 + 48h）
+     * 3) 仅满足条件时才能更新为 cancelled，防止误关已发货订单
+     *
+     * @param orderId 订单ID
+     * @param deadline 发货截止时间（通常来自任务表 deadline_time）
+     * @return 影响行数（1=成功关单，0=状态不满足或已被并发修改）
+     */
+        int closeShipTimeoutOrder(@Param("orderId") Long orderId,
+        @Param("deadline") LocalDateTime deadline);
 
 }

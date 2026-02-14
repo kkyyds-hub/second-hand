@@ -31,6 +31,7 @@
         SELECT
             id,
             user_id AS userId,
+            biz_id AS bizId,
             violation_type AS violationType,
             description,
             evidence,

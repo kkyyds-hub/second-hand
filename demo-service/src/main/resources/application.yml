@@ -103,6 +103,45 @@ order:
     pending-minutes: 15
     batch-size: 200
     fixed-delay-ms: 60000
+  ship-timeout:
+    hours: 48
+    batch-size: 200
+    fixed-delay-ms: 60000
+    retry-delay-seconds: 120
+    penalty:
+      enabled: true
+  refund:
+    batch-size: 200
+    fixed-delay-ms: 60000
+    retry-delay-seconds: 120
+    accounting:
+      enabled: true
+  ship-reminder:
+    enabled: true
+    batch-size: 200
+    fixed-delay-ms: 60000
+    running-timeout-minutes: 5
+  notice:
+    paid-notify-seller-enabled: true
+    status-changed-enabled: true
+    ship-reminder-enabled: true
+    ship-timeout-cancel-enabled: true
+    refund-success-enabled: true
+
+logistics:
+  provider: mock
+  mock:
+    enabled: true
+    fast-forward: false
+    fixed-now:
+    fast-forward-minutes: [0, 2, 4, 6]
+    normal-minutes: [0, 30, 120, 240]
+  sync:
+    interval-minutes: 30
+  delivery-tracker:
+    enabled: false
+    base-url: https://api.tracker.delivery
+    api-key: ${demo.logistics.delivery-tracker.api-key:}
 
 # Day13 Step8 - 积分配置
 points:

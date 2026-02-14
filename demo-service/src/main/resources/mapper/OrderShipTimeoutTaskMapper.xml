@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.OrderShipTimeoutTaskMapper">
+
+    <!-- 幂等插入：利用 uk(order_id) 防止重复建任务 -->
+    <insert id="insertIgnore" parameterType="com.demo.entity.OrderShipTimeoutTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT IGNORE INTO order_ship_timeout_task (
+            order_id,
+            deadline_time,
+            status,
+            retry_count,
+            next_retry_time,
+            last_error,
+            create_time,
+            update_time
+        ) VALUES (
+        #{orderId},
+        #{deadlineTime},
+        #{status},
+        #{retryCount},
+        #{nextRetryTime},
+        #{lastError},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
+    <!-- 按订单ID查询任务 -->
+    <select id="selectByOrderId" resultType="com.demo.entity.OrderShipTimeoutTask">
+        SELECT
+            id,
+            order_id       AS orderId,
+            deadline_time  AS deadlineTime,
+            status,
+            retry_count    AS retryCount,
+            next_retry_time AS nextRetryTime,
+            last_error     AS lastError,
+            create_time    AS createTime,
+            update_time    AS updateTime
+        FROM order_ship_timeout_task
+        WHERE order_id = #{orderId}
+            LIMIT 1
+    </select>
+
+    <!-- 拉取到期待处理任务 -->
+    <select id="listDuePending" resultType="com.demo.entity.OrderShipTimeoutTask">
+        SELECT
+            id,
+            order_id        AS orderId,
+            deadline_time   AS deadlineTime,
+            status,
+            retry_count     AS retryCount,
+            next_retry_time AS nextRetryTime,
+            last_error      AS lastError,
+            create_time     AS createTime,
+            update_time     AS updateTime
+        FROM order_ship_timeout_task
+        WHERE status = 'PENDING'
+          AND deadline_time &lt;= NOW()
+          AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+        ORDER BY deadline_time ASC, id ASC
+            LIMIT #{limit}
+    </select>
+
+    <!-- 仅允许 PENDING -> DONE，防止重复处理 -->
+    <update id="markDone">
+        UPDATE order_ship_timeout_task
+        SET status = 'DONE',
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <!-- 仅允许 PENDING -> CANCELLED -->
+    <update id="markCancelled">
+        UPDATE order_ship_timeout_task
+        SET status = 'CANCELLED',
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <!-- 失败重试：保留 PENDING，递增 retry_count 并设置 next_retry_time -->
+    <update id="markRetry">
+        UPDATE order_ship_timeout_task
+        SET retry_count = retry_count + 1,
+            next_retry_time = #{nextRetryTime},
+            last_error = #{lastError},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <!-- 管理端查询任务：支持按 orderId/status 过滤 -->
+    <select id="listForAdmin" resultType="com.demo.entity.OrderShipTimeoutTask">
+        SELECT
+            id,
+            order_id        AS orderId,
+            deadline_time   AS deadlineTime,
+            status,
+            retry_count     AS retryCount,
+            next_retry_time AS nextRetryTime,
+            last_error      AS lastError,
+            create_time     AS createTime,
+            update_time     AS updateTime
+        FROM order_ship_timeout_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 管理端立即重试：把 PENDING 任务直接调度为“当前可执行” -->
+    <update id="triggerNow">
+        UPDATE order_ship_timeout_task
+        SET next_retry_time = NULL,
+            last_error = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+</mapper>

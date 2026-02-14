@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.OrderRefundTaskMapper">
+
+    <!-- 幂等插入退款任务（依赖 uk(order_id,refund_type) / uk(idempotency_key)） -->
+    <insert id="insertIgnore" parameterType="com.demo.entity.OrderRefundTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT IGNORE INTO order_refund_task (
+            order_id,
+            refund_type,
+            amount,
+            status,
+            idempotency_key,
+            retry_count,
+            next_retry_time,
+            fail_reason,
+            create_time,
+            update_time
+        ) VALUES (
+        #{orderId},
+        #{refundType},
+        #{amount},
+        #{status},
+        #{idempotencyKey},
+        #{retryCount},
+        #{nextRetryTime},
+        #{failReason},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
+    <!-- 按订单+类型查询 -->
+    <select id="selectByOrderIdAndType" resultType="com.demo.entity.OrderRefundTask">
+        SELECT
+            id,
+            order_id         AS orderId,
+            refund_type      AS refundType,
+            amount,
+            status,
+            idempotency_key  AS idempotencyKey,
+            retry_count      AS retryCount,
+            next_retry_time  AS nextRetryTime,
+            fail_reason      AS failReason,
+            create_time      AS createTime,
+            update_time      AS updateTime
+        FROM order_refund_task
+        WHERE order_id = #{orderId}
+          AND refund_type = #{refundType}
+            LIMIT 1
+    </select>
+
+    <!-- 拉取可执行退款任务 -->
+    <select id="listRunnable" resultType="com.demo.entity.OrderRefundTask">
+        SELECT
+            id,
+            order_id         AS orderId,
+            refund_type      AS refundType,
+            amount,
+            status,
+            idempotency_key  AS idempotencyKey,
+            retry_count      AS retryCount,
+            next_retry_time  AS nextRetryTime,
+            fail_reason      AS failReason,
+            create_time      AS createTime,
+            update_time      AS updateTime
+        FROM order_refund_task
+        WHERE status IN ('PENDING', 'FAILED')
+          AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+        ORDER BY id ASC
+            LIMIT #{limit}
+    </select>
+
+    <!-- 标记成功：允许从 PENDING/FAILED 进入 SUCCESS -->
+    <update id="markSuccess">
+        UPDATE order_refund_task
+        SET status = 'SUCCESS',
+            fail_reason = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'FAILED')
+    </update>
+
+    <!-- 标记失败并设置重试时间 -->
+    <update id="markFail">
+        UPDATE order_refund_task
+        SET status = 'FAILED',
+            retry_count = retry_count + 1,
+            next_retry_time = #{nextRetryTime},
+            fail_reason = #{failReason},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'FAILED')
+    </update>
+
+    <!-- 管理端查询任务：支持按 orderId/status 过滤 -->
+    <select id="listForAdmin" resultType="com.demo.entity.OrderRefundTask">
+        SELECT
+            id,
+            order_id         AS orderId,
+            refund_type      AS refundType,
+            amount,
+            status,
+            idempotency_key  AS idempotencyKey,
+            retry_count      AS retryCount,
+            next_retry_time  AS nextRetryTime,
+            fail_reason      AS failReason,
+            create_time      AS createTime,
+            update_time      AS updateTime
+        FROM order_refund_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 管理端重置：FAILED -> PENDING，清空失败原因和重试时间 -->
+    <update id="resetFailedToPending">
+        UPDATE order_refund_task
+        SET status = 'PENDING',
+            next_retry_time = NULL,
+            fail_reason = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'FAILED'
+    </update>
+
+</mapper>

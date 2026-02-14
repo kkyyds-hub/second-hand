@@ -8,6 +8,7 @@ import com.demo.enumeration.OrderStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.service.MessageService;
+import com.demo.service.OrderShipReminderTaskService;
 import com.demo.entity.MqConsumeLog;
 import com.demo.mapper.MqConsumeLogMapper;
 import org.springframework.dao.DuplicateKeyException;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -43,8 +45,21 @@ public class OrderPaidConsumer {
     @Autowired
     private MessageService messageService;
 
+    /**
+     * 发货提醒任务服务（支付成功后预生成 H24/H6/H1 提醒任务）。
+     */
+    @Autowired
+    private OrderShipReminderTaskService shipReminderTaskService;
+
     @Autowired
     private MqConsumeLogMapper mqConsumeLogMapper;
+
+    /**
+     * Step8 通知联动开关：是否发送“支付成功提醒卖家发货”站内信。
+     * 注意：关闭该开关不会影响后续 H24/H6/H1 提醒任务预生成。
+     */
+    @Value("${order.notice.paid-notify-seller-enabled:true}")
+    private boolean paidNotifySellerEnabled;
 
     /** 幂等标识：消费者名称 */
     private static final String CONSUMER_NAME = "OrderPaidConsumer";
@@ -112,13 +127,22 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
             return;
         }
 
-        // 4) 发货流程启动：给卖家发站内消息
-        SendMessageRequest req = new SendMessageRequest();
-        req.setToUserId(order.getSellerId());
-        req.setClientMsgId("SYS-PAY-" + message.getEventId());
-        req.setContent("订单已付款，请尽快发货。订单号：" + payload.getOrderNo());
+        // 4) 发货流程启动：给卖家发站内消息（可通过配置开关关闭）
+        if (paidNotifySellerEnabled) {
+            SendMessageRequest req = new SendMessageRequest();
+            req.setToUserId(order.getSellerId());
+            req.setClientMsgId("SYS-PAY-" + message.getEventId());
+            req.setContent("订单已付款，请尽快发货。订单号：" + payload.getOrderNo());
+            messageService.sendMessage(order.getId(), payload.getBuyerId(), req);
+        }
 
-        messageService.sendMessage(order.getId(), payload.getBuyerId(), req);
+        // 4.1 预生成三档发货超时提醒任务（幂等插入，不会重复建任务）
+        // 说明：后续由定时 Job 扫描任务表，在 H24/H6/H1 时间点发系统提醒。
+        shipReminderTaskService.createReminderTasksForPaidOrder(
+                order.getId(),
+                order.getSellerId(),
+                payload.getPayTime()
+        );
 
         log.info("ORDER_PAID handled, notify seller. orderId={}", order.getId());
 

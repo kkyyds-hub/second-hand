@@ -1,5 +1,6 @@
 package com.demo.config;
 
+import com.demo.json.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,7 +52,9 @@ public class RabbitMqConfiguration {
 
     @Bean
     public MessageConverter rabbitMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+        // 显式使用项目统一的 JacksonObjectMapper，确保 LocalDateTime 等 Java8 时间类型可序列化/反序列化。
+        // 否则 Outbox 发送 EventMessage 时会在 occurredAt 字段处报转换异常。
+        return new Jackson2JsonMessageConverter(new JacksonObjectMapper());
     }
 
 

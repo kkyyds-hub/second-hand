@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class UserViolation {
     private Long id;
     private Long userId;
+    private Long bizId;
     private String violationType;         // 违规类型：false_delivery, fake_product等
     private String description;           // 违规描述
     private String evidence;              // 证据附件

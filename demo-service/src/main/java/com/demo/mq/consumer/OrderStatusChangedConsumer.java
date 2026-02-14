@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,12 @@ public class OrderStatusChangedConsumer {
 
     @Autowired
     private MqConsumeLogMapper mqConsumeLogMapper;
+
+    /**
+     * Step8 通知联动开关：是否发送“订单状态变更通知”（如发货成功通知买家）。
+     */
+    @Value("${order.notice.status-changed-enabled:true}")
+    private boolean statusChangedNoticeEnabled;
 
     /** 幂等标识：消费者名称 */
     private static final String CONSUMER_NAME = "OrderStatusChangedConsumer";
@@ -120,23 +127,23 @@ public class OrderStatusChangedConsumer {
                     ? order.getSellerId()
                     : order.getBuyerId();
 
-            // 5) 生成站内消息内容
-            String content;
-            if (newStatus == OrderStatus.SHIPPED) {
-                content = "卖家已发货，请注意查收。订单号：" + payload.getOrderNo();
-            } else if (newStatus == OrderStatus.COMPLETED) {
-                content = "买家已确认收货，订单完成。订单号：" + payload.getOrderNo();
-            } else {
-                content = "订单状态更新为：" + payload.getNewStatus() + "，订单号：" + payload.getOrderNo();
+            // 5) 发送站内消息（可通过配置开关关闭）
+            if (statusChangedNoticeEnabled) {
+                String content;
+                if (newStatus == OrderStatus.SHIPPED) {
+                    content = "卖家已发货，请注意查收。订单号：" + payload.getOrderNo();
+                } else if (newStatus == OrderStatus.COMPLETED) {
+                    content = "买家已确认收货，订单完成。订单号：" + payload.getOrderNo();
+                } else {
+                    content = "订单状态更新为：" + payload.getNewStatus() + "，订单号：" + payload.getOrderNo();
+                }
+
+                SendMessageRequest req = new SendMessageRequest();
+                req.setToUserId(toUserId);
+                req.setClientMsgId("SYS-STATUS-" + message.getEventId());
+                req.setContent(content);
+                messageService.sendMessage(order.getId(), operatorId, req);
             }
-
-            // 6) 发送站内消息（用事件ID做幂等）
-            SendMessageRequest req = new SendMessageRequest();
-            req.setToUserId(toUserId);
-            req.setClientMsgId("SYS-STATUS-" + message.getEventId());
-            req.setContent(content);
-
-            messageService.sendMessage(order.getId(), operatorId, req);
 
             log.info("ORDER_STATUS_CHANGED handled, orderId={}, newStatus={}",
                     order.getId(), payload.getNewStatus());

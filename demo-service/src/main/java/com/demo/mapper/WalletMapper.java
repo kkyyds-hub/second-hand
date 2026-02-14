@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * Day13 Step8 - 钱包 Mapper
@@ -20,9 +21,21 @@ public interface WalletMapper {
     UserWallet selectByUserId(@Param("userId") Long userId);
 
     /**
+     * 查询并锁定钱包行（FOR UPDATE）。
+     *
+     * 用于退款记账场景，保证“读余额 -> 算新余额 -> 写余额”在并发下的一致性。
+     */
+    UserWallet selectByUserIdForUpdate(@Param("userId") Long userId);
+
+    /**
      * 初始化用户钱包
      */
     int insertWallet(UserWallet wallet);
+
+    /**
+     * 直接更新钱包余额（绝对值写入）。
+     */
+    int updateBalance(@Param("userId") Long userId, @Param("balance") BigDecimal balance);
 
     /**
      * 插入余额流水

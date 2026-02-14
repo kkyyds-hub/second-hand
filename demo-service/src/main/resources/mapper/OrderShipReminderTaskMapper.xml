@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.OrderShipReminderTaskMapper">
+
+    <!-- 幂等插入（依赖 UNIQUE(order_id, level)） -->
+    <insert id="insertIgnore" parameterType="com.demo.entity.OrderShipReminderTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT IGNORE INTO order_ship_reminder_task (
+            order_id,
+            seller_id,
+            level,
+            deadline_time,
+            remind_time,
+            status,
+            retry_count,
+            running_at,
+            sent_at,
+            client_msg_id,
+            last_error,
+            create_time,
+            update_time
+        ) VALUES (
+            #{orderId},
+            #{sellerId},
+            #{level},
+            #{deadlineTime},
+            #{remindTime},
+            #{status},
+            #{retryCount},
+            #{runningAt},
+            #{sentAt},
+            #{clientMsgId},
+            #{lastError},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 批量抢占：PENDING/FAILED 且到期 -> RUNNING -->
+    <update id="markRunningBatch">
+        UPDATE order_ship_reminder_task
+        SET status = 'RUNNING',
+            running_at = #{runningAt},
+            update_time = NOW()
+        WHERE status IN ('PENDING', 'FAILED')
+          AND remind_time &lt;= NOW()
+        ORDER BY remind_time ASC, id ASC
+        LIMIT #{limit}
+    </update>
+
+    <!-- 查询本轮抢占到的 RUNNING 任务 -->
+    <select id="listRunningByRound" resultType="com.demo.entity.OrderShipReminderTask">
+        SELECT
+            id,
+            order_id      AS orderId,
+            seller_id     AS sellerId,
+            level,
+            deadline_time AS deadlineTime,
+            remind_time   AS remindTime,
+            status,
+            retry_count   AS retryCount,
+            running_at    AS runningAt,
+            sent_at       AS sentAt,
+            client_msg_id AS clientMsgId,
+            last_error    AS lastError,
+            create_time   AS createTime,
+            update_time   AS updateTime
+        FROM order_ship_reminder_task
+        WHERE status = 'RUNNING'
+          AND running_at = #{runningAt}
+        ORDER BY remind_time ASC, id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询超时 RUNNING 任务（用于回收） -->
+    <select id="listStaleRunning" resultType="com.demo.entity.OrderShipReminderTask">
+        SELECT
+            id,
+            order_id      AS orderId,
+            seller_id     AS sellerId,
+            level,
+            deadline_time AS deadlineTime,
+            remind_time   AS remindTime,
+            status,
+            retry_count   AS retryCount,
+            running_at    AS runningAt,
+            sent_at       AS sentAt,
+            client_msg_id AS clientMsgId,
+            last_error    AS lastError,
+            create_time   AS createTime,
+            update_time   AS updateTime
+        FROM order_ship_reminder_task
+        WHERE status = 'RUNNING'
+          AND running_at &lt;= #{staleBefore}
+        ORDER BY running_at ASC, id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 单条成功：RUNNING -> SUCCESS -->
+    <update id="markSuccess">
+        UPDATE order_ship_reminder_task
+        SET status = 'SUCCESS',
+            sent_at = #{sentAt},
+            client_msg_id = #{clientMsgId},
+            last_error = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'RUNNING'
+    </update>
+
+    <!-- 单条失败：RUNNING -> FAILED，设置下次重试时间 -->
+    <update id="markFail">
+        UPDATE order_ship_reminder_task
+        SET status = 'FAILED',
+            retry_count = retry_count + 1,
+            remind_time = #{nextRemindTime},
+            running_at = NULL,
+            last_error = #{lastError},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'RUNNING'
+    </update>
+
+    <!-- 单条取消：RUNNING -> CANCELLED -->
+    <update id="markCancelled">
+        UPDATE order_ship_reminder_task
+        SET status = 'CANCELLED',
+            running_at = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status = 'RUNNING'
+    </update>
+
+    <!-- 管理端查询 -->
+    <select id="listForAdmin" resultType="com.demo.entity.OrderShipReminderTask">
+        SELECT
+            id,
+            order_id      AS orderId,
+            seller_id     AS sellerId,
+            level,
+            deadline_time AS deadlineTime,
+            remind_time   AS remindTime,
+            status,
+            retry_count   AS retryCount,
+            running_at    AS runningAt,
+            sent_at       AS sentAt,
+            client_msg_id AS clientMsgId,
+            last_error    AS lastError,
+            create_time   AS createTime,
+            update_time   AS updateTime
+        FROM order_ship_reminder_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 管理端立即重试 -->
+    <update id="triggerNow">
+        UPDATE order_ship_reminder_task
+        SET status = 'PENDING',
+            remind_time = NOW(),
+            running_at = NULL,
+            last_error = NULL,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'FAILED')
+    </update>
+
+</mapper>

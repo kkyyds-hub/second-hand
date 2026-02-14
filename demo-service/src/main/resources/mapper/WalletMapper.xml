@@ -12,11 +12,30 @@
         WHERE user_id = #{userId}
     </select>
 
+    <!-- 查询并锁定钱包行（退款记账使用） -->
+    <select id="selectByUserIdForUpdate" resultType="com.demo.entity.UserWallet">
+        SELECT
+            user_id AS userId,
+            balance,
+            update_time AS updateTime
+        FROM user_wallets
+        WHERE user_id = #{userId}
+        FOR UPDATE
+    </select>
+
     <!-- 初始化用户钱包 -->
     <insert id="insertWallet">
         INSERT INTO user_wallets (user_id, balance, update_time)
         VALUES (#{userId}, #{balance}, NOW())
     </insert>
+
+    <!-- 绝对值更新余额 -->
+    <update id="updateBalance">
+        UPDATE user_wallets
+        SET balance = #{balance},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
 
     <!-- 插入余额流水 -->
     <insert id="insertTransaction" useGeneratedKeys="true" keyProperty="id">

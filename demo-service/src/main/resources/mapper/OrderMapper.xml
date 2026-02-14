@@ -338,8 +338,24 @@
             id,
             buyer_id  AS buyerId,
             seller_id AS sellerId,
+            total_amount AS totalAmount,
             status,
             complete_time AS completeTime
+        FROM orders
+        WHERE id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <!-- Step7：提醒任务专用订单查询 -->
+    <select id="selectOrderForReminder" resultType="com.demo.entity.Order">
+        SELECT
+            id,
+            order_no    AS orderNo,
+            buyer_id    AS buyerId,
+            seller_id   AS sellerId,
+            status,
+            pay_time    AS payTime,
+            update_time AS updateTime
         FROM orders
         WHERE id = #{orderId}
         LIMIT 1
@@ -397,5 +413,25 @@
           AND pay_time IS NOT NULL
           AND status != #{OS_CANCELLED}
     </select>
+
+      <!--
+      Step6-3：发货超时关单（paid -> cancelled）
+      业务语义：
+      - 仅处理“已支付且超过发货截止时间”的订单
+      - 取消原因固定为 ship_timeout
+      - 通过条件更新保证并发安全（rows=1 才算真正成功）
+    -->
+    <update id="closeShipTimeoutOrder">
+      <include refid = "bindStatus"/>
+      UPDATE orders
+      SET status = #{OS_CANCELLED},
+          cancel_time = NOW(),
+          cancel_reason = 'ship_timeout',
+          update_time = NOW()
+      WHERE id = #{orderId}
+          AND status = #{OS_PAID}
+          AND pay_time IS NOT NULL
+          AND pay_time <![CDATA[ <= ]]> #{deadline}
+    </update>    
 
 </mapper>

@@ -5,10 +5,9 @@ import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
-import com.demo.entity.Order;
-import com.demo.entity.OrderItem;
-import com.demo.entity.Product;
+import com.demo.entity.*;
 import com.demo.enumeration.CreditReasonType;
+import com.demo.mapper.OrderShipTimeoutTaskMapper;
 import com.demo.mq.producer.OrderEventProducer;
 import com.demo.enumeration.OrderStatus;
 import com.demo.enumeration.ProductStatus;
@@ -24,10 +23,10 @@ import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.demo.entity.MessageOutbox;
 import com.demo.service.OutboxService;
 import com.demo.dto.mq.EventMessage;
 import com.demo.dto.mq.OrderCreatedPayload;
@@ -66,6 +65,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    // ====== 在类字段区新增 ======
+    @Autowired
+    private OrderShipTimeoutTaskMapper orderShipTimeoutTaskMapper;
+
+    /**
+     * 发货超时时长（小时）
+     * 默认 48，可通过配置覆盖。
+     */
+    @Value("${order.ship-timeout.hours:48}")
+    private int shipTimeoutHours;
 
 
     @Override
@@ -383,6 +393,8 @@ public class OrderServiceImpl implements OrderService {
         // 1) 先尝试条件更新：pending -> paid
         int rows = orderMapper.updateForPay(orderId, currentUserId);
         if (rows == 1) {
+            //支付成功后创建“48小时违法或超时任务”（幂等）
+            createShipTimeoutTaskIfAbsent(orderId,"payorder:update_success");
             return "支付成功";
         }
 
@@ -397,8 +409,14 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单状态异常");
         }
 
+         // 幂等：已支付 -> 仍补建超时任务（修复历史漏建场景）
+        if (s == OrderStatus.PAID) {
+            createShipTimeoutTaskIfAbsent(orderId, "payOrder:idempotent_paid");
+            return "订单已支付，无需重复操作";
+    }
+
         // 幂等：已支付/已进入后续状态 -> 直接返回成功提示（不要抛异常）
-        if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+        if ( s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             return "订单已支付，无需重复操作";
         }
 
@@ -482,7 +500,12 @@ public class OrderServiceImpl implements OrderService {
 
         // 4) 幂等：若已 paid/shipped/completed，直接返回成功
         OrderStatus s = OrderStatus.fromDbValue(order.getStatus());
-        if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+        if (s == OrderStatus.PAID){
+            // 历史漏建修复：已支付也补建任务
+            createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:idempotent_paid");
+            return "订单已支付，回调幂等成功!";
+        }
+        if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             return "订单已支付，回调幂等成功";
         }
 
@@ -526,6 +549,9 @@ public class OrderServiceImpl implements OrderService {
 
             outboxService.save(paidOutbox);
 
+            //day15:支付成功后创建48h未发货超时任务
+            createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:update_success");
+
 
             return "支付回调处理成功";
         }
@@ -542,6 +568,49 @@ public class OrderServiceImpl implements OrderService {
 
         throw new BusinessException("支付回调处理失败，订单状态不允许支付：" + latest.getStatus());
     }
+
+    /**
+     * 支付成功后，幂等创建“发货超时任务”。
+     * <p>
+     * 设计说明：
+     * 1) 使用 INSERT IGNORE + uk(order_id) 保证幂等，重复调用不会报错。
+     * 2) deadline_time 以“当前时刻 + N小时”计算，和 pay_time 的 NOW() 口径保持一致（秒级误差可接受）。
+     * 3) 该方法必须是“弱依赖”：失败时不应该阻塞支付主链路（仅记录日志）。
+     *
+     * @param orderId 订单ID
+     * @param scene   调用场景（便于日志排查）
+     */
+    private void createShipTimeoutTaskIfAbsent(Long orderId, String scene) {
+        if (orderId == null) {
+            log.warn("skip create ship-timeout task because orderId is null, scene={}", scene);
+            return;
+        }
+        // 兜底：防止误配置导致 <=0
+        int hours = shipTimeoutHours <= 0 ? 48 : shipTimeoutHours;
+
+        OrderShipTimeoutTask task = new OrderShipTimeoutTask();
+        task.setOrderId(orderId);
+        task.setDeadlineTime(LocalDateTime.now().plusHours(hours));
+        task.setStatus("PENDING");
+        task.setRetryCount(0);
+        task.setNextRetryTime(null);
+        task.setLastError(null);
+
+        try {
+            int rows = orderShipTimeoutTaskMapper.insertIgnore(task);
+            if (rows == 1) {
+                log.info("create ship-timeout task success, orderId={}, deadlineTime={}, scene={}",
+                        orderId, task.getDeadlineTime(), scene);
+            } else {
+                // rows=0 代表任务已存在（幂等命中），属于正常情况
+                log.info("ship-timeout task already exists, orderId={}, scene={}", orderId, scene);
+            }
+        } catch (Exception ex) {
+            // 不抛异常，避免影响支付成功结果
+            log.error("create ship-timeout task failed, orderId={}, scene={}", orderId, scene, ex);
+        }
+    }
+
 
     private String generateOrderNo(Long buyerId) {
         String time = java.time.LocalDateTime.now()

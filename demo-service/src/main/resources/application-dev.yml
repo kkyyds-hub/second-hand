@@ -27,3 +27,15 @@ demo:
     password: guest
     virtual-host: /
     prefetch: 20
+
+  logistics:
+    provider: mock
+    mock:
+      enabled: true
+      fast-forward: true
+      fixed-now:
+      fast-forward-minutes: [0, 2, 4, 6]
+      normal-minutes: [0, 30, 120, 240]
+    delivery-tracker:
+      enabled: false
+      api-key:
