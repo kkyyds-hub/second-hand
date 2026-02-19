@@ -13,6 +13,9 @@ import com.demo.vo.order.SellerOrderSummary;
 import com.github.pagehelper.PageInfo;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * OrderService 接口。
+ */
 public interface OrderService {
 
     PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId);

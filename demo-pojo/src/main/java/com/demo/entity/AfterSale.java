@@ -16,10 +16,14 @@ import java.time.LocalDateTime;
 public class AfterSale {
 
     @TableId(type = IdType.AUTO)
+    /** 主键 ID。 */
     private Long id;
 
+    /** 订单 ID。 */
     private Long orderId;
+    /** 买家用户 ID。 */
     private Long buyerId;
+    /** 卖家用户 ID。 */
     private Long sellerId;
 
     /**
@@ -43,6 +47,8 @@ public class AfterSale {
      */
     private String platformRemark;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
+    /** 更新时间。 */
     private LocalDateTime updateTime;
 }

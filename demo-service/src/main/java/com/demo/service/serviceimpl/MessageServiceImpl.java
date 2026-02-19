@@ -30,7 +30,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Day13 Step3 - 站内消息服务实现
+ * Day13 Step3 - 站内消息服务实现。
+ * 负责订单会话消息发送、历史查询、未读统计和已读回执。
  */
 @Service
 @Slf4j
@@ -45,6 +46,10 @@ public class MessageServiceImpl implements MessageService {
     @Autowired
     private OrderMapper orderMapper;
 
+    /**
+     * 发送站内消息。
+     * 包含订单归属校验、收件人校验、发送频控和 clientMsgId 幂等处理。
+     */
     @Override
     public MessageDTO sendMessage(Long orderId, Long currentUserId, SendMessageRequest request) {
         // 1. 订单必须存在
@@ -119,6 +124,9 @@ public class MessageServiceImpl implements MessageService {
         return convertToDTO(message);
     }
 
+    /**
+     * 分页查询订单会话消息（按 createTime 升序）。
+     */
     @Override
     public PageResult<MessageDTO> listMessages(Long orderId, Long currentUserId, Integer page, Integer pageSize) {
         // 1. 订单必须存在
@@ -145,11 +153,17 @@ public class MessageServiceImpl implements MessageService {
         return new PageResult<>(dtoList, messagePage.getTotalElements(), page, pageSize);
     }
 
+    /**
+     * 查询当前用户未读消息总数。
+     */
     @Override
     public Long getUnreadCount(Long currentUserId) {
         return messageRepository.countByToUserIdAndRead(currentUserId, false);
     }
 
+    /**
+     * 将当前用户在指定订单会话中的未读消息批量标记为已读。
+     */
     @Override
     public String markAsRead(Long orderId, Long currentUserId) {
         // 1. 订单必须存在
@@ -179,6 +193,9 @@ public class MessageServiceImpl implements MessageService {
         return "已标记" + count + "条消息为已读";
     }
 
+    /**
+     * 实体转 DTO，隔离持久化对象与接口返回对象。
+     */
     private MessageDTO convertToDTO(Message message) {
         MessageDTO dto = new MessageDTO();
         BeanUtils.copyProperties(message, dto);

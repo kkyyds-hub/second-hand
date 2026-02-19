@@ -33,10 +33,16 @@ public class DeliveryTrackerProvider implements LogisticsProvider {
     private final LogisticsProperties logisticsProperties;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public DeliveryTrackerProvider(LogisticsProperties logisticsProperties) {
         this.logisticsProperties = logisticsProperties;
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public String getName() {
         return "delivery-tracker";

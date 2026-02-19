@@ -31,6 +31,9 @@ public class SensitiveWordServiceImpl implements SensitiveWordService {
     };
 
     @PostConstruct
+    /**
+     * 初始化敏感词缓存。
+     */
     public void init() {
         sensitiveWordTree = new HashMap<>();
         for (String word : SENSITIVE_WORDS) {
@@ -57,6 +60,9 @@ public class SensitiveWordServiceImpl implements SensitiveWordService {
         current.put("isEnd", true);
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public boolean containsSensitiveWord(String text) {
         if (text == null || text.isEmpty()) {
@@ -72,6 +78,9 @@ public class SensitiveWordServiceImpl implements SensitiveWordService {
         return false;
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public String getMatchedWords(String text) {
         if (text == null || text.isEmpty()) {

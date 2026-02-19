@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Data
 public class Address {
 
-    private Long id;                    // 地址ID
-    private Long userId;                // 用户ID
+    private Long id;                    // 地址 ID
+    private Long userId;                // 用户 ID
     private String receiverName;        // 收货人姓名
     private String mobile;              // 联系电话
     private String provinceCode;        // 省份行政区划代码

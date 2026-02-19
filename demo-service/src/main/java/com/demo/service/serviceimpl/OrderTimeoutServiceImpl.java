@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * 订单超时处理服务实现。
+ */
 @Service
 @RequiredArgsConstructor
 public class OrderTimeoutServiceImpl implements OrderTimeoutService {
@@ -18,7 +21,10 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
     private final OrderMapper orderMapper;
     private final CreditService creditService;
 
-
+    /**
+     * 关闭超时未支付订单并释放商品占用。
+     * 同时触发买家信用分重算（取消订单场景）。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean closeTimeoutOrderAndRelease(Long orderId, LocalDateTime deadline) {
@@ -26,7 +32,7 @@ public class OrderTimeoutServiceImpl implements OrderTimeoutService {
         if (rows == 1) {
             orderMapper.releaseProductsForOrder(orderId);
 
-            // Step3：超时关单本质上也是取消（cancelled），会影响买家的 cancelled 统计
+            // 超时关单本质是取消订单，会影响买家取消订单维度统计。
             Order order = orderMapper.selectOrderBasicById(orderId);
             if (order != null && order.getBuyerId() != null) {
                 creditService.recalcUserCredit(order.getBuyerId(), CreditReasonType.ORDER_CANCELLED, orderId);

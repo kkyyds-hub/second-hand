@@ -21,6 +21,9 @@ public enum OrderEventType {
     }
 
     /** 获取事件编码 */
+    /**
+     * 获取事件编码。
+     */
     public String getCode() {
         return code;
     }

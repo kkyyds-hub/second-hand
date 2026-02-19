@@ -43,10 +43,16 @@ public class MockLogisticsProvider implements LogisticsProvider {
 
     private final LogisticsProperties logisticsProperties;
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public MockLogisticsProvider(LogisticsProperties logisticsProperties) {
         this.logisticsProperties = logisticsProperties;
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public String getName() {
         return "mock";

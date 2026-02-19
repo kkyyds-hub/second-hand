@@ -27,6 +27,9 @@ public class OrderShipReminderTaskJob {
     @Value("${order.ship-reminder.batch-size:200}")
     private int batchSize;
 
+    /**
+     * 定时触发发货提醒任务批处理。
+     */
     @Scheduled(fixedDelayString = "${order.ship-reminder.fixed-delay-ms:60000}")
     public void run() {
         if (!enabled) {

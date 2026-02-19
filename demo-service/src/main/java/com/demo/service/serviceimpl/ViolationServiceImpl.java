@@ -32,6 +32,9 @@ import java.util.*;
 @Service
 @Transactional
 @Slf4j
+/**
+ * ViolationServiceImpl 业务组件。
+ */
 public class ViolationServiceImpl implements ViolationService {
 
     @Autowired
@@ -46,6 +49,9 @@ public class ViolationServiceImpl implements ViolationService {
     @Autowired
     private UserBanMapper userBanMapper;
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void unbanUser(Long userId) {
         User user = userMapper.selectById(userId);
@@ -64,6 +70,9 @@ public class ViolationServiceImpl implements ViolationService {
         creditService.recalcUserCredit(userId, CreditReasonType.RECALC, null);
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void reviewBan(Long userId, boolean isApproved, String reason) {
         // 保持你现有写法：如果你已把 SelectById 放在 ViolationMapper 里就能用
@@ -79,6 +88,9 @@ public class ViolationServiceImpl implements ViolationService {
         }
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void banUser(Long userId, String reason) {
         User user = userMapper.selectById(userId);
@@ -106,6 +118,9 @@ public class ViolationServiceImpl implements ViolationService {
         creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void reportViolation(ViolationReportRequest request) {
         UserViolation violation = new UserViolation();

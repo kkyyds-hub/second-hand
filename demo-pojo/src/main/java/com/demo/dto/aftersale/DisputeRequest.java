@@ -13,5 +13,6 @@ public class DisputeRequest {
 
     @NotBlank(message = "纠纷说明不能为空")
     @Size(min = 2, max = 500, message = "纠纷说明长度需在 2~500 字符")
+    /** 字段：content。 */
     private String content;
 }

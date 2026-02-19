@@ -1,5 +1,8 @@
 package com.demo.enumeration;
 
+/**
+ * ProductStatus 枚举。
+ */
 public enum ProductStatus {
 
     UNDER_REVIEW("under_review", "审核中"),
@@ -7,7 +10,9 @@ public enum ProductStatus {
     OFF_SHELF("off_shelf", "下架"),
     SOLD("sold", "已售");
 
+    /** 数据库存储值。 */
     private final String dbValue;
+    /** 中文名称。 */
     private final String cnName;
 
     ProductStatus(String dbValue, String cnName) {
@@ -15,10 +20,16 @@ public enum ProductStatus {
         this.cnName = cnName;
     }
 
+    /**
+     * 获取数据库存储值。
+     */
     public String getDbValue() {
         return dbValue;
     }
 
+    /**
+     * 获取中文名称。
+     */
     public String getCnName() {
         return cnName;
     }
@@ -56,7 +67,7 @@ public enum ProductStatus {
         }
 
         // 2) 兼容历史别名（可按你项目实际再补）
-        if ("审核".equals(s) || "审核中".equals(s)) return UNDER_REVIEW;
+        if ("审核".equals(s) || "审核中".equals(s) || "待审核".equals(s)) return UNDER_REVIEW;
         if ("上架中".equals(s) || "在售".equals(s)) return ON_SHELF;
         if ("下架中".equals(s)) return OFF_SHELF;
 

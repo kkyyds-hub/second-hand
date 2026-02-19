@@ -4,6 +4,9 @@ import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.vo.UserVO;
 
+/**
+ * AuthService 接口。
+ */
 public interface AuthService {
 
     /**

@@ -30,6 +30,9 @@ public class UserAuthController {
     private AuthService authService;
 
 
+    /**
+     * 发送短信验证码。
+     */
     @PostMapping("/sms/send")
     public Result<String> sendSmsCode(@Validated @RequestBody SmsCodeRequest request) {
         log.info("发送短信验证码: {}", request);
@@ -37,30 +40,45 @@ public class UserAuthController {
         return Result.success("验证码发送成功，5分钟内有效");
     }
 
+    /**
+     * 手机号注册。
+     */
     @PostMapping("/register/phone")
     public Result<UserVO> registerByPhone(@Validated  @RequestBody PhoneRegisterRequest request) {
         log.info("手机号注册: {}", request);
         return Result.success(authService.registerByPhone(request));
     }
 
+    /**
+     * 邮箱注册。
+     */
     @PostMapping("/register/email")
     public Result<UserVO> registerByEmail(@Validated @RequestBody EmailRegisterRequest request) {
         log.info("邮箱注册: {}", request);
         return Result.success(authService.registerByEmail(request));
     }
 
+    /**
+     * 邮箱激活。
+     */
     @PostMapping("/register/email/activate")
     public Result<UserVO> activateEmail(@Validated @RequestBody EmailActivationRequest request) {
         log.info("邮箱激活: {}", request);
         return Result.success(authService.activateEmail(request));
     }
 
+    /**
+     * 第三方登录。
+     */
     @PostMapping("/login/third-party")
     public Result<AuthResponse> thirdPartyLogin(@Validated @RequestBody ThirdPartyLoginRequest request) {
         log.info("第三方登录: {}", request);
         return Result.success(authService.loginWithThirdParty(request));
     }
 
+    /**
+     * 账号密码登录。
+     */
     @PostMapping("/login/password")
     public Result<AuthResponse> loginWithPassword(@Validated @RequestBody PasswordLoginRequest request) {
         return Result.success(authService.loginWithPassword(request));

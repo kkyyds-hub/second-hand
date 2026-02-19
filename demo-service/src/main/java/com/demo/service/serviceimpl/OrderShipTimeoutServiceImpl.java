@@ -24,6 +24,9 @@ public class OrderShipTimeoutServiceImpl implements OrderShipTimeoutService {
     private final OrderShipTimeoutTaskMapper taskMapper;
     private final OrderShipTimeoutTaskProcessor taskProcessor;
 
+    /**
+     * 处理对应业务流程。
+     */
     @Override
     public int processDueTasks(int limit) {
         List<OrderShipTimeoutTask> tasks = taskMapper.listDuePending(limit);

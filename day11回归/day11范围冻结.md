@@ -39,8 +39,8 @@ Day11 在“二手交易平台”中落地了收藏模块，核心交付如下�
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | id | bigint auto_increment | 主键 |
-| user_id | bigint not null | 收藏人用户ID |
-| product_id | bigint not null | 被收藏商品ID |
+| user_id | bigint not null | 收藏人用户 ID |
+| product_id | bigint not null | 被收藏商品 ID |
 | is_deleted | tinyint(1) default 0 | 逻辑删除：0=正常，1=已取消/删除 |
 | create_time | datetime default CURRENT_TIMESTAMP | 创建时间（收藏时间） |
 | update_time | datetime on update CURRENT_TIMESTAMP | 更新时间 |

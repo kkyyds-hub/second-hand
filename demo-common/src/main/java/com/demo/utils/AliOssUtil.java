@@ -13,6 +13,9 @@ import java.io.ByteArrayInputStream;
 @Data
 @AllArgsConstructor
 @Slf4j
+/**
+ * AliOssUtil 业务组件。
+ */
 public class AliOssUtil {
 
     private String endpoint;

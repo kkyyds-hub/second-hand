@@ -14,8 +14,8 @@ public interface LogisticsService {
     /**
      * 获取订单物流详情。
      *
-     * @param orderId 订单ID
-     * @param currentUserId 当前登录用户ID（用于权限校验）
+     * @param orderId 订单 ID
+     * @param currentUserId 当前登录用户 ID（用于权限校验）
      * @return 物流视图对象
      */
     OrderLogisticsVO getOrderLogistics(Long orderId, Long currentUserId);

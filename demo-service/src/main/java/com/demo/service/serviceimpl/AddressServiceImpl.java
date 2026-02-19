@@ -20,14 +20,20 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @Transactional
+/**
+ * AddressServiceImpl 业务组件。
+ */
 public class AddressServiceImpl implements AddressService {
 
     @Autowired
     private AddressMapper addressMapper;
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public List<AddressVO> listAddresses(Long userId) {
-        log.info("获取用户地址, 用户ID: {}", userId);
+        log.info("获取用户地址, 用户 ID: {}", userId);
 
         List<Address> addresses = addressMapper.findByUserId(userId);
         if (addresses == null || addresses.isEmpty()) {
@@ -40,9 +46,12 @@ public class AddressServiceImpl implements AddressService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public AddressVO getDefaultAddress(Long currentUserId) {
-        log.info("查询默认地址(兜底最近一条), 用户ID: {}", currentUserId);
+        log.info("查询默认地址(兜底最近一条), 用户 ID: {}", currentUserId);
 
         Address address = findDefaultOrLatestAddress(currentUserId);
         return address == null ? null : convertToAddressVO(address);
@@ -61,9 +70,12 @@ public class AddressServiceImpl implements AddressService {
         return addressMapper.findLatestByUserId(userId);
     }
 
+    /**
+     * 创建或新增相关数据。
+     */
     @Override
     public AddressVO createAddress(Long currentUserId, AddressDTO request) {
-        log.info("新增收货地址, 用户ID: {}, 请求: {}", currentUserId, request);
+        log.info("新增收货地址, 用户 ID: {}, 请求: {}", currentUserId, request);
 
         Address address = new Address();
         address.setUserId(currentUserId);
@@ -83,13 +95,16 @@ public class AddressServiceImpl implements AddressService {
 
         addressMapper.insert(address);
 
-        log.info("新增收货地址成功, 用户ID: {}, 地址ID: {}", currentUserId, address.getId());
+        log.info("新增收货地址成功, 用户 ID: {}, 地址 ID: {}", currentUserId, address.getId());
         return convertToAddressVO(address);
     }
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public AddressVO updateAddress(Long currentUserId, Long addressId, AddressDTO request) {
-        log.info("更新收货地址, 用户ID: {}, 地址ID: {}", currentUserId, addressId);
+        log.info("更新收货地址, 用户 ID: {}, 地址 ID: {}", currentUserId, addressId);
 
         // 1. 查询并校验归属
         Address address = addressMapper.findById(addressId);
@@ -133,9 +148,12 @@ public class AddressServiceImpl implements AddressService {
         return convertToAddressVO(address);
     }
 
+    /**
+     * 删除或清理相关数据。
+     */
     @Override
     public void deleteAddress(Long currentUserId, Long addressId) {
-        log.info("删除收货地址, 用户ID: {}, 收货地址ID: {}", currentUserId, addressId);
+        log.info("删除收货地址, 用户 ID: {}, 收货地址 ID: {}", currentUserId, addressId);
 
         // 1. 查询并校验归属
         Address address = addressMapper.findById(addressId);
@@ -179,9 +197,12 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Transactional
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public void setDefaultAddress(Long currentUserId, Long addressId) {
-        log.info("设置默认收货地址, 用户ID: {}, 地址ID: {}", currentUserId, addressId);
+        log.info("设置默认收货地址, 用户 ID: {}, 地址 ID: {}", currentUserId, addressId);
 
         // 1. 查询并校验归属
         Address address = addressMapper.findById(addressId);
@@ -200,9 +221,12 @@ public class AddressServiceImpl implements AddressService {
         // 3. 将当前地址设为默认
         addressMapper.updateIsDefaultByIdAndUserId(addressId, currentUserId, true);
 
-        log.info("设置默认地址成功, 用户ID: {}, 地址ID: {}", currentUserId, addressId);
+        log.info("设置默认地址成功, 用户 ID: {}, 地址 ID: {}", currentUserId, addressId);
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public AddressVO getAddressById(Long currentUserId, Long addressId) {
         Address address = addressMapper.findById(addressId);
@@ -212,3 +236,4 @@ public class AddressServiceImpl implements AddressService {
         return convertToAddressVO(address);
     }
 }
+

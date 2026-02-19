@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
+/**
+ * AddressMapper 接口。
+ */
 public interface AddressMapper {
 
     /** 查询指定用户的所有收货地址：默认优先，其余按更新时间倒序 */
@@ -30,6 +33,9 @@ public interface AddressMapper {
      */
     void insert(Address address);
 
+    /**
+     * 按地址 ID 查询地址。
+     */
     Address findById(@Param("id") Long id);
 
     /**
@@ -38,8 +44,14 @@ public interface AddressMapper {
      */
     void update(Address address);
 
+    /**
+     * 删除指定用户的指定地址。
+     */
     int deleteByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
+    /**
+     * 更新指定地址的默认标记。
+     */
     void updateIsDefaultByIdAndUserId(@Param("id") Long id,
                                       @Param("userId") Long userId,
                                       @Param("isDefault") Boolean isDefault);

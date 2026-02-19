@@ -41,6 +41,9 @@ public class MultiFormatLocalDateTimeDeserializer extends JsonDeserializer<Local
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     );
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public LocalDateTime deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
         String raw = parser.getValueAsString();

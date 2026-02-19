@@ -29,6 +29,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * 用户服务实现。
+ * 包含用户资料、绑定关系、风控封禁、导出等业务。
+ */
 @Service
 @Transactional
 @Slf4j
@@ -45,6 +49,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    /**
+     * 分页查询用户列表。
+     */
     @Override
     public PageResult<UserVO> getUserPage(UserQueryDTO queryDTO) {
         log.info("分页查询用户: {}", queryDTO);
@@ -56,7 +63,7 @@ public class UserServiceImpl implements UserService {
         // 3. 获取分页信息
         PageInfo<User> pageInfo = new PageInfo<>(userList);
 
-        // 4. 转换为VO
+        // 4. 转换为 VO
         List<UserVO> userVOList = convertToVOList(userList);
 
         // 5. 返回结果
@@ -68,6 +75,9 @@ public class UserServiceImpl implements UserService {
         );
     }
 
+    /**
+     * 更新当前用户资料。
+     */
     @Override
     public UserVO updateProfile(UpdateProfileRequest request) {
         log.info("更新用户信息: {}", request);
@@ -85,6 +95,9 @@ public class UserServiceImpl implements UserService {
         return userVO;
     }
 
+    /**
+     * 生成头像上传配置。
+     */
     @Override
     public AvatarUploadConfigVO generateAvatarUploadConfig(AvatarUploadConfigRequest request) {
         String normalizedFileName = request.getFileName().trim();
@@ -94,7 +107,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("文件名需以 .jpg/.jpeg/.png 结尾");
         }
 
-        // 补充一次 contentType 与扩展名的匹配校验
+        // 补充一层 contentType 与扩展名的匹配校验
         boolean isPng = lowerFileName.endsWith(".png");
         if (isPng && !"image/png".equalsIgnoreCase(request.getContentType())) {
             throw new BusinessException("PNG 头像需使用 image/png 上传");
@@ -120,6 +133,9 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    /**
+     * 修改密码。
+     */
     @Override
     public void changePassword(ChangePasswordRequest request) {
         User user = getCurrentUserOrThrow();
@@ -167,6 +183,9 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public UserVO bindPhone(BindPhoneRequest request) {
         User user = getCurrentUserOrThrow();
@@ -193,6 +212,9 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public UserVO bindEmail(BindEmailRequest request) {
         User user = getCurrentUserOrThrow();
@@ -216,6 +238,9 @@ public class UserServiceImpl implements UserService {
 
 
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public void unbindPhone(UnbindContactRequest request) {
         User user = getCurrentUserOrThrow();
@@ -232,10 +257,13 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public void unbindEmail(UnbindContactRequest request) {
-      User user = getCurrentUserOrThrow();
-      Long currentUserId = user.getId();
+        User user = getCurrentUserOrThrow();
+        Long currentUserId = user.getId();
         if (StringUtils.isBlank(user.getEmail())) {
             throw new BusinessException("当前账号未绑定邮箱");
         }
@@ -246,6 +274,9 @@ public class UserServiceImpl implements UserService {
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + user.getEmail());
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void requireSeller(Long userId) {
         if (userId == null) {
@@ -297,9 +328,9 @@ public class UserServiceImpl implements UserService {
         if (StringUtils.isBlank(nickname)) {
             throw new BusinessException("昵称不能为空");
         }
-        // 长度校验更建议放在 DTO 上，这里简单兜个底
+        // 长度校验更建议放在 DTO 上，这里简单兜底
         if (nickname.length() < 1 || nickname.length() > 20) {
-            throw new BusinessException("昵称长度需在1-20个字符内");
+            throw new BusinessException("昵称长度需在 1-20 个字符内");
         }
 
         List<String> blockedWords = Arrays.asList("admin", "管理员", "违规");
@@ -323,9 +354,9 @@ public class UserServiceImpl implements UserService {
         verifyEmailCodeForEmail(user.getEmail(), code);
     }
     /**
-     * 解绑前的安全校验：
+     * 解绑前的安全校验。
      * - 可以用当前密码验证
-     * - 也可以用验证码验证（手机号 / 邮箱）
+     * - 也可以用验证码验证（手机/邮箱）
      * - 至少通过一种验证，否则不允许解绑
      */
     private void verifyUnbindRequest(User user, UnbindContactRequest request) {
@@ -385,7 +416,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 校验某个邮箱对应的验证码（适用于绑定新邮箱场景）
+     * 校验某个邮箱对应的验证码（适用于绑定新邮箱场景）。
      */
     private void verifyEmailCodeForEmail(String email, String code) {
         if (StringUtils.isBlank(email)) {
@@ -411,6 +442,9 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public String banUser(Long userId) {
         User user = userMapper.selectById(userId);
@@ -431,6 +465,9 @@ public class UserServiceImpl implements UserService {
         return "用户封禁成功";
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public String unbanUser(Long userId) {
         User user = userMapper.selectById(userId);
@@ -451,6 +488,9 @@ public class UserServiceImpl implements UserService {
         return "用户解封成功";
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public String exportUsersCSV(String keyword, LocalDateTime startTime, LocalDateTime endTime) {
         List<User> users = userMapper.exportAllUsers(keyword, startTime, endTime);
@@ -491,3 +531,4 @@ public class UserServiceImpl implements UserService {
     }
 
 }
+

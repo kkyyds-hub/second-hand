@@ -19,6 +19,9 @@ import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 管理端信用分管理接口。
+ */
 @RestController
 @RequestMapping("/admin/credit")
 public class AdminCreditController {
@@ -32,31 +35,44 @@ public class AdminCreditController {
     @Autowired
     private UserCreditLogMapper userCreditLogMapper;
 
+    /**
+     * 查询指定用户信用分信息。
+     */
     @GetMapping
     public Result<UserCreditDTO> get(@RequestParam("userId") Long userId) {
         return Result.success(creditService.getCredit(userId));
     }
 
+    /**
+     * 查询指定用户信用流水。
+     */
     @GetMapping("/logs")
     public Result<List<UserCreditLogDTO>> logs(@RequestParam("userId") Long userId,
                                                @RequestParam(value = "limit", defaultValue = "50") Integer limit) {
-        // ✅ 你项目里是 listLogs，不是 getLogs
         return Result.success(creditService.listLogs(userId, limit));
     }
 
+    /**
+     * 触发指定用户信用分重算。
+     */
     @PostMapping("/recalc")
     public Result<UserCreditDTO> recalc(@RequestParam("userId") Long userId) {
         creditService.recalcUserCredit(userId, CreditReasonType.RECALC, null);
         return Result.success(creditService.getCredit(userId));
     }
 
+    /**
+     * 管理员手工调分并重算。
+     */
     @PostMapping("/adjust")
     public Result<UserCreditDTO> adjust(@Valid @RequestBody AdminAdjustCreditRequest req) {
         Long adminId = BaseContext.getCurrentId();
         Long userId = req.getUserId();
 
         User user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
 
         Integer before = user.getCreditScore() == null ? 100 : user.getCreditScore();
         Integer delta = req.getDelta();
@@ -69,18 +85,16 @@ public class AdminCreditController {
         log.setScoreBefore(before);
         log.setScoreAfter(before + delta);
 
-
         String note = req.getReason();
-        if (note == null) note = "";
+        if (note == null) {
+            note = "";
+        }
         log.setReasonNote(note + " (adminId=" + adminId + ")");
-
         log.setCreateTime(LocalDateTime.now());
-
         userCreditLogMapper.insert(log);
-        // 调整后重算，保证最终分数口径统一（并产生 recalc 流水）
-        // 这里必须用 RECALC：避免把 admin_adjust “写两次”并被统计口径重复计入
+
+        // 调整后再重算，确保最终分数口径与统计口径一致。
         creditService.recalcUserCredit(userId, CreditReasonType.RECALC, log.getId());
         return Result.success(creditService.getCredit(userId));
     }
 }
-

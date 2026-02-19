@@ -17,6 +17,9 @@ import javax.validation.Valid;
 @RequestMapping("/user/reviews")
 @RequiredArgsConstructor
 @Validated
+/**
+ * ReviewController 业务组件。
+ */
 public class ReviewController {
 
     private final ReviewService reviewService;

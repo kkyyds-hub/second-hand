@@ -26,7 +26,7 @@ public interface OrderRefundTaskMapper {
     int insertIgnore(OrderRefundTask task);
 
     /**
-     * 根据订单ID+退款类型查询任务
+     * 根据订单 ID+退款类型查询任务
      */
     OrderRefundTask selectByOrderIdAndType(@Param("orderId") Long orderId,
                                            @Param("refundType") String refundType);

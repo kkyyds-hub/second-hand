@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 @Data
 public class OrderRefundTask {
 
-    /** 主键ID */
+    /** 主键 ID */
     private Long id;
 
-    /** 关联订单ID */
+    /** 关联订单 ID */
     private Long orderId;
 
     /**

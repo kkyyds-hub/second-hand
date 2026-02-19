@@ -10,6 +10,7 @@
         <bind name="RT_ADMIN_ADJUST" value="@com.demo.enumeration.CreditReasonType@ADMIN_ADJUST.getDbValue()"/>
     </sql>
 
+    <!-- SQL：sumAdminAdjustDelta，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="sumAdminAdjustDelta" resultType="java.lang.Integer">
         <include refid="bindReasonType"/>
         SELECT CAST(COALESCE(SUM(delta), 0) AS SIGNED)
@@ -18,6 +19,7 @@
         AND reason_type = #{RT_ADMIN_ADJUST}
     </select>
 
+    <!-- SQL：countCompletedAsBuyer，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countCompletedAsBuyer" resultType="java.lang.Long">
         <include refid="bindStatus"/>
         SELECT CAST(COUNT(*) AS SIGNED)
@@ -26,6 +28,7 @@
         AND status = #{OS_COMPLETED}
     </select>
 
+    <!-- SQL：countCompletedAsSeller，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countCompletedAsSeller" resultType="java.lang.Long">
         <include refid="bindStatus"/>
         SELECT CAST(COUNT(*) AS SIGNED)
@@ -34,6 +37,7 @@
         AND status = #{OS_COMPLETED}
     </select>
 
+    <!-- SQL：countCancelledAsBuyer，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countCancelledAsBuyer" resultType="java.lang.Long">
         <include refid="bindStatus"/>
         SELECT CAST(COUNT(*) AS SIGNED)
@@ -42,12 +46,14 @@
         AND status = #{OS_CANCELLED}
     </select>
 
+    <!-- SQL：sumViolationCreditDelta，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="sumViolationCreditDelta" resultType="java.lang.Integer">
         SELECT CAST(COALESCE(SUM(uv.credit), 0) AS SIGNED)
         FROM user_violations uv
         WHERE uv.user_id = #{userId}
     </select>
 
+    <!-- SQL：countActiveBans，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countActiveBans" resultType="java.lang.Integer">
         SELECT CAST(COUNT(*) AS SIGNED)
         FROM user_bans

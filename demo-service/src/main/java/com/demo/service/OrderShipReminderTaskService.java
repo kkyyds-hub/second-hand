@@ -14,8 +14,8 @@ public interface OrderShipReminderTaskService {
     /**
      * 支付成功后，预生成 3 档提醒任务（幂等）。
      *
-     * @param orderId  订单ID
-     * @param sellerId 卖家ID（提醒接收人）
+     * @param orderId  订单 ID
+     * @param sellerId 卖家 ID（提醒接收人）
      * @param payTime  支付时间（deadline = payTime + 48h）
      */
     void createReminderTasksForPaidOrder(Long orderId, Long sellerId, LocalDateTime payTime);

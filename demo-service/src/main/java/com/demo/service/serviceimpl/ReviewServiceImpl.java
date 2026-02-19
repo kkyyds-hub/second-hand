@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @Slf4j
+/**
+ * ReviewServiceImpl 业务组件。
+ */
 public class ReviewServiceImpl implements ReviewService {
 
     @Autowired

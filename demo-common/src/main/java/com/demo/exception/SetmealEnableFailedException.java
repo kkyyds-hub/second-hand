@@ -5,9 +5,15 @@ package com.demo.exception;
  */
 public class SetmealEnableFailedException extends BaseException {
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public SetmealEnableFailedException() {
     }
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public SetmealEnableFailedException(String msg) {
         super(msg);
     }

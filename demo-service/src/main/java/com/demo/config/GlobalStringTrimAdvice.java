@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.InitBinder;
 public class GlobalStringTrimAdvice {
 
     @InitBinder
+    /**
+     * 注册字符串参数自动去首尾空格的绑定规则。
+     */
     public void initBinder(WebDataBinder binder) {
         // true：trim 后空串转 null
         binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));

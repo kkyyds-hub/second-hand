@@ -6,6 +6,9 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 @Data
+/**
+ * BindEmailRequest 业务组件。
+ */
 public class BindEmailRequest {
 
     /**

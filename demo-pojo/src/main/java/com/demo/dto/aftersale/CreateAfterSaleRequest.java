@@ -13,11 +13,13 @@ import java.util.List;
 @Data
 public class CreateAfterSaleRequest {
 
-    @NotNull(message = "订单ID不能为空")
+    @NotNull(message = "订单 ID 不能为空")
+    /** 订单 ID。 */
     private Long orderId;
 
     @NotBlank(message = "退货原因不能为空")
     @Size(min = 2, max = 200, message = "退货原因长度需在 2~200 字符")
+    /** 字段：reason。 */
     private String reason;
 
     /**
@@ -26,3 +28,4 @@ public class CreateAfterSaleRequest {
     @Size(max = 3, message = "凭证图片最多 3 张")
     private List<String> evidenceImages;
 }
+

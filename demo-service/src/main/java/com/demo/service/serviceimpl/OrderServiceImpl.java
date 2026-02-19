@@ -43,6 +43,9 @@ import java.util.Objects;
 
 @Service
 @Slf4j
+/**
+ * OrderServiceImpl 业务组件。
+ */
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
@@ -78,6 +81,9 @@ public class OrderServiceImpl implements OrderService {
     private int shipTimeoutHours;
 
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
         pageValidated(pageQueryDTO);
@@ -90,6 +96,9 @@ public class OrderServiceImpl implements OrderService {
                 pageInfo.getPageSize());
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public PageResult<SellerOrderSummary> getSellOrder(PageQueryDTO dto, Long uid) {
         PageHelper.startPage(dto.getPage(), dto.getPageSize());
@@ -104,6 +113,9 @@ public class OrderServiceImpl implements OrderService {
                 pageInfo.getPageSize());
     }
 
+    /**
+     * 查询并返回相关结果。
+     */
     @Override
     public OrderDetail getOrderDetail(Long orderId, Long currentUserId) {
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
@@ -113,6 +125,9 @@ public class OrderServiceImpl implements OrderService {
         return detail;
     }
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     public String shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId) {
         // 1. 先查订单详情（同时校验与当前用户有关）
@@ -191,6 +206,9 @@ public class OrderServiceImpl implements OrderService {
         throw new BusinessException("发货失败，订单状态不允许发货：" + latestDetail.getStatus());
     }
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String confirmOrder(Long orderId, Long currentUserId) {
@@ -274,18 +292,21 @@ public class OrderServiceImpl implements OrderService {
         throw new BusinessException("确认收货失败，订单状态不允许确认收货：" + latestDetail.getStatus());
     }
 
+    /**
+     * 创建或新增相关数据。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId) {
 
         // 0) 基础参数（一般由 @Validated 做，这里只做关键兜底）
         if (request == null || request.getProductId() == null) {
-            throw new BusinessException("商品ID不能为空");
+            throw new BusinessException("商品 ID 不能为空");
         }
 
         Long productId = request.getProductId();
 
-        // 1) 查商品：拿到卖家ID与价格（注意要限定未删除；status你可以在这里校验）
+        // 1) 查商品：拿到卖家 ID与价格（注意要限定未删除；status你可以在这里校验）
         Product product = productMapper.getProductById(productId); // 用你项目里真实的方法名替换
         if (product == null || product.getIsDeleted() == 1) {
             throw new BusinessException("商品不存在");
@@ -387,6 +408,9 @@ public class OrderServiceImpl implements OrderService {
         return resp;
     }
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String payOrder(Long orderId, Long currentUserId) {
@@ -428,6 +452,9 @@ public class OrderServiceImpl implements OrderService {
         throw new BusinessException("支付失败，订单状态不允许支付：" + detail.getStatus());
     }
 
+    /**
+     * 更新相关业务状态。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String cancelOrder(Long orderId, CancelOrderRequest request, Long currentUserId) {
@@ -473,6 +500,9 @@ public class OrderServiceImpl implements OrderService {
         throw new BusinessException("取消失败，订单状态不允许取消：" + detail.getStatus());
     }
 
+    /**
+     * 处理对应业务流程。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String handlePaymentCallback(com.demo.dto.payment.PaymentCallbackRequest request) {
@@ -577,7 +607,7 @@ public class OrderServiceImpl implements OrderService {
      * 2) deadline_time 以“当前时刻 + N小时”计算，和 pay_time 的 NOW() 口径保持一致（秒级误差可接受）。
      * 3) 该方法必须是“弱依赖”：失败时不应该阻塞支付主链路（仅记录日志）。
      *
-     * @param orderId 订单ID
+     * @param orderId 订单 ID
      * @param scene   调用场景（便于日志排查）
      */
     private void createShipTimeoutTaskIfAbsent(Long orderId, String scene) {
@@ -654,3 +684,4 @@ public class OrderServiceImpl implements OrderService {
         PageHelper.startPage(page, size);
     }
 }
+

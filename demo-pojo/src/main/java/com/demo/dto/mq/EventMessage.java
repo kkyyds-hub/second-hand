@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  */
 @Data
 public class EventMessage<T> {
-    /** 全局唯一事件ID（用于幂等/追踪） */
+    /** 全局唯一事件 ID（用于幂等/追踪） */
     private String eventId;
 
     /** 事件类型（例如 ORDER_CREATED / ORDER_PAID） */

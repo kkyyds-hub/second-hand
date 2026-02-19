@@ -16,9 +16,12 @@ import java.time.LocalDateTime;
 public class UserWallet {
 
     @TableId
+    /** 用户 ID。 */
     private Long userId;
 
+    /** 字段：balance。 */
     private BigDecimal balance;
 
+    /** 更新时间。 */
     private LocalDateTime updateTime;
 }

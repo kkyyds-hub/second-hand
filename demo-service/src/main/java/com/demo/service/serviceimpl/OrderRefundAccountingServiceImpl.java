@@ -37,6 +37,9 @@ public class OrderRefundAccountingServiceImpl implements OrderRefundAccountingSe
 
     private final WalletMapper walletMapper;
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void recordRefund(Order order, OrderRefundTask refundTask) {
         if (order == null || refundTask == null) {

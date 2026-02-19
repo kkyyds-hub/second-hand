@@ -18,13 +18,16 @@ public class PhoneRegisterRequest {
     private String mobile;
 
     @NotBlank(message = "短信验证码不能为空")
+    /** 字段：smsCode。 */
     private String smsCode;
 
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 32, message = "密码长度需在6-32位之间")
+    /** 字段：password。 */
     private String password;
 
     @NotBlank(message = "昵称不能为空")
     @Size(min = 1, max = 20, message = "昵称长度需在1-20个字符内")
+    /** 字段：nickname。 */
     private String nickname;
 }

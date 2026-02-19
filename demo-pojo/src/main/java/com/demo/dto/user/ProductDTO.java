@@ -5,15 +5,24 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 商品列表项 DTO（管理端/卖家端通用）。
+ */
 @Data
 public class ProductDTO {
 
-    private Long productId;       // 商品ID
-    private String productName;   // 商品名称
-    private String category;      // 商品类别
-    private String status;        // 商品审核状态
-    private LocalDateTime submitTime; // 提交时间
-    private BigDecimal price;         // 商品价格
-    private String description;   // 商品描述
-
+    /** 商品 ID。 */
+    private Long productId;
+    /** 商品名称。 */
+    private String productName;
+    /** 商品分类。 */
+    private String category;
+    /** 商品状态。 */
+    private String status;
+    /** 提交时间。 */
+    private LocalDateTime submitTime;
+    /** 商品价格。 */
+    private BigDecimal price;
+    /** 商品描述。 */
+    private String description;
 }

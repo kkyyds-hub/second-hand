@@ -11,7 +11,7 @@
         )
     </insert>
 
-    <!-- 根据订单ID和类型查询标记 -->
+    <!-- 根据订单 ID 和类型查询标记 -->
     <select id="selectByOrderIdAndType" resultType="com.demo.entity.OrderFlag">
         SELECT
             id, order_id AS orderId, type, remark,

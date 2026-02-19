@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
+/**
+ * ReviewMapper 接口。
+ */
 public interface ReviewMapper {
 
     /**

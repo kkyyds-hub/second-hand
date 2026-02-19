@@ -21,6 +21,7 @@ public class ShipOrderRequest {
             regexp = "^[\\p{L}0-9 _.-]{2,50}$",
             message = "快递公司格式不正确"
     )
+    /** 字段：shippingCompany。 */
     private String shippingCompany;
 
     /**
@@ -32,6 +33,7 @@ public class ShipOrderRequest {
             regexp = "^[A-Za-z0-9-]{6,50}$",
             message = "运单号格式不正确"
     )
+    /** 字段：trackingNo。 */
     private String trackingNo;
 
     /**

@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
+/**
+ * UserCreditLogMapper 接口。
+ */
 public interface UserCreditLogMapper {
 
     /**
@@ -18,9 +21,9 @@ public interface UserCreditLogMapper {
     int insert(UserCreditLog log);
 
     /**
-     * 根据用户ID查询信用分变更流水列表（按创建时间倒序）
+     * 根据用户 ID查询信用分变更流水列表（按创建时间倒序）
      *
-     * @param userId 用户ID
+     * @param userId 用户 ID
      * @return 信用分变更流水列表
      */
     List<UserCreditLog> listByUserId(@Param("userId") Long userId);

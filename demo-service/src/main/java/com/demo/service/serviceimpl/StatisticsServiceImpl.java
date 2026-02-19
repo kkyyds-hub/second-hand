@@ -31,6 +31,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     private static final String DAU_KEY_PREFIX = "dau:";
 
+    /**
+     * 统计指定日期 DAU。
+     */
     @Override
     public Long countDAU(LocalDate date) {
         // Day13 冻结：DAU 用 Redis 计数（SET 去重）
@@ -45,6 +48,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         return size != null ? size : 0L;
     }
 
+    /**
+     * 统计指定日期商品发布量（总量+按分类）。
+     */
     @Override
     public Map<String, Object> countProductPublish(LocalDate date) {
         List<com.demo.dto.statistics.ProductPublishCountDTO> categoryList =
@@ -67,6 +73,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         return result;
     }
 
+    /**
+     * 统计指定日期订单量与 GMV。
+     */
     @Override
     public Map<String, Object> countOrderAndGMV(LocalDate date) {
         com.demo.dto.statistics.OrderGmvStatsDTO stats = orderMapper.countOrderAndGMVByDate(date);

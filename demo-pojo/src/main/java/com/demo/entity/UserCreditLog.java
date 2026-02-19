@@ -10,13 +10,16 @@ import java.time.LocalDateTime;
  */
 @Data
 public class UserCreditLog {
+    /** 主键 ID。 */
     private Long id;
+    /** 用户 ID。 */
     private Long userId;
     private Integer delta;  // 信用分变动值（正数为加分，负数为扣分）
     private String reasonType;  // 变更原因类型（存 dbValue，如 "order_completed"）
-    private Long refId;  // 关联业务ID（如订单ID，可为空）
+    private Long refId;  // 关联业务 ID（如订单 ID，可为空）
     private Integer scoreBefore;  // 变更前分数
     private Integer scoreAfter;  // 变更后分数
+    /** 字段：reasonNote。 */
     private String reasonNote;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;  // 创建时间

@@ -51,6 +51,9 @@ public class RabbitMqConfiguration {
     }
 
     @Bean
+    /**
+     * 注册 RabbitMQ JSON 消息转换器。
+     */
     public MessageConverter rabbitMessageConverter() {
         // 显式使用项目统一的 JacksonObjectMapper，确保 LocalDateTime 等 Java8 时间类型可序列化/反序列化。
         // 否则 Outbox 发送 EventMessage 时会在 occurredAt 字段处报转换异常。
@@ -61,6 +64,9 @@ public class RabbitMqConfiguration {
     @Autowired
     private RabbitAdmin rabbitAdmin;
 
+    /**
+     * 应用启动后主动触发一次声明初始化。
+     */
     @EventListener(ApplicationReadyEvent.class)
     public void initializeRabbitDeclarations(ApplicationReadyEvent event) {
         try {
@@ -87,6 +93,9 @@ public class RabbitMqConfiguration {
         return QueueBuilder.durable(dlqQueue).build();
     }
 
+    /**
+     * 库存更新消费者队列。
+     */
     @Bean
     public Queue inventoryUpdateQueue(
             @Value("${demo.rabbitmq.queue.inventory-update}") String queueName,
@@ -100,6 +109,9 @@ public class RabbitMqConfiguration {
                 .build();
     }
 
+    /**
+     * 订单履约消费者队列。
+     */
     @Bean
     public Queue orderFulfillmentQueue(
             @Value("${demo.rabbitmq.queue.order-fulfillment}") String queueName,
@@ -113,6 +125,9 @@ public class RabbitMqConfiguration {
                 .build();
     }
 
+    /**
+     * 订单状态同步消费者队列。
+     */
     @Bean
     public Queue orderStatusSyncQueue(
             @Value("${demo.rabbitmq.queue.order-status-sync}") String queueName,
@@ -126,6 +141,9 @@ public class RabbitMqConfiguration {
                 .build();
     }
 
+    /**
+     * 订单超时处理队列。
+     */
     @Bean
     public Queue orderTimeoutQueue(
             @Value("${demo.rabbitmq.queue.order-timeout}") String queueName,
@@ -159,6 +177,9 @@ public class RabbitMqConfiguration {
                 .build();
     }
 
+    /**
+     * 死信队列绑定。
+     */
     @Bean
     public Binding bindDlq(
             @Qualifier("dlqQueue") Queue dlqQueue,

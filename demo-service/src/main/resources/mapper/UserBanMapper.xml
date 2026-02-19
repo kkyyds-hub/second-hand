@@ -5,6 +5,7 @@
 
 <mapper namespace="com.demo.mapper.UserBanMapper">
 
+    <!-- SQL：insertUserBan，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insertUserBan"
             parameterType="com.demo.entity.UserBan"
             useGeneratedKeys="true"
@@ -15,6 +16,7 @@
             (#{userId}, #{banType}, #{reason}, #{source}, #{startTime}, #{endTime}, #{createdBy}, #{createTime})
     </insert>
 
+    <!-- SQL：closeActiveBans，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="closeActiveBans">
         UPDATE user_bans
         SET end_time = #{now}

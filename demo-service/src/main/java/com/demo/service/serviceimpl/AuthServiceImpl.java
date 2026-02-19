@@ -34,6 +34,10 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * 认证服务实现。
+ * 覆盖注册、登录、激活、风控冻结等能力。
+ */
 @Service
 @Slf4j
 public class AuthServiceImpl implements AuthService {
@@ -74,6 +78,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${spring.mail.username:}")
     private String mailFrom;
 
+    /**
+     * 发送短信验证码。
+     */
     @Override
     public void sendSmsCode(SmsCodeRequest request) {
         String mobile = request.getMobile();
@@ -85,6 +92,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
+    /**
+     * 手机号注册。
+     */
     @Override
     public UserVO registerByPhone(PhoneRegisterRequest request) {
         String mobile = request.getMobile();
@@ -97,19 +107,22 @@ public class AuthServiceImpl implements AuthService {
         if (existed != null) {
             throw new BusinessException("手机号已注册");
         }
-        // 3. 构造 User 对象（密码要加密）
+        // 3. 构建 User 对象（密码要加密）
         User user = buildBaseUser();
         user.setMobile(mobile);
         user.setNickname(nickname);
         String encodedPassword = passwordEncoder.encode(rawPassword);
         user.setPassword(encodedPassword);
         userMapper.insertUser(user);
-        log.info("用户手机号 {} 注册成功，用户ID={}", mobile, user.getId());
+        log.info("用户手机号 {} 注册成功，用户 ID={}", mobile, user.getId());
         clearSmsCode(mobile);
         return toUserVO(user);
     }
 
 
+    /**
+     * 邮箱注册。
+     */
     @Override
     public UserVO registerByEmail(EmailRegisterRequest request) {
         String email = request.getEmail();
@@ -124,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("该邮箱已被注册");
         }
 
-        // 3. 构造 User 对象
+        // 3. 构建 User 对象
         User user = buildBaseUser();
         user.setEmail(email);
         user.setNickname(nickname);
@@ -138,6 +151,9 @@ public class AuthServiceImpl implements AuthService {
 
 
 
+    /**
+     * 邮箱激活。
+     */
     @Override
     public UserVO activateEmail(EmailActivationRequest request) {
         String key = EMAIL_ACTIVATION_KEY_PREFIX + request.getToken();
@@ -148,12 +164,15 @@ public class AuthServiceImpl implements AuthService {
         Long userId = Long.parseLong(userIdStr);
         userMapper.updateStatus(userId, "active", LocalDateTime.now());
         stringRedisTemplate.delete(key);
-        log.info("邮箱激活完成，用户ID={}", userId);
+        log.info("邮箱激活完成，用户 ID={}", userId);
         User user = userMapper.selectById(userId);
         return toUserVO(user);
 
     }
 
+    /**
+     * 第三方登录。
+     */
     @Override
     public AuthResponse loginWithThirdParty(ThirdPartyLoginRequest request) {
         String provider = request.getProvider().toLowerCase();
@@ -175,6 +194,9 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(token, userVO);
     }
 
+    /**
+     * 账号密码登录。
+     */
     @Override
     public AuthResponse loginWithPassword(PasswordLoginRequest request) {
         String loginId = request.getLoginId();
@@ -270,6 +292,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
+    /**
+     * 校验短信发送频率限制。
+     */
     private void enforceSmsRateLimit(String mobile) {
         String rateKey = SMS_RATE_LIMIT_KEY_PREFIX + mobile;
         if (stringRedisTemplate.hasKey(rateKey)) {
@@ -277,12 +302,18 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * 校验短信验证码。
+     */
     private void validateSmsCode(String mobile, String code) {
         String cacheCode = stringRedisTemplate.opsForValue().get(SMS_CODE_KEY_PREFIX + mobile);
         if (!StringUtils.hasText(cacheCode) || !cacheCode.equals(code)) {
             throw new BusinessException("验证码错误或已过期");
         }
     }
+    /**
+     * 校验邮箱验证码。
+     */
     private void validateEmailCode(String email, String code) {
         String cacheCode = stringRedisTemplate.opsForValue().get(EMAIL_CODE_KEY_PREFIX + email);
         if (!StringUtils.hasText(cacheCode) || !cacheCode.equals(code)) {
@@ -290,6 +321,9 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * 生成 6 位数字验证码。
+     */
     private String generateCode() {
 
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1000000));
@@ -303,7 +337,7 @@ public class AuthServiceImpl implements AuthService {
         user.setCreditScore(defaultScore);
         user.setCreditLevel(CreditLevel.fromScore(defaultScore).getDbValue()); // 新增
         user.setCreditUpdatedAt(now);                                         // 新增
-        user.setStatus("active");                                             // 强烈建议新增（你 insertUser 会写 status）
+        user.setStatus("active");                                             // 强烈建议新增（insertUser 会写 status）
 
         user.setCreateTime(now);
         user.setUpdateTime(now);
@@ -337,7 +371,7 @@ public class AuthServiceImpl implements AuthService {
         message.setFrom(mailFrom);
         message.setTo(user.getEmail());
         message.setSubject("账户激活通知");
-        message.setText("请在24小时内点击以下链接激活账户: " +
+        message.setText("请在24小时内点击以下链接激活账号 " +
                 "https://example.com/activate?token=" + token);
         mailSender.send(message);
         log.info("发送激活邮件到:{}，token={}，有效期24小时", user.getEmail(), token);
@@ -363,3 +397,5 @@ public class AuthServiceImpl implements AuthService {
     }
 
 }
+
+

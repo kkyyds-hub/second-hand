@@ -11,5 +11,6 @@ import javax.validation.constraints.NotBlank;
 public class EmailActivationRequest {
 
     @NotBlank(message = "激活令牌不能为空")
+    /** 字段：token。 */
     private String token;
 }

@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 收藏服务实现。
+ */
 @Service
 public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> implements FavoriteService {
 
@@ -32,7 +35,9 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     @Autowired
     private com.demo.service.port.FavoriteReadPort favoriteReadPort;
 
-
+    /**
+     * 收藏商品（幂等）。
+     */
     @Override
     @Transactional
     public FavoriteActionResponse favorite(Long userId, Long productId) {
@@ -60,6 +65,9 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
         }
     }
 
+    /**
+     * 取消收藏（幂等）。
+     */
     @Override
     @Transactional
     public FavoriteActionResponse unfavorite(Long userId, Long productId) {
@@ -68,11 +76,17 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
         return new FavoriteActionResponse(productId, false);
     }
 
+    /**
+     * 查询收藏状态。
+     */
     @Override
     public boolean isFavorited(Long userId, Long productId) {
         return favoriteReadPort.isFavorited(userId, productId);
     }
 
+    /**
+     * 分页查询我的收藏列表。
+     */
     @Override
     public PageResult<FavoriteItemDTO> pageMyFavorites(Long userId, PageQueryDTO q) {
 
@@ -154,3 +168,4 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
         return arr.length == 0 ? null : arr[0].trim();
     }
 }
+

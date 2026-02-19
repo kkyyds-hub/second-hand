@@ -17,10 +17,13 @@ import java.time.LocalDateTime;
 public class WithdrawRequest {
 
     @TableId(type = IdType.AUTO)
+    /** 主键 ID。 */
     private Long id;
 
+    /** 用户 ID。 */
     private Long userId;
 
+    /** 字段：amount。 */
     private BigDecimal amount;
 
     /**
@@ -33,6 +36,8 @@ public class WithdrawRequest {
      */
     private String bankCardNo;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
+    /** 更新时间。 */
     private LocalDateTime updateTime;
 }

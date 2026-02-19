@@ -17,6 +17,9 @@ public class OutboxServiceImpl implements OutboxService {
     @Autowired
     private MessageOutboxMapper messageOutboxMapper;
 
+    /**
+     * 创建或新增相关数据。
+     */
     @Override
     public void save(MessageOutbox outbox) {
         messageOutboxMapper.insert(outbox);

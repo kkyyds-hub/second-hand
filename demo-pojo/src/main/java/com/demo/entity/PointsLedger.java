@@ -16,8 +16,10 @@ import java.time.LocalDateTime;
 public class PointsLedger {
 
     @TableId(type = IdType.AUTO)
+    /** 主键 ID。 */
     private Long id;
 
+    /** 用户 ID。 */
     private Long userId;
 
     /**
@@ -26,7 +28,7 @@ public class PointsLedger {
     private String bizType;
 
     /**
-     * 业务ID（如 orderId）
+     * 业务 ID（如 orderId）
      */
     private Long bizId;
 
@@ -35,5 +37,6 @@ public class PointsLedger {
      */
     private Integer points;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
 }

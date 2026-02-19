@@ -6,16 +6,18 @@ import com.demo.dto.user.ProductDetailDTO;
 import com.demo.dto.user.ProductUpdateRequest;
 import com.demo.dto.user.UserProductQueryDTO;
 import com.demo.entity.Product;
+import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.demo.service.ProductService;
-import com.demo.result.PageResult;
 import com.demo.service.UserService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 卖家商品管理接口。
+ */
 @RestController
 @RequestMapping("/user/products")
 @Validated
@@ -28,38 +30,43 @@ public class UserProductController {
     @Autowired
     private UserService userService;
 
+    /**
+     * 查询当前卖家商品列表。
+     */
     @GetMapping
     public Result<PageResult<Product>> getProducts(@Validated UserProductQueryDTO queryDTO) {
-        log.info("获取用户商品列表");
         Long currentUserId = BaseContext.getCurrentId();
         userService.requireSeller(currentUserId);
-        // 统一从登录态注入，前端不传 userId
         queryDTO.setUserId(currentUserId);
-
         PageResult<Product> pageResult = productService.getUserProducts(queryDTO);
         return Result.success(pageResult);
     }
 
-
-    //商品详情跳转
+    /**
+     * 查询商品详情。
+     */
     @GetMapping("/{productId}")
     public Result<ProductDetailDTO> getProductDetail(@PathVariable("productId") Long productId) {
-        log.info("获取商品详情");
         ProductDetailDTO productDTO = productService.getProductDetail(productId);
         return Result.success(productDTO);
     }
 
+    /**
+     * 修改商品信息。
+     */
     @PutMapping("/{productId}")
     public Result<ProductDetailDTO> updateMyProduct(
             @PathVariable Long productId,
             @Validated @RequestBody ProductUpdateRequest request) {
-
         Long currentUserId = BaseContext.getCurrentId();
         userService.requireSeller(currentUserId);
         ProductDetailDTO dto = productService.updateMyProduct(currentUserId, productId, request);
         return Result.success(dto);
     }
 
+    /**
+     * 下架商品。
+     */
     @PutMapping("/{productId}/off-shelf")
     public Result<String> offShelf(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
@@ -68,6 +75,9 @@ public class UserProductController {
         return Result.success("下架成功");
     }
 
+    /**
+     * 创建商品。
+     */
     @PostMapping
     public Result<ProductDetailDTO> createProduct(@Validated @RequestBody ProductCreateRequest request) {
         Long currentUserId = BaseContext.getCurrentId();
@@ -76,6 +86,9 @@ public class UserProductController {
         return Result.success(dto);
     }
 
+    /**
+     * 删除商品。
+     */
     @DeleteMapping("/{productId}")
     public Result<String> deleteMyProduct(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
@@ -84,6 +97,9 @@ public class UserProductController {
         return Result.success("删除成功");
     }
 
+    /**
+     * 重新提交审核。
+     */
     @PutMapping("/{productId}/resubmit")
     public Result<ProductDetailDTO> resubmit(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
@@ -91,18 +107,26 @@ public class UserProductController {
         return Result.success(productService.resubmitProduct(currentUserId, productId));
     }
 
+    /**
+     * Day16 语义冻结说明：
+     * 1. 该入口保留为兼容路径。
+     * 2. 业务语义等价于“重新提交审核”（off_shelf -> under_review）。
+     * 3. 不再表示“直接上架到 on_sale”。
+     */
     @PutMapping("/{productId}/on-shelf")
     public Result<ProductDetailDTO> onShelf(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
         userService.requireSeller(currentUserId);
         return Result.success(productService.onShelfProduct(currentUserId, productId));
     }
+
+    /**
+     * 撤回审核中的商品到下架状态。
+     */
     @PutMapping("/{productId}/withdraw")
     public Result<ProductDetailDTO> withdraw(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
         userService.requireSeller(currentUserId);
         return Result.success(productService.withdrawProduct(currentUserId, productId));
     }
-
-
 }

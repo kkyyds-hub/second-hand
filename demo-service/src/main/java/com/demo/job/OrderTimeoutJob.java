@@ -11,6 +11,10 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 订单超时关闭定时任务。
+ * 按配置扫描超时未支付订单并触发关闭流程。
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -19,13 +23,17 @@ public class OrderTimeoutJob {
     private final OrderMapper orderMapper;
     private final OrderTimeoutService orderTimeoutService;
 
+    /** 超时阈值（分钟）。 */
     @Value("${order.timeout.pending-minutes:15}")
     private int timeoutMinutes;
 
+    /** 单次处理批量大小。 */
     @Value("${order.timeout.batch-size:200}")
     private int batchSize;
 
-    // 每分钟执行一次：关闭超时未支付订单（可配置）
+    /**
+     * 按固定间隔执行超时关单任务。
+     */
     @Scheduled(fixedDelayString = "${order.timeout.fixed-delay-ms:60000}")
     public void closeTimeoutPendingOrders() {
         LocalDateTime deadline = LocalDateTime.now().minusMinutes(timeoutMinutes);
@@ -41,7 +49,9 @@ public class OrderTimeoutJob {
         for (Long orderId : orderIds) {
             try {
                 boolean ok = orderTimeoutService.closeTimeoutOrderAndRelease(orderId, deadline);
-                if (ok) closed++;
+                if (ok) {
+                    closed++;
+                }
             } catch (Exception e) {
                 log.error("timeout close failed, orderId={}", orderId, e);
             }

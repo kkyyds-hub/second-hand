@@ -28,9 +28,9 @@ public interface OrderShipTimeoutTaskMapper {
     int insertIgnore(OrderShipTimeoutTask task);
 
     /**
-     * 根据订单ID查询任务
+     * 根据订单 ID查询任务
      *
-     * @param orderId 订单ID
+     * @param orderId 订单 ID
      * @return 任务实体（不存在返回 null）
      */
     OrderShipTimeoutTask selectByOrderId(@Param("orderId") Long orderId);

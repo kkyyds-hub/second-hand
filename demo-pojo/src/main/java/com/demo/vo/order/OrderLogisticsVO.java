@@ -18,7 +18,7 @@ import java.util.List;
 public class OrderLogisticsVO {
 
     /**
-     * 订单ID
+     * 订单 ID
      */
     private Long orderId;
 

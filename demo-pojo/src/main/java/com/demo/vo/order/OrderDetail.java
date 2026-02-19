@@ -18,7 +18,7 @@ import java.util.List;
 public class OrderDetail {
 
     // ========= 基础信息 =========
-    private Long orderId;              // 订单ID
+    private Long orderId;              // 订单 ID
     private String orderNo;            // 订单号
     private String status;             // 订单状态（pending/paid/shipped/completed/cancelled 等）
 
@@ -37,7 +37,9 @@ public class OrderDetail {
 
     // ========= 商品信息 =========
     private Long productId;
+    /** 字段：productTitle。 */
     private String productTitle;
+    /** 字段：productThumbnail。 */
     private String productThumbnail;
 
     /**
@@ -50,9 +52,12 @@ public class OrderDetail {
 
     // ========= 角色信息 =========
     private Long buyerId;
+    /** 字段：buyerNickname。 */
     private String buyerNickname;
 
+    /** 卖家用户 ID。 */
     private Long sellerId;
+    /** 字段：sellerNickname。 */
     private String sellerNickname;
 
     // ========= 物流信息 =========
@@ -65,7 +70,10 @@ public class OrderDetail {
 
     // ========= 沟通 / 评价信息（可选，非 Day5 必交付） =========
     private Long chatSessionId;
+    /** 字段：allowReview。 */
     private Boolean allowReview;
+    /** 字段：buyerReview。 */
     private String buyerReview;
+    /** 字段：sellerReply。 */
     private String sellerReply;
 }

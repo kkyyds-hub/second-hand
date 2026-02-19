@@ -121,7 +121,7 @@
    -- 查看商品状态和reason
    SELECT id, title, status, reason 
    FROM products 
-   WHERE id = <测试的商品ID> 
+   WHERE id = <测试的商品 ID> 
      AND is_deleted = 0;
    ```
 

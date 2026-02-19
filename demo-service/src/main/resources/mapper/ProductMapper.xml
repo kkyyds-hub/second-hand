@@ -29,6 +29,7 @@
     </sql>
 
 
+    <!-- SQL：insertProduct，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insertProduct" parameterType="com.demo.entity.Product"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO products (
@@ -60,6 +61,7 @@
         WHERE id = #{id}
         AND is_deleted = 0
     </update>
+    <!-- SQL：updateStatusAndReason，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateStatusAndReason">
         UPDATE products
         SET status = #{status},
@@ -68,6 +70,7 @@
         WHERE id = #{id}
           AND is_deleted = 0
     </update>
+    <!-- SQL：softDeleteByOwner，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="softDeleteByOwner">
         UPDATE products
         SET is_deleted = 1,
@@ -76,6 +79,7 @@
           AND owner_id = #{ownerId}
           AND is_deleted = 0
     </update>
+    <!-- SQL：updateStatusAndReasonByOwner，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateStatusAndReasonByOwner">
         UPDATE products
         SET status = #{status},
@@ -86,19 +90,22 @@
           AND is_deleted = 0
     </update>
 
+    <!-- SQL：updateStatusAndReasonIfUnderReview，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateStatusAndReasonIfUnderReview">
+        <include refid="bindProductStatus"/>
         UPDATE products
         SET status = #{status},
             reason = #{reason},
             update_time = NOW()
         WHERE id = #{productId}
           AND is_deleted = 0
-          AND status = 'under_review'
+          AND status = #{PS_UNDER_REVIEW}
     </update>
 
     <!-- 后台：待审核商品列表（动态筛选）
          规则：不传 status 时默认只查 under_review，符合“待审核”语义 -->
     <select id="getPendingApprovalProducts" resultType="com.demo.entity.Product">
+        <include refid="bindProductStatus"/>
         SELECT
         <include refid="productColumns"/>
         FROM products
@@ -113,7 +120,7 @@
 
             <choose>
                 <when test="status == null or status == ''">
-                    AND status = 'under_review'
+                    AND status = #{PS_UNDER_REVIEW}
                 </when>
                 <when test="status == '全部'">
                     <!-- 查询全部状态，不添加 status 条件 -->
@@ -127,7 +134,7 @@
         ORDER BY create_time DESC
     </select>
 
-    <!-- 根据商品ID查询（必须带 ownerId，否则权限校验必炸） -->
+    <!-- 根据商品 ID 查询（必须带 ownerId，否则权限校验必炸） -->
     <select id="getProductById" resultType="com.demo.entity.Product">
         SELECT
         <include refid="productColumns"/>
@@ -150,11 +157,12 @@
         ORDER BY create_time DESC
     </select>
 
+   <!-- SQL：getMarketProductList，select 语句用于对应 Mapper 方法的数据访问。 -->
    <select id="getMarketProductList" resultType="com.demo.entity.Product">
+    <include refid="bindProductStatus"/>
     SELECT <include refid="productColumns"/>
     FROM products p
        WHERE p.status = #{PS_ON_SALE}
-       <include refid="bindProductStatus"/>
        AND p.is_deleted = 0
     <if test="keyword != null and keyword != ''">
         AND MATCH(p.title, p.description) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
@@ -175,6 +183,7 @@
 </select>
 
 
+    <!-- SQL：getMarketProductById，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="getMarketProductById" resultType="com.demo.entity.Product">
         <include refid="bindProductStatus"/>
         SELECT <include refid="productColumns"/>
@@ -186,6 +195,7 @@
     </select>
 
 
+    <!-- SQL：countProductsBySellerId，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countProductsBySellerId" resultType="com.demo.dto.seller.SellerProductCountDTO">
         <include refid="bindProductStatus"/>
 
@@ -199,6 +209,7 @@
         WHERE owner_id = #{sellerId}
     </select>
 
+    <!-- SQL：countActiveProductsByOwnerId，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countActiveProductsByOwnerId" resultType="java.lang.Long">
         <include refid="bindProductStatus"/>
         SELECT CAST(COUNT(*) AS SIGNED)
@@ -208,6 +219,7 @@
         AND status IN (#{PS_UNDER_REVIEW}, #{PS_ON_SALE})
     </select>
 
+    <!-- SQL：listByIds，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listByIds" resultType="com.demo.entity.Product">
         select id, title, price, images, status
         from products

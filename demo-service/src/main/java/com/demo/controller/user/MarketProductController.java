@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Min;
 
+/**
+ * 用户市场商品查询接口。
+ */
 @RestController
 @RequestMapping("/user/market/products")
 @Validated
@@ -28,6 +31,9 @@ public class MarketProductController {
     private final ProductService productService;
     private final ReviewService reviewService;
 
+    /**
+     * 分页查询市场商品。
+     */
     @GetMapping
     public Result<PageResult<MarketProductSummaryDTO>> listMarketProducts(@Validated MarketProductQueryDTO queryDTO) {
         log.info("市场商品列表 query={}", queryDTO);
@@ -35,6 +41,9 @@ public class MarketProductController {
         return Result.success(pageResult);
     }
 
+    /**
+     * 查询市场商品详情。
+     */
     @GetMapping("/{productId}")
     public Result<MarketProductDetailDTO> getMarketProductDetail(@PathVariable Long productId) {
         log.info("市场商品详情 productId={}", productId);
@@ -43,8 +52,7 @@ public class MarketProductController {
     }
 
     /**
-     * 商品评价列表（分页）
-     * GET /user/market/products/{productId}/reviews
+     * 分页查询商品评价列表。
      */
     @GetMapping("/{productId}/reviews")
     public Result<PageResult<ReviewItemDTO>> listProductReviews(

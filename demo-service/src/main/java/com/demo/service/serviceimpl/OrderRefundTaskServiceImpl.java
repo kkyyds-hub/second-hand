@@ -24,6 +24,9 @@ public class OrderRefundTaskServiceImpl implements OrderRefundTaskService {
     private final OrderRefundTaskMapper refundTaskMapper;
     private final OrderRefundTaskProcessor refundTaskProcessor;
 
+    /**
+     * 拉取可执行退款任务并逐条处理。
+     */
     @Override
     public int processRunnableTasks(int limit) {
         List<OrderRefundTask> tasks = refundTaskMapper.listRunnable(limit);

@@ -5,9 +5,13 @@ import lombok.Data;
 import javax.validation.constraints.*;
 
 @Data
+/**
+ * CreateOrderRequest 业务组件。
+ */
 public class CreateOrderRequest {
 
-    @NotNull(message = "商品ID不能为空")
+    @NotNull(message = "商品 ID 不能为空")
+    /** 商品 ID。 */
     private Long productId;
 
     /**

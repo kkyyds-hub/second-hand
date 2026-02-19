@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 用户卖家中心相关接口。
+ */
 @RestController
 @RequestMapping("/user/seller")
 @Slf4j
@@ -17,7 +20,10 @@ public class SellerController {
     
     @Autowired
     private SellerService sellerService;
-    
+
+    /**
+     * 查询当前卖家的统计摘要信息。
+     */
     @GetMapping("/summary")
     public Result<SellerSummaryDTO> getSummary() {
         log.info("获取卖家统计");

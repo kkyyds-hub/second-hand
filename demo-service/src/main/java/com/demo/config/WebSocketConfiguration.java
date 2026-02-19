@@ -13,11 +13,17 @@ import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 public class WebSocketConfiguration {
 
     @Bean
+    /**
+     * 注册 WebSocket 端点导出器。
+     */
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
     }
 
     @Bean
+    /**
+     * 注册密码加密器。
+     */
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }

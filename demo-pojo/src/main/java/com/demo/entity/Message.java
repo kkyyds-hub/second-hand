@@ -21,13 +21,19 @@ import java.time.LocalDateTime;
         @CompoundIndex(name = "uniq_order_clientMsg", def = "{'orderId': 1, 'fromUserId': 1, 'clientMsgId': 1}", unique = true),
         @CompoundIndex(name = "idx_to_read", def = "{'toUserId': 1, 'read': 1, 'createTime': -1}")
 })
+/**
+ * 站内消息实体定义。
+ */
 public class Message {
 
     @Id
     private String id; // MongoDB ObjectId
 
+    /** 订单 ID。 */
     private Long orderId;
+    /** 发送方用户 ID。 */
     private Long fromUserId;
+    /** 接收方用户 ID。 */
     private Long toUserId;
 
     /**
@@ -42,9 +48,10 @@ public class Message {
     private Boolean read = false;
 
     /**
-     * 客户端生成的幂等键（UUID/雪花ID）
+     * 客户端生成的幂等键（UUID/雪花 ID）
      */
     private String clientMsgId;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
 }

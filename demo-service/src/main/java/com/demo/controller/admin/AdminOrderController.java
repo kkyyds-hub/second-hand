@@ -41,7 +41,7 @@ public class AdminOrderController {
     private OrderMapper orderMapper;
 
     /**
-     * Day13 Step7 - 管理员全局订单分页查询
+     * 管理端分页查询订单列表。
      * GET /admin/orders?page=1&pageSize=10&status=paid&startTime=2026-01-01 00:00:00&endTime=2026-01-31 23:59:59
      */
     @GetMapping
@@ -76,12 +76,12 @@ public class AdminOrderController {
     }
 
     /**
-     * 标记异常订单
+     * 给订单打标记。
      * POST /admin/orders/{orderId}/flags
      */
     @PostMapping("/{orderId}/flags")
     public Result<String> flagOrder(
-            @PathVariable @Min(value = 1, message = "订单ID必须大于0") Long orderId,
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId,
             @Validated @RequestBody OrderFlagRequest request) {
         log.info("管理员标记异常订单: orderId={}, type={}", orderId, request.getType());
 
@@ -108,6 +108,9 @@ public class AdminOrderController {
         return Result.success("标记成功");
     }
 
+    /**
+     * 解析日期时间字符串（支持 ISO 和 yyyy-MM-dd HH:mm:ss）。
+     */
     private LocalDateTime parseDateTime(String input) {
         if (input == null || input.trim().isEmpty()) {
             return null;
@@ -125,3 +128,4 @@ public class AdminOrderController {
         }
     }
 }
+

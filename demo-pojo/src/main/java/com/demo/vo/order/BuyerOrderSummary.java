@@ -16,10 +16,10 @@ import java.time.LocalDateTime;
 @Data
 public class BuyerOrderSummary {
 
-    private Long orderId;          // 订单ID
+    private Long orderId;          // 订单 ID
     private String orderNo;        // 订单编号
 
-    private Long productId;        // 商品ID
+    private Long productId;        // 商品 ID
     private String productTitle;   // 商品标题
     private String productThumbnail; // 商品封面图
 

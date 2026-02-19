@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.time.LocalDateTime;
 
 @Mapper
+/**
+ * UserBanMapper 接口。
+ */
 public interface UserBanMapper {
 
     /**
@@ -14,6 +17,9 @@ public interface UserBanMapper {
      */
     void insertUserBan(UserBan userBan);
 
+    /**
+     * 关闭用户当前有效封禁记录。
+     */
     int closeActiveBans(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
 }

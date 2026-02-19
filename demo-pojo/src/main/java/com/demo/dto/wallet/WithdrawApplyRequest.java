@@ -16,9 +16,11 @@ public class WithdrawApplyRequest {
 
     @NotNull(message = "提现金额不能为空")
     @DecimalMin(value = "0.01", message = "提现金额最小为0.01")
+    /** 字段：amount。 */
     private BigDecimal amount;
 
     @NotBlank(message = "银行卡号不能为空")
     @Size(min = 4, max = 32, message = "银行卡号长度需在4~32字符")
+    /** 字段：bankCardNo。 */
     private String bankCardNo;
 }

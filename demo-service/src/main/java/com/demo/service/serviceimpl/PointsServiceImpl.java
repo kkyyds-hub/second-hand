@@ -27,12 +27,18 @@ public class PointsServiceImpl implements PointsService {
     @Value("${points.order-complete:1}")
     private int pointsPerOrder;
 
+    /**
+     * 查询用户总积分。
+     */
     @Override
     public Integer getTotalPoints(Long userId) {
         Integer total = pointsMapper.sumPointsByUserId(userId);
         return total != null ? total : 0;
     }
 
+    /**
+     * 分页查询积分流水。
+     */
     @Override
     public PageResult<PointsLedger> listPoints(Long userId, Integer page, Integer pageSize) {
         PageHelper.startPage(page, pageSize);
@@ -41,6 +47,9 @@ public class PointsServiceImpl implements PointsService {
         return new PageResult<>(pageInfo.getList(), pageInfo.getTotal(), page, pageSize);
     }
 
+    /**
+     * 订单完成后给买卖双方发放积分（幂等）。
+     */
     @Override
     public void grantPointsForOrderComplete(Long orderId, Long buyerId, Long sellerId) {
         // 给买家加积分

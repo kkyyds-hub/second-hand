@@ -37,6 +37,9 @@ public class AfterSaleServiceImpl implements AfterSaleService {
     @Autowired
     private OrderMapper orderMapper;
 
+    /**
+     * 创建或新增相关数据。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createAfterSale(Long currentUserId, CreateAfterSaleRequest request) {
@@ -117,6 +120,9 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         return afterSale.getId();
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String sellerDecision(Long afterSaleId, Long currentUserId, SellerDecisionRequest request) {
@@ -154,6 +160,9 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         return request.getApproved() ? "已同意退货退款" : "已拒绝退货退款";
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String submitDispute(Long afterSaleId, Long currentUserId, DisputeRequest request) {
@@ -185,6 +194,9 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         return "纠纷已提交，等待平台介入";
     }
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String arbitrate(Long afterSaleId, ArbitrateRequest request) {

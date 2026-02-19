@@ -58,6 +58,9 @@ protected void addInterceptors(InterceptorRegistry registry) {
 
 
     @Bean
+    /**
+     * 注册管理端 Swagger 文档分组。
+     */
     public Docket docket1(){
         log.info("准备生成接口文档...");
         ApiInfo apiInfo = new ApiInfoBuilder()
@@ -79,6 +82,9 @@ protected void addInterceptors(InterceptorRegistry registry) {
     }
 
     @Bean
+    /**
+     * 注册用户端 Swagger 文档分组。
+     */
     public Docket docket2(){
         log.info("准备生成接口文档...");
         ApiInfo apiInfo = new ApiInfoBuilder()

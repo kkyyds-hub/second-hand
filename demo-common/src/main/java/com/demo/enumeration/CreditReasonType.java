@@ -13,7 +13,9 @@ public enum CreditReasonType {
     ADMIN_ADJUST("admin_adjust", "管理员调整"),
     RECALC("recalc", "重算/对账");
 
+    /** 数据库存储值。 */
     private final String dbValue;
+    /** 业务语义说明。 */
     private final String description;
 
     CreditReasonType(String dbValue, String description) {
@@ -21,10 +23,16 @@ public enum CreditReasonType {
         this.description = description;
     }
 
+    /**
+     * 获取数据库存储值。
+     */
     public String getDbValue() {
         return dbValue;
     }
 
+    /**
+     * 获取描述信息。
+     */
     public String getDescription() {
         return description;
     }

@@ -16,7 +16,7 @@ public interface OrderFlagMapper {
     int insertOrderFlag(OrderFlag orderFlag);
 
     /**
-     * 根据订单ID和类型查询标记（幂等检查）
+     * 根据订单 ID和类型查询标记（幂等检查）
      */
     OrderFlag selectByOrderIdAndType(@Param("orderId") Long orderId, @Param("type") String type);
 }

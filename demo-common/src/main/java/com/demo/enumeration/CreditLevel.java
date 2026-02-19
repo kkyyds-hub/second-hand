@@ -17,9 +17,13 @@ public enum CreditLevel {
     LV4("lv4", "等级4", 120, 159),
     LV5("lv5", "等级5", 160, 200);
 
+    /** 数据库存储值。 */
     private final String dbValue;
+    /** 中文名称。 */
     private final String cnName;
+    /** 最小分值。 */
     private final int minScore;
+    /** 最大分值。 */
     private final int maxScore;
 
     CreditLevel(String dbValue, String cnName, int minScore, int maxScore) {
@@ -29,18 +33,30 @@ public enum CreditLevel {
         this.maxScore = maxScore;
     }
 
+    /**
+     * 获取数据库存储值。
+     */
     public String getDbValue() {
         return dbValue;
     }
 
+    /**
+     * 获取中文名称。
+     */
     public String getCnName() {
         return cnName;
     }
 
+    /**
+     * 获取相关信息。
+     */
     public int getMinScore() {
         return minScore;
     }
 
+    /**
+     * 获取相关信息。
+     */
     public int getMaxScore() {
         return maxScore;
     }

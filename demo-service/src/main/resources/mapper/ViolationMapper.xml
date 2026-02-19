@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.ViolationMapper">
+    <!-- SQL：update，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="update">
         UPDATE users
         <set>
@@ -11,6 +12,7 @@
     </update>
 
 
+    <!-- SQL：SelectById，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="SelectById" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE id = #{userId}
     </select>
@@ -27,6 +29,7 @@
         ORDER BY cnt DESC
     </select>
 
+    <!-- SQL：getUserViolations，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="getUserViolations" resultType="com.demo.dto.admin.UserViolationDTO">
         SELECT
             id,

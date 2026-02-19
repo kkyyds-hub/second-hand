@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
+/**
+ * FavoriteMapper 接口。
+ */
 public interface FavoriteMapper extends BaseMapper<Favorite> {
     /**
      * 恢复被逻辑删除的收藏记录：is_deleted 1 -> 0

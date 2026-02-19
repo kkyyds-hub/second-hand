@@ -15,11 +15,11 @@ public class SendMessageRequest {
     /**
      * 接收方用户 ID
      */
-    @NotNull(message = "接收方用户ID不能为空")
+    @NotNull(message = "接收方用户 ID 不能为空")
     private Long toUserId;
 
     /**
-     * 客户端生成的幂等键（UUID/雪花ID）
+     * 客户端生成的幂等键（UUID/雪花 ID）
      */
     @NotBlank(message = "客户端消息ID不能为空")
     private String clientMsgId;
@@ -31,3 +31,4 @@ public class SendMessageRequest {
     @Size(min = 1, max = 500, message = "消息内容长度需在 1~500 字符")
     private String content;
 }
+

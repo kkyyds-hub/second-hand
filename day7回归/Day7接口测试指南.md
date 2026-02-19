@@ -91,11 +91,11 @@ ORDER BY create_time DESC;
 ```
 PUT /admin/products/{productId}/approve
 Headers: { "authentication": "<admin_token>" }
-Path参数: productId = <某个 under_review 状态的商品ID>
+Path参数: productId = <某个 under_review 状态的商品 ID>
 ```
 
 **测试步骤：**
-1. 先查询一个 `status = under_review` 的商品ID（如ID=2）
+1. 先查询一个 `status = under_review` 的商品 ID（如 ID=2）
 2. 调用审核通过接口
 3. 查询数据库验证
 
@@ -126,7 +126,7 @@ Headers: {
   "authentication": "<admin_token>",
   "Content-Type": "application/json"
 }
-Path参数: productId = <某个 under_review 状态的商品ID>
+Path参数: productId = <某个 under_review 状态的商品 ID>
 Body:
 {
   "reason": "商品信息不符合规范，请重新填写"
@@ -134,7 +134,7 @@ Body:
 ```
 
 **测试步骤：**
-1. 先查询一个 `status = under_review` 的商品ID
+1. 先查询一个 `status = under_review` 的商品 ID
 2. 调用审核驳回接口，传入 reason
 3. 查询数据库验证
 
@@ -173,12 +173,12 @@ Body:
 ```
 PUT /user/products/{productId}/resubmit
 Headers: { "authentication": "<user_token>" }
-Path参数: productId = <某个 off_shelf 状态的商品ID，且ownerId = 当前用户>
+Path参数: productId = <某个 off_shelf 状态的商品 ID，且ownerId = 当前用户>
 ```
 
 **测试步骤：**
 1. 使用卖家账号登录，获取Token
-2. 查询一个自己的 `status = off_shelf` 的商品ID
+2. 查询一个自己的 `status = off_shelf` 的商品 ID
 3. 调用重提审接口
 4. 查询数据库验证
 
@@ -206,12 +206,12 @@ SELECT id, status, reason FROM products WHERE id = <productId>;
 ```
 PUT /user/products/{productId}/withdraw
 Headers: { "authentication": "<user_token>" }
-Path参数: productId = <某个 under_review 状态的商品ID，且ownerId = 当前用户>
+Path参数: productId = <某个 under_review 状态的商品 ID，且ownerId = 当前用户>
 ```
 
 **测试步骤：**
 1. 使用卖家账号登录
-2. 查询一个自己的 `status = under_review` 的商品ID
+2. 查询一个自己的 `status = under_review` 的商品 ID
 3. 调用撤回审核接口
 4. 查询数据库验证
 

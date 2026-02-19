@@ -10,15 +10,21 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Data
+/**
+ * ProductCreateRequest 业务组件。
+ */
 public class ProductCreateRequest {
 
     @NotBlank(message = "商品标题不能为空")
+    /** 字段：title。 */
     private String title;
 
+    /** 业务语义说明。 */
     private String description;
 
     @NotNull(message = "商品价格不能为空")
     @DecimalMin(value = "0.01", message = "商品价格必须大于 0")
+    /** 字段：price。 */
     private BigDecimal price;
 
     /**

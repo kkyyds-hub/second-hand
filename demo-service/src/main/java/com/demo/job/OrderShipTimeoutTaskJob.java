@@ -25,6 +25,9 @@ public class OrderShipTimeoutTaskJob {
     @Value("${order.ship-timeout.batch-size:200}")
     private int batchSize;
 
+    /**
+     * 定时触发发货超时任务批处理。
+     */
     @Scheduled(fixedDelayString = "${order.ship-timeout.fixed-delay-ms:60000}")
     public void run() {
         int size = batchSize <= 0 ? 200 : batchSize;

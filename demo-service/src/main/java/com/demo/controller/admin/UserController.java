@@ -16,6 +16,9 @@ import javax.validation.Valid;
 @Api(tags = "用户管理")
 @RequestMapping("/admin/user")
 @Slf4j
+/**
+ * UserController 业务组件。
+ */
 public class UserController {
 
     @Autowired
@@ -23,6 +26,9 @@ public class UserController {
 
     @GetMapping
     @ApiOperation("用户分页查询")
+    /**
+     * 分页查询用户列表。
+     */
     public Result<PageResult<UserVO>> getUsers(@Valid UserQueryDTO queryDTO) {
         log.info("用户分页查询: page={}, pageSize={}", queryDTO.getPage(), queryDTO.getPageSize());
         PageResult<UserVO> pageResult = userService.getUserPage(queryDTO);

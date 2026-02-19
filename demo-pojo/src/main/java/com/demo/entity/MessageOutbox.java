@@ -16,7 +16,7 @@ public class MessageOutbox {
     /** 自增主键 */
     private Long id;
 
-    /** 事件唯一ID（幂等/追踪） */
+    /** 事件唯一 ID（幂等/追踪） */
     private String eventId;
 
     /** 事件类型（ORDER_CREATED/ORDER_PAID/...） */

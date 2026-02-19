@@ -9,6 +9,9 @@ import java.util.Date;
 import java.util.Map;
 
 @Slf4j  // 添加日志
+/**
+ * JwtUtil 业务组件。
+ */
 public class JwtUtil {
 
     /**

@@ -9,15 +9,15 @@ import java.time.LocalDateTime;
  */
 @Data
 public class OrderCreatedPayload {
-    /** 订单ID */
+    /** 订单 ID */
     private Long orderId;
     /** 订单号 */
     private String orderNo;
-    /** 买家ID */
+    /** 买家 ID */
     private Long buyerId;
-    /** 卖家ID */
+    /** 卖家 ID */
     private Long sellerId;
-    /** 商品ID */
+    /** 商品 ID */
     private Long productId;
     /** 购买数量 */
     private Integer quantity;

@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
  */
 @Data
 public class OrderTimeoutPayload {
-    /** 订单ID */
+    /** 订单 ID */
     private Long orderId;
     /** 订单号 */
     private String orderNo;
-    /** 买家ID */
+    /** 买家 ID */
     private Long buyerId;
     /** 超时分钟数（用于追踪配置） */
     private Integer pendingMinutes;

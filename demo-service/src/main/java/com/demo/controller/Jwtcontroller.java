@@ -1,4 +1,5 @@
 package com.demo.controller;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.context.annotation.Profile;
@@ -12,31 +13,36 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 开发环境 Token 生成辅助接口。
+ */
 @RestController
 @RequestMapping("/dev/token")
 @Profile("dev")
 public class Jwtcontroller {
+
+    /**
+     * 生成测试用 JWT（仅 dev 环境可用）。
+     */
     @GetMapping("/safe-token")
     public String generateToken() {
         try {
-            //  安全的可变Map
+            // 固定示例声明，便于本地联调管理端鉴权流程。
             Map<String, Object> claims = new LinkedHashMap<>();
             claims.put("empId", 1L);
             claims.put("username", "admin");
 
-            // 密钥处理（确保长度足够）
             String secretKey = "second hand";
             byte[] keyBytes = Arrays.copyOf(
                     secretKey.getBytes(StandardCharsets.UTF_8),
-                    32 // HS256需要32字节
+                    32
             );
 
             return Jwts.builder()
                     .setClaims(claims)
                     .signWith(SignatureAlgorithm.HS256, keyBytes)
-                    .setExpiration(new Date(System.currentTimeMillis() + 7200000))
+                    .setExpiration(new Date(System.currentTimeMillis() + 7_200_000))
                     .compact();
-
         } catch (Exception e) {
             return "Safe Error: " + e.getClass().getSimpleName() + " - " + e.getMessage();
         }

@@ -5,9 +5,15 @@ package com.demo.exception;
  */
 public class AccountNotFoundException extends BaseException {
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public AccountNotFoundException() {
     }
 
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public AccountNotFoundException(String msg) {
         super(msg);
     }

@@ -27,6 +27,9 @@ public class WalletServiceImpl implements WalletService {
     @Autowired
     private WalletMapper walletMapper;
 
+    /**
+     * 查询用户钱包余额，不存在则自动初始化钱包。
+     */
     @Override
     public BigDecimal getBalance(Long userId) {
         UserWallet wallet = walletMapper.selectByUserId(userId);
@@ -41,6 +44,9 @@ public class WalletServiceImpl implements WalletService {
         return wallet.getBalance();
     }
 
+    /**
+     * 分页查询钱包流水。
+     */
     @Override
     public PageResult<WalletTransaction> listTransactions(Long userId, Integer page, Integer pageSize) {
         PageHelper.startPage(page, pageSize);
@@ -49,6 +55,9 @@ public class WalletServiceImpl implements WalletService {
         return new PageResult<>(pageInfo.getList(), pageInfo.getTotal(), page, pageSize);
     }
 
+    /**
+     * 提交提现申请。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long applyWithdraw(Long userId, WithdrawApplyRequest request) {

@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * 卖家中心聚合服务实现。
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -20,6 +23,9 @@ public class SellerServiceImpl implements SellerService {
     private final ProductMapper productMapper;
     private final OrderMapper orderMapper;
 
+    /**
+     * 统计当前卖家的商品与订单摘要数据。
+     */
     @Override
     public SellerSummaryDTO getSummary(Long sellerId) {
         // 入口只信入参：sellerId 来自 Controller 的 currentUserId
@@ -48,7 +54,11 @@ public class SellerServiceImpl implements SellerService {
         return dto;
     }
 
+    /**
+     * 空值转 0。
+     */
     private Long nz(Long v) {
         return v == null ? 0L : v;
     }
 }
+

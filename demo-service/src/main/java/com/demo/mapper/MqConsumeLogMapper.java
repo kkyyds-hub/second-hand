@@ -16,7 +16,7 @@ public interface MqConsumeLogMapper {
      * 根据 consumer + eventId 查询
      *
      * @param consumer 消费者标识
-     * @param eventId  事件ID
+     * @param eventId  事件 ID
      * @return 已存在的消费记录（null 表示未消费）
      */
     MqConsumeLog selectByConsumerAndEventId(@Param("consumer") String consumer,

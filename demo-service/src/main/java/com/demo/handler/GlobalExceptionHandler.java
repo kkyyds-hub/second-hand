@@ -77,6 +77,9 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler
+    /**
+     * 实现对应业务处理。
+     */
     public Result exceptiobHandler(SQLIntegrityConstraintViolationException ex){
         log.error("异常信息：{}", ex.getMessage());
         String message = ex.getMessage();

@@ -35,6 +35,9 @@ public class OrderShipTimeoutPenaltyServiceImpl implements OrderShipTimeoutPenal
     @Value("${order.ship-timeout.penalty.enabled:false}")
     private boolean penaltyEnabled;
 
+    /**
+     * 实现接口定义的方法。
+     */
     @Override
     public void applyPenalty(Order order) {
         if (order == null || order.getId() == null || order.getSellerId() == null) {

@@ -33,7 +33,7 @@ public class MessageController {
      */
     @PostMapping("/orders/{orderId}")
     public Result<MessageDTO> sendMessage(
-            @PathVariable @Min(value = 1, message = "订单ID必须大于0") Long orderId,
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId,
             @Validated @RequestBody SendMessageRequest request) {
         Long currentUserId = BaseContext.getCurrentId();
         log.info("发送消息：orderId={}, from={}, to={}", orderId, currentUserId, request.getToUserId());
@@ -48,7 +48,7 @@ public class MessageController {
      */
     @GetMapping("/orders/{orderId}")
     public Result<PageResult<MessageDTO>> listMessages(
-            @PathVariable @Min(value = 1, message = "订单ID必须大于0") Long orderId,
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
         Long currentUserId = BaseContext.getCurrentId();
@@ -77,7 +77,7 @@ public class MessageController {
      */
     @PutMapping("/orders/{orderId}/read")
     public Result<String> markAsRead(
-            @PathVariable @Min(value = 1, message = "订单ID必须大于0") Long orderId) {
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId) {
         Long currentUserId = BaseContext.getCurrentId();
         log.info("标记已读：orderId={}, userId={}", orderId, currentUserId);
 
@@ -85,3 +85,4 @@ public class MessageController {
         return Result.success(msg);
     }
 }
+

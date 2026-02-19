@@ -19,7 +19,7 @@ public class MqConsumeLog {
     /** 消费者标识（如 OrderPaidConsumer） */
     private String consumer;
 
-    /** 事件唯一ID（EventMessage.eventId） */
+    /** 事件唯一 ID（EventMessage.eventId） */
     private String eventId;
 
     /** 处理状态（OK/FAIL） */

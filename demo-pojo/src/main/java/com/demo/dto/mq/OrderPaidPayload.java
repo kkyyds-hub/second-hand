@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
  */
 @Data
 public class OrderPaidPayload {
-    /** 订单ID */
+    /** 订单 ID */
     private Long orderId;
     /** 订单号 */
     private String orderNo;
-    /** 买家ID */
+    /** 买家 ID */
     private Long buyerId;
     /** 支付金额 */
     private BigDecimal payAmount;

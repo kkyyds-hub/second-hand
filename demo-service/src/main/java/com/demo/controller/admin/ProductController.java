@@ -3,6 +3,7 @@ package com.demo.controller.admin;
 import com.demo.dto.admin.RejectProductRequest;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.ProductViolation;
+import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.exception.DatabaseUpdateException;
 import com.demo.exception.ProductNotFoundException;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 
+/**
+ * ProductController 业务组件。
+ */
 @RestController
 @RequestMapping("/admin/products")
 @Api(tags = "商品管理")
@@ -28,7 +32,9 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    // 获取待审核商品列表
+    /**
+     * 获取待审核商品分页列表。
+     */
     @GetMapping("/pending-approval")
     public Result<PageResult<ProductDTO>> getPendingApprovalProducts(
             @RequestParam(defaultValue = "1") int page,
@@ -66,7 +72,9 @@ public class ProductController {
     }
 
 
-    // 审批商品
+    /**
+     * 审批商品（兼容旧接口，建议使用 Day7 的 PUT 接口）。
+     */
     @Deprecated
     @PostMapping("/{productId}/approve")
     public Result<String> approveProduct(
@@ -82,14 +90,18 @@ public class ProductController {
         }
     }
 
-    // 根据商品ID获取违规记录
+    /**
+     * 根据商品 ID 获取违规记录。
+     */
     @GetMapping("/{productId}/violations")
     public ResponseEntity<List<ProductViolation>> getProductViolations(@PathVariable Long productId) {
         List<ProductViolation> violations = productService.getProductViolations(productId);
         return new ResponseEntity<>(violations, HttpStatus.OK);
     }
 
-    // 添加商品违规记录
+    /**
+     * 为指定商品新增违规记录。
+     */
     @PostMapping("/{productId}/violations")
     public ResponseEntity<Void> addProductViolation(@PathVariable Long productId, @RequestBody ProductViolation violation) {
         violation.setProductId(productId);
@@ -97,7 +109,9 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    // 更新商品状态
+    /**
+     * 更新商品状态。
+     */
     @PostMapping("/{productId}/update-status")
     public Result<String> updateProductStatus(@PathVariable Long productId, @RequestParam String status) {
         try {
@@ -125,34 +139,23 @@ public class ProductController {
 
     /**
      * 后台入参 status 统一规范化：
-     * - 允许 dbValue：on_sale / sold / off_shelf / under_review
-     * - 兼容中文：上架 / 已售 / 下架 / 审核中（兼容旧测试，不影响内部口径）
+     * - 统一复用 ProductStatus.normalizeToDbValue，避免维护第二套状态映射
+     * - 兼容中文：上架/在售/已售/下架/审核中/待审核
      * - 允许“全部/空”表示不筛选（返回 null）
      */
     private String normalizeStatus(String status) {
-        if (status == null) return null;
-        status = status.trim();
-        if (status.isEmpty() || "全部".equals(status)) return null;
-
-        switch (status) {
-            case "上架":
-            case "在售": return "on_sale";
-            case "已售": return "sold";
-            case "下架": return "off_shelf";
-            case "审核中":
-            case "待审核": return "under_review";
-            default:
-                if (isDbStatus(status)) return status;
-                throw new BusinessException("非法商品状态: " + status
-                        + "，允许: on_sale/sold/off_shelf/under_review 或 上架/已售/下架/审核中");
+        if (status == null) {
+            return null;
         }
-    }
-
-
-    private boolean isDbStatus(String status) {
-        return "on_sale".equals(status)
-                || "sold".equals(status)
-                || "off_shelf".equals(status)
-                || "under_review".equals(status);
+        String normalized = status.trim();
+        if (normalized.isEmpty() || "全部".equals(normalized)) {
+            return null;
+        }
+        try {
+            return ProductStatus.normalizeToDbValue(normalized);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("非法商品状态: " + status
+                    + "，允许: on_sale/sold/off_shelf/under_review 或 上架/在售/已售/下架/审核中/待审核");
+        }
     }
 }

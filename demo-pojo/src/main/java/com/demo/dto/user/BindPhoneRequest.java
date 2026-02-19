@@ -6,6 +6,9 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
 @Data
+/**
+ * BindPhoneRequest 业务组件。
+ */
 public class BindPhoneRequest {
 
     /**

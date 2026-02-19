@@ -33,6 +33,9 @@ public class OrderShipReminderTaskServiceImpl implements OrderShipReminderTaskSe
     @Value("${order.ship-reminder.running-timeout-minutes:5}")
     private int runningTimeoutMinutes;
 
+    /**
+     * 创建或新增相关数据。
+     */
     @Override
     public void createReminderTasksForPaidOrder(Long orderId, Long sellerId, LocalDateTime payTime) {
         if (orderId == null || sellerId == null) {
@@ -60,6 +63,9 @@ public class OrderShipReminderTaskServiceImpl implements OrderShipReminderTaskSe
         }
     }
 
+    /**
+     * 处理对应业务流程。
+     */
     @Override
     public int processDueTasks(int limit) {
         int size = limit <= 0 ? 200 : limit;

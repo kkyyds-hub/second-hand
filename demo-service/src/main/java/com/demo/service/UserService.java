@@ -8,6 +8,9 @@ import com.demo.vo.UserVO;
 import javax.validation.Valid;
 import java.util.List;
 
+/**
+ * UserService 接口。
+ */
 public interface UserService {
     PageResult<UserVO> getUserPage(UserQueryDTO queryDTO);
 

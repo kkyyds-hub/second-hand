@@ -93,6 +93,9 @@ public class OrderRefundTaskProcessor {
     private void registerAfterCommit(Runnable callback) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                /**
+                 * 实现接口定义的方法。
+                 */
                 @Override
                 public void afterCommit() {
                     callback.run();

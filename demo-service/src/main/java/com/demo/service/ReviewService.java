@@ -5,6 +5,9 @@ import com.demo.dto.review.ReviewCreateRequest;
 import com.demo.dto.review.ReviewItemDTO;
 import com.demo.result.PageResult;
 
+/**
+ * ReviewService 接口。
+ */
 public interface ReviewService {
 
     /**

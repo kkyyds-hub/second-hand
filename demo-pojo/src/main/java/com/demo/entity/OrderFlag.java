@@ -16,8 +16,10 @@ import java.time.LocalDateTime;
 public class OrderFlag {
 
     @TableId(type = IdType.AUTO)
+    /** 主键 ID。 */
     private Long id;
 
+    /** 订单 ID。 */
     private Long orderId;
 
     /**
@@ -35,5 +37,6 @@ public class OrderFlag {
      */
     private Long createdBy;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
 }

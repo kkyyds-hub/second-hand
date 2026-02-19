@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @Data
 public class Order {
 
-    private Long id;            // 主键ID
+    private Long id;            // 主键 ID
     private String orderNo;     // 订单号（业务展示用）
 
-    private Long buyerId;       // 买家ID
-    private Long sellerId;      // 卖家ID
+    private Long buyerId;       // 买家 ID
+    private Long sellerId;      // 卖家 ID
 
     private BigDecimal totalAmount;   // 订单总金额（所有明细合计）
 

@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
 @Data
 public class OrderShipTimeoutTask {
 
-    /** 主键ID */
+    /** 主键 ID */
     private Long id;
 
-    /** 关联订单ID（唯一） */
+    /** 关联订单 ID（唯一） */
     private Long orderId;
 
     /** 超时截止时间（通常 = pay_time + 48h） */

@@ -14,6 +14,7 @@
         <bind name="PS_SOLD" value="@com.demo.enumeration.ProductStatus@SOLD.getDbValue()"/>
     </sql>
 
+    <!-- SQL：updateForShipping，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateForShipping">
         <include refid="bindStatus"/>
         UPDATE orders
@@ -31,6 +32,7 @@
     </update>
 
 
+    <!-- SQL：updateForConfirm，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateForConfirm" parameterType="com.demo.entity.Order">
         <include refid="bindStatus"/>
         UPDATE orders
@@ -45,6 +47,7 @@
     </update>
 
 
+    <!-- SQL：insertOrder，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id">
         <include refid="bindStatus"/>
         INSERT INTO orders (
@@ -58,6 +61,7 @@
         )
     </insert>
 
+    <!-- SQL：insertOrderItem，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insertOrderItem">
         <include refid="bindStatus"/>
         INSERT INTO order_items (
@@ -67,6 +71,7 @@
         )
     </insert>
 
+    <!-- SQL：markProductSoldIfOnSale，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="markProductSoldIfOnSale">
         <include refid="bindStatus"/>
         UPDATE products
@@ -77,6 +82,7 @@
         AND is_deleted = 0
     </update>
 
+    <!-- SQL：listBuyerOrders，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listBuyerOrders" resultType="com.demo.vo.order.BuyerOrderSummary">
         <include refid="bindStatus"/>
         SELECT
@@ -131,6 +137,7 @@
         </choose>
     </select>
 
+    <!-- SQL：listSellerOrders，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listSellerOrders" resultType="com.demo.vo.order.SellerOrderSummary">
         <include refid="bindStatus"/>
         SELECT
@@ -216,6 +223,7 @@
         </choose>
     </select>
 
+    <!-- SQL：getOrderDetail，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="getOrderDetail" resultType="com.demo.vo.order.OrderDetail">
         <include refid="bindStatus"/>
         SELECT
@@ -263,6 +271,7 @@
         LIMIT 1
     </select>
 
+    <!-- SQL：updateForPay，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateForPay">
         <include refid="bindStatus"/>
         UPDATE orders
@@ -274,6 +283,7 @@
         AND status = #{OS_PENDING}
     </update>
 
+    <!-- SQL：updateForCancel，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateForCancel">
         <include refid="bindStatus"/>
         UPDATE orders
@@ -286,6 +296,7 @@
         AND status = #{OS_PENDING}
     </update>
 
+    <!-- SQL：releaseProductsForOrder，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="releaseProductsForOrder">
         <include refid="bindStatus"/>
         UPDATE products p
@@ -298,6 +309,7 @@
         AND p.is_deleted = 0
     </update>
 
+    <!-- SQL：findTimeoutPendingOrderIds，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="findTimeoutPendingOrderIds" resultType="java.lang.Long">
         <include refid="bindStatus"/>
         SELECT id
@@ -308,6 +320,7 @@
         LIMIT #{limit}
     </select>
 
+    <!-- SQL：closeTimeoutOrder，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="closeTimeoutOrder">
         <include refid="bindStatus"/>
         UPDATE orders
@@ -320,6 +333,7 @@
         AND create_time <![CDATA[ <= ]]> #{deadline}
     </update>
 
+    <!-- SQL：countOrdersBySellerId，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countOrdersBySellerId" resultType="com.demo.dto.seller.SellerOrderCountDTO">
         <include refid="bindStatus"/>
         SELECT
@@ -333,6 +347,7 @@
         WHERE seller_id = #{sellerId}
     </select>
     
+    <!-- SQL：selectOrderBasicById，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="selectOrderBasicById" resultType="com.demo.entity.Order">
         SELECT
             id,

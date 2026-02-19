@@ -15,13 +15,13 @@ import java.time.LocalDateTime;
 @Data
 public class OrderShipReminderTask {
 
-    /** 主键ID */
+    /** 主键 ID */
     private Long id;
 
-    /** 订单ID */
+    /** 订单 ID */
     private Long orderId;
 
-    /** 卖家ID（提醒接收人） */
+    /** 卖家 ID（提醒接收人） */
     private Long sellerId;
 
     /**

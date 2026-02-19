@@ -27,7 +27,7 @@ import java.util.Objects;
 public class OrderNoticeServiceImpl implements OrderNoticeService {
 
     /**
-     * 系统用户ID（站内消息显示“系统通知”可由前端按此ID识别）。
+     * 系统用户 ID（站内消息显示“系统通知”可由前端按此 ID识别）。
      */
     private static final Long SYSTEM_USER_ID = 0L;
 
@@ -42,6 +42,9 @@ public class OrderNoticeServiceImpl implements OrderNoticeService {
     @Value("${order.notice.ship-reminder-enabled:true}")
     private boolean shipReminderNoticeEnabled;
 
+    /**
+     * 发送“超时未发货已取消”通知。
+     */
     @Override
     public void notifyShipTimeoutCancelled(Order order) {
         if (!shipTimeoutCancelNoticeEnabled) {
@@ -50,12 +53,15 @@ public class OrderNoticeServiceImpl implements OrderNoticeService {
         if (order == null || order.getId() == null) {
             return;
         }
-        String content = "订单因超时未发货已自动取消，系统已发起退款。订单ID：" + order.getId();
+        String content = "订单因超时未发货已自动取消，系统已发起退款。订单 ID：" + order.getId();
 
         saveNotice(order.getId(), order.getBuyerId(), "SYS-SHIP-TIMEOUT-" + order.getId() + "-BUYER", content);
         saveNotice(order.getId(), order.getSellerId(), "SYS-SHIP-TIMEOUT-" + order.getId() + "-SELLER", content);
     }
 
+    /**
+     * 发送“退款成功”通知。
+     */
     @Override
     public void notifyRefundSuccess(Order order, OrderRefundTask refundTask) {
         if (!refundSuccessNoticeEnabled) {
@@ -64,12 +70,15 @@ public class OrderNoticeServiceImpl implements OrderNoticeService {
         if (order == null || order.getId() == null || refundTask == null) {
             return;
         }
-        String content = "订单退款处理成功。订单ID：" + order.getId() + "，退款类型：" + refundTask.getRefundType();
+        String content = "订单退款处理成功。订单 ID：" + order.getId() + "，退款类型：" + refundTask.getRefundType();
 
         saveNotice(order.getId(), order.getBuyerId(), "SYS-REFUND-SUCCESS-" + order.getId() + "-BUYER", content);
         saveNotice(order.getId(), order.getSellerId(), "SYS-REFUND-SUCCESS-" + order.getId() + "-SELLER", content);
     }
 
+    /**
+     * 发送“即将超时未发货”提醒通知。
+     */
     @Override
     public void notifyShipReminder(Order order, String level, String remaining, String clientMsgId) {
         if (!shipReminderNoticeEnabled) {
@@ -118,3 +127,4 @@ public class OrderNoticeServiceImpl implements OrderNoticeService {
         }
     }
 }
+

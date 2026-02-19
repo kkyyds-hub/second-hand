@@ -27,9 +27,9 @@ public interface MessageOutboxMapper {
     int insert(MessageOutbox outbox);
 
     /**
-     * 根据事件ID查询（用于幂等检查）
+     * 根据事件 ID查询（用于幂等检查）
      *
-     * @param eventId 事件唯一ID
+     * @param eventId 事件唯一 ID
      * @return 外箱记录（可能为 null）
      */
     MessageOutbox selectByEventId(@Param("eventId") String eventId);

@@ -2,18 +2,33 @@ package com.demo.dto.user;
 
 import lombok.Data;
 
+/**
+ * 卖家中心统计摘要 DTO。
+ */
 @Data
 public class SellerSummaryDTO {
-    private Long totalProducts;        // 商品总数
-    private Long underReviewProducts;  // 审核中
-    private Long onSaleProducts;       // 在售
-    private Long offShelfProducts;     // 下架
-    private Long soldProducts;         // 已售
-    
-    private Long totalOrders;          // 订单总数
-    private Long pendingOrders;        // 待付款
-    private Long paidOrders;           // 已付款待发货
-    private Long shippedOrders;        // 已发货待收货
-    private Long completedOrders;      // 已完成
-    private Long cancelledOrders;      // 已取消
+
+    /** 商品总数。 */
+    private Long totalProducts;
+    /** 待审核商品数。 */
+    private Long underReviewProducts;
+    /** 在售商品数。 */
+    private Long onSaleProducts;
+    /** 下架商品数。 */
+    private Long offShelfProducts;
+    /** 已售商品数。 */
+    private Long soldProducts;
+
+    /** 订单总数。 */
+    private Long totalOrders;
+    /** 待支付订单数。 */
+    private Long pendingOrders;
+    /** 已支付待发货订单数。 */
+    private Long paidOrders;
+    /** 已发货待收货订单数。 */
+    private Long shippedOrders;
+    /** 已完成订单数。 */
+    private Long completedOrders;
+    /** 已取消订单数。 */
+    private Long cancelledOrders;
 }

@@ -20,6 +20,7 @@
             updated_at     AS updateTime
         </trim>
     </sql>
+    <!-- SQL：insert，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO addresses (
             user_id,
@@ -53,6 +54,7 @@
                )
     </insert>
 
+    <!-- SQL：clearDefaultByUserId，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="clearDefaultByUserId">
         UPDATE addresses
         SET is_default = 0,
@@ -60,6 +62,7 @@
         WHERE user_id = #{userId}
           AND is_default = 1
     </update>
+    <!-- SQL：update，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="update">
         UPDATE addresses
         SET receiver_name  = #{receiverName},
@@ -76,6 +79,7 @@
         WHERE id      = #{id}
           AND user_id = #{userId}
     </update>
+    <!-- SQL：updateIsDefaultByIdAndUserId，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateIsDefaultByIdAndUserId">
         UPDATE addresses
         SET is_default = #{isDefault},
@@ -83,6 +87,7 @@
         WHERE id = #{id}
           AND user_id = #{userId}
     </update>
+    <!-- SQL：deleteByIdAndUserId，delete 语句用于对应 Mapper 方法的数据访问。 -->
     <delete id="deleteByIdAndUserId">
         DELETE FROM addresses
         WHERE id = #{id}
@@ -117,6 +122,7 @@
         ORDER BY created_at DESC
         LIMIT 1
     </select>
+    <!-- SQL：findById，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="findById" resultType="com.demo.entity.Address">
         SELECT
         <include refid="addressColumns"/>

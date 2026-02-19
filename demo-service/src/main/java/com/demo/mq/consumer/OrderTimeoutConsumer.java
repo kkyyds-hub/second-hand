@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
  *
  * 职责：
  * 1) 监听 order.timeout.queue
- * 2) 解析消息载荷（订单ID、超时时间等）
+ * 2) 解析消息载荷（订单 ID、超时时间等）
  * 3) 调用业务服务完成“超时关单 + 释放商品 + 影响信用分”
  * 4) 手动 ACK / NACK（避免消息丢失或无限重试）
  */

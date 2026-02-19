@@ -16,8 +16,10 @@ import java.time.LocalDateTime;
 public class AfterSaleEvidence {
 
     @TableId(type = IdType.AUTO)
+    /** 主键 ID。 */
     private Long id;
 
+    /** 关联 ID。 */
     private Long afterSaleId;
 
     /**
@@ -30,5 +32,6 @@ public class AfterSaleEvidence {
      */
     private Integer sort;
 
+    /** 创建时间。 */
     private LocalDateTime createTime;
 }

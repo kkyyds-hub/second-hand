@@ -55,6 +55,9 @@ public class OrderEventProducer {
 
 
     /** 构造注入 RabbitTemplate */
+    /**
+     * 构造函数，初始化当前组件依赖。
+     */
     public OrderEventProducer(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
@@ -156,11 +159,11 @@ public void sendOrderTimeoutDelay(Order order) {
 /**
  * 发送订单状态变更事件
  *
- * @param orderId    订单ID
+ * @param orderId    订单 ID
  * @param orderNo    订单号
  * @param oldStatus  变更前状态（dbValue）
  * @param newStatus  变更后状态（dbValue）
- * @param operatorId 操作人ID（买家/卖家）
+ * @param operatorId 操作人 ID（买家/卖家）
  */
 public void sendOrderStatusChanged(Long orderId,
     String orderNo,

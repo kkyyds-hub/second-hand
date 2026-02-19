@@ -14,11 +14,13 @@
         <result property="createTime" column="create_time"/>
     </resultMap>
 
+    <!-- SQL：insert，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insert" parameterType="com.demo.entity.UserCreditLog" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user_credit_logs (user_id, delta, reason_type, reason_note, ref_id, score_before, score_after, create_time)
         VALUES (#{userId}, #{delta}, #{reasonType}, #{reasonNote}, #{refId}, #{scoreBefore}, #{scoreAfter}, NOW())
     </insert>
 
+    <!-- SQL：listByUserId，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listByUserId" resultMap="UserCreditLogResultMap">
         SELECT id, user_id, delta, reason_type, reason_note, ref_id, score_before, score_after, create_time
         FROM user_credit_logs

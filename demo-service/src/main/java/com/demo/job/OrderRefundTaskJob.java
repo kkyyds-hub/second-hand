@@ -24,6 +24,9 @@ public class OrderRefundTaskJob {
     @Value("${order.refund.batch-size:200}")
     private int batchSize;
 
+    /**
+     * 定时触发退款任务批处理。
+     */
     @Scheduled(fixedDelayString = "${order.refund.fixed-delay-ms:60000}")
     public void run() {
         int size = batchSize <= 0 ? 200 : batchSize;

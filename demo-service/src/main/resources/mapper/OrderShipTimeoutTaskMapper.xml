@@ -26,7 +26,7 @@
         )
     </insert>
 
-    <!-- 按订单ID查询任务 -->
+    <!-- 按订单 ID 查询任务 -->
     <select id="selectByOrderId" resultType="com.demo.entity.OrderShipTimeoutTask">
         SELECT
             id,

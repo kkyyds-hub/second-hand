@@ -73,7 +73,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
             }
 
             Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
-            log.info("当前用户id: {}", userId);
+            log.info("当前用户 ID: {}", userId);
 
             // 4. 查询数据库中的用户信息
             User user = userMapper.selectById(userId);
@@ -97,7 +97,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
                 throw new BusinessException("账号未激活，请先完成激活");
             }
 
-            // 6. 状态正常，保存当前用户ID到上下文，放行
+            // 6. 状态正常，保存当前用户 ID到上下文，放行
             BaseContext.setCurrentId(userId);
 
             // Day13 DAU 口径：用户调用任一 /user/** GET 接口视为当天活跃（Redis SET 去重）
@@ -122,3 +122,4 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
         }
     }
 }
+
