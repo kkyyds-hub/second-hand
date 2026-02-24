@@ -1,15 +1,13 @@
 package com.demo.entity;
 
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.LocalDateTime;
 
 /**
  * 用户实体。
  */
 @Data
-public class User {
+public class User extends BaseAuditEntity {
     /** 用户 ID。 */
     private Long id;
     /** 用户名。 */
@@ -37,10 +35,4 @@ public class User {
     /** 是否卖家标记。 */
     private Integer isSeller;
 
-    /** 创建时间。 */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-    /** 更新时间。 */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
 }

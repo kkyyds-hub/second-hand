@@ -15,6 +15,14 @@ public interface AddressMapper {
     /** 查询指定用户的所有收货地址：默认优先，其余按更新时间倒序 */
     List<Address> findByUserId(@Param("userId") Long userId);
 
+    /** 按用户统计地址总数。 */
+    long countByUserId(@Param("userId") Long userId);
+
+    /** 按用户分页查询地址列表。 */
+    List<Address> findPageByUserId(@Param("userId") Long userId,
+                                   @Param("offset") int offset,
+                                   @Param("pageSize") int pageSize);
+
     /** 查询指定用户的默认收货地址 */
     Address findDefaultByUserId(@Param("userId") Long userId);
 

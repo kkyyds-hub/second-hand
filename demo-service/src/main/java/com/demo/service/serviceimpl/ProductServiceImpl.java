@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -284,8 +285,17 @@ public class ProductServiceImpl implements ProductService {
      * 查询商品的违规记录。
      */
     @Override
-    public List<ProductViolation> getProductViolations(Long productId) {
-        return productViolationMapper.findByProductId(productId);
+    public PageResult<ProductViolation> getProductViolations(Long productId, Integer page, Integer pageSize) {
+        int safePage = (page == null || page < 1) ? 1 : page;
+        int safePageSize = (pageSize == null || pageSize < 1) ? 20 : Math.min(pageSize, 100);
+        int offset = (safePage - 1) * safePageSize;
+
+        long total = productViolationMapper.countByProductId(productId);
+        if (total <= 0) {
+            return new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize);
+        }
+        List<ProductViolation> rows = productViolationMapper.findByProductIdPage(productId, offset, safePageSize);
+        return new PageResult<>(rows, total, safePage, safePageSize);
     }
 
     /**
@@ -310,7 +320,6 @@ public class ProductServiceImpl implements ProductService {
         ProductStatus newStatus = ProductStatus.fromDbValue(statusDbValue);
         String beforeStatus = product.getStatus();
         product.setStatus(newStatus.getDbValue());
-        product.setUpdateTime(LocalDateTime.now());
         productMapper.updateProduct(product);
 
         // 后台“直接改状态”兜底审计（非 Day16 主链路，但属于状态变更）。

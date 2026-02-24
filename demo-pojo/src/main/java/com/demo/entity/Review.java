@@ -6,14 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 @TableName("reviews")
 /**
  * Review 业务组件。
  */
-public class Review {
+public class Review extends BaseAuditEntity {
 
     @TableId(type = IdType.AUTO)
     /** 主键 ID。 */
@@ -51,8 +49,4 @@ public class Review {
     /** 逻辑删除标记。 */
     private Integer isDeleted;
 
-    /** 创建时间。 */
-    private LocalDateTime createTime;
-    /** 更新时间。 */
-    private LocalDateTime updateTime;
 }

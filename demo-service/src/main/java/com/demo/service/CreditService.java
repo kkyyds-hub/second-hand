@@ -3,8 +3,7 @@ package com.demo.service;
 import com.demo.dto.user.UserCreditDTO;
 import com.demo.dto.user.UserCreditLogDTO;
 import com.demo.enumeration.CreditReasonType;
-
-import java.util.List;
+import com.demo.result.PageResult;
 
 /**
  * 用户信用分服务接口。
@@ -24,6 +23,6 @@ public interface CreditService {
     /**
      * 查询用户最近信用分流水。
      */
-    List<UserCreditLogDTO> listLogs(Long userId, Integer limit);
+    PageResult<UserCreditLogDTO> listLogs(Long userId, Integer page, Integer pageSize);
 
 }

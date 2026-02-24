@@ -116,7 +116,8 @@ public class MessageServiceImpl implements MessageService {
         try {
             messageRepository.save(message);
         } catch (DuplicateKeyException e) {
-            log.warn("消息幂等: clientMsgId={}, orderId={}", request.getClientMsgId(), orderId);
+            log.info("幂等命中：action=sendMessage, idemKey=clientMsgId:{}, detail=orderId={},fromUserId={}",
+                    request.getClientMsgId(), orderId, currentUserId);
             Query query = new Query();
             query.addCriteria(
                     Criteria.where("orderId").is(orderId)

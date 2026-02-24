@@ -3,6 +3,7 @@ package com.demo.job;
 import com.demo.mapper.MessageOutboxMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +23,12 @@ public class OutboxMonitorJob {
     private MessageOutboxMapper messageOutboxMapper;
 
     /** 失败条数告警阈值（可按需调整） */
-    private static final int FAIL_THRESHOLD = 5;
+    @Value("${outbox.monitor.fail-threshold:5}")
+    private int failThreshold;
 
     /** 失败重试次数告警阈值（可按需调整） */
-    private static final int FAIL_RETRY_THRESHOLD = 10;
+    @Value("${outbox.monitor.fail-retry-threshold:10}")
+    private int failRetryThreshold;
 
     /**
      * 每 30 秒输出一次监控日志
@@ -38,13 +41,15 @@ public class OutboxMonitorJob {
         int failRetrySum = messageOutboxMapper.sumRetryCountByStatus("FAIL");
 
         // 1) 常规监控日志（INFO）
-        log.info("OUTBOX_METRICS new={}, sent={}, fail={}, failRetrySum={}",
+        log.info("Outbox 监控指标：new={}, sent={}, fail={}, failRetrySum={}",
                 newCount, sentCount, failCount, failRetrySum);
 
         // 2) 失败阈值告警（ERROR）
-        if (failCount >= FAIL_THRESHOLD || failRetrySum >= FAIL_RETRY_THRESHOLD) {
-            log.error("OUTBOX_ALERT failCount={} failRetrySum={} (threshold hit)",
-                    failCount, failRetrySum);
+        if (failCount >= failThreshold || failRetrySum >= failRetryThreshold) {
+            log.error("Outbox 告警：failCount={}, failRetrySum={}, failThreshold={}, retryThreshold={}",
+                    failCount, failRetrySum, failThreshold, failRetryThreshold);
+        } else {
+            log.debug("Outbox 告警阈值未触发：failCount={}, failRetrySum={}", failCount, failRetrySum);
         }
     }
 }

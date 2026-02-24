@@ -50,6 +50,25 @@
             LIMIT 1
     </select>
 
+    <!-- 按任务 ID 查询（用于并发冲突后的状态回查） -->
+    <select id="selectById" resultType="com.demo.entity.OrderRefundTask">
+        SELECT
+            id,
+            order_id         AS orderId,
+            refund_type      AS refundType,
+            amount,
+            status,
+            idempotency_key  AS idempotencyKey,
+            retry_count      AS retryCount,
+            next_retry_time  AS nextRetryTime,
+            fail_reason      AS failReason,
+            create_time      AS createTime,
+            update_time      AS updateTime
+        FROM order_refund_task
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
     <!-- 拉取可执行退款任务 -->
     <select id="listRunnable" resultType="com.demo.entity.OrderRefundTask">
         SELECT
@@ -71,17 +90,17 @@
             LIMIT #{limit}
     </select>
 
-    <!-- 标记成功：允许从 PENDING/FAILED 进入 SUCCESS -->
+    <!-- 标记成功：CAS（id + expectedStatus） -->
     <update id="markSuccess">
         UPDATE order_refund_task
         SET status = 'SUCCESS',
             fail_reason = NULL,
             update_time = NOW()
         WHERE id = #{id}
-          AND status IN ('PENDING', 'FAILED')
+          AND status = #{expectedStatus}
     </update>
 
-    <!-- 标记失败并设置重试时间 -->
+    <!-- 标记失败并设置重试时间：CAS（id + expectedStatus） -->
     <update id="markFail">
         UPDATE order_refund_task
         SET status = 'FAILED',
@@ -90,7 +109,7 @@
             fail_reason = #{failReason},
             update_time = NOW()
         WHERE id = #{id}
-          AND status IN ('PENDING', 'FAILED')
+          AND status = #{expectedStatus}
     </update>
 
     <!-- 管理端查询任务：支持按 orderId/status 过滤 -->
@@ -117,7 +136,20 @@
             </if>
         </where>
         ORDER BY id DESC
-        LIMIT #{limit}
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countForAdmin" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM order_refund_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
     </select>
 
     <!-- 管理端重置：FAILED -> PENDING，清空失败原因和重试时间 -->

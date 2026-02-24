@@ -114,7 +114,20 @@
             </if>
         </where>
         ORDER BY id DESC
-        LIMIT #{limit}
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countForAdmin" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM order_ship_timeout_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
     </select>
 
     <!-- 管理端立即重试：把 PENDING 任务直接调度为“当前可执行” -->

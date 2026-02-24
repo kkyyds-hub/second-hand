@@ -4,6 +4,7 @@ import com.demo.dto.user.AddressDTO;
 import com.demo.entity.Address;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.AddressMapper;
+import com.demo.result.PageResult;
 import com.demo.service.AddressService;
 import com.demo.vo.address.AddressVO;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -32,18 +34,24 @@ public class AddressServiceImpl implements AddressService {
      * 查询并返回相关结果。
      */
     @Override
-    public List<AddressVO> listAddresses(Long userId) {
+    public PageResult<AddressVO> listAddresses(Long userId, Integer page, Integer pageSize) {
         log.info("获取用户地址, 用户 ID: {}", userId);
 
-        List<Address> addresses = addressMapper.findByUserId(userId);
-        if (addresses == null || addresses.isEmpty()) {
+        int safePage = (page == null || page < 1) ? 1 : page;
+        int safePageSize = (pageSize == null || pageSize < 1) ? 20 : Math.min(pageSize, 100);
+        int offset = (safePage - 1) * safePageSize;
+
+        long total = addressMapper.countByUserId(userId);
+        List<Address> addresses = addressMapper.findPageByUserId(userId, offset, safePageSize);
+        if (total <= 0) {
             log.info("用户没有地址信息");
-            return List.of();
+            return new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize);
         }
 
-        return addresses.stream()
+        List<AddressVO> records = addresses.stream()
                 .map(this::convertToAddressVO)
                 .collect(Collectors.toList());
+        return new PageResult<>(records, total, safePage, safePageSize);
     }
 
     /**

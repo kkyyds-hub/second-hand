@@ -4,11 +4,9 @@ import com.demo.dto.admin.ForceOffShelfRequest;
 import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
-import com.github.pagehelper.PageInfo;
 import com.demo.result.PageResult;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * 商品领域服务接口。
@@ -40,7 +38,7 @@ public interface ProductService {
     /**
      * 查询商品违规记录。
      */
-    List<ProductViolation> getProductViolations(Long productId);
+    PageResult<ProductViolation> getProductViolations(Long productId, Integer page, Integer pageSize);
 
     /**
      * 新增商品违规记录。

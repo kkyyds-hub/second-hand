@@ -82,6 +82,13 @@
         AND is_deleted = 0
     </update>
 
+    <!--
+      SQL_ID: P2S3-ORD-001
+      用途: 买家订单分页列表（多表关联 + 动态排序）
+      输入: buyerId, query.status, query.sortField, query.sortOrder
+      索引依赖: orders.idx_orders_buyer_status(buyer_id,status,create_time), order_items.fk_items_order(order_id), users.PRIMARY(id)
+      不迁移原因: 多表 Join + 动态排序白名单在 XML 中表达更清晰，迁移到 Wrapper 成本高且可读性下降
+    -->
     <!-- SQL：listBuyerOrders，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listBuyerOrders" resultType="com.demo.vo.order.BuyerOrderSummary">
         <include refid="bindStatus"/>
@@ -137,6 +144,13 @@
         </choose>
     </select>
 
+    <!--
+      SQL_ID: P2S3-ORD-002
+      用途: 卖家订单分页列表（多表关联 + 状态筛选）
+      输入: currentUserId, query.status
+      索引依赖: orders.idx_orders_seller_status(seller_id,status,create_time), order_items.fk_items_order(order_id), products.PRIMARY(id)
+      不迁移原因: 业务展示字段跨多表且含图片缩略处理，XML 显式 SQL 维护成本更低
+    -->
     <!-- SQL：listSellerOrders，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="listSellerOrders" resultType="com.demo.vo.order.SellerOrderSummary">
         <include refid="bindStatus"/>
@@ -223,6 +237,13 @@
         </choose>
     </select>
 
+    <!--
+      SQL_ID: P2S3-ORD-003
+      用途: 订单详情查询（买卖双方权限隔离 + 多表汇总）
+      输入: orderId, currentUserId
+      索引依赖: orders.PRIMARY(id), order_items.fk_items_order(order_id), users.PRIMARY(id), products.PRIMARY(id)
+      不迁移原因: 权限条件 + 多表字段投影复杂，保留 XML 更利于审计与回归
+    -->
     <!-- SQL：getOrderDetail，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="getOrderDetail" resultType="com.demo.vo.order.OrderDetail">
         <include refid="bindStatus"/>
@@ -296,6 +317,13 @@
         AND status = #{OS_PENDING}
     </update>
 
+    <!--
+      SQL_ID: P2S3-ORD-004
+      用途: 订单取消后释放关联商品状态（Update Join）
+      输入: orderId
+      索引依赖: order_items.fk_items_order(order_id), products.PRIMARY(id), products.idx(status,is_deleted)
+      不迁移原因: Update Join 是强 SQL 方言特性，MP 通用能力难以等价表达且可读性更差
+    -->
     <!-- SQL：releaseProductsForOrder，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="releaseProductsForOrder">
         <include refid="bindStatus"/>
@@ -361,6 +389,22 @@
         LIMIT 1
     </select>
 
+    <!-- 批量查询订单基础信息（P3-S4：批处理链路去 N+1） -->
+    <select id="selectOrderBasicByIds" resultType="com.demo.entity.Order">
+        SELECT
+            id,
+            buyer_id  AS buyerId,
+            seller_id AS sellerId,
+            total_amount AS totalAmount,
+            status,
+            complete_time AS completeTime
+        FROM orders
+        WHERE id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+    </select>
+
     <!-- Step7：提醒任务专用订单查询 -->
     <select id="selectOrderForReminder" resultType="com.demo.entity.Order">
         SELECT
@@ -374,6 +418,23 @@
         FROM orders
         WHERE id = #{orderId}
         LIMIT 1
+    </select>
+
+    <!-- 批量查询提醒任务所需字段（P3-S4：批处理链路去 N+1） -->
+    <select id="selectOrderForReminderByIds" resultType="com.demo.entity.Order">
+        SELECT
+            id,
+            order_no    AS orderNo,
+            buyer_id    AS buyerId,
+            seller_id   AS sellerId,
+            status,
+            pay_time    AS payTime,
+            update_time AS updateTime
+        FROM orders
+        WHERE id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
     </select>
 
 <!-- 查询订单商品明细（评价创建时取 product_id） -->

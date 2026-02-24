@@ -3,14 +3,13 @@ package com.demo.controller.user;
 import com.demo.context.BaseContext;
 import com.demo.dto.user.UserCreditDTO;
 import com.demo.dto.user.UserCreditLogDTO;
+import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.demo.service.CreditService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 用户信用分查询接口。
@@ -38,8 +37,10 @@ public class UserCreditController {
      */
     @GetMapping("/logs")
     @ApiOperation("查询我的信用流水")
-    public Result<List<UserCreditLogDTO>> myCreditLogs(@RequestParam(required = false, defaultValue = "50") Integer limit) {
+    public Result<PageResult<UserCreditLogDTO>> myCreditLogs(
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         Long userId = BaseContext.getCurrentId();
-        return Result.success(creditService.listLogs(userId, limit));
+        return Result.success(creditService.listLogs(userId, page, pageSize));
     }
 }

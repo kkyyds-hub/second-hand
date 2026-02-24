@@ -1,11 +1,11 @@
 package com.demo.service;
 
 import com.demo.dto.user.AddressDTO;
+import com.demo.result.PageResult;
 import com.demo.vo.address.AddressVO;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * 用户地址领域服务接口。
@@ -15,7 +15,7 @@ public interface AddressService {
     /**
      * 查询指定用户的地址列表。
      */
-    List<AddressVO> listAddresses(Long userId);
+    PageResult<AddressVO> listAddresses(Long userId, Integer page, Integer pageSize);
 
     /**
      * 查询指定用户的默认地址。

@@ -88,7 +88,6 @@ public class UserServiceImpl implements UserService {
         user.setNickname(request.getNickname());
         user.setAvatar(request.getAvatar());
         user.setBio(request.getBio());
-        user.setUpdateTime(LocalDateTime.now());
         userMapper.updateProfile(user);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
@@ -179,7 +178,7 @@ public class UserServiceImpl implements UserService {
 
         // 3. 把新密码加密后再更新
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
-        userMapper.updatePassword(currentUserId, encodedNewPassword, LocalDateTime.now());
+        userMapper.updatePassword(currentUserId, encodedNewPassword);
     }
 
 
@@ -203,11 +202,9 @@ public class UserServiceImpl implements UserService {
         }
 
         // 3. 更新绑定关系
-        LocalDateTime now = LocalDateTime.now();
-        userMapper.updateMobile(currentUserId, mobile, now);
+        userMapper.updateMobile(currentUserId, mobile);
         stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + mobile);
         user.setMobile(mobile);
-        user.setUpdateTime(now);
         return toUserVO(user);
     }
 
@@ -228,11 +225,9 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("该邮箱已被其他账号绑定");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        userMapper.updateEmail(currentUserId, email, now);
+        userMapper.updateEmail(currentUserId, email);
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + email);
         user.setEmail(email);
-        user.setUpdateTime(now);
         return toUserVO(user);
     }
 
@@ -251,8 +246,7 @@ public class UserServiceImpl implements UserService {
         }
 
         verifyUnbindRequest(user, request);
-        LocalDateTime now = LocalDateTime.now();
-        userMapper.updateMobile(currentUserId, null, now);
+        userMapper.updateMobile(currentUserId, null);
         stringRedisTemplate.delete(SMS_CODE_KEY_PREFIX + user.getMobile());
     }
 
@@ -269,8 +263,7 @@ public class UserServiceImpl implements UserService {
         }
 
         verifyUnbindRequest(user, request);
-        LocalDateTime now = LocalDateTime.now();
-        userMapper.updateEmail(currentUserId, null, now);
+        userMapper.updateEmail(currentUserId, null);
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + user.getEmail());
     }
 
@@ -456,7 +449,7 @@ public class UserServiceImpl implements UserService {
             return "用户已处于封禁状态";
         }
 
-        int rows = userMapper.updateStatus(userId, "banned", LocalDateTime.now());
+        int rows = userMapper.updateStatus(userId, "banned");
         if (rows != 1) {
             throw new BusinessException("操作失败");
         }
@@ -479,7 +472,7 @@ public class UserServiceImpl implements UserService {
             return "用户已处于正常状态";
         }
 
-        int rows = userMapper.updateStatus(userId, "active", LocalDateTime.now());
+        int rows = userMapper.updateStatus(userId, "active");
         if (rows != 1) {
             throw new BusinessException("操作失败");
         }

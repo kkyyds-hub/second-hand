@@ -29,6 +29,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.demo.service.OutboxService;
 import com.demo.dto.mq.EventMessage;
 import com.demo.dto.mq.OrderCreatedPayload;
@@ -92,6 +94,7 @@ public class OrderServiceImpl implements OrderService {
      * 实现接口定义的方法。
      */
     @Override
+    @Transactional(readOnly = true)
     public PageResult<BuyerOrderSummary> buy(PageQueryDTO pageQueryDTO, Long currentUserId) {
         pageValidated(pageQueryDTO);
         List<BuyerOrderSummary> list = orderMapper.listBuyerOrders(currentUserId, pageQueryDTO);
@@ -107,6 +110,7 @@ public class OrderServiceImpl implements OrderService {
      * 查询并返回相关结果。
      */
     @Override
+    @Transactional(readOnly = true)
     public PageResult<SellerOrderSummary> getSellOrder(PageQueryDTO dto, Long uid) {
         PageHelper.startPage(dto.getPage(), dto.getPageSize());
 
@@ -124,6 +128,7 @@ public class OrderServiceImpl implements OrderService {
      * 查询并返回相关结果。
      */
     @Override
+    @Transactional(readOnly = true)
     public OrderDetail getOrderDetail(Long orderId, Long currentUserId) {
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
@@ -136,6 +141,7 @@ public class OrderServiceImpl implements OrderService {
      * 更新相关业务状态。
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String shipOrder(Long orderId, ShipOrderRequest request, Long currentUserId) {
         // 1. 先查订单详情（同时校验与当前用户有关）
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
@@ -156,6 +162,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 幂等性：如果订单已经发货或已完成，直接返回（不抛异常）
         if (currentStatus == OrderStatus.SHIPPED || currentStatus == OrderStatus.COMPLETED) {
+            logIdempotencyHit("shipOrder", "orderId:" + orderId, "status=" + currentStatus.getDbValue());
             return "订单已发货，无需重复操作";
         }
         // 状态校验：只能从 paid -> shipped
@@ -201,6 +208,7 @@ public class OrderServiceImpl implements OrderService {
 
         //  幂等：已发货/已完成 -> 成功返回
         if (latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
+            logIdempotencyHit("shipOrder", "orderId:" + orderId, "latestStatus=" + latestStatus.getDbValue());
             return "订单已发货，无需重复操作";
         }
 
@@ -237,6 +245,7 @@ public class OrderServiceImpl implements OrderService {
         }
         // 幂等性：如果订单已经完成，直接返回（不抛异常）
         if (currentStatus == OrderStatus.COMPLETED) {
+            logIdempotencyHit("confirmOrder", "orderId:" + orderId, "status=" + currentStatus.getDbValue());
             return "订单已确认收货，无需重复操作"; // 稍后改为返回提示信息
         }
 
@@ -288,6 +297,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 幂等：已确认 -> 直接返回
         if (s == OrderStatus.COMPLETED) {
+            logIdempotencyHit("confirmOrder", "orderId:" + orderId, "latestStatus=" + s.getDbValue());
             return "订单已确认收货，无需重复操作"; // 稍后改为返回提示信息
         }
 
@@ -446,12 +456,14 @@ public class OrderServiceImpl implements OrderService {
 
          // 幂等：已支付 -> 仍补建超时任务（修复历史漏建场景）
         if (s == OrderStatus.PAID) {
+            logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
             createShipTimeoutTaskIfAbsent(orderId, "payOrder:idempotent_paid");
             return "订单已支付，无需重复操作";
     }
 
         // 幂等：已支付/已进入后续状态 -> 直接返回成功提示（不要抛异常）
         if ( s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
             return "订单已支付，无需重复操作";
         }
 
@@ -500,6 +512,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 幂等口径：已 cancelled -> 当成功返回
         if (s == OrderStatus.CANCELLED) {
+            logIdempotencyHit("cancelOrder", "orderId:" + orderId, "status=" + s.getDbValue());
             return "订单已取消，无需重复操作";
         }
 
@@ -542,11 +555,13 @@ public class OrderServiceImpl implements OrderService {
         // 4) 幂等：若已 paid/shipped/completed，直接返回成功
         OrderStatus s = OrderStatus.fromDbValue(order.getStatus());
         if (s == OrderStatus.PAID){
+            logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "status=" + s.getDbValue());
             // 历史漏建修复：已支付也补建任务
             createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:idempotent_paid");
             return "订单已支付，回调幂等成功!";
         }
         if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "status=" + s.getDbValue());
             return "订单已支付，回调幂等成功";
         }
 
@@ -604,6 +619,7 @@ public class OrderServiceImpl implements OrderService {
         }
         OrderStatus latestStatus = OrderStatus.fromDbValue(latest.getStatus());
         if (latestStatus == OrderStatus.PAID || latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
+            logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "latestStatus=" + latestStatus.getDbValue());
             return "订单已支付，回调幂等成功";
         }
 
@@ -623,7 +639,7 @@ public class OrderServiceImpl implements OrderService {
      */
     private void createShipTimeoutTaskIfAbsent(Long orderId, String scene) {
         if (orderId == null) {
-            log.warn("skip create ship-timeout task because orderId is null, scene={}", scene);
+            log.warn("跳过创建发货超时任务：orderId 为空，scene={}", scene);
             return;
         }
         // 兜底：防止误配置导致 <=0
@@ -640,15 +656,16 @@ public class OrderServiceImpl implements OrderService {
         try {
             int rows = orderShipTimeoutTaskMapper.insertIgnore(task);
             if (rows == 1) {
-                log.info("create ship-timeout task success, orderId={}, deadlineTime={}, scene={}",
+                log.info("创建发货超时任务成功：orderId={}, deadlineTime={}, scene={}",
                         orderId, task.getDeadlineTime(), scene);
             } else {
                 // rows=0 代表任务已存在（幂等命中），属于正常情况
-                log.info("ship-timeout task already exists, orderId={}, scene={}", orderId, scene);
+                logIdempotencyHit("createShipTimeoutTask", "orderId:" + orderId, "scene=" + scene);
+                log.info("发货超时任务已存在：orderId={}, scene={}", orderId, scene);
             }
         } catch (Exception ex) {
             // 不抛异常，避免影响支付成功结果
-            log.error("create ship-timeout task failed, orderId={}, scene={}", orderId, scene, ex);
+            log.error("创建发货超时任务失败：orderId={}, scene={}", orderId, scene, ex);
         }
     }
 
@@ -709,14 +726,41 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * MQ 发送失败不应阻塞主交易，避免把业务成功误判为“服务器错误”。
+     * 安全发送 MQ（事务后置）。
+     *
+     * 设计说明：
+     * 1) 若当前存在事务，则在 afterCommit 阶段发送，避免“主事务回滚但消息已发”；
+     * 2) 若当前无事务，直接发送（兼容非事务调用场景）；
+     * 3) 发送失败仅记录日志，不影响主流程，后续由 Outbox 重试补偿。
      */
     private void safePublish(String scene, Runnable action) {
-        try {
-            action.run();
-        } catch (Exception ex) {
-            log.error("MQ publish failed, scene={}", scene, ex);
+        Runnable safeAction = () -> {
+            try {
+                action.run();
+                log.info("MQ 发送完成：scene={}", scene);
+            } catch (Exception ex) {
+                log.error("MQ 发送失败：scene={}，将由 Outbox 补偿重试", scene, ex);
+            }
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    safeAction.run();
+                }
+            });
+            return;
         }
+        safeAction.run();
+    }
+
+    /**
+     * 统一幂等命中日志口径：
+     * action=业务动作，idemKey=幂等键，detail=命中时状态/场景。
+     */
+    private void logIdempotencyHit(String action, String idemKey, String detail) {
+        log.info("幂等命中：action={}, idemKey={}, detail={}", action, idemKey, detail);
     }
 
     private void pageValidated(PageQueryDTO pageQueryDTO) {

@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -51,6 +53,7 @@ public class PointsServiceImpl implements PointsService {
      * 订单完成后给买卖双方发放积分（幂等）。
      */
     @Override
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void grantPointsForOrderComplete(Long orderId, Long buyerId, Long sellerId) {
         // 给买家加积分
         PointsLedger buyerLedger = new PointsLedger();
@@ -63,7 +66,8 @@ public class PointsServiceImpl implements PointsService {
             pointsMapper.insertPoints(buyerLedger);
             log.info("积分发放成功：userId={}, orderId={}, points={}", buyerId, orderId, pointsPerOrder);
         } catch (DuplicateKeyException e) {
-            log.warn("积分重复发放（幂等）：userId={}, orderId={}", buyerId, orderId);
+            log.info("幂等命中：action=grantPoints, idemKey=userId:{}|bizType:ORDER_COMPLETED|bizId:{}, detail=role=buyer",
+                    buyerId, orderId);
         }
 
         // 给卖家加积分
@@ -77,7 +81,8 @@ public class PointsServiceImpl implements PointsService {
             pointsMapper.insertPoints(sellerLedger);
             log.info("积分发放成功：userId={}, orderId={}, points={}", sellerId, orderId, pointsPerOrder);
         } catch (DuplicateKeyException e) {
-            log.warn("积分重复发放（幂等）：userId={}, orderId={}", sellerId, orderId);
+            log.info("幂等命中：action=grantPoints, idemKey=userId:{}|bizType:ORDER_COMPLETED|bizId:{}, detail=role=seller",
+                    sellerId, orderId);
         }
     }
 }

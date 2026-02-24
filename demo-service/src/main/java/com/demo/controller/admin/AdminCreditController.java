@@ -10,6 +10,7 @@ import com.demo.enumeration.CreditReasonType;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.UserCreditLogMapper;
 import com.demo.mapper.UserMapper;
+import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.demo.service.CreditService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.List;
-
 /**
  * 管理端信用分管理接口。
  */
@@ -47,9 +46,10 @@ public class AdminCreditController {
      * 查询指定用户信用流水。
      */
     @GetMapping("/logs")
-    public Result<List<UserCreditLogDTO>> logs(@RequestParam("userId") Long userId,
-                                               @RequestParam(value = "limit", defaultValue = "50") Integer limit) {
-        return Result.success(creditService.listLogs(userId, limit));
+    public Result<PageResult<UserCreditLogDTO>> logs(@RequestParam("userId") Long userId,
+                                                      @RequestParam(value = "page", defaultValue = "1") Integer page,
+                                                      @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize) {
+        return Result.success(creditService.listLogs(userId, page, pageSize));
     }
 
     /**

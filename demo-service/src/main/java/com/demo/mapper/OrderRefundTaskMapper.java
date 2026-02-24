@@ -32,19 +32,26 @@ public interface OrderRefundTaskMapper {
                                            @Param("refundType") String refundType);
 
     /**
+     * 根据任务 ID 查询任务（用于并发分流回查）。
+     */
+    OrderRefundTask selectById(@Param("id") Long id);
+
+    /**
      * 拉取待处理任务（PENDING 或 FAILED 且到达重试时间）
      */
     List<OrderRefundTask> listRunnable(@Param("limit") int limit);
 
     /**
-     * 标记退款成功
+     * 标记退款成功（CAS：id + expectedStatus）。
      */
-    int markSuccess(@Param("id") Long id);
+    int markSuccess(@Param("id") Long id,
+                    @Param("expectedStatus") String expectedStatus);
 
     /**
-     * 标记退款失败并设置下次重试
+     * 标记退款失败并设置下次重试（CAS：id + expectedStatus）。
      */
     int markFail(@Param("id") Long id,
+                 @Param("expectedStatus") String expectedStatus,
                  @Param("nextRetryTime") LocalDateTime nextRetryTime,
                  @Param("failReason") String failReason);
 
@@ -57,7 +64,14 @@ public interface OrderRefundTaskMapper {
      */
     List<OrderRefundTask> listForAdmin(@Param("orderId") Long orderId,
                                        @Param("status") String status,
-                                       @Param("limit") int limit);
+                                       @Param("offset") int offset,
+                                       @Param("pageSize") int pageSize);
+
+    /**
+     * 统计管理端任务总数（支持与 listForAdmin 同条件过滤）。
+     */
+    long countForAdmin(@Param("orderId") Long orderId,
+                       @Param("status") String status);
 
     /**
      * 管理端重置任务：FAILED -> PENDING。

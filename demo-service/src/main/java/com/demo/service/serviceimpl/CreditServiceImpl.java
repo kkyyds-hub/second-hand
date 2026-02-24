@@ -11,6 +11,7 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.CreditStatMapper;
 import com.demo.mapper.UserCreditLogMapper;
 import com.demo.mapper.UserMapper;
+import com.demo.result.PageResult;
 import com.demo.service.CreditService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -111,27 +112,27 @@ public class CreditServiceImpl implements CreditService {
      * 查询用户信用流水（按限制条数返回）。
      */
     @Override
-    public List<UserCreditLogDTO> listLogs(Long userId, Integer limit) {
+    public PageResult<UserCreditLogDTO> listLogs(Long userId, Integer page, Integer pageSize) {
         if (userId == null) {
             throw new BusinessException("userId 不能为空");
         }
-        int lim = (limit == null || limit <= 0) ? 50 : Math.min(limit, 200);
+        int safePage = (page == null || page < 1) ? 1 : page;
+        int safePageSize = (pageSize == null || pageSize < 1) ? 20 : Math.min(pageSize, 100);
+        int offset = (safePage - 1) * safePageSize;
 
-        List<UserCreditLog> logs = userCreditLogMapper.listByUserId(userId);
-        if (logs == null || logs.isEmpty()) {
-            return Collections.emptyList();
+        long total = userCreditLogMapper.countByUserId(userId);
+        if (total <= 0) {
+            return new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize);
         }
+        List<UserCreditLog> logs = userCreditLogMapper.listByUserIdPage(userId, offset, safePageSize);
 
         List<UserCreditLogDTO> res = new ArrayList<>();
         for (UserCreditLog log : logs) {
             UserCreditLogDTO dto = new UserCreditLogDTO();
             BeanUtils.copyProperties(log, dto);
             res.add(dto);
-            if (res.size() >= lim) {
-                break;
-            }
         }
-        return res;
+        return new PageResult<>(res, total, safePage, safePageSize);
     }
 
     /**

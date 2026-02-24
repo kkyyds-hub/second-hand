@@ -68,14 +68,14 @@ public class OrderStatusChangedConsumer {
         try {
             // 1) 兜底：空消息直接 ACK
             if (message == null || message.getPayload() == null) {
-                log.warn("ORDER_STATUS_CHANGED payload empty, ack and drop.");
+                log.warn("ORDER_STATUS_CHANGED 消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
 
             // 1.1) eventId 必须存在（幂等关键字段）
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("ORDER_STATUS_CHANGED message missing eventId, ack and drop.");
+                log.warn("ORDER_STATUS_CHANGED 缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
@@ -89,7 +89,7 @@ public class OrderStatusChangedConsumer {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException e) {
                 // 已经处理过该消息 → 直接 ACK
-                log.info("ORDER_STATUS_CHANGED duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=OrderStatusChangedConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -99,7 +99,7 @@ public class OrderStatusChangedConsumer {
             // 2) 查询订单
             Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
             if (order == null) {
-                log.warn("ORDER_STATUS_CHANGED: order not found, orderId={}", payload.getOrderId());
+                log.warn("ORDER_STATUS_CHANGED 订单不存在，orderId={}", payload.getOrderId());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -108,7 +108,7 @@ public class OrderStatusChangedConsumer {
             // 3) 判断变更后的状态
             OrderStatus newStatus = OrderStatus.fromDbValue(payload.getNewStatus());
             if (newStatus == null) {
-                log.warn("ORDER_STATUS_CHANGED: invalid status, orderId={}, status={}",
+                log.warn("ORDER_STATUS_CHANGED 状态非法，orderId={}, status={}",
                         payload.getOrderId(), payload.getNewStatus());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
@@ -118,7 +118,7 @@ public class OrderStatusChangedConsumer {
             // 4) 计算消息接收方（对方）
             Long operatorId = payload.getOperatorId();
             if (operatorId == null) {
-                log.warn("ORDER_STATUS_CHANGED: operatorId is null, orderId={}", payload.getOrderId());
+                log.warn("ORDER_STATUS_CHANGED operatorId 为空，orderId={}", payload.getOrderId());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -145,7 +145,7 @@ public class OrderStatusChangedConsumer {
                 messageService.sendMessage(order.getId(), operatorId, req);
             }
 
-            log.info("ORDER_STATUS_CHANGED handled, orderId={}, newStatus={}",
+            log.info("ORDER_STATUS_CHANGED 处理完成：orderId={}, newStatus={}",
                     order.getId(), payload.getNewStatus());
 
             // 7) 处理成功：标记 OK + ACK
@@ -156,7 +156,7 @@ public class OrderStatusChangedConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             }
-            log.warn("ORDER_STATUS_CHANGED business exception, ack and drop. msg={}, err={}",
+            log.warn("ORDER_STATUS_CHANGED 业务异常，ACK 丢弃。msg={}, err={}",
                     message, ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
@@ -164,7 +164,7 @@ public class OrderStatusChangedConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("ORDER_STATUS_CHANGED handle failed, nack to DLQ. msg={}", message, ex);
+            log.error("ORDER_STATUS_CHANGED 处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

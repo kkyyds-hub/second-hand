@@ -113,6 +113,13 @@
           AND status = #{currentStatus}
     </update>
 
+    <!--
+      SQL_ID: P2S3-PROD-001
+      用途: 卖家编辑商品并原子回审（状态机条件更新）
+      输入: id, ownerId, currentStatus, targetStatus, title, description, price, images
+      索引依赖: PRIMARY(id), idx(owner_id,status,is_deleted)
+      不迁移原因: 条件更新 + 状态机原子语义强依赖 SQL 细粒度控制
+    -->
     <!-- SQL：updateForEditByOwnerAndCurrentStatus，编辑字段 + 回审状态原子更新。 -->
     <update id="updateForEditByOwnerAndCurrentStatus">
         UPDATE products
@@ -196,6 +203,13 @@
         ORDER BY create_time DESC
     </select>
 
+   <!--
+     SQL_ID: P2S3-PROD-002
+     用途: 市场商品检索（全文检索 + 条件过滤 + 相关性排序）
+     输入: keyword, category
+     索引依赖: FULLTEXT(ft_title_desc_ngram), idx_products_status(status,is_deleted,create_time)
+     不迁移原因: FULLTEXT/MATCH 排序策略与执行计划强相关，MP Wrapper 可读性与可控性不如 XML
+   -->
    <!-- SQL：getMarketProductList，select 语句用于对应 Mapper 方法的数据访问。 -->
    <select id="getMarketProductList" resultType="com.demo.entity.Product">
     <include refid="bindProductStatus"/>
@@ -234,6 +248,13 @@
     </select>
 
 
+    <!--
+      SQL_ID: P2S3-PROD-003
+      用途: 卖家商品状态分布聚合统计
+      输入: sellerId
+      索引依赖: idx(owner_id,status)
+      不迁移原因: 多 CASE 聚合统计 SQL 可读性在 XML 中更稳定，迁移收益低
+    -->
     <!-- SQL：countProductsBySellerId，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="countProductsBySellerId" resultType="com.demo.dto.seller.SellerProductCountDTO">
         <include refid="bindProductStatus"/>
@@ -268,6 +289,13 @@
         </foreach>
     </select>
 
+    <!--
+      SQL_ID: P2S3-PROD-004
+      用途: 指定日期商品发布量分组统计
+      输入: date
+      索引依赖: idx(create_time,is_deleted), idx(category,create_time)
+      不迁移原因: DATE 函数 + GROUP BY 聚合语义需要显式 SQL 优化空间，先保留 XML
+    -->
     <!-- Day13 Step7 - 统计指定日期的商品发布量（按 category 分组） -->
     <select id="countProductPublishByDate" resultType="com.demo.dto.statistics.ProductPublishCountDTO">
         SELECT

@@ -72,7 +72,14 @@ public interface OrderShipTimeoutTaskMapper {
      */
     List<OrderShipTimeoutTask> listForAdmin(@Param("orderId") Long orderId,
                                             @Param("status") String status,
-                                            @Param("limit") int limit);
+                                            @Param("offset") int offset,
+                                            @Param("pageSize") int pageSize);
+
+    /**
+     * 统计管理端任务总数（支持与 listForAdmin 同条件过滤）。
+     */
+    long countForAdmin(@Param("orderId") Long orderId,
+                       @Param("status") String status);
 
     /**
      * 管理端“立即重试”：仅对 PENDING 任务清空 next_retry_time。

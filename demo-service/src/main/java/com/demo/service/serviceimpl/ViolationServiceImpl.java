@@ -64,7 +64,7 @@ public class ViolationServiceImpl implements ViolationService {
         userBanMapper.closeActiveBans(userId, now);
 
         // 2) 恢复状态
-        userMapper.updateStatus(userId, "active", now);
+        userMapper.updateStatus(userId, "active");
 
         // 3) 重算（会把 BAN_ACTIVE 影响移除）
         creditService.recalcUserCredit(userId, CreditReasonType.RECALC, null);
@@ -112,7 +112,7 @@ public class ViolationServiceImpl implements ViolationService {
         userBanMapper.insertUserBan(ban);
 
         // 2) 更新用户状态
-        userMapper.updateStatus(userId, "banned", now);
+        userMapper.updateStatus(userId, "banned");
 
         // 3) 触发信用重算并落日志（BAN_ACTIVE）
         creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());

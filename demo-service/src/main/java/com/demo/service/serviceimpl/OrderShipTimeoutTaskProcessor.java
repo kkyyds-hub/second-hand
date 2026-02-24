@@ -54,14 +54,27 @@ public class OrderShipTimeoutTaskProcessor {
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean processOne(OrderShipTimeoutTask task) {
+        return processOne(task, null);
+    }
+
+    /**
+     * 处理单条任务（支持批处理链路传入预加载订单，减少固定单查）。
+     *
+     * @param task 发货超时任务
+     * @param preloadedOrder 批量预加载订单；为空时回退单条查询
+     * @return true=本次确实完成了关单；false=未关单（如任务取消/重试）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public boolean processOne(OrderShipTimeoutTask task, Order preloadedOrder) {
         Long taskId = task.getId();
         Long orderId = task.getOrderId();
 
         // 1) 读取订单当前状态做分流
-        Order order = orderMapper.selectOrderBasicById(orderId);
+        // P3-S4：优先命中预加载订单，避免循环内固定 selectById
+        Order order = preloadedOrder != null ? preloadedOrder : orderMapper.selectOrderBasicById(orderId);
         if (order == null) {
             // 订单不存在：任务失效，直接取消任务
-            taskMapper.markCancelled(taskId);
+            markCancelled(taskId, orderId, "order_not_found");
             return false;
         }
 
@@ -73,7 +86,7 @@ public class OrderShipTimeoutTaskProcessor {
 
         // 2) 已发货/已完成/已取消：任务无意义，标记取消
         if (status == OrderStatus.SHIPPED || status == OrderStatus.COMPLETED || status == OrderStatus.CANCELLED) {
-            taskMapper.markCancelled(taskId);
+            markCancelled(taskId, orderId, "order_terminal:" + status.getDbValue());
             return false;
         }
 
@@ -98,19 +111,19 @@ public class OrderShipTimeoutTaskProcessor {
             penaltyService.applyPenalty(order);
 
             // 7) 任务状态收敛为 DONE
-            taskMapper.markDone(taskId);
+            markDone(taskId, orderId);
 
             // 8) 事务提交后发送“超时取消”通知，避免回滚时提前落库消息
             registerAfterCommit(() -> orderNoticeService.notifyShipTimeoutCancelled(order));
 
-            log.info("ship-timeout close success, orderId={}, taskId={}", orderId, taskId);
+            log.info("发货超时关单成功：orderId={}, taskId={}", orderId, taskId);
             return true;
         }
 
         // 7) rows=0：并发场景二次判定
         Order latest = orderMapper.selectOrderBasicById(orderId);
         if (latest == null) {
-            taskMapper.markCancelled(taskId);
+            markCancelled(taskId, orderId, "latest_order_not_found");
             return false;
         }
 
@@ -118,7 +131,7 @@ public class OrderShipTimeoutTaskProcessor {
         if (latestStatus == OrderStatus.SHIPPED
                 || latestStatus == OrderStatus.COMPLETED
                 || latestStatus == OrderStatus.CANCELLED) {
-            taskMapper.markCancelled(taskId);
+            markCancelled(taskId, orderId, "latest_order_terminal:" + latestStatus.getDbValue());
             return false;
         }
 
@@ -136,10 +149,10 @@ public class OrderShipTimeoutTaskProcessor {
      */
     private void createRefundTaskIfAbsent(Order order) {
         if (order == null || order.getId() == null) {
-            throw new IllegalStateException("cannot create refund task because order is null");
+            throw new IllegalStateException("创建退款任务失败：order 为空");
         }
         if (order.getTotalAmount() == null) {
-            throw new IllegalStateException("cannot create refund task because totalAmount is null, orderId=" + order.getId());
+            throw new IllegalStateException("创建退款任务失败：totalAmount 为空，orderId=" + order.getId());
         }
 
         OrderRefundTask refundTask = new OrderRefundTask();
@@ -154,9 +167,11 @@ public class OrderShipTimeoutTaskProcessor {
 
         int inserted = refundTaskMapper.insertIgnore(refundTask);
         if (inserted == 1) {
-            log.info("create refund task success, orderId={}, refundType={}", order.getId(), refundTask.getRefundType());
+            log.info("创建退款任务成功：orderId={}, refundType={}", order.getId(), refundTask.getRefundType());
         } else {
-            log.info("refund task already exists, orderId={}, refundType={}", order.getId(), refundTask.getRefundType());
+            log.info("幂等命中：action=createRefundTask, idemKey=orderId:{}|refundType:{}, detail=insertIgnoreRows=0",
+                    order.getId(), refundTask.getRefundType());
+            log.info("退款任务已存在：orderId={}, refundType={}", order.getId(), refundTask.getRefundType());
         }
     }
 
@@ -168,9 +183,6 @@ public class OrderShipTimeoutTaskProcessor {
     private void registerAfterCommit(Runnable callback) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                /**
-                 * 实现接口定义的方法。
-                 */
                 @Override
                 public void afterCommit() {
                     callback.run();
@@ -193,6 +205,35 @@ public class OrderShipTimeoutTaskProcessor {
         if (safeErr.length() > 240) {
             safeErr = safeErr.substring(0, 240);
         }
-        taskMapper.markRetry(taskId, LocalDateTime.now().plusSeconds(delay), safeErr);
+        int rows = taskMapper.markRetry(taskId, LocalDateTime.now().plusSeconds(delay), safeErr);
+        if (rows == 0) {
+            log.info("发货超时任务标记重试 CAS 未命中：taskId={}, expectedStatus=PENDING, reason={}", taskId, safeErr);
+        }
+    }
+
+    /**
+     * 标记 DONE，并在并发场景记录清晰语义。
+     */
+    private void markDone(Long taskId, Long orderId) {
+        int rows = taskMapper.markDone(taskId);
+        if (rows == 0) {
+            OrderShipTimeoutTask latestTask = taskMapper.selectByOrderId(orderId);
+            String latestStatus = latestTask == null ? "NOT_FOUND" : latestTask.getStatus();
+            log.info("发货超时任务标记完成 CAS 未命中：taskId={}, orderId={}, expectedStatus=PENDING, latestTaskStatus={}",
+                    taskId, orderId, latestStatus);
+        }
+    }
+
+    /**
+     * 标记 CANCELLED，并在并发场景记录清晰语义。
+     */
+    private void markCancelled(Long taskId, Long orderId, String scene) {
+        int rows = taskMapper.markCancelled(taskId);
+        if (rows == 0) {
+            OrderShipTimeoutTask latestTask = taskMapper.selectByOrderId(orderId);
+            String latestStatus = latestTask == null ? "NOT_FOUND" : latestTask.getStatus();
+            log.info("发货超时任务标记取消 CAS 未命中：taskId={}, orderId={}, scene={}, latestTaskStatus={}",
+                    taskId, orderId, scene, latestStatus);
+        }
     }
 }

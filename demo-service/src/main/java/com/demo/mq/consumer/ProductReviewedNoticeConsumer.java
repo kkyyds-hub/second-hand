@@ -57,17 +57,17 @@ public class ProductReviewedNoticeConsumer {
         MqConsumeLog logRecord = null;
         try {
             if (message == null || message.getPayload() == null) {
-                log.warn("PRODUCT_REVIEWED payload empty, ack and drop.");
+                log.warn("商品审核通知消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("PRODUCT_REVIEWED missing eventId, ack and drop.");
+                log.warn("商品审核通知缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (!ProductEventType.PRODUCT_REVIEWED.getCode().equals(message.getEventType())) {
-                log.warn("PRODUCT_REVIEWED unexpected eventType={}, ack and drop.", message.getEventType());
+                log.warn("商品审核通知事件类型不匹配：eventType={}，ACK 丢弃。", message.getEventType());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -80,7 +80,7 @@ public class ProductReviewedNoticeConsumer {
             try {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException ex) {
-                log.info("PRODUCT_REVIEWED duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=ProductReviewedNoticeConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -92,7 +92,7 @@ public class ProductReviewedNoticeConsumer {
                 return;
             }
             if (!reviewedNoticeEnabled) {
-                log.info("PRODUCT_REVIEWED notice disabled, skip send. eventId={}", message.getEventId());
+                log.info("商品审核通知开关关闭，跳过发送：eventId={}", message.getEventId());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -111,14 +111,14 @@ public class ProductReviewedNoticeConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             }
-            log.warn("PRODUCT_REVIEWED business exception, ack and drop. msg={}, err={}",
+            log.warn("商品审核通知业务异常，ACK 丢弃。msg={}, err={}",
                     message, ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("PRODUCT_REVIEWED handle failed, nack to DLQ. msg={}", message, ex);
+            log.error("商品审核通知处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

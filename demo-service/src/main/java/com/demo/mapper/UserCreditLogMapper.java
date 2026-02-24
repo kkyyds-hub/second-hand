@@ -27,5 +27,17 @@ public interface UserCreditLogMapper {
      * @return 信用分变更流水列表
      */
     List<UserCreditLog> listByUserId(@Param("userId") Long userId);
+
+    /**
+     * 按用户统计信用流水总数。
+     */
+    long countByUserId(@Param("userId") Long userId);
+
+    /**
+     * 按用户分页查询信用流水。
+     */
+    List<UserCreditLog> listByUserIdPage(@Param("userId") Long userId,
+                                         @Param("offset") int offset,
+                                         @Param("pageSize") int pageSize);
 }
 

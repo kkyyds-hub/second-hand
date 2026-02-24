@@ -1,5 +1,8 @@
 package com.demo.service.serviceimpl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.demo.constant.MessageConstant;
 import com.demo.constant.ReviewConstants;
 import com.demo.dto.base.PageQueryDTO;
@@ -18,17 +21,18 @@ import com.demo.mapper.ReviewMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.result.PageResult;
 import com.demo.service.ReviewService;
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,10 +41,7 @@ import java.util.stream.Collectors;
 /**
  * ReviewServiceImpl 业务组件。
  */
-public class ReviewServiceImpl implements ReviewService {
-
-    @Autowired
-    private ReviewMapper reviewMapper;
+public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> implements ReviewService {
 
     @Autowired
     private OrderMapper orderMapper;
@@ -85,14 +86,23 @@ public class ReviewServiceImpl implements ReviewService {
 
         // 4. 应用层幂等：查询该订单是否已评价
         Integer roleCode = ReviewRole.BUYER_TO_SELLER.getCode();
-        Review existingReview = reviewMapper.selectByOrderIdAndRole(orderId, roleCode);
+        Review existingReview = this.lambdaQuery()
+                .eq(Review::getOrderId, orderId)
+                .eq(Review::getRole, roleCode)
+                .eq(Review::getIsDeleted, 0)
+                .last("LIMIT 1")
+                .one();
         if (existingReview != null) {
             throw new BusinessException(MessageConstant.REVIEW_ALREADY_EXISTS);
         }
 
         // Day13 Step4 - 防刷：同一买家 24 小时内最多 20 条评价
         java.time.LocalDateTime twentyFourHoursAgo = java.time.LocalDateTime.now().minusHours(24);
-        int recentCount = reviewMapper.countByBuyerIdSince(currentUserId, twentyFourHoursAgo);
+        Long recentCount = this.lambdaQuery()
+                .eq(Review::getBuyerId, currentUserId)
+                .eq(Review::getIsDeleted, 0)
+                .ge(Review::getCreateTime, twentyFourHoursAgo)
+                .count();
         if (recentCount >= 20) {
             throw new BusinessException(MessageConstant.REVIEW_TOO_FREQUENT);
         }
@@ -111,10 +121,11 @@ public class ReviewServiceImpl implements ReviewService {
         review.setRating(request.getRating());
         review.setContent(content);
         review.setIsAnonymous(request.getIsAnonymous() ? ReviewConstants.ANON_YES : ReviewConstants.ANON_NO);
+        review.setIsDeleted(0);
 
         // 7. 插入（捕获唯一键冲突）
         try {
-            reviewMapper.insertReview(review);
+            this.save(review);
         } catch (DuplicateKeyException e) {
             // 数据库层幂等：唯一键冲突转业务异常
             log.warn("唯一键冲突（并发创建评价）：orderId={}, role={}", orderId, roleCode, e);
@@ -130,17 +141,30 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public PageResult<ReviewItemDTO> listMyReviews(Long currentUserId, PageQueryDTO query) {
-        PageHelper.startPage(query.getPage(), query.getPageSize());
-        List<Review> reviews = reviewMapper.listByBuyerId(currentUserId);
-        PageInfo<Review> pageInfo = new PageInfo<>(reviews);
+        int safePage = (query.getPage() == null || query.getPage() <= 0) ? 1 : query.getPage();
+        int safePageSize = (query.getPageSize() == null || query.getPageSize() <= 0) ? 10 : query.getPageSize();
+
+        Page<Review> page = new Page<>(safePage, safePageSize);
+        Page<Review> reviewPage = this.page(page, new LambdaQueryWrapper<Review>()
+                .eq(Review::getBuyerId, currentUserId)
+                .eq(Review::getIsDeleted, 0)
+                .orderByDesc(Review::getCreateTime));
+
+        List<Review> reviews = reviewPage.getRecords();
+        if (reviews == null || reviews.isEmpty()) {
+            return new PageResult<>(Collections.emptyList(), reviewPage.getTotal(), (int) reviewPage.getCurrent(), (int) reviewPage.getSize());
+        }
+
+        Map<Long, Product> productMap = loadProductsByIds(reviews);
+        Map<Long, User> buyerMap = loadBuyersByIds(reviews);
 
         // 转换为 DTO
         List<ReviewItemDTO> dtoList = reviews.stream()
-                .map(r -> convertToDTO(r, currentUserId))
+                .map(r -> toReviewItemDTO(r, buyerMap, productMap))
                 .collect(Collectors.toList());
 
-                return new PageResult<>(dtoList, pageInfo.getTotal(), query.getPage(), query.getPageSize());
-            
+        return new PageResult<>(dtoList, reviewPage.getTotal(), (int) reviewPage.getCurrent(), (int) reviewPage.getSize());
+
     }
 
     /**
@@ -148,16 +172,33 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public PageResult<ReviewItemDTO> listProductReviews(Long productId, PageQueryDTO query) {
-        PageHelper.startPage(query.getPage(), query.getPageSize());
-        List<Review> reviews = reviewMapper.listByProductId(productId);
-        PageInfo<Review> pageInfo = new PageInfo<>(reviews);
+        int safePage = (query.getPage() == null || query.getPage() <= 0) ? 1 : query.getPage();
+        int safePageSize = (query.getPageSize() == null || query.getPageSize() <= 0) ? 10 : query.getPageSize();
+
+        Page<Review> page = new Page<>(safePage, safePageSize);
+        Page<Review> reviewPage = this.page(page, new LambdaQueryWrapper<Review>()
+                .eq(Review::getProductId, productId)
+                .eq(Review::getIsDeleted, 0)
+                .orderByDesc(Review::getCreateTime));
+
+        List<Review> reviews = reviewPage.getRecords();
+        if (reviews == null || reviews.isEmpty()) {
+            return new PageResult<>(Collections.emptyList(), reviewPage.getTotal(), (int) reviewPage.getCurrent(), (int) reviewPage.getSize());
+        }
+
+        Map<Long, User> buyerMap = loadBuyersByIds(reviews);
+        Map<Long, Product> productMap = new HashMap<>(1);
+        Product product = productMapper.getProductById(productId);
+        if (product != null) {
+            productMap.put(productId, product);
+        }
 
         // 转换为 DTO
         List<ReviewItemDTO> dtoList = reviews.stream()
-                .map(r -> convertToDTO(r, null)) // 商品评价列表不需要传 currentUserId
+                .map(r -> toReviewItemDTO(r, buyerMap, productMap))
                 .collect(Collectors.toList());
 
-                return new PageResult<>(dtoList, pageInfo.getTotal(), query.getPage(), query.getPageSize());
+        return new PageResult<>(dtoList, reviewPage.getTotal(), (int) reviewPage.getCurrent(), (int) reviewPage.getSize());
     }
 
     // ========== 私有辅助方法 ==========
@@ -175,7 +216,7 @@ private Long getProductIdFromOrder(Long orderId) {
     /**
      * 转换 Review -> ReviewItemDTO（含匿名展示逻辑）
      */
-    private ReviewItemDTO convertToDTO(Review review, Long currentUserId) {
+    private ReviewItemDTO toReviewItemDTO(Review review, Map<Long, User> buyerMap, Map<Long, Product> productMap) {
         ReviewItemDTO dto = new ReviewItemDTO();
         dto.setId(review.getId());
         dto.setOrderId(review.getOrderId());
@@ -190,8 +231,7 @@ private Long getProductIdFromOrder(Long orderId) {
             dto.setBuyerDisplayName(ReviewConstants.ANON_DISPLAY_NAME);
             dto.setBuyerAvatar(ReviewConstants.ANON_AVATAR);
         } else {
-            // 查询买家信息
-            User buyer = userMapper.selectById(review.getBuyerId());
+            User buyer = buyerMap.get(review.getBuyerId());
             if (buyer != null) {
                 dto.setBuyerDisplayName(buyer.getNickname() != null ? buyer.getNickname() : buyer.getUsername());
                 dto.setBuyerAvatar(buyer.getAvatar() != null ? buyer.getAvatar() : "");
@@ -201,8 +241,7 @@ private Long getProductIdFromOrder(Long orderId) {
             }
         }
 
-        // 可选：填充商品展示字段
-        Product product = productMapper.getProductById(review.getProductId());
+        Product product = productMap.get(review.getProductId());
         if (product != null) {
             dto.setProductTitle(product.getTitle());
             // 从 images 取第一张作为 cover（假设 images 格式为逗号分隔）
@@ -213,5 +252,30 @@ private Long getProductIdFromOrder(Long orderId) {
         }
 
         return dto;
+    }
+
+    private Map<Long, Product> loadProductsByIds(List<Review> reviews) {
+        Set<Long> productIds = reviews.stream()
+                .map(Review::getProductId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return productMapper.listByIds(List.copyOf(productIds)).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+    }
+
+    private Map<Long, User> loadBuyersByIds(List<Review> reviews) {
+        Set<Long> buyerIds = reviews.stream()
+                .filter(review -> review.getIsAnonymous() == null || !review.getIsAnonymous().equals(ReviewConstants.ANON_YES))
+                .map(Review::getBuyerId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (buyerIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userMapper.selectByIds(List.copyOf(buyerIds)).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
     }
 }

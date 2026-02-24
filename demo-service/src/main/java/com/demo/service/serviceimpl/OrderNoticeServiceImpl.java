@@ -123,7 +123,8 @@ public class OrderNoticeServiceImpl implements OrderNoticeService {
         try {
             messageRepository.save(message);
         } catch (DuplicateKeyException e) {
-            log.info("system notice duplicated, orderId={}, toUserId={}, clientMsgId={}", orderId, toUserId, clientMsgId);
+            log.info("幂等命中：action=saveOrderNotice, idemKey=clientMsgId:{}, detail=orderId={},toUserId={}",
+                    clientMsgId, orderId, toUserId);
         }
     }
 }

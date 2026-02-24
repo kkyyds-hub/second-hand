@@ -78,20 +78,20 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
     long tag = amqpMessage.getMessageProperties().getDeliveryTag();
     MqConsumeLog logRecord = null;
 
-    try {
-        // 0) 兜底：空消息直接 ACK
-        if (message == null || message.getPayload() == null) {
-            log.warn("ORDER_PAID message payload empty, ack and drop.");
-            channel.basicAck(tag, false);
-            return;
-        }
+        try {
+            // 0) 兜底：空消息直接 ACK
+            if (message == null || message.getPayload() == null) {
+                log.warn("ORDER_PAID 消息体为空，ACK 丢弃。");
+                channel.basicAck(tag, false);
+                return;
+            }
 
-        // 1) eventId 必须存在（幂等关键字段）
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("ORDER_PAID message missing eventId, ack and drop.");
-            channel.basicAck(tag, false);
-            return;
-        }
+            // 1) eventId 必须存在（幂等关键字段）
+            if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
+                log.warn("ORDER_PAID 缺少 eventId，ACK 丢弃。");
+                channel.basicAck(tag, false);
+                return;
+            }
 
         // 2) 幂等抢占：先插入一条消费记录（状态=PROCESSING）
         logRecord = new MqConsumeLog();
@@ -103,7 +103,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
             mqConsumeLogMapper.insert(logRecord);
         } catch (DuplicateKeyException e) {
             // 已经处理过该消息 → 直接 ACK
-            log.info("ORDER_PAID duplicate consume, eventId={}", message.getEventId());
+            log.info("幂等命中：consumer=OrderPaidConsumer, eventId={}", message.getEventId());
             channel.basicAck(tag, false);
             return;
         }
@@ -112,7 +112,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
         OrderPaidPayload payload = message.getPayload();
         Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
         if (order == null) {
-            log.warn("ORDER_PAID: order not found, orderId={}", payload.getOrderId());
+            log.warn("ORDER_PAID 订单不存在，orderId={}", payload.getOrderId());
             mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             channel.basicAck(tag, false);
             return;
@@ -121,7 +121,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
         // 只处理 PAID 状态
         OrderStatus status = OrderStatus.fromDbValue(order.getStatus());
         if (status != OrderStatus.PAID) {
-            log.info("ORDER_PAID: skip, current status={}, orderId={}", status, order.getId());
+            log.info("ORDER_PAID 跳过处理：当前状态={}, orderId={}", status, order.getId());
             mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             channel.basicAck(tag, false);
             return;
@@ -144,7 +144,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
                 payload.getPayTime()
         );
 
-        log.info("ORDER_PAID handled, notify seller. orderId={}", order.getId());
+        log.info("ORDER_PAID 处理完成：已通知卖家，orderId={}", order.getId());
 
         // 5) 标记消费成功 + ACK
         mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
@@ -155,7 +155,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
         if (logRecord != null && logRecord.getId() != null) {
             mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
         }
-        log.warn("ORDER_PAID business exception, ack and drop. msg={}, err={}", message, ex.getMessage());
+        log.warn("ORDER_PAID 业务异常，ACK 丢弃。msg={}, err={}", message, ex.getMessage());
         channel.basicAck(tag, false);
 
     } catch (Exception ex) {
@@ -163,7 +163,7 @@ public void onMessage(EventMessage<OrderPaidPayload> message,
         if (logRecord != null && logRecord.getId() != null) {
             mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
         }
-        log.error("ORDER_PAID handle failed, nack to DLQ. msg={}", message, ex);
+        log.error("ORDER_PAID 处理失败，NACK 进入 DLQ。msg={}", message, ex);
         channel.basicNack(tag, false, false);
     }
 }

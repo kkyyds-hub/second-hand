@@ -39,6 +39,8 @@ public interface MessageOutboxMapper {
      * 规则：
      * - status = NEW 或 FAIL
      * - nextRetryTime 为空 或 nextRetryTime <= 当前时间
+     * - 按 id ASC 返回前 limit（保语义）
+     * - SQL 内部采用分支限流后再合并排序，收口 filesort 影响范围
      *
      * @param limit 拉取条数
      * @return 待发送消息列表
@@ -54,6 +56,17 @@ public interface MessageOutboxMapper {
     int markSent(@Param("id") Long id);
 
     /**
+     * 批量标记发送成功。
+     *
+     * 约束：
+     * - 仅更新状态为 NEW/FAIL 的记录，避免重复刷写 SENT 记录。
+     *
+     * @param ids 外箱表主键集合
+     * @return 更新行数
+     */
+    int markSentBatch(@Param("ids") List<Long> ids);
+
+    /**
      * 标记发送失败并设置下次重试时间
      *
      * @param id            外箱表主键
@@ -62,6 +75,20 @@ public interface MessageOutboxMapper {
      */
     int markFail(@Param("id") Long id,
                  @Param("nextRetryTime") LocalDateTime nextRetryTime);
+
+    /**
+     * 批量标记发送失败并设置下次重试时间。
+     *
+     * 约束：
+     * - 仅更新状态为 NEW/FAIL 的记录；
+     * - retry_count 在 SQL 中自增 1，保持与单条失败逻辑一致。
+     *
+     * @param ids 外箱表主键集合
+     * @param nextRetryTime 下次可重试时间
+     * @return 更新行数
+     */
+    int markFailBatch(@Param("ids") List<Long> ids,
+                      @Param("nextRetryTime") LocalDateTime nextRetryTime);
 
     /**
      * 统计 Outbox 状态数量（用于监控）
@@ -78,5 +105,17 @@ public interface MessageOutboxMapper {
      * @return 重试次数总和
      */
     int sumRetryCountByStatus(@Param("status") String status);
+
+    /**
+     * 人工补偿：按 eventId 立即重试。
+     *
+     * 说明：
+     * - 仅对 NEW/FAIL 状态生效；
+     * - 通过清空 next_retry_time，让该事件在下一轮调度立即可被拉取。
+     *
+     * @param eventId 事件 ID
+     * @return 更新行数
+     */
+    int triggerNowByEventId(@Param("eventId") String eventId);
 
 }

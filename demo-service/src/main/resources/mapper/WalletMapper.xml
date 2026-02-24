@@ -12,6 +12,13 @@
         WHERE user_id = #{userId}
     </select>
 
+    <!--
+      SQL_ID: P2S3-WAL-001
+      用途: 钱包余额读取并加行锁（退款/记账并发一致性）
+      输入: userId
+      索引依赖: PRIMARY(user_id)
+      不迁移原因: FOR UPDATE 锁语义属于资金链路核心能力，保留 XML 可明确事务与锁行为
+    -->
     <!-- 查询并锁定钱包行（退款记账使用） -->
     <select id="selectByUserIdForUpdate" resultType="com.demo.entity.UserWallet">
         SELECT

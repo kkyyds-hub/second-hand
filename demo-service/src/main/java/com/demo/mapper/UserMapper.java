@@ -41,13 +41,17 @@ public interface UserMapper {
      * 更新用户状态与更新时间。
      */
     int updateStatus(@Param("userId") Long userId,
-                     @Param("status") String status,
-                     @Param("updateTime") LocalDateTime updateTime);
+                     @Param("status") String status);
 
     /**
      * 按用户 ID 查询用户。
      */
     User selectById(@Param("userId") Long userId);
+
+    /**
+     * 按用户 ID 集合批量查询（仅未删除用户）。
+     */
+    List<User> selectByIds(@Param("userIds") List<Long> userIds);
 
     /**
      * 更新用户资料。
@@ -63,22 +67,19 @@ public interface UserMapper {
      * 更新用户密码。
      */
     void updatePassword(@Param("userId") Long userId,
-                        @Param("password") String password,
-                        @Param("updateTime") LocalDateTime updateTime);
+                        @Param("password") String password);
 
     /**
      * 更新用户邮箱。
      */
     void updateEmail(@Param("userId") Long userId,
-                     @Param("email") String email,
-                     @Param("updateTime") LocalDateTime updateTime);
+                     @Param("email") String email);
 
     /**
      * 更新用户手机号。
      */
     void updateMobile(@Param("userId") Long userId,
-                      @Param("mobile") String mobile,
-                      @Param("updateTime") LocalDateTime updateTime);
+                      @Param("mobile") String mobile);
 
     /**
      * 更新用户信用分与信用等级。

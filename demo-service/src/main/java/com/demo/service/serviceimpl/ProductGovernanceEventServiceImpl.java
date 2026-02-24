@@ -167,7 +167,7 @@ public class ProductGovernanceEventServiceImpl implements ProductGovernanceEvent
         outbox.setNextRetryTime(null);
 
         outboxService.save(outbox);
-        log.info("Product governance event saved to outbox: eventType={}, bizId={}, eventId={}",
+        log.info("商品治理事件写入 Outbox 成功：eventType={}, bizId={}, eventId={}",
                 eventType.getCode(), bizId, eventMessage.getEventId());
     }
 

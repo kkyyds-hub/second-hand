@@ -2,6 +2,7 @@ package com.demo.controller.user;
 
 import com.demo.context.BaseContext;
 import com.demo.dto.user.AddressDTO;
+import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.demo.service.AddressService;
 import com.demo.vo.address.AddressVO;
@@ -11,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
-
 /**
  * 用户收货地址管理接口。
  * 覆盖地址列表、默认地址、新增、修改、删除、设为默认等操作。
@@ -29,10 +28,12 @@ public class AddressController {
      * 查询当前用户的地址列表。
      */
     @GetMapping
-    public Result<List<AddressVO>> listAddresses() {
+    public Result<PageResult<AddressVO>> listAddresses(
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
         Long currentUserId = BaseContext.getCurrentId();
         log.info("获取用户地址列表, 用户 ID: {}", currentUserId);
-        List<AddressVO> addressVOList = addressService.listAddresses(currentUserId);
+        PageResult<AddressVO> addressVOList = addressService.listAddresses(currentUserId, page, pageSize);
         return Result.success(addressVOList);
     }
 

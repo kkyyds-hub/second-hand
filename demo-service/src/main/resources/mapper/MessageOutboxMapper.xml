@@ -54,23 +54,50 @@
 
     <!-- 拉取待发送消息 -->
     <select id="listPending" resultType="com.demo.entity.MessageOutbox">
+        <!--
+          P3-S4 附加优化：Outbox filesort 收口（保语义）
+          语义保持：
+          1) 仍只拉 NEW/FAIL 且到期可重试记录
+          2) 仍按 id ASC 全局排序
+          3) 仍只取 limit 条
+          实现方式：
+          - 先按状态分别取前 limit（每支路上界受控）
+          - 再在小集合（最多 2*limit）做最终排序与截断
+          - 避免“全量候选集合排序”在数据量上升时线性放大
+        -->
         SELECT
-        id,
-        event_id     AS eventId,
-        event_type   AS eventType,
-        routing_key  AS routingKey,
-        exchange_name AS exchangeName,
-        biz_id       AS bizId,
-        payload_json AS payloadJson,
-        status,
-        retry_count  AS retryCount,
-        next_retry_time AS nextRetryTime,
-        created_at   AS createdAt,
-        updated_at   AS updatedAt
-        FROM message_outbox
-        WHERE status IN ('NEW', 'FAIL')
-        AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
-        ORDER BY id ASC
+            t.id,
+            t.event_id      AS eventId,
+            t.event_type    AS eventType,
+            t.routing_key   AS routingKey,
+            t.exchange_name AS exchangeName,
+            t.biz_id        AS bizId,
+            t.payload_json  AS payloadJson,
+            t.status,
+            t.retry_count   AS retryCount,
+            t.next_retry_time AS nextRetryTime,
+            t.created_at    AS createdAt,
+            t.updated_at    AS updatedAt
+        FROM (
+                 (SELECT
+                      id, event_id, event_type, routing_key, exchange_name, biz_id, payload_json,
+                      status, retry_count, next_retry_time, created_at, updated_at
+                  FROM message_outbox
+                  WHERE status = 'NEW'
+                    AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+                  ORDER BY id ASC
+                  LIMIT #{limit})
+                 UNION ALL
+                 (SELECT
+                      id, event_id, event_type, routing_key, exchange_name, biz_id, payload_json,
+                      status, retry_count, next_retry_time, created_at, updated_at
+                  FROM message_outbox
+                  WHERE status = 'FAIL'
+                    AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+                  ORDER BY id ASC
+                  LIMIT #{limit})
+             ) t
+        ORDER BY t.id ASC
         LIMIT #{limit}
     </select>
 
@@ -82,6 +109,19 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 批量标记发送成功：用于替代 N 次 markSent 单条更新 -->
+    <update id="markSentBatch">
+        UPDATE message_outbox
+        SET status = 'SENT',
+            updated_at = NOW()
+        -- 仅允许 NEW/FAIL -> SENT，避免重复覆盖已成功记录
+        WHERE status IN ('NEW', 'FAIL')
+          AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <!-- 标记发送失败（增加重试次数 + 设置下次重试时间） -->
     <update id="markFail">
         UPDATE message_outbox
@@ -90,6 +130,21 @@
             next_retry_time = #{nextRetryTime},
             updated_at = NOW()
         WHERE id = #{id}
+    </update>
+
+    <!-- 批量标记发送失败：用于替代 N 次 markFail 单条更新 -->
+    <update id="markFailBatch">
+        UPDATE message_outbox
+        SET status = 'FAIL',
+            retry_count = retry_count + 1,
+            next_retry_time = #{nextRetryTime},
+            updated_at = NOW()
+        -- 仅允许 NEW/FAIL 写回失败状态，保持状态机口径一致
+        WHERE status IN ('NEW', 'FAIL')
+          AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </update>
 
 <!-- 统计 Outbox 状态数量（监控用） -->
@@ -105,5 +160,14 @@
     FROM message_outbox
     WHERE status = #{status}
 </select>
+
+    <!-- 人工补偿：按 eventId 立即重试 -->
+    <update id="triggerNowByEventId">
+        UPDATE message_outbox
+        SET next_retry_time = NULL,
+            updated_at = NOW()
+        WHERE event_id = #{eventId}
+          AND status IN ('NEW', 'FAIL')
+    </update>
 
 </mapper>

@@ -72,6 +72,28 @@
         LIMIT #{limit}
     </select>
 
+    <!-- 按任务 ID 查询（用于并发分流） -->
+    <select id="selectById" resultType="com.demo.entity.OrderShipReminderTask">
+        SELECT
+            id,
+            order_id      AS orderId,
+            seller_id     AS sellerId,
+            level,
+            deadline_time AS deadlineTime,
+            remind_time   AS remindTime,
+            status,
+            retry_count   AS retryCount,
+            running_at    AS runningAt,
+            sent_at       AS sentAt,
+            client_msg_id AS clientMsgId,
+            last_error    AS lastError,
+            create_time   AS createTime,
+            update_time   AS updateTime
+        FROM order_ship_reminder_task
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
     <!-- 查询超时 RUNNING 任务（用于回收） -->
     <select id="listStaleRunning" resultType="com.demo.entity.OrderShipReminderTask">
         SELECT
@@ -121,6 +143,23 @@
           AND status = 'RUNNING'
     </update>
 
+    <!-- 批量回收卡死任务：按分组把 RUNNING 一次性转为 FAILED -->
+    <update id="markFailBatch">
+        UPDATE order_ship_reminder_task
+        SET status = 'FAILED',
+            retry_count = retry_count + 1,
+            remind_time = #{nextRemindTime},
+            running_at = NULL,
+            last_error = #{lastError},
+            update_time = NOW()
+        -- 只允许 RUNNING 状态被回收，防止误更新其他终态记录
+        WHERE status = 'RUNNING'
+          AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <!-- 单条取消：RUNNING -> CANCELLED -->
     <update id="markCancelled">
         UPDATE order_ship_reminder_task
@@ -158,7 +197,20 @@
             </if>
         </where>
         ORDER BY id DESC
-        LIMIT #{limit}
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countForAdmin" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM order_ship_reminder_task
+        <where>
+            <if test="orderId != null">
+                AND order_id = #{orderId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
     </select>
 
     <!-- 管理端立即重试 -->

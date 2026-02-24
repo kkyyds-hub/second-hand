@@ -39,6 +39,17 @@ public class OrderShipReminderTaskProcessor {
      * @return true=推进到 SUCCESS；false=未成功（FAILED/CANCELLED）
      */
     public boolean processOne(OrderShipReminderTask task) {
+        return processOne(task, null);
+    }
+
+    /**
+     * 处理单条提醒任务（支持批处理链路传入预加载订单）。
+     *
+     * @param task 提醒任务
+     * @param preloadedOrder 批量预加载订单；为空时回退单条查询
+     * @return true=推进到 SUCCESS；false=未成功（FAILED/CANCELLED）
+     */
+    public boolean processOne(OrderShipReminderTask task, Order preloadedOrder) {
         if (task == null || task.getId() == null || task.getOrderId() == null) {
             return false;
         }
@@ -46,9 +57,10 @@ public class OrderShipReminderTaskProcessor {
         Long taskId = task.getId();
         try {
             // 1) 回查订单状态，避免“已发货/已取消还发提醒”
-            Order order = orderMapper.selectOrderForReminder(task.getOrderId());
+            // P3-S4：优先命中预加载订单，避免循环内固定 selectById
+            Order order = preloadedOrder != null ? preloadedOrder : orderMapper.selectOrderForReminder(task.getOrderId());
             if (order == null) {
-                reminderTaskMapper.markCancelled(taskId);
+                markCancelled(taskId, "order_not_found");
                 return false;
             }
 
@@ -63,7 +75,7 @@ public class OrderShipReminderTaskProcessor {
                     || status == OrderStatus.COMPLETED
                     || status == OrderStatus.CANCELLED
                     || status == OrderStatus.PENDING) {
-                reminderTaskMapper.markCancelled(taskId);
+                markCancelled(taskId, "order_terminal_or_not_paid:" + status.getDbValue());
                 return false;
             }
 
@@ -84,9 +96,21 @@ public class OrderShipReminderTaskProcessor {
 
             // 5) 发送成功（或幂等命中）后，任务推进为 SUCCESS
             int rows = reminderTaskMapper.markSuccess(taskId, LocalDateTime.now(), clientMsgId);
-            return rows == 1;
+            if (rows == 1) {
+                return true;
+            }
+
+            OrderShipReminderTask latest = reminderTaskMapper.selectById(taskId);
+            String latestStatus = latest == null ? "NOT_FOUND" : latest.getStatus();
+            if ("SUCCESS".equalsIgnoreCase(latestStatus)) {
+                log.info("幂等命中：action=markShipReminderSuccess, idemKey=taskId:{}, detail=latestStatus=SUCCESS", taskId);
+            } else {
+                log.warn("发货提醒任务标记成功 CAS 未命中：taskId={}, expectedStatus=RUNNING, latestStatus={}",
+                        taskId, latestStatus);
+            }
+            return false;
         } catch (Exception ex) {
-            log.error("process ship reminder task failed, taskId={}, orderId={}", taskId, task.getOrderId(), ex);
+            log.error("处理发货提醒任务失败：taskId={}, orderId={}", taskId, task.getOrderId(), ex);
             markFail(task, "send_error:" + ex.getMessage());
             return false;
         }
@@ -99,7 +123,26 @@ public class OrderShipReminderTaskProcessor {
         int nextRetryCount = (task.getRetryCount() == null ? 0 : task.getRetryCount()) + 1;
         LocalDateTime nextRemindTime = LocalDateTime.now().plusMinutes(nextDelayMinutes(nextRetryCount));
         String safeErr = trimErr(err);
-        reminderTaskMapper.markFail(task.getId(), nextRemindTime, safeErr);
+        int rows = reminderTaskMapper.markFail(task.getId(), nextRemindTime, safeErr);
+        if (rows == 0) {
+            OrderShipReminderTask latest = reminderTaskMapper.selectById(task.getId());
+            String latestStatus = latest == null ? "NOT_FOUND" : latest.getStatus();
+            log.warn("发货提醒任务标记失败 CAS 未命中：taskId={}, expectedStatus=RUNNING, latestStatus={}, reason={}",
+                    task.getId(), latestStatus, safeErr);
+        }
+    }
+
+    /**
+     * 取消任务并记录并发分流语义。
+     */
+    private void markCancelled(Long taskId, String scene) {
+        int rows = reminderTaskMapper.markCancelled(taskId);
+        if (rows == 0) {
+            OrderShipReminderTask latest = reminderTaskMapper.selectById(taskId);
+            String latestStatus = latest == null ? "NOT_FOUND" : latest.getStatus();
+            log.info("发货提醒任务取消 CAS 未命中：taskId={}, scene={}, latestStatus={}",
+                    taskId, scene, latestStatus);
+        }
     }
 
     /**

@@ -103,6 +103,21 @@
         ORDER BY is_default DESC, updated_at DESC
     </select>
 
+    <select id="countByUserId" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM addresses
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findPageByUserId" resultType="com.demo.entity.Address">
+        SELECT
+        <include refid="addressColumns"/>
+        FROM addresses
+        WHERE user_id = #{userId}
+        ORDER BY is_default DESC, updated_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
     <!-- ② 查询用户默认地址 -->
     <select id="findDefaultByUserId" resultType="com.demo.entity.Address">
         SELECT

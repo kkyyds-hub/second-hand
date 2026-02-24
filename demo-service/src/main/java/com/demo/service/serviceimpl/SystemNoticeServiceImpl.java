@@ -58,7 +58,8 @@ public class SystemNoticeServiceImpl implements SystemNoticeService {
         try {
             messageRepository.save(message);
         } catch (DuplicateKeyException ex) {
-            log.info("系统通知幂等命中: toUserId={}, clientMsgId={}", toUserId, clientMsgId);
+            log.info("幂等命中：action=sendSystemNotice, idemKey=clientMsgId:{}, detail=toUserId={}",
+                    clientMsgId, toUserId);
         }
     }
 

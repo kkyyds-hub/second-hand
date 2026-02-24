@@ -28,4 +28,18 @@
         ORDER BY create_time DESC
     </select>
 
+    <select id="countByUserId" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM user_credit_logs
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="listByUserIdPage" resultMap="UserCreditLogResultMap">
+        SELECT id, user_id, delta, reason_type, reason_note, ref_id, score_before, score_after, create_time
+        FROM user_credit_logs
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
 </mapper>

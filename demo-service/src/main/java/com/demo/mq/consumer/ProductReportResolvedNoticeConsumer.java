@@ -57,17 +57,17 @@ public class ProductReportResolvedNoticeConsumer {
         MqConsumeLog logRecord = null;
         try {
             if (message == null || message.getPayload() == null) {
-                log.warn("PRODUCT_REPORT_RESOLVED payload empty, ack and drop.");
+                log.warn("举报处理结果通知消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("PRODUCT_REPORT_RESOLVED missing eventId, ack and drop.");
+                log.warn("举报处理结果通知缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (!ProductEventType.PRODUCT_REPORT_RESOLVED.getCode().equals(message.getEventType())) {
-                log.warn("PRODUCT_REPORT_RESOLVED unexpected eventType={}, ack and drop.", message.getEventType());
+                log.warn("举报处理结果通知事件类型不匹配：eventType={}，ACK 丢弃。", message.getEventType());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -79,7 +79,7 @@ public class ProductReportResolvedNoticeConsumer {
             try {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException ex) {
-                log.info("PRODUCT_REPORT_RESOLVED duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=ProductReportResolvedNoticeConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -91,7 +91,7 @@ public class ProductReportResolvedNoticeConsumer {
                 return;
             }
             if (!reportResolvedNoticeEnabled) {
-                log.info("PRODUCT_REPORT_RESOLVED notice disabled, skip send. eventId={}", message.getEventId());
+                log.info("举报处理结果通知开关关闭，跳过发送：eventId={}", message.getEventId());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -110,14 +110,14 @@ public class ProductReportResolvedNoticeConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             }
-            log.warn("PRODUCT_REPORT_RESOLVED business exception, ack and drop. msg={}, err={}",
+            log.warn("举报处理结果通知业务异常，ACK 丢弃。msg={}, err={}",
                     message, ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("PRODUCT_REPORT_RESOLVED handle failed, nack to DLQ. msg={}", message, ex);
+            log.error("举报处理结果通知处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

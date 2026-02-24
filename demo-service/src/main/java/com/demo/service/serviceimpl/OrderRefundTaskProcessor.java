@@ -43,13 +43,26 @@ public class OrderRefundTaskProcessor {
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean processOne(OrderRefundTask task) {
+        return processOne(task, null);
+    }
+
+    /**
+     * 处理单条退款任务（支持批量链路预加载订单）。
+     *
+     * @param task 退款任务
+     * @param preloadedOrder 预加载订单；为空时回退单条查询
+     * @return true=本次成功推进到 SUCCESS；false=未成功（已写失败重试或幂等命中）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public boolean processOne(OrderRefundTask task, Order preloadedOrder) {
         if (task == null || task.getId() == null) {
             return false;
         }
 
-        Order order = orderMapper.selectOrderBasicById(task.getOrderId());
+        // P3-S4：优先使用批处理阶段预加载结果，避免循环内固定 selectById
+        Order order = preloadedOrder != null ? preloadedOrder : orderMapper.selectOrderBasicById(task.getOrderId());
         if (order == null) {
-            markFail(task.getId(), "order_not_found");
+            markFail(task, "order_not_found");
             return false;
         }
 
@@ -59,43 +72,56 @@ public class OrderRefundTaskProcessor {
             refundAccountingService.recordRefund(order, task);
 
             // 演示口径：当前仍是 Mock 退款成功，直接推进任务状态
-            int rows = refundTaskMapper.markSuccess(task.getId());
+            String expectedStatus = task.getStatus() == null ? "PENDING" : task.getStatus();
+            int rows = refundTaskMapper.markSuccess(task.getId(), expectedStatus);
             if (rows == 1) {
                 // 事务提交后再通知，避免回滚导致“消息已发但状态未变”
                 registerAfterCommit(() -> orderNoticeService.notifyRefundSuccess(order, task));
-                log.info("refund task success, taskId={}, orderId={}", task.getId(), task.getOrderId());
+                log.info("退款任务处理成功：taskId={}, orderId={}", task.getId(), task.getOrderId());
                 return true;
             }
 
-            // rows=0 通常表示该任务已被并发处理为 SUCCESS，按幂等成功处理
-            OrderRefundTask latest = refundTaskMapper.selectByOrderIdAndType(task.getOrderId(), task.getRefundType());
+            // rows=0：并发分流（幂等命中 / 已进入其他状态）
+            OrderRefundTask latest = refundTaskMapper.selectById(task.getId());
             if (latest != null && "SUCCESS".equalsIgnoreCase(latest.getStatus())) {
+                log.info("幂等命中：action=markRefundSuccess, idemKey=orderId:{}|refundType:{}, detail=latestStatus=SUCCESS",
+                        task.getOrderId(), task.getRefundType());
                 return false;
             }
 
-            markFail(task.getId(), "mark_success_rows_0");
+            String latestStatus = latest == null ? "NOT_FOUND" : latest.getStatus();
+            log.warn("退款任务 CAS 未命中：taskId={}, expectedStatus={}, latestStatus={}",
+                    task.getId(), expectedStatus, latestStatus);
             return false;
         } catch (Exception ex) {
-            markFail(task.getId(), "mock_refund_error:" + ex.getMessage());
+            markFail(task, "mock_refund_error:" + ex.getMessage());
             return false;
         }
     }
 
-    private void markFail(Long taskId, String reason) {
+    private void markFail(OrderRefundTask task, String reason) {
+        Long taskId = task == null ? null : task.getId();
+        if (taskId == null) {
+            return;
+        }
         int delay = retryDelaySeconds <= 0 ? 120 : retryDelaySeconds;
         String safeReason = reason == null ? "unknown" : reason;
         if (safeReason.length() > 240) {
             safeReason = safeReason.substring(0, 240);
         }
-        refundTaskMapper.markFail(taskId, LocalDateTime.now().plusSeconds(delay), safeReason);
+        String expectedStatus = task.getStatus() == null ? "PENDING" : task.getStatus();
+        int rows = refundTaskMapper.markFail(taskId, expectedStatus, LocalDateTime.now().plusSeconds(delay), safeReason);
+        if (rows == 0) {
+            OrderRefundTask latest = refundTaskMapper.selectById(taskId);
+            String latestStatus = latest == null ? "NOT_FOUND" : latest.getStatus();
+            log.warn("退款任务标记失败 CAS 未命中：taskId={}, expectedStatus={}, latestStatus={}, reason={}",
+                    taskId, expectedStatus, latestStatus, safeReason);
+        }
     }
 
     private void registerAfterCommit(Runnable callback) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                /**
-                 * 实现接口定义的方法。
-                 */
                 @Override
                 public void afterCommit() {
                     callback.run();

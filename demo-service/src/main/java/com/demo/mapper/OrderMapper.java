@@ -114,9 +114,25 @@ public interface OrderMapper {
     Order selectOrderBasicById(@Param("orderId") Long orderId);
 
     /**
+     * 批量查询订单基础信息（用于批处理链路去 N+1）。
+     *
+     * 字段口径与 selectOrderBasicById 保持一致：
+     * id / buyerId / sellerId / totalAmount / status / completeTime。
+     */
+    List<Order> selectOrderBasicByIds(@Param("orderIds") List<Long> orderIds);
+
+    /**
      * Step7：提醒任务专用查询（只取提醒所需字段，避免复用方法字段缺失）。
      */
     Order selectOrderForReminder(@Param("orderId") Long orderId);
+
+    /**
+     * 批量查询提醒任务所需订单字段（用于提醒任务批处理去 N+1）。
+     *
+     * 字段口径与 selectOrderForReminder 保持一致：
+     * id / orderNo / buyerId / sellerId / status / payTime / updateTime。
+     */
+    List<Order> selectOrderForReminderByIds(@Param("orderIds") List<Long> orderIds);
 
     /**
      * 查询订单商品明细（用于评价等场景）。

@@ -57,14 +57,14 @@ public class OrderTimeoutConsumer {
         try {
             // 0) 兜底：空消息直接 ACK
             if (message == null || message.getPayload() == null) {
-                log.warn("ORDER_TIMEOUT message payload empty, ack and drop.");
+                log.warn("ORDER_TIMEOUT 消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
     
             // 1) eventId 必须存在（幂等关键字段）
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("ORDER_TIMEOUT message missing eventId, ack and drop.");
+                log.warn("ORDER_TIMEOUT 缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
@@ -79,7 +79,7 @@ public class OrderTimeoutConsumer {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException e) {
                 // 已经处理过该消息 → 直接 ACK
-                log.info("ORDER_TIMEOUT duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=OrderTimeoutConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -94,7 +94,7 @@ public class OrderTimeoutConsumer {
                     payload.getOrderId(), deadline
             );
     
-            log.info("ORDER_TIMEOUT handled, orderId={}, closed={}", payload.getOrderId(), closed);
+            log.info("ORDER_TIMEOUT 处理完成：orderId={}, closed={}", payload.getOrderId(), closed);
     
             // 4) 标记消费成功（OK）
             mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
@@ -107,7 +107,7 @@ public class OrderTimeoutConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             }
-            log.warn("ORDER_TIMEOUT business exception, ack and drop. msg={}, err={}", message, ex.getMessage());
+            log.warn("ORDER_TIMEOUT 业务异常，ACK 丢弃。msg={}, err={}", message, ex.getMessage());
             channel.basicAck(tag, false);
     
         } catch (Exception ex) {
@@ -115,7 +115,7 @@ public class OrderTimeoutConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("ORDER_TIMEOUT handle failed, nack to DLQ. message={}", message, ex);
+            log.error("ORDER_TIMEOUT 处理失败，NACK 进入 DLQ。message={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

@@ -36,4 +36,20 @@
         WHERE product_id = #{productId}
         AND status = 'active'
     </select>
+
+    <select id="countByProductId" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM product_violations
+        WHERE product_id = #{productId}
+          AND status = 'active'
+    </select>
+
+    <select id="findByProductIdPage" resultType="com.demo.entity.ProductViolation">
+        SELECT id, product_id, violation_type, description, evidence_urls, punishment_result, credit_score_change, status
+        FROM product_violations
+        WHERE product_id = #{productId}
+          AND status = 'active'
+        ORDER BY id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
 </mapper>

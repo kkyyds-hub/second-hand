@@ -1,16 +1,14 @@
 package com.demo.entity;
 
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * 商品实体。
  */
 @Data
-public class Product {
+public class Product extends BaseAuditEntity {
 
     /** 商品 ID。 */
     private Long id;
@@ -28,13 +26,6 @@ public class Product {
     private String status;
     /** 浏览量。 */
     private Integer viewCount = 0;
-
-    /** 创建时间。 */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-    /** 更新时间。 */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
 
     /** 审核/状态变更备注。 */
     private String reason;

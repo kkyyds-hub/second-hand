@@ -162,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("激活链接已失效或不存在，请重新发送");
         }
         Long userId = Long.parseLong(userIdStr);
-        userMapper.updateStatus(userId, "active", LocalDateTime.now());
+        userMapper.updateStatus(userId, "active");
         stringRedisTemplate.delete(key);
         log.info("邮箱激活完成，用户 ID={}", userId);
         User user = userMapper.selectById(userId);
@@ -266,7 +266,7 @@ public class AuthServiceImpl implements AuthService {
         int count = Integer.parseInt(value);
         if (count >= MAX_FAIL_COUNT) {
             // 触发风控：临时冻结账号
-            userMapper.updateStatus(user.getId(), UserStatus.FROZEN.name(), LocalDateTime.now());
+            userMapper.updateStatus(user.getId(), UserStatus.FROZEN.name());
             // 记录封禁记录（临时封锁，来源 AUTO_RISK）
             insertAutoRiskBan(user.getId(), "登录失败次数过多自动冻结");
         }
@@ -339,8 +339,6 @@ public class AuthServiceImpl implements AuthService {
         user.setCreditUpdatedAt(now);                                         // 新增
         user.setStatus("active");                                             // 强烈建议新增（insertUser 会写 status）
 
-        user.setCreateTime(now);
-        user.setUpdateTime(now);
         return user;
     }
 

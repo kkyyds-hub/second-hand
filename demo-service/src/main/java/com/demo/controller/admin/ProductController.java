@@ -22,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 
 /**
  * ProductController 业务组件。
@@ -137,9 +136,12 @@ public class ProductController {
      * 根据商品 ID 获取违规记录。
      */
     @GetMapping("/{productId}/violations")
-    public ResponseEntity<List<ProductViolation>> getProductViolations(@PathVariable Long productId) {
-        List<ProductViolation> violations = productService.getProductViolations(productId);
-        return new ResponseEntity<>(violations, HttpStatus.OK);
+    public Result<PageResult<ProductViolation>> getProductViolations(
+            @PathVariable Long productId,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
+        PageResult<ProductViolation> violations = productService.getProductViolations(productId, page, pageSize);
+        return Result.success(violations);
     }
 
     /**

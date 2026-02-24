@@ -2,14 +2,12 @@ package com.demo.entity;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 /**
  * 商品举报工单实体。
  * 对应表：product_report_ticket
  */
 @Data
-public class ProductReportTicket {
+public class ProductReportTicket extends BaseAuditEntity {
     /** 主键ID。 */
     private Long id;
     /** 工单号（唯一）。 */
@@ -32,9 +30,4 @@ public class ProductReportTicket {
     private String resolveAction;
     /** 处理备注。 */
     private String resolveRemark;
-    /** 创建时间。 */
-    private LocalDateTime createTime;
-    /** 更新时间。 */
-    private LocalDateTime updateTime;
 }
-

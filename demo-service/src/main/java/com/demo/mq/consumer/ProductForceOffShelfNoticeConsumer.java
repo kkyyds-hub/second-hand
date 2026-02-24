@@ -57,17 +57,17 @@ public class ProductForceOffShelfNoticeConsumer {
         MqConsumeLog logRecord = null;
         try {
             if (message == null || message.getPayload() == null) {
-                log.warn("PRODUCT_FORCE_OFF_SHELF payload empty, ack and drop.");
+                log.warn("商品强制下架通知消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("PRODUCT_FORCE_OFF_SHELF missing eventId, ack and drop.");
+                log.warn("商品强制下架通知缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
             if (!ProductEventType.PRODUCT_FORCE_OFF_SHELF.getCode().equals(message.getEventType())) {
-                log.warn("PRODUCT_FORCE_OFF_SHELF unexpected eventType={}, ack and drop.", message.getEventType());
+                log.warn("商品强制下架通知事件类型不匹配：eventType={}，ACK 丢弃。", message.getEventType());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -79,7 +79,7 @@ public class ProductForceOffShelfNoticeConsumer {
             try {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException ex) {
-                log.info("PRODUCT_FORCE_OFF_SHELF duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=ProductForceOffShelfNoticeConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -91,7 +91,7 @@ public class ProductForceOffShelfNoticeConsumer {
                 return;
             }
             if (!forceOffShelfNoticeEnabled) {
-                log.info("PRODUCT_FORCE_OFF_SHELF notice disabled, skip send. eventId={}", message.getEventId());
+                log.info("商品强制下架通知开关关闭，跳过发送：eventId={}", message.getEventId());
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -110,14 +110,14 @@ public class ProductForceOffShelfNoticeConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
             }
-            log.warn("PRODUCT_FORCE_OFF_SHELF business exception, ack and drop. msg={}, err={}",
+            log.warn("商品强制下架通知业务异常，ACK 丢弃。msg={}, err={}",
                     message, ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("PRODUCT_FORCE_OFF_SHELF handle failed, nack to DLQ. msg={}", message, ex);
+            log.error("商品强制下架通知处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

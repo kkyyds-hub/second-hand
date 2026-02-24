@@ -55,14 +55,14 @@ public class InventoryUpdateConsumer {
         try {
             // 1) 空消息兜底
             if (message == null || message.getPayload() == null) {
-                log.warn("INVENTORY_UPDATE payload empty, ack and drop.");
+                log.warn("库存更新消息体为空，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
 
             // 1.1) eventId 必须存在（幂等关键字段）
             if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("INVENTORY_UPDATE message missing eventId, ack and drop.");
+                log.warn("库存更新消息缺少 eventId，ACK 丢弃。");
                 channel.basicAck(tag, false);
                 return;
             }
@@ -76,7 +76,7 @@ public class InventoryUpdateConsumer {
                 mqConsumeLogMapper.insert(logRecord);
             } catch (DuplicateKeyException e) {
                 // 已经处理过该消息 → 直接 ACK
-                log.info("INVENTORY_UPDATE duplicate consume, eventId={}", message.getEventId());
+                log.info("幂等命中：consumer=InventoryUpdateConsumer, eventId={}", message.getEventId());
                 channel.basicAck(tag, false);
                 return;
             }
@@ -85,7 +85,7 @@ public class InventoryUpdateConsumer {
 
             // 2) productId 必须存在
             if (payload.getProductId() == null) {
-                log.warn("INVENTORY_UPDATE missing productId, ack and drop.");
+                log.warn("库存更新消息缺少 productId，ACK 丢弃。");
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
                 channel.basicAck(tag, false);
                 return;
@@ -94,7 +94,7 @@ public class InventoryUpdateConsumer {
             // 3) 幂等更新：只在 on_sale 时改为 sold
             int rows = orderMapper.markProductSoldIfOnSale(payload.getProductId());
 
-            log.info("INVENTORY_UPDATE handled, productId={}, updatedRows={}",
+            log.info("库存更新处理完成：productId={}, updatedRows={}",
                     payload.getProductId(), rows);
 
             // 4) 成功：标记 OK + ACK
@@ -105,7 +105,7 @@ public class InventoryUpdateConsumer {
             if (logRecord != null && logRecord.getId() != null) {
                 mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
             }
-            log.error("INVENTORY_UPDATE failed, nack to DLQ. msg={}", message, ex);
+            log.error("库存更新处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }

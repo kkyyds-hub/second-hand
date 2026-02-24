@@ -6,6 +6,7 @@ import com.demo.entity.OrderShipTimeoutTask;
 import com.demo.mapper.OrderRefundTaskMapper;
 import com.demo.mapper.OrderShipReminderTaskMapper;
 import com.demo.mapper.OrderShipTimeoutTaskMapper;
+import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.demo.service.OrderRefundTaskService;
 import com.demo.service.OrderShipReminderTaskService;
@@ -16,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Min;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +37,11 @@ import java.util.Map;
 @RequestMapping("/admin/ops/tasks")
 public class AdminTaskOpsController {
 
-    private static final int DEFAULT_LIMIT = 50;
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 50;
+    private static final int MAX_PAGE_SIZE = 100;
     private static final int DEFAULT_RUN_BATCH = 200;
-    private static final int MAX_LIMIT = 500;
+    private static final int MAX_RUN_BATCH = 500;
 
     private final OrderShipTimeoutTaskMapper shipTimeoutTaskMapper;
     private final OrderShipReminderTaskMapper shipReminderTaskMapper;
@@ -53,14 +57,23 @@ public class AdminTaskOpsController {
      * GET /admin/ops/tasks/ship-timeout?orderId=1001&status=PENDING&limit=50
      */
     @GetMapping("/ship-timeout")
-    public Result<List<OrderShipTimeoutTask>> listShipTimeoutTasks(
+    public Result<PageResult<OrderShipTimeoutTask>> listShipTimeoutTasks(
             @RequestParam(value = "orderId", required = false) Long orderId,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize) {
 
-        int size = normalize(limit, DEFAULT_LIMIT);
-        List<OrderShipTimeoutTask> tasks = shipTimeoutTaskMapper.listForAdmin(orderId, safeStatus(status), size);
-        return Result.success(tasks);
+        int safePage = normalizePage(page);
+        int safePageSize = normalizePageSize(pageSize);
+        int offset = (safePage - 1) * safePageSize;
+        String normalizedStatus = safeStatus(status);
+
+        long total = shipTimeoutTaskMapper.countForAdmin(orderId, normalizedStatus);
+        if (total <= 0) {
+            return Result.success(new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize));
+        }
+        List<OrderShipTimeoutTask> tasks = shipTimeoutTaskMapper.listForAdmin(orderId, normalizedStatus, offset, safePageSize);
+        return Result.success(new PageResult<>(tasks, total, safePage, safePageSize));
     }
 
     /**
@@ -70,14 +83,23 @@ public class AdminTaskOpsController {
      * GET /admin/ops/tasks/refund?orderId=1001&status=FAILED&limit=50
      */
     @GetMapping("/refund")
-    public Result<List<OrderRefundTask>> listRefundTasks(
+    public Result<PageResult<OrderRefundTask>> listRefundTasks(
             @RequestParam(value = "orderId", required = false) Long orderId,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize) {
 
-        int size = normalize(limit, DEFAULT_LIMIT);
-        List<OrderRefundTask> tasks = refundTaskMapper.listForAdmin(orderId, safeStatus(status), size);
-        return Result.success(tasks);
+        int safePage = normalizePage(page);
+        int safePageSize = normalizePageSize(pageSize);
+        int offset = (safePage - 1) * safePageSize;
+        String normalizedStatus = safeStatus(status);
+
+        long total = refundTaskMapper.countForAdmin(orderId, normalizedStatus);
+        if (total <= 0) {
+            return Result.success(new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize));
+        }
+        List<OrderRefundTask> tasks = refundTaskMapper.listForAdmin(orderId, normalizedStatus, offset, safePageSize);
+        return Result.success(new PageResult<>(tasks, total, safePage, safePageSize));
     }
 
     /**
@@ -87,14 +109,23 @@ public class AdminTaskOpsController {
      * GET /admin/ops/tasks/ship-reminder?orderId=1001&status=FAILED&limit=50
      */
     @GetMapping("/ship-reminder")
-    public Result<List<OrderShipReminderTask>> listShipReminderTasks(
+    public Result<PageResult<OrderShipReminderTask>> listShipReminderTasks(
             @RequestParam(value = "orderId", required = false) Long orderId,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize) {
 
-        int size = normalize(limit, DEFAULT_LIMIT);
-        List<OrderShipReminderTask> tasks = shipReminderTaskMapper.listForAdmin(orderId, safeStatus(status), size);
-        return Result.success(tasks);
+        int safePage = normalizePage(page);
+        int safePageSize = normalizePageSize(pageSize);
+        int offset = (safePage - 1) * safePageSize;
+        String normalizedStatus = safeStatus(status);
+
+        long total = shipReminderTaskMapper.countForAdmin(orderId, normalizedStatus);
+        if (total <= 0) {
+            return Result.success(new PageResult<>(Collections.emptyList(), 0L, safePage, safePageSize));
+        }
+        List<OrderShipReminderTask> tasks = shipReminderTaskMapper.listForAdmin(orderId, normalizedStatus, offset, safePageSize);
+        return Result.success(new PageResult<>(tasks, total, safePage, safePageSize));
     }
 
     /**
@@ -107,7 +138,7 @@ public class AdminTaskOpsController {
     public Result<Map<String, Object>> runShipTimeoutOnce(
             @RequestParam(value = "limit", required = false) Integer limit) {
 
-        int size = normalize(limit, DEFAULT_RUN_BATCH);
+        int size = normalizeBatchLimit(limit, DEFAULT_RUN_BATCH);
         int success = shipTimeoutService.processDueTasks(size);
         log.info("admin run ship-timeout once, limit={}, success={}", size, success);
         return Result.success(runResult("ship-timeout", size, success));
@@ -123,7 +154,7 @@ public class AdminTaskOpsController {
     public Result<Map<String, Object>> runRefundOnce(
             @RequestParam(value = "limit", required = false) Integer limit) {
 
-        int size = normalize(limit, DEFAULT_RUN_BATCH);
+        int size = normalizeBatchLimit(limit, DEFAULT_RUN_BATCH);
         int success = refundTaskService.processRunnableTasks(size);
         log.info("admin run refund once, limit={}, success={}", size, success);
         return Result.success(runResult("refund", size, success));
@@ -139,7 +170,7 @@ public class AdminTaskOpsController {
     public Result<Map<String, Object>> runShipReminderOnce(
             @RequestParam(value = "limit", required = false) Integer limit) {
 
-        int size = normalize(limit, DEFAULT_RUN_BATCH);
+        int size = normalizeBatchLimit(limit, DEFAULT_RUN_BATCH);
         int success = shipReminderTaskService.processDueTasks(size);
         log.info("admin run ship-reminder once, limit={}, success={}", size, success);
         return Result.success(runResult("ship-reminder", size, success));
@@ -193,12 +224,26 @@ public class AdminTaskOpsController {
         return Result.success(singleRowResult(taskId, rows));
     }
 
-    private int normalize(Integer value, int defaultValue) {
+    private int normalizeBatchLimit(Integer value, int defaultValue) {
         int target = value == null ? defaultValue : value;
         if (target <= 0) {
             target = defaultValue;
         }
-        return Math.min(target, MAX_LIMIT);
+        return Math.min(target, MAX_RUN_BATCH);
+    }
+
+    private int normalizePage(Integer page) {
+        if (page == null || page < 1) {
+            return DEFAULT_PAGE;
+        }
+        return page;
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return Math.min(pageSize, MAX_PAGE_SIZE);
     }
 
     private String safeStatus(String status) {

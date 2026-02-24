@@ -41,6 +41,11 @@ public interface OrderShipReminderTaskMapper {
     List<OrderShipReminderTask> listRunningByRound(@Param("runningAt") LocalDateTime runningAt, @Param("limit") int limit);
 
     /**
+     * 根据任务 ID 查询任务（用于并发分流回查）。
+     */
+    OrderShipReminderTask selectById(@Param("id") Long id);
+
+    /**
      * 查询超时 RUNNING 任务（用于“卡死回收”）。
      */
     List<OrderShipReminderTask> listStaleRunning(@Param("staleBefore") LocalDateTime staleBefore,
@@ -61,6 +66,18 @@ public interface OrderShipReminderTaskMapper {
                  @Param("lastError") String lastError);
 
     /**
+     * 批量标记失败（用于回收卡死 RUNNING 任务）。
+     *
+     * 约束：
+     * - 仅更新 RUNNING 状态记录；
+     * - retry_count 在 SQL 中自增 1；
+     * - nextRemindTime 由服务层按重试策略统一计算后传入。
+     */
+    int markFailBatch(@Param("ids") List<Long> ids,
+                      @Param("nextRemindTime") LocalDateTime nextRemindTime,
+                      @Param("lastError") String lastError);
+
+    /**
      * 取消任务：RUNNING -> CANCELLED（订单已终态，无需提醒）。
      */
     int markCancelled(@Param("id") Long id);
@@ -70,7 +87,14 @@ public interface OrderShipReminderTaskMapper {
      */
     List<OrderShipReminderTask> listForAdmin(@Param("orderId") Long orderId,
                                              @Param("status") String status,
-                                             @Param("limit") int limit);
+                                             @Param("offset") int offset,
+                                             @Param("pageSize") int pageSize);
+
+    /**
+     * 统计管理端任务总数（支持与 listForAdmin 同条件过滤）。
+     */
+    long countForAdmin(@Param("orderId") Long orderId,
+                       @Param("status") String status);
 
     /**
      * 管理端“立即重跑”：PENDING/FAILED -> PENDING 且 remind_time=NOW()。

@@ -130,6 +130,15 @@ order:
     ship-timeout-cancel-enabled: true
     refund-success-enabled: true
 
+# P4-S4 Outbox 发布与监控参数
+outbox:
+  publish:
+    batch-size: 50
+    retry-delay-seconds: 30
+  monitor:
+    fail-threshold: 5
+    fail-retry-threshold: 10
+
 # Day16 商品治理通知开关（支持灰度/故障快速隔离）
 product:
   notice:
