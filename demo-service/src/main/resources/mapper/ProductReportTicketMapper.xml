@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.ProductReportTicketMapper">
+
+    <!-- SQL：insert，新增举报工单。 -->
+    <insert id="insert" parameterType="com.demo.entity.ProductReportTicket" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_report_ticket (
+            ticket_no,
+            product_id,
+            reporter_id,
+            report_type,
+            description,
+            evidence_urls,
+            status,
+            resolver_id,
+            resolve_action,
+            resolve_remark,
+            create_time,
+            update_time
+        ) VALUES (
+            #{ticketNo},
+            #{productId},
+            #{reporterId},
+            #{reportType},
+            #{description},
+            #{evidenceUrls},
+            #{status},
+            #{resolverId},
+            #{resolveAction},
+            #{resolveRemark},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- SQL：selectByTicketNo，按工单号查询。 -->
+    <select id="selectByTicketNo" parameterType="java.lang.String" resultType="com.demo.entity.ProductReportTicket">
+        SELECT
+            id,
+            ticket_no AS ticketNo,
+            product_id AS productId,
+            reporter_id AS reporterId,
+            report_type AS reportType,
+            description,
+            evidence_urls AS evidenceUrls,
+            status,
+            resolver_id AS resolverId,
+            resolve_action AS resolveAction,
+            resolve_remark AS resolveRemark,
+            create_time AS createTime,
+            update_time AS updateTime
+        FROM product_report_ticket
+        WHERE ticket_no = #{ticketNo}
+        LIMIT 1
+    </select>
+
+    <!-- SQL：resolveIfPending，仅处理 PENDING 工单。 -->
+    <update id="resolveIfPending">
+        UPDATE product_report_ticket
+        SET status = #{targetStatus},
+            resolver_id = #{resolverId},
+            resolve_action = #{resolveAction},
+            resolve_remark = #{resolveRemark},
+            update_time = NOW()
+        WHERE ticket_no = #{ticketNo}
+          AND status = 'PENDING'
+    </update>
+
+</mapper>
+

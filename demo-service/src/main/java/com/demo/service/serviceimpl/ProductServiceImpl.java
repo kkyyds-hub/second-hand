@@ -2,19 +2,26 @@ package com.demo.service.serviceimpl;
 
 import com.demo.constant.CreditPolicyConstants;
 import com.demo.constant.ProductMessageConstant;
+import com.demo.constant.ProductReason;
 import com.demo.context.BaseContext;
+import com.demo.dto.admin.ForceOffShelfRequest;
 import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
 import com.demo.enumeration.CreditLevel;
+import com.demo.enumeration.ProductActionType;
 import com.demo.enumeration.ProductStatus;
 import com.demo.exception.BusinessException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ProductViolationMapper;
 import com.demo.result.PageResult;
+import com.demo.service.ProductAuditService;
 import com.demo.service.CreditService;
+import com.demo.service.ProductGovernanceEventService;
 import com.demo.service.ProductService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +30,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,54 +51,231 @@ public class ProductServiceImpl implements ProductService {
     private ProductViolationMapper productViolationMapper;
 
     @Autowired
+    private ProductAuditService productAuditService;
+
+    @Autowired
     private CreditService creditService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private com.demo.service.SensitiveWordService sensitiveWordService;
 
+    @Autowired
+    private ProductGovernanceEventService productGovernanceEventService;
+
     @Override
     public PageResult<ProductDTO> getPendingApprovalProducts(int page, int pageSize, String productName, String category, String status) {
-        return null;
+        int safePage = page <= 0 ? 1 : page;
+        int safePageSize = pageSize <= 0 ? 10 : pageSize;
+
+        PageHelper.startPage(safePage, safePageSize);
+        List<Product> products = productMapper.getPendingApprovalProducts(productName, category, status);
+        PageInfo<Product> pageInfo = new PageInfo<>(products);
+
+        List<ProductDTO> dtoList = pageInfo.getList().stream()
+                .map(this::toProductDTO)
+                .collect(Collectors.toList());
+
+        return new PageResult<>(
+                dtoList,
+                pageInfo.getTotal(),
+                pageInfo.getPageNum(),
+                pageInfo.getPageSize()
+        );
     }
 
     /**
      * 管理员审核商品。
-     * 1. isApproved=true：审核通过，商品状态更新为 ON_SHELF。
-     * 2. isApproved=false：审核拒绝，商品状态更新为 OFF_SHELF，并记录驳回原因。
+     * 接口语义：
+     * 1) isApproved=true  -> under_review -> on_sale
+     * 2) isApproved=false -> under_review -> off_shelf（写入驳回原因）
+     *
+     * 统一迁移内核固定执行顺序：
+     * 1) 权限校验（管理员接口默认由 /admin/** 链路前置）
+     * 2) 状态校验
+     * 3) 条件更新（id + current_status）
+     * 4) 更新行数=0 时执行幂等回查（重复审核返回“已处理”）
      */
     @Override
     @Transactional
-    public void approveProduct(Long productId, boolean isApproved, String reason) {
+    public String approveProduct(Long productId, boolean isApproved, String reason) {
+        Long operatorId = safeOperatorId(BaseContext.getCurrentId());
 
         if (Boolean.TRUE.equals(isApproved)) {
-            int rows = productMapper.updateStatusAndReasonIfUnderReview(
+            TransitionResult result = transit(
                     productId,
-                    ProductStatus.ON_SHELF.getDbValue(), // 数据库存储值为 on_sale
+                    null,
+                    false,
+                    ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                    ProductActionType.APPROVE,
+                    EnumSet.of(ProductStatus.UNDER_REVIEW),
+                    status -> status == ProductStatus.ON_SHELF,
+                    "已处理",
+                    this::buildApproveInvalidStatusMessage,
+                    (product, currentStatus) -> productMapper.updateStatusAndReasonByCurrentStatus(
+                            productId,
+                            currentStatus.getDbValue(),
+                            ProductStatus.ON_SHELF.getDbValue(),
+                            null
+                    )
+            );
+            // Day16 P0：审核状态变更审计落库（主事务内强一致）。
+            recordTransitionAudit(
+                    ProductActionType.APPROVE,
+                    operatorId,
+                    "admin",
+                    result,
+                    "approve",
+                    null,
                     null
             );
-            if (rows == 0) {
-                // 可选：为了返回更精确的错误原因，再补查一次商品当前状态。
-                Product p = productMapper.getProductById(productId);
-                if (p == null || p.getIsDeleted() == 1) throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
-                throw new BusinessException(ProductMessageConstant.PRODUCT_ONLY_UNDER_REVIEW_CAN_APPROVE + p.getStatus());
+            // Day16 Step5：审核通过成功后，投递 PRODUCT_REVIEWED 事件（异步站内信由消费者负责）。
+            if (!result.isIdempotent()) {
+                productGovernanceEventService.publishProductReviewed(
+                        result.getProduct(),
+                        "approve",
+                        ProductStatus.UNDER_REVIEW.getDbValue(),
+                        result.getProduct().getStatus(),
+                        null
+                );
             }
-            return;
+            return result.isIdempotent() ? result.getMessage() : "商品审核通过";
         }
+
         // 驳回场景：先去除首尾空白，再做非空与长度校验。
         String r = (reason == null) ? null : reason.trim();
-        if (r == null || r.isEmpty()) throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_REQUIRED);
-        if (r.length() > 200) throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_TOO_LONG);
-
-        int rows = productMapper.updateStatusAndReasonIfUnderReview(
-                productId,
-                ProductStatus.OFF_SHELF.getDbValue(),
-                r
-        );
-        if (rows == 0) {
-            Product p = productMapper.getProductById(productId);
-            if (p == null || p.getIsDeleted() == 1) throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
-            throw new BusinessException(ProductMessageConstant.PRODUCT_ONLY_UNDER_REVIEW_CAN_REJECT + p.getStatus());
+        if (r == null || r.isEmpty()) {
+            throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_REQUIRED);
         }
+        if (r.length() > 200) {
+            throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_TOO_LONG);
+        }
+
+        TransitionResult result = transit(
+                productId,
+                null,
+                false,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.REJECT,
+                EnumSet.of(ProductStatus.UNDER_REVIEW),
+                status -> status == ProductStatus.OFF_SHELF,
+                "已处理",
+                this::buildRejectInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByCurrentStatus(
+                        productId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.OFF_SHELF.getDbValue(),
+                        r
+                )
+        );
+        // Day16 P0：审核驳回状态变更审计落库（携带驳回原因）。
+        recordTransitionAudit(
+                ProductActionType.REJECT,
+                operatorId,
+                "admin",
+                result,
+                "reject",
+                r,
+                null
+        );
+        // Day16 Step5：审核驳回成功后，投递 PRODUCT_REVIEWED 事件（携带驳回原因）。
+        if (!result.isIdempotent()) {
+            productGovernanceEventService.publishProductReviewed(
+                    result.getProduct(),
+                    "reject",
+                    ProductStatus.UNDER_REVIEW.getDbValue(),
+                    result.getProduct().getStatus(),
+                    r
+            );
+        }
+        return result.isIdempotent() ? result.getMessage() : "商品审核驳回";
+    }
+
+    /**
+     * Day16 Step3：管理员强制下架。
+     * 接口语义：PUT /admin/products/{productId}/force-off-shelf
+     *
+     * 核心规则：
+     * 1) 允许 under_review/on_sale 执行强制下架到 off_shelf。
+     * 2) 若当前已是 off_shelf，按幂等成功返回“商品已下架”。
+     * 3) 强制下架成功后写入 products.reason（reasonText）。
+     * 4) 强制下架成功后插入 product_status_audit_log（记录 before/after/action/operator/reason）。
+     */
+    @Override
+    @Transactional
+    public String forceOffShelfProduct(Long operatorId, Long productId, ForceOffShelfRequest request) {
+        if (operatorId == null) {
+            throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
+        }
+        if (request == null) {
+            throw new BusinessException("强制下架参数不能为空");
+        }
+        String reasonCode = normalizeBlankToNull(request.getReasonCode());
+        if (reasonCode == null) {
+            throw new BusinessException("reasonCode 不能为空");
+        }
+        if (reasonCode.length() > 64) {
+            throw new BusinessException("reasonCode 长度不能超过64");
+        }
+        String reasonText = normalizeBlankToNull(request.getReasonText());
+        if (reasonText == null) {
+            throw new BusinessException("reasonText 不能为空");
+        }
+        if (reasonText.length() > 255) {
+            throw new BusinessException("reasonText 长度不能超过255");
+        }
+        String reportTicketNo = normalizeBlankToNull(request.getReportTicketNo());
+        if (reportTicketNo != null && reportTicketNo.length() > 32) {
+            throw new BusinessException("reportTicketNo 长度不能超过32");
+        }
+
+        TransitionResult result = transit(
+                productId,
+                operatorId,
+                false,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.FORCE_OFF_SHELF,
+                EnumSet.of(ProductStatus.UNDER_REVIEW, ProductStatus.ON_SHELF),
+                status -> status == ProductStatus.OFF_SHELF,
+                "商品已下架",
+                this::buildForceOffShelfInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByCurrentStatus(
+                        productId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.OFF_SHELF.getDbValue(),
+                        reasonText
+                )
+        );
+
+        boolean statusChanged = !Objects.equals(result.getBeforeStatus(), result.getProduct().getStatus());
+
+        // Day16 P0：强制下架真实生效时写审计（附带 reportTicketNo 扩展字段）。
+        recordTransitionAudit(
+                ProductActionType.FORCE_OFF_SHELF,
+                operatorId,
+                "admin",
+                result,
+                reasonCode,
+                reasonText,
+                buildForceOffShelfExtraJson(reportTicketNo)
+        );
+
+        // Day16 Step5：强制下架真实生效后，投递 PRODUCT_FORCE_OFF_SHELF 事件。
+        if (!result.isIdempotent() && statusChanged) {
+            productGovernanceEventService.publishProductForceOffShelf(
+                    result.getProduct(),
+                    operatorId,
+                    result.getBeforeStatus(),
+                    result.getProduct().getStatus(),
+                    reasonCode,
+                    reasonText,
+                    reportTicketNo
+            );
+        }
+
+        return result.isIdempotent() ? result.getMessage() : "强制下架成功";
     }
 
 
@@ -122,9 +308,25 @@ public class ProductServiceImpl implements ProductService {
 
         // 使用枚举做一层校验，防止乱写
         ProductStatus newStatus = ProductStatus.fromDbValue(statusDbValue);
+        String beforeStatus = product.getStatus();
         product.setStatus(newStatus.getDbValue());
         product.setUpdateTime(LocalDateTime.now());
         productMapper.updateProduct(product);
+
+        // 后台“直接改状态”兜底审计（非 Day16 主链路，但属于状态变更）。
+        if (!Objects.equals(beforeStatus, newStatus.getDbValue())) {
+            productAuditService.record(
+                    product.getId(),
+                    "update_status",
+                    safeOperatorId(BaseContext.getCurrentId()),
+                    "admin",
+                    beforeStatus,
+                    newStatus.getDbValue(),
+                    "manual_update",
+                    null,
+                    null
+            );
+        }
 
         log.info("商品状态更新成功，商品 ID: {}, 新状态: {}", productId, newStatus);
     }
@@ -170,37 +372,16 @@ public class ProductServiceImpl implements ProductService {
 
     /**
      * 当前用户编辑自己的商品。
+     * 核心规则（Day16 Step2）：
+     * 1) 先校验卖家权限与状态合法性。
+     * 2) 编辑后统一流转为 under_review，并清空 reason。
+     * 3) 更新走条件更新（id + owner_id + current_status），避免并发误覆盖。
+     * 4) 更新行数=0 时做幂等/并发回查。
      */
     @Override
     public ProductDetailDTO updateMyProduct(Long currentUserId,
                                             Long productId,
                                             ProductUpdateRequest request) {
-        Product product = productMapper.getProductById(productId);
-        if (product == null) {
-            throw new ProductNotFoundException("商品不存在或已被删除");
-        }
-
-        // 权限校验
-        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_EDIT);
-        }
-
-        // 状态校验：sold 禁止编辑；on_sale/under_review/off_shelf 允许编辑
-        ProductStatus status = ProductStatus.fromDbValue(product.getStatus());
-        if (status == ProductStatus.SOLD) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_SOLD_CANNOT_EDIT);
-        }
-        if (status != ProductStatus.ON_SHELF
-                && status != ProductStatus.UNDER_REVIEW
-                && status != ProductStatus.OFF_SHELF) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_EDIT);
-        }
-
-        // 更新字段
-        product.setTitle(request.getTitle());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-
         // Day13 Step6 - 敏感词检测（编辑时）
         String checkText = (request.getTitle() != null ? request.getTitle() : "") + " " +
                           (request.getDescription() != null ? request.getDescription() : "");
@@ -211,60 +392,93 @@ public class ProductServiceImpl implements ProductService {
             throw new BusinessException(ProductMessageConstant.PRODUCT_CONTENT_SENSITIVE_SUBMIT + matched);
         }
 
-        // images：null=不改；[] 或全空清空；否则 join 存库
+        // images：null=不改；[] 或全空清空；否则 join 存库（按接口语义原样保留）。
+        String imagesForUpdate = null;
         if (request.getImages() != null) {
             if (request.getImages().isEmpty()) {
-                product.setImages("");
+                imagesForUpdate = "";
             } else {
                 List<String> cleaned = request.getImages().stream()
                         .filter(Objects::nonNull)
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
-                product.setImages(cleaned.isEmpty() ? "" : String.join(",", cleaned));
+                imagesForUpdate = cleaned.isEmpty() ? "" : String.join(",", cleaned);
             }
         }
 
-        product.setUpdateTime(LocalDateTime.now());
-        productMapper.updateProduct(product);
+        final String finalImagesForUpdate = imagesForUpdate;
 
-        // 编辑后统一进入审核中，并清空历史驳回原因（否则前端会一直显示旧 reason）。
-        productMapper.updateStatusAndReason(productId, ProductStatus.UNDER_REVIEW.getDbValue(), null);
-
-        Product dbProduct = productMapper.getProductById(productId);
-        if (dbProduct == null) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_UPDATE_RETRY);
-        }
-        return toProductDetailDTO(dbProduct);
+        TransitionResult result = transit(
+                productId,
+                currentUserId,
+                true,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_EDIT,
+                ProductActionType.EDIT,
+                EnumSet.of(ProductStatus.ON_SHELF, ProductStatus.UNDER_REVIEW, ProductStatus.OFF_SHELF),
+                null,
+                null,
+                this::buildEditInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateForEditByOwnerAndCurrentStatus(
+                        productId,
+                        currentUserId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.UNDER_REVIEW.getDbValue(),
+                        null,
+                        request.getTitle(),
+                        request.getDescription(),
+                        request.getPrice(),
+                        finalImagesForUpdate
+                )
+        );
+        // Day16 P0：编辑动作审计（on_sale/off_shelf/under_review -> under_review）。
+        recordTransitionAudit(
+                ProductActionType.EDIT,
+                safeOperatorId(currentUserId),
+                "seller",
+                result,
+                "edit",
+                null,
+                null
+        );
+        return toProductDetailDTO(result.getProduct());
     }
 
     /**
-     * 更新相关业务状态。
+     * 卖家主动下架（兼容 under_review/on_sale -> off_shelf）。
+     * 幂等口径：重复下架返回“商品已下架”。
      */
     @Override
-    public void offShelfProductStatus(Long currentUserId, Long productId) {
-        Product product = productMapper.getProductById(productId);
-        if (product == null) {
-            throw new ProductNotFoundException("商品未找到，ID: " + productId);
-        }
-
-        // 1. 权限校验：只能下架自己的商品
-        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
-        }
-
-        // 2. 状态流转校验：只允许审核中/上架 -> 下架
-        ProductStatus current = ProductStatus.fromDbValue(product.getStatus());
-        if (current != ProductStatus.UNDER_REVIEW && current != ProductStatus.ON_SHELF) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_OFF_SHELF);
-        }
-
-        // 3. 状态更新
-        product.setStatus(ProductStatus.OFF_SHELF.getDbValue());
-        product.setUpdateTime(LocalDateTime.now());
-        productMapper.updateProduct(product);
-
-        log.info("商品下架成功，用户 ID: {}, 商品 ID: {}", currentUserId, productId);
+    public String offShelfProductStatus(Long currentUserId, Long productId) {
+        TransitionResult result = transit(
+                productId,
+                currentUserId,
+                true,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.OFF_SHELF,
+                EnumSet.of(ProductStatus.UNDER_REVIEW, ProductStatus.ON_SHELF),
+                status -> status == ProductStatus.OFF_SHELF,
+                "商品已下架",
+                status -> ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_OFF_SHELF,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByOwnerAndCurrentStatus(
+                        productId,
+                        currentUserId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.OFF_SHELF.getDbValue(),
+                        product.getReason()
+                )
+        );
+        // Day16 P0：卖家下架审计。
+        recordTransitionAudit(
+                ProductActionType.OFF_SHELF,
+                safeOperatorId(currentUserId),
+                "seller",
+                result,
+                "seller_off_shelf",
+                null,
+                null
+        );
+        return result.isIdempotent() ? result.getMessage() : "下架成功";
     }
 
     /**
@@ -404,119 +618,378 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * 更新相关业务状态。
+     * 卖家重新提审（off_shelf -> under_review）。
+     * 幂等口径：若当前已是 under_review，直接返回当前详情（视为成功）。
      */
     @Override
     public ProductDetailDTO resubmitProduct(Long currentUserId, Long productId) {
-        // Day16：标准“重新提交审核”入口（off_shelf -> under_review）。
-        Product product = productMapper.getProductById(productId);
-        if (product == null) throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
-        if (!Objects.equals(product.getOwnerId(), currentUserId)) throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
-
-        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
-
-        if (st == ProductStatus.SOLD) throw new BusinessException(ProductMessageConstant.PRODUCT_SOLD_CANNOT_RESUBMIT);
-        if (st == ProductStatus.ON_SHELF) throw new BusinessException(ProductMessageConstant.PRODUCT_ON_SALE_NO_NEED_RESUBMIT);
-
-        // 已是待审核状态，直接返回当前详情。
-        if (st == ProductStatus.UNDER_REVIEW) {
-            return toProductDetailDTO(product);
-        }
-
-        // 仅允许下架状态发起重新提交。
-        if (st != ProductStatus.OFF_SHELF) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_CANNOT_RESUBMIT);
-        }
-
-        int rows = productMapper.updateStatusAndReasonByOwner(
-                productId, currentUserId,
-                ProductStatus.UNDER_REVIEW.getDbValue(),
+        TransitionResult result = transit(
+                productId,
+                currentUserId,
+                true,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.RESUBMIT,
+                EnumSet.of(ProductStatus.OFF_SHELF),
+                status -> status == ProductStatus.UNDER_REVIEW,
+                null,
+                this::buildResubmitInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByOwnerAndCurrentStatus(
+                        productId,
+                        currentUserId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.UNDER_REVIEW.getDbValue(),
+                        null
+                )
+        );
+        // Day16 P0：卖家重提审核审计。
+        recordTransitionAudit(
+                ProductActionType.RESUBMIT,
+                safeOperatorId(currentUserId),
+                "seller",
+                result,
+                "resubmit",
+                null,
                 null
         );
-        if (rows == 0) throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_UPDATE_FAILED);
-
-        Product db = productMapper.getProductById(productId);
-        return toProductDetailDTO(db);
+        return toProductDetailDTO(result.getProduct());
     }
 
     /**
-     * 更新相关业务状态。
+     * 卖家上架入口（Day16 语义冻结：与 resubmit 等价，仅提审，不直上架）。
+     * 幂等口径：若当前已是 under_review，直接返回当前详情（视为成功）。
      */
     @Override
     public ProductDetailDTO onShelfProduct(Long currentUserId, Long productId) {
-        // Day16：兼容入口，语义与 resubmit 一致（不是 off_shelf -> on_sale 直上架）。
-        Product product = productMapper.getProductById(productId);
-        if (product == null) throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
-        if (!Objects.equals(product.getOwnerId(), currentUserId)) throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
-
-        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
-
-        if (st == ProductStatus.SOLD) throw new BusinessException(ProductMessageConstant.PRODUCT_SOLD_CANNOT_ON_SHELF);
-        if (st == ProductStatus.ON_SHELF) throw new BusinessException(ProductMessageConstant.PRODUCT_ON_SALE_NO_NEED_ON_SHELF);
-
-        // 已是待审核状态，直接返回当前详情。
-        if (st == ProductStatus.UNDER_REVIEW) {
-            return toProductDetailDTO(product);
-        }
-
-        // 仅允许下架状态发起重新提交。
-        if (st != ProductStatus.OFF_SHELF) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_CANNOT_ON_SHELF);
-        }
-
-        int rows = productMapper.updateStatusAndReasonByOwner(
-                productId, currentUserId,
-                ProductStatus.UNDER_REVIEW.getDbValue(),
+        TransitionResult result = transit(
+                productId,
+                currentUserId,
+                true,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.ON_SHELF,
+                EnumSet.of(ProductStatus.OFF_SHELF),
+                status -> status == ProductStatus.UNDER_REVIEW,
+                null,
+                this::buildOnShelfInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByOwnerAndCurrentStatus(
+                        productId,
+                        currentUserId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.UNDER_REVIEW.getDbValue(),
+                        null
+                )
+        );
+        // Day16 P0：on-shelf 入口（提审别名）审计。
+        recordTransitionAudit(
+                ProductActionType.ON_SHELF,
+                safeOperatorId(currentUserId),
+                "seller",
+                result,
+                "on_shelf_alias_resubmit",
+                null,
                 null
         );
-        if (rows == 0) throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_UPDATE_FAILED);
-
-        Product db = productMapper.getProductById(productId);
-        return toProductDetailDTO(db);
+        return toProductDetailDTO(result.getProduct());
     }
 
     /**
-     * 更新相关业务状态。
+     * 卖家撤回审核（under_review -> off_shelf）。
      */
     @Override
     public ProductDetailDTO withdrawProduct(Long currentUserId, Long productId) {
-        // Day16：撤回审核入口（under_review -> off_shelf）。
-        Product product = productMapper.getProductById(productId);
-        if (product == null) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
-        }
-        if (!Objects.equals(product.getOwnerId(), currentUserId)) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
-        }
-
-        ProductStatus st = ProductStatus.fromDbValue(product.getStatus());
-        // sold：不允许撤回。
-        if (st == ProductStatus.SOLD) throw new BusinessException(ProductMessageConstant.PRODUCT_SOLD_CANNOT_WITHDRAW);
-        // on_sale：提示应先走下架流程。
-        if (st == ProductStatus.ON_SHELF) throw new BusinessException(ProductMessageConstant.PRODUCT_ON_SALE_NEED_OFF_SHELF_FIRST);
-        // off_shelf：无需重复撤回。
-        if (st == ProductStatus.OFF_SHELF) throw new BusinessException(ProductMessageConstant.PRODUCT_ALREADY_WITHDRAWN);
-        // 仅 under_review 允许继续执行撤回。
-        if (st != ProductStatus.UNDER_REVIEW) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_NO_NEED_WITHDRAW);
-        }
-        // reason：固定记录卖家撤回原因，便于审计。
-        String reason = "seller_withdraw";
-
-        // 复用状态更新接口落库。
-
-        int rows = productMapper.updateStatusAndReasonByOwner(
+        TransitionResult result = transit(
                 productId,
                 currentUserId,
-                ProductStatus.OFF_SHELF.getDbValue(),
-                reason
+                true,
+                ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE,
+                ProductActionType.WITHDRAW,
+                EnumSet.of(ProductStatus.UNDER_REVIEW),
+                null,
+                null,
+                this::buildWithdrawInvalidStatusMessage,
+                (product, currentStatus) -> productMapper.updateStatusAndReasonByOwnerAndCurrentStatus(
+                        productId,
+                        currentUserId,
+                        currentStatus.getDbValue(),
+                        ProductStatus.OFF_SHELF.getDbValue(),
+                        ProductReason.SELLER_WITHDRAW
+                )
         );
-        if (rows == 0) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_UPDATE_FAILED);
+        // Day16 P0：卖家撤回审核审计。
+        recordTransitionAudit(
+                ProductActionType.WITHDRAW,
+                safeOperatorId(currentUserId),
+                "seller",
+                result,
+                ProductReason.SELLER_WITHDRAW,
+                ProductReason.SELLER_WITHDRAW,
+                null
+        );
+        return toProductDetailDTO(result.getProduct());
+    }
+
+    /**
+     * 商品状态迁移统一内核（Step2 核心）。
+     *
+     * 固定执行顺序（所有动作统一）：
+     * 1. 权限校验：owner 动作强制校验 owner_id == operatorId。
+     * 2. 状态校验：判断是否命中允许的 from 状态；不满足时按动作返回对应业务错误。
+     * 3. 条件更新：执行 id + current_status (+ owner_id) 的并发安全更新。
+     * 4. 幂等回查：当 rows=0 时回查最新状态，若命中幂等条件则按成功返回，否则抛业务错误。
+     *
+     * 设计目的：
+     * - 把状态迁移规则收敛到一个入口，避免 approve/reject/off_shelf/... 各自维护一套分叉逻辑。
+     * - 通过 current_status 条件更新避免并发写覆盖，保证状态机行为可预测。
+     */
+    private TransitionResult transit(Long productId,
+                                     Long operatorId,
+                                     boolean ownerAction,
+                                     String permissionDeniedMessage,
+                                     ProductActionType actionType,
+                                     Set<ProductStatus> allowedFromStatuses,
+                                     java.util.function.Predicate<ProductStatus> idempotentPredicate,
+                                     String idempotentMessage,
+                                     java.util.function.Function<ProductStatus, String> invalidStatusMessageBuilder,
+                                     TransitionUpdater updater) {
+        Product product = mustGetProduct(productId);
+
+        // 1) 权限校验：卖家动作必须 owner 自己操作。
+        if (ownerAction && !Objects.equals(product.getOwnerId(), operatorId)) {
+            throw new BusinessException(permissionDeniedMessage);
         }
 
-        Product db = productMapper.getProductById(productId);
-        return toProductDetailDTO(db);
+        // 2) 状态校验：先做“幂等短路”，再判定是否允许迁移。
+        ProductStatus currentStatus = ProductStatus.fromDbValue(product.getStatus());
+        if (idempotentPredicate != null && idempotentPredicate.test(currentStatus)) {
+            return TransitionResult.idempotent(product, idempotentMessage, currentStatus.getDbValue());
+        }
+        if (!allowedFromStatuses.contains(currentStatus)) {
+            throw new BusinessException(invalidStatusMessageBuilder.apply(currentStatus));
+        }
+
+        // 3) 条件更新：id + current_status (+ owner_id)。
+        int rows = updater.update(product, currentStatus);
+        if (rows == 1) {
+            Product latest = mustGetProduct(productId);
+            log.info("商品状态迁移成功: action={}, productId={}, from={}, to={}",
+                    actionType.getCode(), productId, currentStatus.getDbValue(), latest.getStatus());
+            return TransitionResult.success(latest, currentStatus.getDbValue());
+        }
+
+        // 4) 行数=0 幂等回查：处理并发下“别人先更新”场景。
+        Product latest = mustGetProduct(productId);
+        ProductStatus latestStatus = ProductStatus.fromDbValue(latest.getStatus());
+        if (idempotentPredicate != null && idempotentPredicate.test(latestStatus)) {
+            log.info("商品状态迁移幂等命中: action={}, productId={}, latestStatus={}",
+                    actionType.getCode(), productId, latestStatus.getDbValue());
+            return TransitionResult.idempotent(latest, idempotentMessage, latestStatus.getDbValue());
+        }
+        if (!allowedFromStatuses.contains(latestStatus)) {
+            throw new BusinessException(invalidStatusMessageBuilder.apply(latestStatus));
+        }
+        throw new BusinessException(ProductMessageConstant.PRODUCT_STATUS_UPDATE_FAILED);
+    }
+
+    /**
+     * 查询商品，不存在则抛统一业务异常。
+     */
+    private Product mustGetProduct(Long productId) {
+        Product product = productMapper.getProductById(productId);
+        if (product == null || product.getIsDeleted() == 1) {
+            throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_DELETED);
+        }
+        return product;
+    }
+
+    /**
+     * approve 的非法状态文案映射。
+     */
+    private String buildApproveInvalidStatusMessage(ProductStatus status) {
+        return ProductMessageConstant.PRODUCT_ONLY_UNDER_REVIEW_CAN_APPROVE + status.getDbValue();
+    }
+
+    /**
+     * reject 的非法状态文案映射。
+     */
+    private String buildRejectInvalidStatusMessage(ProductStatus status) {
+        return ProductMessageConstant.PRODUCT_ONLY_UNDER_REVIEW_CAN_REJECT + status.getDbValue();
+    }
+
+    /**
+     * edit 的非法状态文案映射。
+     */
+    private String buildEditInvalidStatusMessage(ProductStatus status) {
+        if (status == ProductStatus.SOLD) {
+            return ProductMessageConstant.PRODUCT_SOLD_CANNOT_EDIT;
+        }
+        return ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_EDIT;
+    }
+
+    /**
+     * resubmit 的非法状态文案映射。
+     */
+    private String buildResubmitInvalidStatusMessage(ProductStatus status) {
+        if (status == ProductStatus.SOLD) {
+            return ProductMessageConstant.PRODUCT_SOLD_CANNOT_RESUBMIT;
+        }
+        if (status == ProductStatus.ON_SHELF) {
+            return ProductMessageConstant.PRODUCT_ON_SALE_NO_NEED_RESUBMIT;
+        }
+        return ProductMessageConstant.PRODUCT_STATUS_CANNOT_RESUBMIT;
+    }
+
+    /**
+     * on-shelf(提审别名) 的非法状态文案映射。
+     */
+    private String buildOnShelfInvalidStatusMessage(ProductStatus status) {
+        if (status == ProductStatus.SOLD) {
+            return ProductMessageConstant.PRODUCT_SOLD_CANNOT_ON_SHELF;
+        }
+        if (status == ProductStatus.ON_SHELF) {
+            return ProductMessageConstant.PRODUCT_ON_SALE_NO_NEED_ON_SHELF;
+        }
+        return ProductMessageConstant.PRODUCT_STATUS_CANNOT_ON_SHELF;
+    }
+
+    /**
+     * withdraw 的非法状态文案映射。
+     */
+    private String buildWithdrawInvalidStatusMessage(ProductStatus status) {
+        if (status == ProductStatus.SOLD) {
+            return ProductMessageConstant.PRODUCT_SOLD_CANNOT_WITHDRAW;
+        }
+        if (status == ProductStatus.ON_SHELF) {
+            return ProductMessageConstant.PRODUCT_ON_SALE_NEED_OFF_SHELF_FIRST;
+        }
+        if (status == ProductStatus.OFF_SHELF) {
+            return ProductMessageConstant.PRODUCT_ALREADY_WITHDRAWN;
+        }
+        return ProductMessageConstant.PRODUCT_STATUS_NO_NEED_WITHDRAW;
+    }
+
+    /**
+     * force_off_shelf 的非法状态文案映射。
+     */
+    private String buildForceOffShelfInvalidStatusMessage(ProductStatus status) {
+        // Day16 不允许 sold 回流到 off_shelf。
+        if (status == ProductStatus.SOLD) {
+            return ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_FORCE_OFF_SHELF;
+        }
+        return ProductMessageConstant.PRODUCT_STATUS_NOT_ALLOW_FORCE_OFF_SHELF;
+    }
+
+    /**
+     * 状态迁移成功后统一写审计日志（非幂等分支）。
+     * 说明：
+     * 1) 幂等命中（重复请求）不重复写审计，避免日志污染。
+     * 2) beforeStatus 取统一迁移内核返回值，保证与条件更新前状态一致。
+     */
+    private void recordTransitionAudit(ProductActionType actionType,
+                                       Long operatorId,
+                                       String operatorRole,
+                                       TransitionResult result,
+                                       String reasonCode,
+                                       String reasonText,
+                                       String extraJson) {
+        if (result == null || result.isIdempotent()) {
+            return;
+        }
+        productAuditService.record(
+                result.getProduct().getId(),
+                actionType.getCode(),
+                safeOperatorId(operatorId),
+                operatorRole,
+                result.getBeforeStatus(),
+                result.getProduct().getStatus(),
+                reasonCode,
+                reasonText,
+                extraJson
+        );
+    }
+
+    /**
+     * 组装强制下架扩展信息 JSON。
+     */
+    private String buildForceOffShelfExtraJson(String reportTicketNo) {
+        if (reportTicketNo == null) {
+            return null;
+        }
+        java.util.Map<String, String> extra = new java.util.HashMap<>();
+        extra.put("reportTicketNo", reportTicketNo);
+        try {
+            return objectMapper.writeValueAsString(extra);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("强制下架审计扩展信息序列化失败");
+        }
+    }
+
+    /**
+     * 把空白字符串归一化为 null，便于可选字段落库。
+     */
+    private String normalizeBlankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /**
+     * 统一兜底操作人 ID，避免审计因空操作人导致写入失败。
+     */
+    private Long safeOperatorId(Long operatorId) {
+        return operatorId == null ? 0L : operatorId;
+    }
+
+    /**
+     * 条件更新执行器：把具体 SQL 更新逻辑以函数方式注入统一内核。
+     */
+    @FunctionalInterface
+    private interface TransitionUpdater {
+        int update(Product product, ProductStatus currentStatus);
+    }
+
+    /**
+     * 状态迁移返回结果：
+     * - product：迁移后（或幂等命中时当前）商品快照
+     * - idempotent：是否命中幂等分支
+     * - message：幂等提示文案（非幂等时可为空）
+     */
+    private static class TransitionResult {
+        private final Product product;
+        private final boolean idempotent;
+        private final String message;
+        private final String beforeStatus;
+
+        private TransitionResult(Product product, boolean idempotent, String message, String beforeStatus) {
+            this.product = product;
+            this.idempotent = idempotent;
+            this.message = message;
+            this.beforeStatus = beforeStatus;
+        }
+
+        static TransitionResult success(Product product, String beforeStatus) {
+            return new TransitionResult(product, false, null, beforeStatus);
+        }
+
+        static TransitionResult idempotent(Product product, String message, String beforeStatus) {
+            return new TransitionResult(product, true, message, beforeStatus);
+        }
+
+        Product getProduct() {
+            return product;
+        }
+
+        boolean isIdempotent() {
+            return idempotent;
+        }
+
+        String getMessage() {
+            return message;
+        }
+
+        String getBeforeStatus() {
+            return beforeStatus;
+        }
     }
 
 

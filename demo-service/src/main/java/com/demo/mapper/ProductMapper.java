@@ -74,6 +74,40 @@ public interface ProductMapper {
                                      @Param("reason") String reason);
 
     /**
+     * 按商品 ID + 当前状态更新状态与原因（管理员动作）。
+     * 用于并发安全的条件更新，避免状态被误覆盖。
+     */
+    int updateStatusAndReasonByCurrentStatus(@Param("id") Long id,
+                                             @Param("currentStatus") String currentStatus,
+                                             @Param("targetStatus") String targetStatus,
+                                             @Param("reason") String reason);
+
+    /**
+     * 按商品 ID + ownerId + 当前状态更新状态与原因（卖家动作）。
+     * 用于并发安全的条件更新，确保只能对自己且处于预期状态的商品执行迁移。
+     */
+    int updateStatusAndReasonByOwnerAndCurrentStatus(@Param("id") Long id,
+                                                     @Param("ownerId") Long ownerId,
+                                                     @Param("currentStatus") String currentStatus,
+                                                     @Param("targetStatus") String targetStatus,
+                                                     @Param("reason") String reason);
+
+    /**
+     * 卖家编辑商品并迁移状态（统一回审）：
+     * 1) 仅当 ownerId + currentStatus 命中时更新，避免并发误写。
+     * 2) 同时更新标题/描述/价格/图片与状态，保证编辑与状态迁移原子化。
+     */
+    int updateForEditByOwnerAndCurrentStatus(@Param("id") Long id,
+                                             @Param("ownerId") Long ownerId,
+                                             @Param("currentStatus") String currentStatus,
+                                             @Param("targetStatus") String targetStatus,
+                                             @Param("reason") String reason,
+                                             @Param("title") String title,
+                                             @Param("description") String description,
+                                             @Param("price") java.math.BigDecimal price,
+                                             @Param("images") String images);
+
+    /**
      * 仅当商品处于待审核时更新状态与原因。
      */
     int updateStatusAndReasonIfUnderReview(@Param("productId") Long productId,

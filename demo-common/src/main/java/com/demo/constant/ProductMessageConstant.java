@@ -29,6 +29,7 @@ public class ProductMessageConstant {
 
     public static final String PRODUCT_ONLY_UNDER_REVIEW_CAN_APPROVE = "仅审核中商品可通过，当前状态: ";
     public static final String PRODUCT_ONLY_UNDER_REVIEW_CAN_REJECT = "仅审核中商品可驳回，当前状态: ";
+    public static final String PRODUCT_STATUS_NOT_ALLOW_FORCE_OFF_SHELF = "当前状态不允许强制下架";
 
     public static final String PRODUCT_SOLD_CANNOT_EDIT = "商品已售出，不能编辑";
     public static final String PRODUCT_STATUS_NOT_ALLOW_EDIT = "当前状态不允许编辑";
@@ -55,4 +56,10 @@ public class ProductMessageConstant {
     public static final String PRODUCT_CONTENT_SENSITIVE_CREATE = "商品内容包含敏感词，无法发布：";
     public static final String PRODUCT_CREATE_FAILED_RETRY = "商品创建失败，请重试";
     public static final String PRODUCT_ID_REQUIRED = "productId 不能为空";
+
+    public static final String PRODUCT_REPORT_TICKET_NOT_FOUND = "举报单不存在";
+    public static final String PRODUCT_REPORT_ALREADY_RESOLVED = "工单已处理";
+    public static final String PRODUCT_REPORT_SUBMIT_FAILED_RETRY = "举报提交失败，请重试";
+    public static final String PRODUCT_REPORT_RESOLVE_FAILED_RETRY = "工单处理失败，请重试";
+    public static final String PRODUCT_REPORT_RESOLVE_SUCCESS = "工单处理成功";
 }

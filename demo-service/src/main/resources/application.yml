@@ -25,7 +25,7 @@ spring:
     mongodb:
       uri: ${demo.mongodb.uri:}
 
-  # RabbitMQ（Day14 异步消息），未安装时可先不填，见 application-dev.yml
+  # RabbitMQ（Day14 异步消息），见 application-dev.yml
   rabbitmq:
     host: ${demo.rabbitmq.host:}
     port: ${demo.rabbitmq.port:5672}
@@ -43,22 +43,18 @@ spring:
         default-requeue-rejected: false
 
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.demo.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 logging:
   level:
-    com:
-      demo:  # 修改包名
-        mapper: debug
-        service: info
-        controller: info
-    org:
-      springframework:
-        web: debug
+    com.demo.mapper: info
+    com.demo.service: info
+    com.demo.controller: info
+    org.springframework.web: info
 
 # 应用自定义配置
 demo:
@@ -89,12 +85,18 @@ demo:
       order-status-changed: order.status.changed
       order-timeout: order.timeout
       order-timeout-delay: order.timeout.delay
+      product-reviewed: product.reviewed
+      product-force-off-shelf: product.force.off.shelf
+      product-report-resolved: product.report.resolved
       dlq: order.dlq
     queue:
       order-timeout: order.timeout.queue
       inventory-update: inventory.update.queue
       order-fulfillment: order.fulfillment.queue
       order-status-sync: order.status.sync.queue
+      product-reviewed-notice: product.reviewed.notice.queue
+      product-force-off-shelf-notice: product.force.off.shelf.notice.queue
+      product-report-resolved-notice: product.report.resolved.notice.queue
       dlq: order.dlq.queue
       order-timeout-delay: order.timeout.delay.queue
 
@@ -127,6 +129,13 @@ order:
     ship-reminder-enabled: true
     ship-timeout-cancel-enabled: true
     refund-success-enabled: true
+
+# Day16 商品治理通知开关（支持灰度/故障快速隔离）
+product:
+  notice:
+    reviewed-enabled: true
+    force-off-shelf-enabled: true
+    report-resolved-enabled: true
 
 logistics:
   provider: mock

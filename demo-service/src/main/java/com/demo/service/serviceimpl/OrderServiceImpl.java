@@ -7,6 +7,7 @@ import com.demo.dto.user.CreateOrderResponse;
 import com.demo.dto.user.ShipOrderRequest;
 import com.demo.entity.*;
 import com.demo.enumeration.CreditReasonType;
+import com.demo.enumeration.ProductActionType;
 import com.demo.mapper.OrderShipTimeoutTaskMapper;
 import com.demo.mq.producer.OrderEventProducer;
 import com.demo.enumeration.OrderStatus;
@@ -17,6 +18,7 @@ import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
 import com.demo.service.CreditService;
 import com.demo.service.OrderService;
+import com.demo.service.ProductAuditService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
@@ -38,7 +40,9 @@ import java.util.UUID;
 
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -68,6 +72,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ProductAuditService productAuditService;
 
     // ====== 在类字段区新增 ======
     @Autowired
@@ -357,6 +364,10 @@ public class OrderServiceImpl implements OrderService {
         if (itemInserted != 1) {
             throw new BusinessException("创建订单明细失败");
         }
+
+        // Day16 P0：成交置已售审计（on_sale -> sold）。
+        recordProductSoldAudit(product, order, currentUserId);
+
         // 发送订单创建事件（失败不影响主交易，后续由 Outbox/任务兜底）
         safePublish("ORDER_CREATED", () -> orderEventProducer.sendOrderCreated(order, product));
 
@@ -647,6 +658,42 @@ public class OrderServiceImpl implements OrderService {
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000);
         return time + (buyerId % 10000) + rnd;
+    }
+
+    /**
+     * 写入“商品成交置已售”审计。
+     *
+     * 说明：
+     * 1) 当前下单链路采用“先占用商品（sold）再建订单”的策略。
+     * 2) 审计放在订单/明细写入成功后，仍在同一事务内；若后续异常会整体回滚。
+     */
+    private void recordProductSoldAudit(Product product, Order order, Long operatorId) {
+        if (product == null || product.getId() == null || order == null || order.getId() == null) {
+            throw new BusinessException("写入成交审计失败：关键参数缺失");
+        }
+
+        Map<String, Object> extra = new HashMap<>();
+        extra.put("scene", "create_order");
+        extra.put("orderId", order.getId());
+        extra.put("orderNo", order.getOrderNo());
+        extra.put("buyerId", order.getBuyerId());
+        extra.put("sellerId", order.getSellerId());
+
+        String beforeStatus = (product.getStatus() == null || product.getStatus().trim().isEmpty())
+                ? ProductStatus.ON_SHELF.getDbValue()
+                : product.getStatus();
+
+        productAuditService.record(
+                product.getId(),
+                ProductActionType.SOLD.getCode(),
+                operatorId == null ? 0L : operatorId,
+                "system",
+                beforeStatus,
+                ProductStatus.SOLD.getDbValue(),
+                "order_create",
+                "订单创建占用商品，状态置为 sold",
+                toJsonSafely(extra)
+        );
     }
 
     /**

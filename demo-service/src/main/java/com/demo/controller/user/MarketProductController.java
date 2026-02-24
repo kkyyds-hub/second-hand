@@ -1,12 +1,16 @@
 package com.demo.controller.user;
 
+import com.demo.context.BaseContext;
 import com.demo.dto.base.PageQueryDTO;
 import com.demo.dto.review.ReviewItemDTO;
 import com.demo.dto.user.MarketProductDetailDTO;
 import com.demo.dto.user.MarketProductQueryDTO;
 import com.demo.dto.user.MarketProductSummaryDTO;
+import com.demo.dto.user.ProductReportRequest;
+import com.demo.dto.user.ProductReportResponse;
 import com.demo.result.PageResult;
 import com.demo.result.Result;
+import com.demo.service.ProductReportService;
 import com.demo.service.ProductService;
 import com.demo.service.ReviewService;
 import io.swagger.annotations.Api;
@@ -30,6 +34,7 @@ public class MarketProductController {
 
     private final ProductService productService;
     private final ReviewService reviewService;
+    private final ProductReportService productReportService;
 
     /**
      * 分页查询市场商品。
@@ -61,5 +66,18 @@ public class MarketProductController {
         log.info("查询商品评价列表 productId={}, page={}, pageSize={}",
                 productId, query.getPage(), query.getPageSize());
         return Result.success(reviewService.listProductReviews(productId, query));
+    }
+
+    /**
+     * Day16 Step4：买家举报商品。
+     * 接口：POST /user/market/products/{productId}/report
+     * 作用：创建一条 PENDING 举报工单，返回 ticketNo 供后续追踪处理。
+     */
+    @PostMapping("/{productId}/report")
+    public Result<ProductReportResponse> reportProduct(@PathVariable @Min(1) Long productId,
+                                                       @Validated @RequestBody ProductReportRequest request) {
+        Long reporterId = BaseContext.getCurrentId();
+        ProductReportResponse response = productReportService.createReport(reporterId, productId, request);
+        return Result.success(response);
     }
 }

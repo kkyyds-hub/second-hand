@@ -1,6 +1,9 @@
 package com.demo.controller.admin;
 
+import com.demo.context.BaseContext;
+import com.demo.dto.admin.ForceOffShelfRequest;
 import com.demo.dto.admin.RejectProductRequest;
+import com.demo.dto.admin.ResolveProductReportRequest;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.ProductViolation;
 import com.demo.enumeration.ProductStatus;
@@ -8,6 +11,7 @@ import com.demo.exception.BusinessException;
 import com.demo.exception.DatabaseUpdateException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.result.Result;
+import com.demo.service.ProductReportService;
 import com.demo.service.ProductService;
 import com.demo.result.PageResult;
 import io.swagger.annotations.Api;
@@ -32,6 +36,9 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
+    @Autowired
+    private ProductReportService productReportService;
+
     /**
      * 获取待审核商品分页列表。
      */
@@ -55,9 +62,11 @@ public class ProductController {
      */
     @PutMapping("/{productId}/approve")
     public Result<String> approveProductV2(@PathVariable("productId") Long productId) {
-        // 先复用旧 service：true=通过，reason=null
-        productService.approveProduct(productId, true, null);
-        return Result.success("商品审核通过");
+        // 审核幂等语义：
+        // 1) 首次通过返回“商品审核通过”
+        // 2) 重复通过返回“已处理”
+        String message = productService.approveProduct(productId, true, null);
+        return Result.success(message);
     }
 
     /**
@@ -66,9 +75,43 @@ public class ProductController {
     @PutMapping("/{productId}/reject")
     public Result<String> rejectProductV2(@PathVariable("productId") Long productId,
                                           @Valid @RequestBody RejectProductRequest request) {
-        // 先复用旧 service：false=驳回，reason=request.reason
-        productService.approveProduct(productId, false, request.getReason());
-        return Result.success("商品审核驳回");
+        // 审核幂等语义：
+        // 1) 首次驳回返回“商品审核驳回”
+        // 2) 重复驳回返回“已处理”
+        String message = productService.approveProduct(productId, false, request.getReason());
+        return Result.success(message);
+    }
+
+    /**
+     * Day16 Step3：管理员强制下架。
+     * 接口：PUT /admin/products/{productId}/force-off-shelf
+     * 作用：
+     * 1) 对 under_review/on_sale 商品执行强制下架到 off_shelf
+     * 2) 写入下架原因（products.reason）
+     * 3) 记录状态审计日志（product_status_audit_log）
+     * 4) 若商品已是 off_shelf，按幂等返回“商品已下架”
+     */
+    @PutMapping("/{productId}/force-off-shelf")
+    public Result<String> forceOffShelf(@PathVariable("productId") Long productId,
+                                        @Valid @RequestBody ForceOffShelfRequest request) {
+        Long operatorId = BaseContext.getCurrentId();
+        String message = productService.forceOffShelfProduct(operatorId, productId, request);
+        return Result.success(message);
+    }
+
+    /**
+     * Day16 Step4：管理员处理举报工单。
+     * 接口：PUT /admin/products/reports/{ticketNo}/resolve
+     * 处理动作：
+     * 1) dismiss：举报不成立，工单关闭
+     * 2) force_off_shelf：举报成立，联动强制下架 + 违规记录
+     */
+    @PutMapping("/reports/{ticketNo}/resolve")
+    public Result<String> resolveReport(@PathVariable("ticketNo") String ticketNo,
+                                        @Valid @RequestBody ResolveProductReportRequest request) {
+        Long resolverId = BaseContext.getCurrentId();
+        String message = productReportService.resolveReport(resolverId, ticketNo, request);
+        return Result.success(message);
     }
 
 
@@ -82,8 +125,8 @@ public class ProductController {
             @RequestParam(value = "isApproved") boolean isApproved,
             @RequestParam(value = "reason", required = false) String reason) {
         try {
-            productService.approveProduct(productId, isApproved, reason);
-            return Result.success("商品审核成功");
+            String message = productService.approveProduct(productId, isApproved, reason);
+            return Result.success(message);
         } catch (Exception e) {
             log.error("商品审核失败", e);
             return Result.error("商品审核失败");

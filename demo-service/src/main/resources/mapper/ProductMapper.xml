@@ -90,6 +90,45 @@
           AND is_deleted = 0
     </update>
 
+    <!-- SQL：updateStatusAndReasonByCurrentStatus，管理员状态迁移条件更新。 -->
+    <update id="updateStatusAndReasonByCurrentStatus">
+        UPDATE products
+        SET status = #{targetStatus},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 0
+          AND status = #{currentStatus}
+    </update>
+
+    <!-- SQL：updateStatusAndReasonByOwnerAndCurrentStatus，卖家状态迁移条件更新。 -->
+    <update id="updateStatusAndReasonByOwnerAndCurrentStatus">
+        UPDATE products
+        SET status = #{targetStatus},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+          AND is_deleted = 0
+          AND status = #{currentStatus}
+    </update>
+
+    <!-- SQL：updateForEditByOwnerAndCurrentStatus，编辑字段 + 回审状态原子更新。 -->
+    <update id="updateForEditByOwnerAndCurrentStatus">
+        UPDATE products
+        SET title = #{title},
+            description = #{description},
+            price = #{price},
+            <if test="images != null">images = #{images},</if>
+            status = #{targetStatus},
+            reason = #{reason},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+          AND is_deleted = 0
+          AND status = #{currentStatus}
+    </update>
+
     <!-- SQL：updateStatusAndReasonIfUnderReview，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateStatusAndReasonIfUnderReview">
         <include refid="bindProductStatus"/>

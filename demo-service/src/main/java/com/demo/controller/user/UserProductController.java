@@ -71,8 +71,11 @@ public class UserProductController {
     public Result<String> offShelf(@PathVariable("productId") Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
         userService.requireSeller(currentUserId);
-        productService.offShelfProductStatus(currentUserId, productId);
-        return Result.success("下架成功");
+        // 下架幂等语义：
+        // 1) 首次下架返回“下架成功”
+        // 2) 重复下架返回“商品已下架”
+        String message = productService.offShelfProductStatus(currentUserId, productId);
+        return Result.success(message);
     }
 
     /**

@@ -142,6 +142,54 @@ public class RabbitMqConfiguration {
     }
 
     /**
+     * Day16 - 商品审核结果通知队列。
+     */
+    @Bean
+    public Queue productReviewedNoticeQueue(
+            @Value("${demo.rabbitmq.queue.product-reviewed-notice}") String queueName,
+            @Value("${demo.rabbitmq.exchange.order-events}") String dlx,
+            @Value("${demo.rabbitmq.routing-key.dlq}") String dlqRoutingKey
+    ) {
+        log.info("Declaring RabbitMQ queue: {}", queueName);
+        return QueueBuilder.durable(queueName)
+                .withArgument(ARG_DLX, dlx)
+                .withArgument(ARG_DLX_RK, dlqRoutingKey)
+                .build();
+    }
+
+    /**
+     * Day16 - 商品强制下架通知队列。
+     */
+    @Bean
+    public Queue productForceOffShelfNoticeQueue(
+            @Value("${demo.rabbitmq.queue.product-force-off-shelf-notice}") String queueName,
+            @Value("${demo.rabbitmq.exchange.order-events}") String dlx,
+            @Value("${demo.rabbitmq.routing-key.dlq}") String dlqRoutingKey
+    ) {
+        log.info("Declaring RabbitMQ queue: {}", queueName);
+        return QueueBuilder.durable(queueName)
+                .withArgument(ARG_DLX, dlx)
+                .withArgument(ARG_DLX_RK, dlqRoutingKey)
+                .build();
+    }
+
+    /**
+     * Day16 - 举报处理结果通知队列。
+     */
+    @Bean
+    public Queue productReportResolvedNoticeQueue(
+            @Value("${demo.rabbitmq.queue.product-report-resolved-notice}") String queueName,
+            @Value("${demo.rabbitmq.exchange.order-events}") String dlx,
+            @Value("${demo.rabbitmq.routing-key.dlq}") String dlqRoutingKey
+    ) {
+        log.info("Declaring RabbitMQ queue: {}", queueName);
+        return QueueBuilder.durable(queueName)
+                .withArgument(ARG_DLX, dlx)
+                .withArgument(ARG_DLX_RK, dlqRoutingKey)
+                .build();
+    }
+
+    /**
      * 订单超时处理队列。
      */
     @Bean
@@ -214,6 +262,33 @@ public class RabbitMqConfiguration {
             @Value("${demo.rabbitmq.routing-key.order-status-changed}") String routingKey
     ) {
         return BindingBuilder.bind(orderStatusSyncQueue).to(orderEventsExchange).with(routingKey);
+    }
+
+    @Bean
+    public Binding bindProductReviewedNotice(
+            @Qualifier("productReviewedNoticeQueue") Queue productReviewedNoticeQueue,
+            TopicExchange orderEventsExchange,
+            @Value("${demo.rabbitmq.routing-key.product-reviewed}") String routingKey
+    ) {
+        return BindingBuilder.bind(productReviewedNoticeQueue).to(orderEventsExchange).with(routingKey);
+    }
+
+    @Bean
+    public Binding bindProductForceOffShelfNotice(
+            @Qualifier("productForceOffShelfNoticeQueue") Queue productForceOffShelfNoticeQueue,
+            TopicExchange orderEventsExchange,
+            @Value("${demo.rabbitmq.routing-key.product-force-off-shelf}") String routingKey
+    ) {
+        return BindingBuilder.bind(productForceOffShelfNoticeQueue).to(orderEventsExchange).with(routingKey);
+    }
+
+    @Bean
+    public Binding bindProductReportResolvedNotice(
+            @Qualifier("productReportResolvedNoticeQueue") Queue productReportResolvedNoticeQueue,
+            TopicExchange orderEventsExchange,
+            @Value("${demo.rabbitmq.routing-key.product-report-resolved}") String routingKey
+    ) {
+        return BindingBuilder.bind(productReportResolvedNoticeQueue).to(orderEventsExchange).with(routingKey);
     }
 
     @Bean

@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 
 /**
  * Day13 Step3 - 站内消息接口
@@ -82,6 +83,52 @@ public class MessageController {
         log.info("标记已读：orderId={}, userId={}", orderId, currentUserId);
 
         String msg = messageService.markAsRead(orderId, currentUserId);
+        return Result.success(msg);
+    }
+
+    /**
+     * Day16 Step6 - 拉取系统通知列表（分页）。
+     * GET /user/messages/system-notices?page=1&pageSize=20
+     *
+     * 说明：
+     * 1) 该接口只返回系统通知（orderId=0）；
+     * 2) 不走订单会话权限校验，按 toUserId=当前用户隔离数据。
+     */
+    @GetMapping("/system-notices")
+    public Result<PageResult<MessageDTO>> listSystemNotices(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        Long currentUserId = BaseContext.getCurrentId();
+        log.info("拉取系统通知：userId={}, page={}, pageSize={}", currentUserId, page, pageSize);
+
+        PageResult<MessageDTO> result = messageService.listSystemNotices(currentUserId, page, pageSize);
+        return Result.success(result);
+    }
+
+    /**
+     * Day16 Step6 - 查询系统通知详情。
+     * GET /user/messages/system-notices/{messageId}
+     */
+    @GetMapping("/system-notices/{messageId}")
+    public Result<MessageDTO> getSystemNoticeDetail(
+            @PathVariable @NotBlank(message = "消息 ID 不能为空") String messageId) {
+        Long currentUserId = BaseContext.getCurrentId();
+        log.info("查询系统通知详情：messageId={}, userId={}", messageId, currentUserId);
+
+        MessageDTO dto = messageService.getSystemNoticeDetail(messageId, currentUserId);
+        return Result.success(dto);
+    }
+
+    /**
+     * Day16 Step6 - 一键已读系统通知。
+     * PUT /user/messages/system-notices/read
+     */
+    @PutMapping("/system-notices/read")
+    public Result<String> markSystemNoticesAsRead() {
+        Long currentUserId = BaseContext.getCurrentId();
+        log.info("一键已读系统通知：userId={}", currentUserId);
+
+        String msg = messageService.markSystemNoticesAsRead(currentUserId);
         return Result.success(msg);
     }
 }

@@ -39,3 +39,7 @@ demo:
     delivery-tracker:
       enabled: false
       api-key:
+
+logging:
+  level:
+    com.demo.mapper: debug

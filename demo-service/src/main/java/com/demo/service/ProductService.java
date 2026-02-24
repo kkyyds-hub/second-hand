@@ -1,5 +1,6 @@
 package com.demo.service;
 
+import com.demo.dto.admin.ForceOffShelfRequest;
 import com.demo.dto.user.*;
 import com.demo.entity.Product;
 import com.demo.entity.ProductViolation;
@@ -22,8 +23,19 @@ public interface ProductService {
 
     /**
      * 审核通过或驳回商品。
+     * 返回值用于接口直接透传：
+     * - 首次处理：商品审核通过 / 商品审核驳回
+     * - 重复处理：已处理
      */
-    void approveProduct(Long productId, boolean isApproved, String reason);
+    String approveProduct(Long productId, boolean isApproved, String reason);
+
+    /**
+     * 管理员强制下架商品。
+     * 返回值用于接口直接透传：
+     * - 首次强制下架：强制下架成功
+     * - 重复下架幂等：商品已下架
+     */
+    String forceOffShelfProduct(Long operatorId, Long productId, ForceOffShelfRequest request);
 
     /**
      * 查询商品违规记录。
@@ -57,8 +69,11 @@ public interface ProductService {
 
     /**
      * 下架当前用户商品。
+     * 返回值用于接口直接透传：
+     * - 首次下架：下架成功
+     * - 重复下架：商品已下架
      */
-    void offShelfProductStatus(Long currentUserId, Long productId);
+    String offShelfProductStatus(Long currentUserId, Long productId);
 
     /**
      * 卖家创建商品。

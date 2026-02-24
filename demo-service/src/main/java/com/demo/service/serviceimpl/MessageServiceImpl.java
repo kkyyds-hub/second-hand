@@ -18,6 +18,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -36,6 +37,17 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class MessageServiceImpl implements MessageService {
+
+    /**
+     * Day16 系统通知固定会话槽位（非订单会话）。
+     */
+    private static final Long SYSTEM_NOTICE_ORDER_ID = 0L;
+
+    /**
+     * Day16 系统通知固定发送人。
+     * 仅用于查询条件收敛，避免把用户伪造的 orderId=0 消息混入系统通知列表。
+     */
+    private static final Long SYSTEM_NOTICE_FROM_USER_ID = 0L;
 
     @Autowired
     private MessageRepository messageRepository;
@@ -191,6 +203,101 @@ public class MessageServiceImpl implements MessageService {
 
         log.info("标记订单会话已读: orderId={}, userId={}, count={}", orderId, currentUserId, count);
         return "已标记" + count + "条消息为已读";
+    }
+
+    /**
+     * Day16 Step6 - 分页查询系统通知。
+     *
+     * 核心逻辑：
+     * 1) 不查订单表，不走“买卖家归属”模型；
+     * 2) 按 orderId=0 + fromUserId=0 + toUserId=currentUserId 收敛查询范围；
+     * 3) 按 createTime 倒序返回，保证用户先看到最新系统通知。
+     */
+    @Override
+    public PageResult<MessageDTO> listSystemNotices(Long currentUserId, Integer page, Integer pageSize) {
+        validateCurrentUser(currentUserId);
+        int safePage = (page == null || page < 1) ? 1 : page;
+        int safePageSize = (pageSize == null || pageSize < 1) ? 20 : pageSize;
+
+        Query query = new Query();
+        query.addCriteria(buildSystemNoticeCriteria(currentUserId));
+
+        Pageable pageable = PageRequest.of(safePage - 1, safePageSize, Sort.by(Sort.Direction.DESC, "createTime"));
+        query.with(pageable);
+
+        List<MessageDTO> dtoList = mongoTemplate.find(query, Message.class).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        Query countQuery = new Query();
+        countQuery.addCriteria(buildSystemNoticeCriteria(currentUserId));
+        long total = mongoTemplate.count(countQuery, Message.class);
+
+        return new PageResult<>(dtoList, total, safePage, safePageSize);
+    }
+
+    /**
+     * Day16 Step6 - 查询系统通知详情。
+     *
+     * 权限模型：
+     * - 仅允许读取发送给当前用户的系统通知；
+     * - 若 messageId 不存在或不属于当前用户，统一返回“系统通知不存在”。
+     */
+    @Override
+    public MessageDTO getSystemNoticeDetail(String messageId, Long currentUserId) {
+        validateCurrentUser(currentUserId);
+        if (messageId == null || messageId.trim().isEmpty()) {
+            throw new BusinessException("messageId 不能为空");
+        }
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(messageId.trim()));
+        query.addCriteria(buildSystemNoticeCriteria(currentUserId));
+
+        Message message = mongoTemplate.findOne(query, Message.class);
+        if (message == null) {
+            throw new BusinessException("系统通知不存在");
+        }
+        return convertToDTO(message);
+    }
+
+    /**
+     * Day16 Step6 - 批量标记系统通知为已读。
+     * 仅操作当前用户的系统通知槽位消息，不影响订单会话消息。
+     */
+    @Override
+    public String markSystemNoticesAsRead(Long currentUserId) {
+        validateCurrentUser(currentUserId);
+        Query query = new Query();
+        query.addCriteria(
+                buildSystemNoticeCriteria(currentUserId)
+                        .and("read").is(false)
+        );
+
+        Update update = new Update().set("read", true);
+        long count = mongoTemplate.updateMulti(query, update, Message.class).getModifiedCount();
+
+        log.info("标记系统通知已读: userId={}, count={}", currentUserId, count);
+        return "已标记" + count + "条系统通知为已读";
+    }
+
+    /**
+     * 系统通知基础条件。
+     * 统一约束三元组：orderId=0 + fromUserId=0 + toUserId=currentUserId。
+     */
+    private Criteria buildSystemNoticeCriteria(Long currentUserId) {
+        return Criteria.where("orderId").is(SYSTEM_NOTICE_ORDER_ID)
+                .and("fromUserId").is(SYSTEM_NOTICE_FROM_USER_ID)
+                .and("toUserId").is(currentUserId);
+    }
+
+    /**
+     * 统一登录态保护，避免空用户造成越权查询。
+     */
+    private void validateCurrentUser(Long currentUserId) {
+        if (currentUserId == null) {
+            throw new BusinessException(MessageConstant.USER_NOT_LOGIN);
+        }
     }
 
     /**
