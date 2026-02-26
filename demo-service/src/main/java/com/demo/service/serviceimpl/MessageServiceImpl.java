@@ -10,6 +10,7 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.repository.MessageRepository;
 import com.demo.result.PageResult;
+import com.demo.security.InputSecurityGuard;
 import com.demo.service.MessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -64,6 +65,11 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public MessageDTO sendMessage(Long orderId, Long currentUserId, SendMessageRequest request) {
+        // Day18 P3-S2：站内信文本会直接展示给对端用户，必须先做输入安全守卫。
+        // safeClientMsgId 也做统一规范化，避免脏值影响幂等查询条件。
+        String safeClientMsgId = InputSecurityGuard.normalizePlainText(request.getClientMsgId(), "客户端消息ID", 64, true);
+        String safeContent = InputSecurityGuard.normalizePlainText(request.getContent(), "消息内容", 500, true);
+
         // 1. 订单必须存在
         Order order = orderMapper.selectOrderBasicById(orderId);
         if (order == null) {
@@ -107,8 +113,8 @@ public class MessageServiceImpl implements MessageService {
         message.setOrderId(orderId);
         message.setFromUserId(currentUserId);
         message.setToUserId(request.getToUserId());
-        message.setContent(request.getContent());
-        message.setClientMsgId(request.getClientMsgId());
+        message.setContent(safeContent);
+        message.setClientMsgId(safeClientMsgId);
         message.setRead(false);
         message.setCreateTime(LocalDateTime.now());
 
@@ -117,12 +123,12 @@ public class MessageServiceImpl implements MessageService {
             messageRepository.save(message);
         } catch (DuplicateKeyException e) {
             log.info("幂等命中：action=sendMessage, idemKey=clientMsgId:{}, detail=orderId={},fromUserId={}",
-                    request.getClientMsgId(), orderId, currentUserId);
+                    safeClientMsgId, orderId, currentUserId);
             Query query = new Query();
             query.addCriteria(
                     Criteria.where("orderId").is(orderId)
                             .and("fromUserId").is(currentUserId)
-                            .and("clientMsgId").is(request.getClientMsgId())
+                            .and("clientMsgId").is(safeClientMsgId)
             );
             Message existing = mongoTemplate.findOne(query, Message.class);
             if (existing != null) {

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Day18 Regression v2 (Local)" tests="45" time="1.826">
+  <testsuite name="01-Auth / Buyer Login" id="c9b879ff-4e67-41e7-8ff9-5d69f1b019ee" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.355">
+    <testcase name="HTTP 200" time="0.355" classname="01AuthBuyerLogin"/>
+    <testcase name="code == 1" time="0.355" classname="01AuthBuyerLogin"/>
+    <testcase name="buyer token exists" time="0.355" classname="01AuthBuyerLogin"/>
+  </testsuite>
+  <testsuite name="01-Auth / Seller Login" id="921d6c15-4977-4150-a6e0-f07b34439511" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.093">
+    <testcase name="HTTP 200" time="0.093" classname="01AuthSellerLogin"/>
+    <testcase name="code == 1" time="0.093" classname="01AuthSellerLogin"/>
+    <testcase name="seller token exists" time="0.093" classname="01AuthSellerLogin"/>
+  </testsuite>
+  <testsuite name="01-Auth / Admin Login" id="5f4d0e98-956f-44cf-a74b-d3e24c7957a0" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.092">
+    <testcase name="HTTP 200" time="0.092" classname="01AuthAdminLogin"/>
+    <testcase name="code == 1" time="0.092" classname="01AuthAdminLogin"/>
+    <testcase name="admin token exists" time="0.092" classname="01AuthAdminLogin"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Seller] Create Product D" id="3843f9fa-58e8-4054-82ce-44729fc60e15" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.196">
+    <testcase name="HTTP 200" time="0.196" classname="02Day17SetupSellerCreateProductD"/>
+    <testcase name="code == 1" time="0.196" classname="02Day17SetupSellerCreateProductD"/>
+    <testcase name="create D has productId" time="0.196" classname="02Day17SetupSellerCreateProductD"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Seller] Create Product E" id="604b52ff-1e1e-4ee0-b669-bce1fdad43f4" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.019">
+    <testcase name="HTTP 200" time="0.019" classname="02Day17SetupSellerCreateProductE"/>
+    <testcase name="code == 1" time="0.019" classname="02Day17SetupSellerCreateProductE"/>
+    <testcase name="create E has productId" time="0.019" classname="02Day17SetupSellerCreateProductE"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Admin] Approve Product D" id="bbcf7758-1a5c-4905-a1f0-51c758ed588e" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.062">
+    <testcase name="HTTP 200" time="0.062" classname="02Day17SetupAdminApproveProductD"/>
+    <testcase name="code == 1" time="0.062" classname="02Day17SetupAdminApproveProductD"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Seller] Create Product F (For Favorite)" id="fe9eff6f-f518-4545-b661-e8ee28b301e7" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.019">
+    <testcase name="HTTP 200" time="0.019" classname="02Day17SetupSellerCreateProductFForFavorite"/>
+    <testcase name="code == 1" time="0.019" classname="02Day17SetupSellerCreateProductFForFavorite"/>
+    <testcase name="create F has productId" time="0.019" classname="02Day17SetupSellerCreateProductFForFavorite"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Admin] Approve Product E" id="abf5c867-d06b-473e-ac5b-afe96e09d409" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.014">
+    <testcase name="HTTP 200" time="0.014" classname="02Day17SetupAdminApproveProductE"/>
+    <testcase name="code == 1" time="0.014" classname="02Day17SetupAdminApproveProductE"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Admin] Approve Product F" id="c10229c9-9b57-4ea5-8d96-a16495482eed" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.019">
+    <testcase name="HTTP 200" time="0.019" classname="02Day17SetupAdminApproveProductF"/>
+    <testcase name="code == 1" time="0.019" classname="02Day17SetupAdminApproveProductF"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Buyer] Create Order D" id="153e8947-0f75-49cb-9cfa-323e1815b53d" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.088">
+    <testcase name="HTTP 200" time="0.088" classname="02Day17SetupBuyerCreateOrderD"/>
+    <testcase name="code == 1" time="0.088" classname="02Day17SetupBuyerCreateOrderD"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Buyer] Pay Order D" id="10975767-c6a5-4514-9eb9-220ec47ba3c2" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.020">
+    <testcase name="HTTP 200" time="0.020" classname="02Day17SetupBuyerPayOrderD"/>
+    <testcase name="code == 1" time="0.020" classname="02Day17SetupBuyerPayOrderD"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Buyer] Pay Order D Repeat Idempotent" id="b310a34c-8cea-416c-808e-0807adedd70b" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.021">
+    <testcase name="HTTP 200" time="0.021" classname="02Day17SetupBuyerPayOrderDRepeatIdempotent"/>
+    <testcase name="code == 1" time="0.021" classname="02Day17SetupBuyerPayOrderDRepeatIdempotent"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Buyer] Create Order E" id="b543b899-36da-44b1-b1ba-86620cfd8f4d" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.028">
+    <testcase name="HTTP 200" time="0.028" classname="02Day17SetupBuyerCreateOrderE"/>
+    <testcase name="code == 1" time="0.028" classname="02Day17SetupBuyerCreateOrderE"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Public] Payment Callback E First" id="6b90333a-7edc-4dfa-881b-dd802b551f51" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.027">
+    <testcase name="HTTP 200" time="0.027" classname="02Day17SetupPublicPaymentCallbackEFirst"/>
+    <testcase name="code == 1" time="0.027" classname="02Day17SetupPublicPaymentCallbackEFirst"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Public] Payment Callback E Repeat Idempotent" id="23aadcac-bbac-4922-9659-53335062f9e6" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="HTTP 200" time="0.010" classname="02Day17SetupPublicPaymentCallbackERepeatIdempotent"/>
+    <testcase name="code == 1" time="0.010" classname="02Day17SetupPublicPaymentCallbackERepeatIdempotent"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Seller] Ship Order D" id="e228e32f-2cb8-432f-9c4e-d278e9a118bf" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.029">
+    <testcase name="HTTP 200" time="0.029" classname="02Day17SetupSellerShipOrderD"/>
+    <testcase name="code == 1" time="0.029" classname="02Day17SetupSellerShipOrderD"/>
+  </testsuite>
+  <testsuite name="02-Day17-Setup / [Buyer] Confirm Receipt D" id="43597360-ef82-48a7-87c2-fa52c460de3d" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.049">
+    <testcase name="HTTP 200" time="0.049" classname="02Day17SetupBuyerConfirmReceiptD"/>
+    <testcase name="code == 1" time="0.049" classname="02Day17SetupBuyerConfirmReceiptD"/>
+  </testsuite>
+  <testsuite name="03-Day17-MP-CRUD / [Buyer] Favorite Product F" id="bb5d42b1-c706-4d59-b5bf-89910aadc3e3" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.051">
+    <testcase name="HTTP 200" time="0.051" classname="03Day17MpCrudBuyerFavoriteProductF"/>
+    <testcase name="code == 1" time="0.051" classname="03Day17MpCrudBuyerFavoriteProductF"/>
+  </testsuite>
+  <testsuite name="03-Day17-MP-CRUD / [Buyer] Favorites Page" id="5558b9f0-87b4-4e69-9bd8-cd3d4d4d2a46" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.098">
+    <testcase name="HTTP 200" time="0.098" classname="03Day17MpCrudBuyerFavoritesPage"/>
+    <testcase name="code == 1" time="0.098" classname="03Day17MpCrudBuyerFavoritesPage"/>
+    <testcase name="favorites records array" time="0.098" classname="03Day17MpCrudBuyerFavoritesPage"/>
+  </testsuite>
+  <testsuite name="03-Day17-MP-CRUD / [Buyer] Create Review For Order D" id="b1b60a14-f4d2-464a-9f5b-2362a20f1dd9" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.069">
+    <testcase name="HTTP 200" time="0.069" classname="03Day17MpCrudBuyerCreateReviewForOrderD"/>
+    <testcase name="code == 1" time="0.069" classname="03Day17MpCrudBuyerCreateReviewForOrderD"/>
+  </testsuite>
+  <testsuite name="03-Day17-MP-CRUD / [Buyer] List My Reviews" id="f2cee88d-10f9-4e7d-a823-abd1b4c7556a" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.019">
+    <testcase name="HTTP 200" time="0.019" classname="03Day17MpCrudBuyerListMyReviews"/>
+    <testcase name="code == 1" time="0.019" classname="03Day17MpCrudBuyerListMyReviews"/>
+  </testsuite>
+  <testsuite name="03-Day17-MP-CRUD / [Buyer] List Product Reviews D" id="5bb3c99f-a57a-45de-9f17-84fbff14c2cf" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.026">
+    <testcase name="HTTP 200" time="0.026" classname="03Day17MpCrudBuyerListProductReviewsD"/>
+    <testcase name="code == 1" time="0.026" classname="03Day17MpCrudBuyerListProductReviewsD"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Buyer] Addresses Page" id="5427885e-5885-414d-9935-a0daaac16346" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.020">
+    <testcase name="HTTP 200" time="0.020" classname="04Day17PaginationAndMixedBuyerAddressesPage"/>
+    <testcase name="code == 1" time="0.020" classname="04Day17PaginationAndMixedBuyerAddressesPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Buyer] Credit Logs Page" id="d8a6396d-05ab-47e2-8c4c-fbf35ff53947" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.028">
+    <testcase name="HTTP 200" time="0.028" classname="04Day17PaginationAndMixedBuyerCreditLogsPage"/>
+    <testcase name="code == 1" time="0.028" classname="04Day17PaginationAndMixedBuyerCreditLogsPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Admin] Credit Logs Page" id="badd5e3e-c337-41fa-9c32-d116cca68dc0" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.008">
+    <testcase name="HTTP 200" time="0.008" classname="04Day17PaginationAndMixedAdminCreditLogsPage"/>
+    <testcase name="code == 1" time="0.008" classname="04Day17PaginationAndMixedAdminCreditLogsPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Admin] Product Violations Page" id="e11ae69d-ba5b-43a5-8750-c2b1c896f7c0" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="HTTP 200" time="0.009" classname="04Day17PaginationAndMixedAdminProductViolationsPage"/>
+    <testcase name="code == 1" time="0.009" classname="04Day17PaginationAndMixedAdminProductViolationsPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Admin] Ship Timeout Tasks Page" id="084315be-0343-45bb-b059-1fefaa4480c6" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.023">
+    <testcase name="HTTP 200" time="0.023" classname="04Day17PaginationAndMixedAdminShipTimeoutTasksPage"/>
+    <testcase name="code == 1" time="0.023" classname="04Day17PaginationAndMixedAdminShipTimeoutTasksPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Admin] Refund Tasks Page" id="8683e4d1-b9c9-4ba0-b2fd-e16dcb0d6550" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="HTTP 200" time="0.010" classname="04Day17PaginationAndMixedAdminRefundTasksPage"/>
+    <testcase name="code == 1" time="0.010" classname="04Day17PaginationAndMixedAdminRefundTasksPage"/>
+  </testsuite>
+  <testsuite name="04-Day17-Pagination-And-Mixed / [Admin] Ship Reminder Tasks Page" id="0f08ec89-18a4-40b0-9f43-8a76d80a64f7" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.014">
+    <testcase name="HTTP 200" time="0.014" classname="04Day17PaginationAndMixedAdminShipReminderTasksPage"/>
+    <testcase name="code == 1" time="0.014" classname="04Day17PaginationAndMixedAdminShipReminderTasksPage"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Buyer] Send Order Message First" id="18dde84a-647b-4ff5-8f03-30db74d15731" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.027">
+    <testcase name="HTTP 200" time="0.027" classname="05Day17IdempotencyAndAsyncBuyerSendOrderMessageFirst"/>
+    <testcase name="code == 1" time="0.027" classname="05Day17IdempotencyAndAsyncBuyerSendOrderMessageFirst"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Buyer] Send Order Message Repeat Idempotent" id="0c9ec63e-3f12-45e1-ab92-079844488bf4" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.094">
+    <testcase name="HTTP 200" time="0.094" classname="05Day17IdempotencyAndAsyncBuyerSendOrderMessageRepeatIdempotent"/>
+    <testcase name="code == 1" time="0.094" classname="05Day17IdempotencyAndAsyncBuyerSendOrderMessageRepeatIdempotent"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Outbox Metrics" id="0c4d56b8-d29f-44d9-bbde-9597a69ab21b" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.014">
+    <testcase name="HTTP 200" time="0.014" classname="05Day17IdempotencyAndAsyncAdminOutboxMetrics"/>
+    <testcase name="code == 1" time="0.014" classname="05Day17IdempotencyAndAsyncAdminOutboxMetrics"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Outbox Publish Once" id="da55cf21-d21c-42ca-b8f2-5cdfd142146a" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.036">
+    <testcase name="HTTP 200" time="0.036" classname="05Day17IdempotencyAndAsyncAdminOutboxPublishOnce"/>
+    <testcase name="code == 1" time="0.036" classname="05Day17IdempotencyAndAsyncAdminOutboxPublishOnce"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Run Ship Timeout Once" id="e53a70a0-0c25-4adf-a93e-2b05b8831572" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.025">
+    <testcase name="HTTP 200" time="0.025" classname="05Day17IdempotencyAndAsyncAdminRunShipTimeoutOnce"/>
+    <testcase name="code == 1" time="0.025" classname="05Day17IdempotencyAndAsyncAdminRunShipTimeoutOnce"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Run Ship Timeout Once Repeat" id="3f70c255-0587-4d5e-8aa4-4ebf8b2983fa" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.008">
+    <testcase name="HTTP 200" time="0.008" classname="05Day17IdempotencyAndAsyncAdminRunShipTimeoutOnceRepeat"/>
+    <testcase name="code == 1" time="0.008" classname="05Day17IdempotencyAndAsyncAdminRunShipTimeoutOnceRepeat"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Run Refund Once" id="844ed89d-f82c-4ba4-973f-4af7c3a2e41b" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.007">
+    <testcase name="HTTP 200" time="0.007" classname="05Day17IdempotencyAndAsyncAdminRunRefundOnce"/>
+    <testcase name="code == 1" time="0.007" classname="05Day17IdempotencyAndAsyncAdminRunRefundOnce"/>
+  </testsuite>
+  <testsuite name="05-Day17-Idempotency-And-Async / [Admin] Run Ship Reminder Once" id="88c18df2-6402-4a6f-b2ea-18486cdd061d" timestamp="2026-02-26T02:23:58.796Z" tests="2" failures="0" errors="0" time="0.011">
+    <testcase name="HTTP 200" time="0.011" classname="05Day17IdempotencyAndAsyncAdminRunShipReminderOnce"/>
+    <testcase name="code == 1" time="0.011" classname="05Day17IdempotencyAndAsyncAdminRunShipReminderOnce"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Outbox Trigger Missing Event" id="f59dbc75-feb7-44d6-b4cc-39247801ca87" timestamp="2026-02-26T02:23:58.796Z" tests="4" failures="0" errors="0" time="0.010">
+    <testcase name="HTTP 200" time="0.010" classname="06Day18ConsistencyAndSafetyAdminOutboxTriggerMissingEvent"/>
+    <testcase name="code == 1" time="0.010" classname="06Day18ConsistencyAndSafetyAdminOutboxTriggerMissingEvent"/>
+    <testcase name="updatedRows == 0 for missing event" time="0.010" classname="06Day18ConsistencyAndSafetyAdminOutboxTriggerMissingEvent"/>
+    <testcase name="success == false for missing event" time="0.010" classname="06Day18ConsistencyAndSafetyAdminOutboxTriggerMissingEvent"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Outbox Metrics After Trigger" id="ea8cf74e-89d2-4f83-9681-d348d117eeef" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="HTTP 200" time="0.007" classname="06Day18ConsistencyAndSafetyAdminOutboxMetricsAfterTrigger"/>
+    <testcase name="code == 1" time="0.007" classname="06Day18ConsistencyAndSafetyAdminOutboxMetricsAfterTrigger"/>
+    <testcase name="metrics fields exist" time="0.007" classname="06Day18ConsistencyAndSafetyAdminOutboxMetricsAfterTrigger"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Flag Order D First" id="d2292f47-8b06-4bdf-addc-5e472867e96a" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.018">
+    <testcase name="HTTP 200" time="0.018" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDFirst"/>
+    <testcase name="code == 1" time="0.018" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDFirst"/>
+    <testcase name="flag result message stable" time="0.018" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDFirst"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Flag Order D Repeat Idempotent" id="72302760-c770-4028-9818-50cda10bb83b" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.008">
+    <testcase name="HTTP 200" time="0.008" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDRepeatIdempotent"/>
+    <testcase name="code == 1" time="0.008" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDRepeatIdempotent"/>
+    <testcase name="repeat flag hit idempotent branch" time="0.008" classname="06Day18ConsistencyAndSafetyAdminFlagOrderDRepeatIdempotent"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Ban Buyer" id="9b5c641f-189d-4a61-9c2c-21babc55a9b8" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.018">
+    <testcase name="HTTP 200" time="0.018" classname="06Day18ConsistencyAndSafetyAdminBanBuyer"/>
+    <testcase name="code == 1" time="0.018" classname="06Day18ConsistencyAndSafetyAdminBanBuyer"/>
+    <testcase name="ban message stable" time="0.018" classname="06Day18ConsistencyAndSafetyAdminBanBuyer"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Ban Buyer Repeat Idempotent" id="0979fe20-78c5-4e09-8c12-a3f2479c9f1b" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="HTTP 200" time="0.007" classname="06Day18ConsistencyAndSafetyAdminBanBuyerRepeatIdempotent"/>
+    <testcase name="code == 1" time="0.007" classname="06Day18ConsistencyAndSafetyAdminBanBuyerRepeatIdempotent"/>
+    <testcase name="repeat ban idempotent" time="0.007" classname="06Day18ConsistencyAndSafetyAdminBanBuyerRepeatIdempotent"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Unban Buyer" id="2770c75a-dd5f-4cd2-b723-043c6372b3cf" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.013">
+    <testcase name="HTTP 200" time="0.013" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyer"/>
+    <testcase name="code == 1" time="0.013" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyer"/>
+    <testcase name="unban message stable" time="0.013" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyer"/>
+  </testsuite>
+  <testsuite name="06-Day18-Consistency-And-Safety / [Admin] Unban Buyer Repeat Idempotent" id="2bf9bae3-8464-48a2-84d2-024dd8918d07" timestamp="2026-02-26T02:23:58.796Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="HTTP 200" time="0.007" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyerRepeatIdempotent"/>
+    <testcase name="code == 1" time="0.007" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyerRepeatIdempotent"/>
+    <testcase name="repeat unban idempotent" time="0.007" classname="06Day18ConsistencyAndSafetyAdminUnbanBuyerRepeatIdempotent"/>
+  </testsuite>
+</testsuites>

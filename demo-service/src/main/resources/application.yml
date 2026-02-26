@@ -59,10 +59,10 @@ logging:
 # 应用自定义配置
 demo:
   jwt:
-    admin-secret-key: second hand
+    admin-secret-key: ${DEMO_JWT_ADMIN_SECRET:dev-admin-secret-change-me}
     admin-token-name: token
     admin-ttl: 7200000
-    user-secret-key: second  hand
+    user-secret-key: ${DEMO_JWT_USER_SECRET:dev-user-secret-change-me}
     user-token-name: authentication
     user-ttl: 7200000
 

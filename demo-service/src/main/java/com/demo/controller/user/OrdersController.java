@@ -118,7 +118,7 @@ public class OrdersController {
     @PostMapping
     public Result<CreateOrderResponse> createOrder(@Validated @RequestBody CreateOrderRequest request) {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("创建订单: userId={}, request={}", currentUserId, request);
+        log.info("创建订单: userId={}, productId={}", currentUserId, request.getProductId());
         CreateOrderResponse response = orderService.createOrder(request, currentUserId);
         return Result.success(response);
     }

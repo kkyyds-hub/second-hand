@@ -1,0 +1,233 @@
+﻿{
+    "executedAt":  "2026-02-25 15:24:20",
+    "scenarioA_userLogin":  {
+                                "success":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  {
+                                                             "code":  1,
+                                                             "msg":  "success",
+                                                             "data":  {
+                                                                          "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMTE0NjAsInVzZXJJZCI6MX0.ArTZg2wVNneA_xoGI8ToqfOmqzBwmBKCNR-TrbferO4",
+                                                                          "user":  {
+                                                                                       "id":  1,
+                                                                                       "username":  "buyer01",
+                                                                                       "mobile":  "13800000001",
+                                                                                       "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                                       "nickname":  "æµè¯ä¹°å®¶01",
+                                                                                       "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                                       "email":  "buyer01@test.com",
+                                                                                       "registerTime":  null,
+                                                                                       "lastLoginIp":  null,
+                                                                                       "creditScore":  39,
+                                                                                       "productCount":  null,
+                                                                                       "status":  "active",
+                                                                                       "region":  null
+                                                                                   }
+                                                                      }
+                                                         }
+                                            },
+                                "failed":  {
+                                               "ok":  true,
+                                               "statusCode":  200,
+                                               "body":  {
+                                                            "code":  0,
+                                                            "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                            "data":  null
+                                                        }
+                                           }
+                            },
+    "scenarioB_adminLogin":  {
+                                 "success":  {
+                                                 "ok":  true,
+                                                 "statusCode":  200,
+                                                 "body":  {
+                                                              "code":  1,
+                                                              "msg":  "success",
+                                                              "data":  {
+                                                                           "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDExNDYwfQ.5KDIl6E46PmZv2E_BPE_OjON8UcDred1p-N_VGB2oJ4",
+                                                                           "user":  {
+                                                                                        "id":  5,
+                                                                                        "username":  "admin",
+                                                                                        "mobile":  "13900000001",
+                                                                                        "avatar":  null,
+                                                                                        "nickname":  "ç®¡çå",
+                                                                                        "bio":  "Day3 åå½ admin å«å",
+                                                                                        "email":  "admin@test.com",
+                                                                                        "registerTime":  null,
+                                                                                        "lastLoginIp":  null,
+                                                                                        "creditScore":  100,
+                                                                                        "productCount":  null,
+                                                                                        "status":  "active",
+                                                                                        "region":  null
+                                                                                    }
+                                                                       }
+                                                          }
+                                             },
+                                 "failed":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  {
+                                                             "code":  0,
+                                                             "msg":  "è´¦å·æå¯ç éè¯¯",
+                                                             "data":  null
+                                                         }
+                                            }
+                             },
+    "scenarioC_order":  {
+                            "market":  {
+                                           "ok":  true,
+                                           "statusCode":  200,
+                                           "body":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  {
+                                                                     "total":  2,
+                                                                     "page":  1,
+                                                                     "list":  [
+                                                                                  {
+                                                                                      "productId":  920017,
+                                                                                      "title":  "P2S3-115328",
+                                                                                      "price":  199.00,
+                                                                                      "category":  "P2S3",
+                                                                                      "thumbnail":  "https://img.example.com/p2s3.jpg",
+                                                                                      "ownerId":  2,
+                                                                                      "createTime":  "2026-02-25 11:53"
+                                                                                  },
+                                                                                  {
+                                                                                      "productId":  48,
+                                                                                      "title":  "DAY11-REG-ONSALE-48",
+                                                                                      "price":  19.90,
+                                                                                      "category":  "åå½æµè¯",
+                                                                                      "thumbnail":  null,
+                                                                                      "ownerId":  2,
+                                                                                      "createTime":  "2026-01-14 23:16"
+                                                                                  }
+                                                                              ],
+                                                                     "pageSize":  20
+                                                                 }
+                                                    }
+                                       },
+                            "productId":  920017,
+                            "createOrder":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  {
+                                                             "code":  1,
+                                                             "msg":  "success",
+                                                             "data":  {
+                                                                          "orderId":  900045,
+                                                                          "orderNo":  "2026022515242112497",
+                                                                          "status":  "pending",
+                                                                          "totalAmount":  199.00,
+                                                                          "createTime":  "2026-02-25 15:24"
+                                                                      }
+                                                         }
+                                            },
+                            "orderId":  900045,
+                            "orderNo":  "2026022515242112497",
+                            "totalAmount":  199.00,
+                            "payFirst":  {
+                                             "ok":  true,
+                                             "statusCode":  200,
+                                             "body":  {
+                                                          "code":  1,
+                                                          "msg":  "success",
+                                                          "data":  "æ¯ä»æå"
+                                                      }
+                                         },
+                            "payRepeat":  {
+                                              "ok":  true,
+                                              "statusCode":  200,
+                                              "body":  {
+                                                           "code":  1,
+                                                           "msg":  "success",
+                                                           "data":  "è®¢åå·²æ¯ä»ï¼æ ééå¤æä½"
+                                                       }
+                                          },
+                            "cancelAfterPaid":  {
+                                                    "ok":  true,
+                                                    "statusCode":  200,
+                                                    "body":  {
+                                                                 "code":  0,
+                                                                 "msg":  "è®¢åå·²æ¯ä»ï¼å½åä¸å\u0085è®¸åæ¶ï¼åç»­èµ°éæ¬¾/å®åï¼",
+                                                                 "data":  null
+                                                             }
+                                                }
+                        },
+    "scenarioD_paymentCallback":  {
+                                      "ignored":  {
+                                                      "ok":  true,
+                                                      "statusCode":  200,
+                                                      "body":  {
+                                                                   "code":  1,
+                                                                   "msg":  "success",
+                                                                   "data":  "åè°ç¶æéæåï¼ä¸åå¤ç"
+                                                               }
+                                                  },
+                                      "timestampExpired":  {
+                                                               "ok":  true,
+                                                               "statusCode":  200,
+                                                               "body":  {
+                                                                            "code":  0,
+                                                                            "msg":  "åè°æ¶é´æ³è¶\u0085æ¶ï¼è¶\u0085è¿5åéï¼",
+                                                                            "data":  null
+                                                                        }
+                                                           },
+                                      "repeatIdempotent":  {
+                                                               "ok":  true,
+                                                               "statusCode":  200,
+                                                               "body":  {
+                                                                            "code":  1,
+                                                                            "msg":  "success",
+                                                                            "data":  "è®¢åå·²æ¯ä»ï¼åè°å¹ç­æå!"
+                                                                        }
+                                                           }
+                                  },
+    "scenarioE_banUnban":  {
+                               "targetUserId":  2,
+                               "banFirst":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  {
+                                                             "code":  1,
+                                                             "msg":  "success",
+                                                             "data":  "ç¨æ·å°ç¦æå"
+                                                         }
+                                            },
+                               "banRepeat":  {
+                                                 "ok":  true,
+                                                 "statusCode":  200,
+                                                 "body":  {
+                                                              "code":  1,
+                                                              "msg":  "success",
+                                                              "data":  "ç¨æ·å·²å¤äºå°ç¦ç¶æ"
+                                                          }
+                                             },
+                               "unbanFirst":  {
+                                                  "ok":  true,
+                                                  "statusCode":  200,
+                                                  "body":  {
+                                                               "code":  1,
+                                                               "msg":  "success",
+                                                               "data":  "ç¨æ·è§£å°æå"
+                                                           }
+                                              },
+                               "unbanRepeat":  {
+                                                   "ok":  true,
+                                                   "statusCode":  200,
+                                                   "body":  {
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ"
+                                                            }
+                                               }
+                           },
+    "logProbe":  {
+                     "candidateCount":  0,
+                     "auditHits":  [
+
+                                   ],
+                     "note":  "未在仓库目录检出可读取的 AUDIT 日志文件（服务日志可能仅输出在 IDEA Run 控制台）"
+                 }
+}

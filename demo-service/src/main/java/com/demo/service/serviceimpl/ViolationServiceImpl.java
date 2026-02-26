@@ -1,5 +1,6 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.audit.AuditLogUtil;
 import com.demo.constant.CreditConstants;
 import com.demo.constant.MessageConstant;
 import com.demo.context.BaseContext;
@@ -14,6 +15,7 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.mapper.ViolationMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.service.CreditService;
 import com.demo.service.ViolationService;
 import com.github.pagehelper.PageHelper;
@@ -54,20 +56,42 @@ public class ViolationServiceImpl implements ViolationService {
      */
     @Override
     public void unbanUser(Long userId) {
+        String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
-        if (!"banned".equalsIgnoreCase(user.getStatus())) throw new BusinessException("用户未处于封禁状态");
+        if (user == null) {
+            AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user not found");
+            throw new BusinessException("用户不存在");
+        }
+        if (!"banned".equalsIgnoreCase(user.getStatus())) {
+            AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "STATUS_NOT_BANNED", "status=" + user.getStatus());
+            throw new BusinessException("用户未处于封禁状态");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 1) 关闭有效封禁记录
-        userBanMapper.closeActiveBans(userId, now);
+        // 1) 恢复状态（CAS：banned -> active）
+        int rows = userMapper.updateStatusByExpected(userId, "banned", "active");
+        if (rows == 0) {
+            User latest = userMapper.selectById(userId);
+            if (latest == null) {
+                AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
+                throw new BusinessException("用户不存在");
+            }
+            if ("active".equalsIgnoreCase(latest.getStatus())) {
+                log.info("幂等命中：action=unbanUser, idemKey=userId:{}, detail=latestStatus=active", userId);
+                AuditLogUtil.success(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "latest status active");
+                return;
+            }
+            AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "CAS_CONFLICT", "latest status=" + latest.getStatus());
+            throw new BusinessException("用户状态已变化，请刷新后重试");
+        }
 
-        // 2) 恢复状态
-        userMapper.updateStatus(userId, "active");
+        // 2) 关闭有效封禁记录
+        userBanMapper.closeActiveBans(userId, now);
 
         // 3) 重算（会把 BAN_ACTIVE 影响移除）
         creditService.recalcUserCredit(userId, CreditReasonType.RECALC, null);
+        AuditLogUtil.success(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to active");
     }
 
     /**
@@ -93,13 +117,37 @@ public class ViolationServiceImpl implements ViolationService {
      */
     @Override
     public void banUser(Long userId, String reason) {
+        String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
-        if ("banned".equalsIgnoreCase(user.getStatus())) throw new BusinessException("用户已处于封禁状态");
+        if (user == null) {
+            AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user not found");
+            throw new BusinessException("用户不存在");
+        }
+        if ("banned".equalsIgnoreCase(user.getStatus())) {
+            AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "ALREADY_BANNED", "status=banned");
+            throw new BusinessException("用户已处于封禁状态");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 1) 写入封禁记录（信用统计看的是 user_bans）
+        // 1) 更新用户状态（CAS：current -> banned）
+        int rows = userMapper.updateStatusByExpected(userId, user.getStatus(), "banned");
+        if (rows == 0) {
+            User latest = userMapper.selectById(userId);
+            if (latest == null) {
+                AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
+                throw new BusinessException("用户不存在");
+            }
+            if ("banned".equalsIgnoreCase(latest.getStatus())) {
+                log.info("幂等命中：action=banUser, idemKey=userId:{}, detail=latestStatus=banned", userId);
+                AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "latest status banned");
+                return;
+            }
+            AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "CAS_CONFLICT", "latest status=" + latest.getStatus());
+            throw new BusinessException("用户状态已变化，请刷新后重试");
+        }
+
+        // 2) 写入封禁记录（信用统计看的是 user_bans）
         UserBan ban = new UserBan();
         ban.setUserId(userId);
         ban.setBanType("PERM");
@@ -111,11 +159,9 @@ public class ViolationServiceImpl implements ViolationService {
         ban.setCreateTime(now);
         userBanMapper.insertUserBan(ban);
 
-        // 2) 更新用户状态
-        userMapper.updateStatus(userId, "banned");
-
         // 3) 触发信用重算并落日志（BAN_ACTIVE）
         creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());
+        AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to banned");
     }
 
     /**
@@ -123,10 +169,15 @@ public class ViolationServiceImpl implements ViolationService {
      */
     @Override
     public void reportViolation(ViolationReportRequest request) {
+        // Day18 P3-S2：违规类型/描述/处罚结果都会进入审计与回显链路，先统一做输入安全守卫。
+        String violationType = InputSecurityGuard.normalizePlainText(request.getViolationType(), "违规类型", 64, true);
+        String description = InputSecurityGuard.normalizePlainText(request.getDescription(), "违规描述", 500, true);
+        String punishmentResult = InputSecurityGuard.normalizePlainText(request.getPunishmentResult(), "处罚结果", 64, false);
+
         UserViolation violation = new UserViolation();
         violation.setUserId(request.getUserId());
-        violation.setViolationType(request.getViolationType());
-        violation.setDescription(request.getDescription());
+        violation.setViolationType(violationType);
+        violation.setDescription(description);
 
         // evidenceUrls 可能为空
         if (request.getEvidenceUrls() != null && !request.getEvidenceUrls().isEmpty()) {
@@ -135,7 +186,7 @@ public class ViolationServiceImpl implements ViolationService {
             violation.setEvidence(null);
         }
 
-        violation.setPunish(request.getPunishmentResult());
+        violation.setPunish(punishmentResult);
 
         // 写入违规扣分（必须写到 user_violations.credit，否则 Step2 统计不到）
         violation.setCredit(CreditConstants.DELTA_USER_VIOLATION);
@@ -151,7 +202,7 @@ public class ViolationServiceImpl implements ViolationService {
         // 插入成功后立刻触发重算
         creditService.recalcUserCredit(request.getUserId(), CreditReasonType.USER_VIOLATION, violation.getId());
 
-        log.info("违规记录已上报: userId={}, type={}, violationId={}", request.getUserId(), request.getViolationType(), violation.getId());
+        log.info("违规记录已上报: userId={}, type={}, violationId={}", request.getUserId(), violationType, violation.getId());
     }
 
     /**

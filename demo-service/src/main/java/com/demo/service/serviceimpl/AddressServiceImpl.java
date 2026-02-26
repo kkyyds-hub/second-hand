@@ -83,7 +83,7 @@ public class AddressServiceImpl implements AddressService {
      */
     @Override
     public AddressVO createAddress(Long currentUserId, AddressDTO request) {
-        log.info("新增收货地址, 用户 ID: {}, 请求: {}", currentUserId, request);
+        log.info("新增收货地址, 用户 ID: {}, isDefault={}", currentUserId, request.getIsDefault());
 
         Address address = new Address();
         address.setUserId(currentUserId);

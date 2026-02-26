@@ -1,0 +1,159 @@
+﻿{
+    "executedAt":  "2026-02-26T10:41:48",
+    "baseUrl":  "http://localhost:8080",
+    "scenarios":  {
+                      "concurrentBan":  [
+                                            {
+                                                "code":  1,
+                                                "msg":  "success",
+                                                "data":  "ç¨æ·å°ç¦æå",
+                                                "PSComputerName":  "localhost",
+                                                "RunspaceId":  "4de3f2b9-8c0b-4611-bd63-c95f019b7567",
+                                                "PSShowComputerName":  false,
+                                                "PSSourceJobInstanceId":  "4f62db1f-5af9-48f9-bf55-1434ae401ec5"
+                                            },
+                                            {
+                                                "code":  1,
+                                                "msg":  "success",
+                                                "data":  "ç¨æ·å·²å¤äºå°ç¦ç¶æ",
+                                                "PSComputerName":  "localhost",
+                                                "RunspaceId":  "8b5914d0-3cb3-4579-8767-0a08f029b732",
+                                                "PSShowComputerName":  false,
+                                                "PSSourceJobInstanceId":  "cfcc235a-638b-4eee-bb6c-406cc4923dbc"
+                                            }
+                                        ],
+                      "concurrentUnban":  [
+                                              {
+                                                  "code":  1,
+                                                  "msg":  "success",
+                                                  "data":  "ç¨æ·è§£å°æå",
+                                                  "PSComputerName":  "localhost",
+                                                  "RunspaceId":  "3fdf1e86-8431-402f-8759-73a4df95fca1",
+                                                  "PSShowComputerName":  false,
+                                                  "PSSourceJobInstanceId":  "7c0162ba-9ada-47e6-a9f7-3d49e81ae814"
+                                              },
+                                              {
+                                                  "code":  1,
+                                                  "msg":  "success",
+                                                  "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                                  "PSComputerName":  "localhost",
+                                                  "RunspaceId":  "f39389e2-8312-4969-abb5-68a16d7ba881",
+                                                  "PSShowComputerName":  false,
+                                                  "PSSourceJobInstanceId":  "bd793066-f821-4ee1-9fe1-97a357211b51"
+                                              }
+                                          ],
+                      "concurrentShipReminderRunOnce":  [
+                                                            {
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  {
+                                                                             "processedAt":  1772073708337,
+                                                                             "taskType":  "ship-reminder",
+                                                                             "batchSize":  50,
+                                                                             "success":  0
+                                                                         },
+                                                                "PSComputerName":  "localhost",
+                                                                "RunspaceId":  "a0b8b7ee-1888-47be-9a6c-529e04d9b5d3",
+                                                                "PSShowComputerName":  false,
+                                                                "PSSourceJobInstanceId":  "7b846d14-6158-42a5-9d5d-dd6584ddf597"
+                                                            },
+                                                            {
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  {
+                                                                             "processedAt":  1772073708503,
+                                                                             "taskType":  "ship-reminder",
+                                                                             "batchSize":  50,
+                                                                             "success":  0
+                                                                         },
+                                                                "PSComputerName":  "localhost",
+                                                                "RunspaceId":  "40d47163-4a2a-4999-9bcb-13809bcf6648",
+                                                                "PSShowComputerName":  false,
+                                                                "PSSourceJobInstanceId":  "0bb7b273-db31-410b-ac53-7a8fe425a30b"
+                                                            }
+                                                        ],
+                      "mqFailureInjection":  {
+                                                 "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                 "publishFail":  {
+                                                                     "code":  1,
+                                                                     "msg":  "success",
+                                                                     "data":  {
+                                                                                  "limit":  50,
+                                                                                  "processedAt":  1772073708725,
+                                                                                  "failed":  1,
+                                                                                  "sent":  0,
+                                                                                  "pulled":  1
+                                                                              }
+                                                                 },
+                                                 "eventAfterFail":  {
+                                                                        "code":  1,
+                                                                        "msg":  "success",
+                                                                        "data":  {
+                                                                                     "id":  52,
+                                                                                     "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                                                     "eventType":  "ORDER_STATUS_CHANGED",
+                                                                                     "exchangeName":  "bad.exchange",
+                                                                                     "routingKey":  "order.status.changed",
+                                                                                     "bizId":  900055,
+                                                                                     "payloadJson":  "{eventId:P7S2_MQ_FAIL_20260226104148,eventType:ORDER_STATUS_CHANGED,routingKey:order.status.changed,bizId:900055,payload:{orderId:900055},version:1}",
+                                                                                     "status":  "FAIL",
+                                                                                     "retryCount":  1,
+                                                                                     "nextRetryTime":  "2026-02-26 10:42",
+                                                                                     "createdAt":  "2026-02-26 10:41",
+                                                                                     "updatedAt":  "2026-02-26 10:41"
+                                                                                 }
+                                                                    },
+                                                 "triggerNow":  {
+                                                                    "code":  1,
+                                                                    "msg":  "success",
+                                                                    "data":  {
+                                                                                 "processedAt":  1772073708807,
+                                                                                 "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                                                 "updatedRows":  1,
+                                                                                 "success":  true
+                                                                             }
+                                                                },
+                                                 "publishRecover":  {
+                                                                        "code":  1,
+                                                                        "msg":  "success",
+                                                                        "data":  {
+                                                                                     "limit":  50,
+                                                                                     "processedAt":  1772073708821,
+                                                                                     "failed":  1,
+                                                                                     "sent":  0,
+                                                                                     "pulled":  1
+                                                                                 }
+                                                                    },
+                                                 "eventAfterRecover":  {
+                                                                           "code":  1,
+                                                                           "msg":  "success",
+                                                                           "data":  {
+                                                                                        "id":  52,
+                                                                                        "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                                                        "eventType":  "ORDER_STATUS_CHANGED",
+                                                                                        "exchangeName":  "order.events.exchange",
+                                                                                        "routingKey":  "order.status.changed",
+                                                                                        "bizId":  900055,
+                                                                                        "payloadJson":  "{eventId:P7S2_MQ_FAIL_20260226104148,eventType:ORDER_STATUS_CHANGED,routingKey:order.status.changed,bizId:900055,payload:{orderId:900055},version:1}",
+                                                                                        "status":  "FAIL",
+                                                                                        "retryCount":  2,
+                                                                                        "nextRetryTime":  "2026-02-26 10:42",
+                                                                                        "createdAt":  "2026-02-26 10:41",
+                                                                                        "updatedAt":  "2026-02-26 10:41"
+                                                                                    }
+                                                                       }
+                                             },
+                      "failedReminderTasks":  {
+                                                  "code":  1,
+                                                  "msg":  "success",
+                                                  "data":  {
+                                                               "total":  0,
+                                                               "page":  1,
+                                                               "list":  [
+
+                                                                        ],
+                                                               "pageSize":  20
+                                                           }
+                                              }
+                  }
+}

@@ -1,0 +1,70 @@
+﻿{
+    "executedAt":  "2026-02-25 14:34:02",
+    "login":  {
+                  "code":  1,
+                  "msg":  "success",
+                  "data":  {
+                               "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMDg0NDIsInVzZXJJZCI6MX0.PlCzNXzFPKCpFQO2U1PhpU9GjExRXcXNvJC4JwkFNDQ",
+                               "user":  {
+                                            "id":  1,
+                                            "username":  "buyer01",
+                                            "mobile":  "13800000001",
+                                            "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                            "nickname":  "æµè¯ä¹°å®¶01",
+                                            "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                            "email":  "buyer01@test.com",
+                                            "registerTime":  null,
+                                            "lastLoginIp":  null,
+                                            "creditScore":  39,
+                                            "productCount":  null,
+                                            "status":  "active",
+                                            "region":  null
+                                        }
+                           }
+              },
+    "sort_injection_buy":  {
+                               "code":  0,
+                               "msg":  "sortField ä»\u0085æ¯æ: createTime/payTime",
+                               "data":  null
+                           },
+    "xss_profile_update":  {
+                               "code":  0,
+                               "msg":  "æµç§°å\u0085å«éæ³èæ¬æHTMLçæ®µ",
+                               "data":  null
+                           },
+    "market_list_probe":  {
+                              "code":  1,
+                              "msg":  "success",
+                              "data":  {
+                                           "total":  2,
+                                           "page":  1,
+                                           "list":  [
+                                                        {
+                                                            "productId":  920017,
+                                                            "title":  "P2S3-115328",
+                                                            "price":  199.00,
+                                                            "category":  "P2S3",
+                                                            "thumbnail":  "https://img.example.com/p2s3.jpg",
+                                                            "ownerId":  2,
+                                                            "createTime":  "2026-02-25 11:53"
+                                                        },
+                                                        {
+                                                            "productId":  48,
+                                                            "title":  "DAY11-REG-ONSALE-48",
+                                                            "price":  19.90,
+                                                            "category":  "åå½æµè¯",
+                                                            "thumbnail":  null,
+                                                            "ownerId":  2,
+                                                            "createTime":  "2026-01-14 23:16"
+                                                        }
+                                                    ],
+                                           "pageSize":  5
+                                       }
+                          },
+    "xss_report_submit":  {
+                              "code":  0,
+                              "msg":  "descriptionå\u0085å«éæ³èæ¬æHTMLçæ®µ",
+                              "data":  null
+                          },
+    "report_product_id":  920017
+}

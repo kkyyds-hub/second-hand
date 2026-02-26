@@ -1,0 +1,23 @@
+﻿{
+    "executedAt":  "2026-02-25 13:48:32",
+    "login":  {
+                  "code":  1,
+                  "userId":  1
+              },
+    "changePassword_without_second_verify":  {
+                                                 "code":  0,
+                                                 "msg":  "è¯·æä¾å½åå¯ç æéªè¯ç è¿è¡éªè¯"
+                                             },
+    "unbindPhone_without_second_verify":  {
+                                              "code":  0,
+                                              "msg":  "éªè¯ç ä¸è½ä¸ºç©º"
+                                          },
+    "bindPhone_with_invalid_code":  {
+                                        "code":  0,
+                                        "msg":  "éªè¯ç éè¯¯æå·²è¿æ"
+                                    },
+    "bindEmail_with_invalid_code":  {
+                                        "code":  0,
+                                        "msg":  "éªè¯ç éè¯¯æå·²è¿æ"
+                                    }
+}

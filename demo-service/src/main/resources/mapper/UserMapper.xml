@@ -62,6 +62,15 @@
             update_time = NOW()
         WHERE id = #{userId}
     </update>
+
+    <!-- SQL：updateStatusByExpected，CAS 更新用户状态（id + expectedStatus）。 -->
+    <update id="updateStatusByExpected">
+        UPDATE users
+        SET status = #{targetStatus},
+            update_time = NOW()
+        WHERE id = #{userId}
+          AND status = #{expectedStatus}
+    </update>
     <!-- SQL：updateProfile，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateProfile" parameterType="com.demo.entity.User">
         UPDATE users

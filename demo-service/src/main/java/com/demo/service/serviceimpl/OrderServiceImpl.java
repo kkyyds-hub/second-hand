@@ -1,5 +1,6 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.audit.AuditLogUtil;
 import com.demo.dto.base.PageQueryDTO;
 import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
@@ -16,6 +17,7 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
+import com.demo.security.InputSecurityGuard;
 import com.demo.service.CreditService;
 import com.demo.service.OrderService;
 import com.demo.service.ProductAuditService;
@@ -46,6 +48,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -53,6 +58,17 @@ import java.util.Objects;
  * OrderServiceImpl 业务组件。
  */
 public class OrderServiceImpl implements OrderService {
+
+    /**
+     * Day18 P3-S2：订单分页允许的排序字段。
+     *
+     * 说明：
+     * 1) 与 OrderMapper.xml 动态排序分支保持一一对应；
+     * 2) buy/sell 共用同一白名单，避免两条链路口径漂移；
+     * 3) 新增排序字段时必须同步：常量 + XML + 文档。
+     */
+    private static final Set<String> ORDER_SORT_FIELD_WHITELIST =
+            new HashSet<>(Arrays.asList("createTime", "payTime"));
 
     @Autowired
     private OrderMapper orderMapper;
@@ -112,7 +128,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PageResult<SellerOrderSummary> getSellOrder(PageQueryDTO dto, Long uid) {
-        PageHelper.startPage(dto.getPage(), dto.getPageSize());
+        pageValidated(dto);
 
         List<SellerOrderSummary> list = orderMapper.listSellerOrders(uid, dto);
 
@@ -435,11 +451,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String payOrder(Long orderId, Long currentUserId) {
+        String auditId = AuditLogUtil.newAuditId();
         // 1) 先尝试条件更新：pending -> paid
         int rows = orderMapper.updateForPay(orderId, currentUserId);
         if (rows == 1) {
             //支付成功后创建“48小时违法或超时任务”（幂等）
             createShipTimeoutTaskIfAbsent(orderId,"payorder:update_success");
+            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "SUCCESS", "pending->paid");
             return "支付成功";
         }
 
@@ -458,20 +476,24 @@ public class OrderServiceImpl implements OrderService {
         if (s == OrderStatus.PAID) {
             logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
             createShipTimeoutTaskIfAbsent(orderId, "payOrder:idempotent_paid");
+            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "IDEMPOTENT", "status=paid");
             return "订单已支付，无需重复操作";
     }
 
         // 幂等：已支付/已进入后续状态 -> 直接返回成功提示（不要抛异常）
         if ( s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
+            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "IDEMPOTENT", "status=" + s.getDbValue());
             return "订单已支付，无需重复操作";
         }
 
         if (s == OrderStatus.CANCELLED) {
+            AuditLogUtil.failed(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "ORDER_CANCELLED", "cannot pay cancelled order");
             throw new BusinessException("订单已取消，无法支付");
         }
 
         // 理论上 pending 时 rows 应该=1，走到这里多半是并发/脏数据/where条件不一致
+        AuditLogUtil.failed(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "STATUS_NOT_ALLOW", "status=" + detail.getStatus());
         throw new BusinessException("支付失败，订单状态不允许支付：" + detail.getStatus());
     }
 
@@ -481,6 +503,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String cancelOrder(Long orderId, CancelOrderRequest request, Long currentUserId) {
+        String auditId = AuditLogUtil.newAuditId();
         String reason = (request == null || request.getReason() == null || request.getReason().trim().isEmpty())
                 ? "buyer_cancel"
                 : request.getReason().trim();
@@ -492,6 +515,7 @@ public class OrderServiceImpl implements OrderService {
             // Step3：订单取消会影响买家 cancelled 统计，因此重算买家
             creditService.recalcUserCredit(currentUserId, CreditReasonType.ORDER_CANCELLED, orderId);
 
+            AuditLogUtil.success(log, auditId, "ORDER_CANCEL", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "SUCCESS", "pending->cancelled,reason=" + reason);
             return "取消成功";
         }
 
@@ -513,14 +537,17 @@ public class OrderServiceImpl implements OrderService {
         // 幂等口径：已 cancelled -> 当成功返回
         if (s == OrderStatus.CANCELLED) {
             logIdempotencyHit("cancelOrder", "orderId:" + orderId, "status=" + s.getDbValue());
+            AuditLogUtil.success(log, auditId, "ORDER_CANCEL", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "IDEMPOTENT", "already cancelled");
             return "订单已取消，无需重复操作";
         }
 
         // 已支付后不允许取消（后续退款/售后再做）
         if (s == OrderStatus.PAID || s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
+            AuditLogUtil.failed(log, auditId, "ORDER_CANCEL", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "STATUS_NOT_ALLOW", "status=" + s.getDbValue());
             throw new BusinessException("订单已支付，当前不允许取消（后续走退款/售后）");
         }
 
+        AuditLogUtil.failed(log, auditId, "ORDER_CANCEL", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "STATUS_NOT_ALLOW", "status=" + detail.getStatus());
         throw new BusinessException("取消失败，订单状态不允许取消：" + detail.getStatus());
     }
 
@@ -530,25 +557,30 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String handlePaymentCallback(com.demo.dto.payment.PaymentCallbackRequest request) {
+        String auditId = AuditLogUtil.newAuditId();
         // 1) 占位验签（Day13 冻结：sign 非空 + timestamp 在 5 分钟内）
         if (request.getSign() == null || request.getSign().trim().isEmpty()) {
+            AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER_NO", request.getOrderNo(), "SIGN_EMPTY", "sign is blank");
             throw new BusinessException("签名不能为空");
         }
         //时间戳校验
         long now = System.currentTimeMillis() / 1000;
         long diff = Math.abs(now - request.getTimestamp());
         if (diff > 300) { // 5分钟 = 300秒
+            AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER_NO", request.getOrderNo(), "TIMESTAMP_EXPIRED", "diffSeconds=" + diff);
             throw new BusinessException("回调时间戳超时（超过5分钟）");
         }
 
         // 2) 只有 status=SUCCESS 才触发订单状态更新
         if (!"SUCCESS".equalsIgnoreCase(request.getStatus())) {
+            AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER_NO", request.getOrderNo(), "IGNORED", "status=" + request.getStatus());
             return "回调状态非成功，不做处理";
         }
 
         // 3) 根据 orderNo 查询订单
         Order order = orderMapper.selectOrderByOrderNo(request.getOrderNo());
         if (order == null) {
+            AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER_NO", request.getOrderNo(), "ORDER_NOT_FOUND", "order not found");
             throw new BusinessException("订单不存在：" + request.getOrderNo());
         }
 
@@ -558,15 +590,18 @@ public class OrderServiceImpl implements OrderService {
             logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "status=" + s.getDbValue());
             // 历史漏建修复：已支付也补建任务
             createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:idempotent_paid");
+            AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "IDEMPOTENT", "status=paid");
             return "订单已支付，回调幂等成功!";
         }
         if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "status=" + s.getDbValue());
+            AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "IDEMPOTENT", "status=" + s.getDbValue());
             return "订单已支付，回调幂等成功";
         }
 
         // 5) 若已取消，提示不可支付
         if (s == OrderStatus.CANCELLED) {
+            AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "ORDER_CANCELLED", "cannot pay cancelled order");
             throw new BusinessException("订单已取消，无法支付");
         }
 
@@ -608,6 +643,7 @@ public class OrderServiceImpl implements OrderService {
             //day15:支付成功后创建48h未发货超时任务
             createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:update_success");
 
+            AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "SUCCESS", "pending->paid");
 
             return "支付回调处理成功";
         }
@@ -620,9 +656,11 @@ public class OrderServiceImpl implements OrderService {
         OrderStatus latestStatus = OrderStatus.fromDbValue(latest.getStatus());
         if (latestStatus == OrderStatus.PAID || latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
             logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "latestStatus=" + latestStatus.getDbValue());
+            AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(latest.getId()), "IDEMPOTENT", "latestStatus=" + latestStatus.getDbValue());
             return "订单已支付，回调幂等成功";
         }
 
+        AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(latest.getId()), "STATUS_NOT_ALLOW", "latestStatus=" + latest.getStatus());
         throw new BusinessException("支付回调处理失败，订单状态不允许支付：" + latest.getStatus());
     }
 
@@ -763,6 +801,18 @@ public class OrderServiceImpl implements OrderService {
         log.info("幂等命中：action={}, idemKey={}, detail={}", action, idemKey, detail);
     }
 
+    /**
+     * 订单分页参数统一规范化入口。
+     *
+     * 固定执行顺序：
+     * 1) page/pageSize 兜底；
+     * 2) sortField 白名单校验；
+     * 3) sortOrder 枚举校验；
+     * 4) 启动 PageHelper 分页上下文。
+     *
+     * 设计目的：
+     * - 把“分页 + 排序安全”集中在一处，避免 buy/sell 两条链路重复且不一致。
+     */
     private void pageValidated(PageQueryDTO pageQueryDTO) {
         Integer page = pageQueryDTO.getPage();
         Integer size = pageQueryDTO.getPageSize();
@@ -772,6 +822,10 @@ public class OrderServiceImpl implements OrderService {
         if (size == null || size < 1) {
             size = 10;
         }
+        pageQueryDTO.setSortField(InputSecurityGuard.normalizeSortField(
+                pageQueryDTO.getSortField(), ORDER_SORT_FIELD_WHITELIST, "createTime"));
+        pageQueryDTO.setSortOrder(InputSecurityGuard.normalizeSortOrder(
+                pageQueryDTO.getSortOrder(), "desc"));
         PageHelper.startPage(page, size);
     }
 }

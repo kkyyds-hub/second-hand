@@ -1,5 +1,6 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.audit.AuditLogUtil;
 import com.demo.constant.JwtClaimsConstant;
 import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
@@ -12,6 +13,7 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.properties.JwtProperties;
+import com.demo.security.InputSecurityGuard;
 import com.demo.service.AuthService;
 import com.demo.service.CreditService;
 import com.demo.utils.JwtUtil;
@@ -88,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
         String code = generateCode();
         stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + mobile, code, Duration.ofMinutes(5));
         stringRedisTemplate.opsForValue().set(SMS_RATE_LIMIT_KEY_PREFIX + mobile, "1", Duration.ofMinutes(1));
-        log.info("向手机号 {} 发送验证码:{}，有效期5分钟", mobile, code);
+        log.info("向手机号 {} 发送验证码，有效期5分钟", maskMobile(mobile));
     }
 
 
@@ -100,7 +102,8 @@ public class AuthServiceImpl implements AuthService {
         String mobile = request.getMobile();
         String smsCode = request.getSmsCode();
         String rawPassword = request.getPassword();
-        String nickname = request.getNickname();
+        // Day18 P3-S2：昵称属于可展示文本，注册入口统一做输入安全守卫。
+        String nickname = InputSecurityGuard.normalizePlainText(request.getNickname(), "昵称", 20, true);
         validateSmsCode(mobile, smsCode);
         //校验手机号是否被注册
         User existed = userMapper.selectByMobile(mobile);
@@ -114,7 +117,7 @@ public class AuthServiceImpl implements AuthService {
         String encodedPassword = passwordEncoder.encode(rawPassword);
         user.setPassword(encodedPassword);
         userMapper.insertUser(user);
-        log.info("用户手机号 {} 注册成功，用户 ID={}", mobile, user.getId());
+        log.info("用户手机号 {} 注册成功，用户 ID={}", maskMobile(mobile), user.getId());
         clearSmsCode(mobile);
         return toUserVO(user);
     }
@@ -128,7 +131,8 @@ public class AuthServiceImpl implements AuthService {
         String email = request.getEmail();
         String emailCode = request.getEmailCode();
         String rawPassword = request.getPassword();
-        String nickname = request.getNickname();
+        // Day18 P3-S2：与手机号注册保持同口径，避免昵称字段治理不一致。
+        String nickname = InputSecurityGuard.normalizePlainText(request.getNickname(), "昵称", 20, true);
         // 1. 校验邮箱验证码
         validateEmailCode(email, emailCode);
         // 2. 校验邮箱是否已被注册
@@ -162,11 +166,24 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("激活链接已失效或不存在，请重新发送");
         }
         Long userId = Long.parseLong(userIdStr);
-        userMapper.updateStatus(userId, "active");
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        int rows = userMapper.updateStatusByExpected(userId, "inactive", "active");
+        if (rows == 0 && !"active".equalsIgnoreCase(user.getStatus())) {
+            User latest = userMapper.selectById(userId);
+            if (latest == null) {
+                throw new BusinessException("用户不存在");
+            }
+            if (!"active".equalsIgnoreCase(latest.getStatus())) {
+                throw new BusinessException("当前账号状态不允许激活：" + latest.getStatus());
+            }
+        }
         stringRedisTemplate.delete(key);
         log.info("邮箱激活完成，用户 ID={}", userId);
-        User user = userMapper.selectById(userId);
-        return toUserVO(user);
+        User latestUser = userMapper.selectById(userId);
+        return toUserVO(latestUser);
 
     }
 
@@ -199,6 +216,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public AuthResponse loginWithPassword(PasswordLoginRequest request) {
+        String auditId = AuditLogUtil.newAuditId();
         String loginId = request.getLoginId();
         String rawPassword = request.getPassword();
 
@@ -211,16 +229,20 @@ public class AuthServiceImpl implements AuthService {
 
         // 3. 用户不存在
         if (user == null) {
+            AuditLogUtil.failed(log, auditId, "USER_LOGIN", "USER", loginId, "ACCOUNT", "-", "ACCOUNT_NOT_FOUND", "user not found by loginId");
             throw new BusinessException("用户名或密码错误");
         }
         UserStatus status = UserStatus.from(user.getStatus());
         // 先判断状态
         switch (status) {
             case INACTIVE:
+                AuditLogUtil.failed(log, auditId, "USER_LOGIN", "USER", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "ACCOUNT_INACTIVE", "user inactive");
                 throw new BusinessException("账号未激活，请先完成邮箱激活");
             case BANNED:
+                AuditLogUtil.failed(log, auditId, "USER_LOGIN", "USER", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "ACCOUNT_BANNED", "user banned");
                 throw new BusinessException("账号已被封禁，如有疑问请联系客服");
             case FROZEN:
+                AuditLogUtil.failed(log, auditId, "USER_LOGIN", "USER", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "ACCOUNT_FROZEN", "user frozen");
                 throw new BusinessException("账号已被暂时冻结，请稍后再试或联系管理员");
             case ACTIVE:
             default:
@@ -230,24 +252,37 @@ public class AuthServiceImpl implements AuthService {
         // 4. 校验密码
         String encodedPassword = user.getPassword();
         if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
-            recordLoginFail(user.getId(), loginId);
-            handleLoginRiskOnFail(user);
+            // 先递增失败计数，再按最新计数判断是否触发冻结。
+            long failCount = recordLoginFail(user.getId(), loginId);
+            handleLoginRiskOnFail(user, auditId, failCount);
+            AuditLogUtil.failed(log, auditId, "USER_LOGIN", "USER", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "PASSWORD_MISMATCH", "password mismatch");
             throw new BusinessException("用户名或密码错误");
         }
         resetLoginFailCounter(user);
         // 6. 生成 JWT 并返回
         String token = buildJwt(user);        // 这里重用你已经写好的方法
         UserVO userVO = toUserVO(user);
+        AuditLogUtil.success(log, auditId, "USER_LOGIN", "USER", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "SUCCESS", "user login success");
         return new AuthResponse(token, userVO);
     }
 
-    private void recordLoginFail(Long userId, String identifier) {
+    /**
+     * 记录一次登录失败并返回当前窗口内失败次数。
+     *
+     * 说明：
+     * 1) key 采用 userId（优先）保证同账号聚合；
+     * 2) 第一次失败时设置窗口 TTL；
+     * 3) 返回值用于后续风控判定与审计字段输出。
+     */
+    private long recordLoginFail(Long userId, String identifier) {
         String key = LOGIN_FAIL_KEY_PREFIX + (userId != null ? userId : identifier);
         Long count = stringRedisTemplate.opsForValue().increment(key);
+        long safeCount = count == null ? 0L : count;
         if (count == 1) {
             // 第一次失败时设置过期时间
             stringRedisTemplate.expire(key, Duration.ofMinutes(FAIL_WINDOW_MINUTES));
         }
+        return safeCount;
     }
 
     private void resetLoginFailCounter(User user) {
@@ -255,24 +290,74 @@ public class AuthServiceImpl implements AuthService {
         stringRedisTemplate.delete(key);
     }
 
-    private void handleLoginRiskOnFail(User user) {
+    /**
+     * 登录失败后的自动风控处理。
+     *
+     * @param user      当前登录用户
+     * @param auditId   本次登录动作 auditId（用于串联 USER_LOGIN 与冻结事件）
+     * @param failCount 当前失败窗口累计次数
+     */
+    private void handleLoginRiskOnFail(User user, String auditId, long failCount) {
         if (user == null) {
             return;
         }
-        String key = LOGIN_FAIL_KEY_PREFIX + user.getId();
-        String value = stringRedisTemplate.opsForValue().get(key);
-        if (value == null) return;
+        if (failCount >= MAX_FAIL_COUNT) {
+            // 触发风控：仅 active -> frozen（CAS），避免覆盖并发状态迁移。
+            int rows = userMapper.updateStatusByExpected(user.getId(), "active", "frozen");
+            if (rows == 1) {
+                Long banId = insertAutoRiskBan(user.getId(), "登录失败次数过多自动冻结");
+                AuditLogUtil.success(
+                        log,
+                        auditId,
+                        "LOGIN_RISK_FREEZE",
+                        "SYSTEM",
+                        "RISK_ENGINE",
+                        "USER",
+                        String.valueOf(user.getId()),
+                        "SUCCESS",
+                        "failCount=" + failCount + ",source=AUTO_RISK,banId=" + banId
+                );
+                return;
+            }
 
-        int count = Integer.parseInt(value);
-        if (count >= MAX_FAIL_COUNT) {
-            // 触发风控：临时冻结账号
-            userMapper.updateStatus(user.getId(), UserStatus.FROZEN.name());
-            // 记录封禁记录（临时封锁，来源 AUTO_RISK）
-            insertAutoRiskBan(user.getId(), "登录失败次数过多自动冻结");
+            User latest = userMapper.selectById(user.getId());
+            if (latest != null && "frozen".equalsIgnoreCase(latest.getStatus())) {
+                log.info("幂等命中：action=freezeOnLoginRisk, idemKey=userId:{}, detail=latestStatus=frozen", user.getId());
+                AuditLogUtil.success(
+                        log,
+                        auditId,
+                        "LOGIN_RISK_FREEZE",
+                        "SYSTEM",
+                        "RISK_ENGINE",
+                        "USER",
+                        String.valueOf(user.getId()),
+                        "IDEMPOTENT",
+                        "failCount=" + failCount + ",latestStatus=frozen"
+                );
+                return;
+            }
+            log.info("登录风控冻结跳过：userId={}, latestStatus={}",
+                    user.getId(), latest == null ? "NOT_FOUND" : latest.getStatus());
+            AuditLogUtil.failed(
+                    log,
+                    auditId,
+                    "LOGIN_RISK_FREEZE",
+                    "SYSTEM",
+                    "RISK_ENGINE",
+                    "USER",
+                    String.valueOf(user.getId()),
+                    "CAS_CONFLICT",
+                    "failCount=" + failCount + ",latestStatus=" + (latest == null ? "NOT_FOUND" : latest.getStatus())
+            );
         }
     }
 
-    private void insertAutoRiskBan(Long userId, String reason) {
+    /**
+     * 写入自动风控封禁记录并触发信用重算。
+     *
+     * @return 本次写入 ban 记录 ID（若未生成则为 null）
+     */
+    private Long insertAutoRiskBan(Long userId, String reason) {
         LocalDateTime  now = LocalDateTime.now();
         UserBan ban = new UserBan();
         ban.setUserId(userId);
@@ -288,6 +373,7 @@ public class AuthServiceImpl implements AuthService {
         userBanMapper.insertUserBan(ban);
         // 封禁记录插入后，active_bans 统计会变化，立即重算
         creditService.recalcUserCredit(userId, CreditReasonType.BAN_ACTIVE, ban.getId());
+        return ban.getId();
 
     }
 
@@ -372,13 +458,18 @@ public class AuthServiceImpl implements AuthService {
         message.setText("请在24小时内点击以下链接激活账号 " +
                 "https://example.com/activate?token=" + token);
         mailSender.send(message);
-        log.info("发送激活邮件到:{}，token={}，有效期24小时", user.getEmail(), token);
+        log.info("发送激活邮件到:{}，有效期24小时", maskEmail(user.getEmail()));
     }
     private String resolveExternalId(ThirdPartyLoginRequest request) {
         if (StringUtils.hasText(request.getExternalId())) {
-            return request.getExternalId();
+            // 优先使用 externalId；入库/拼接前先做长度与风险片段校验。
+            return InputSecurityGuard.normalizePlainText(request.getExternalId(), "externalId", 128, true);
         }
-        return request.getProvider() + ":" + request.getAuthorizationCode();
+        // 回退策略：provider + authorizationCode 组合作为临时外部唯一标识。
+        // 这里同样先规范化，避免把异常字符带入 Redis key / 日志。
+        String provider = InputSecurityGuard.normalizePlainText(request.getProvider(), "provider", 32, true);
+        String authCode = InputSecurityGuard.normalizePlainText(request.getAuthorizationCode(), "authorizationCode", 256, true);
+        return provider + ":" + authCode;
     }
     private String buildJwt(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -390,8 +481,44 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(provider + "_" + externalId.substring(0, Math.min(12, externalId.length())));
         user.setStatus("active");
         userMapper.insertUser(user);
-        log.info("为第三方账号 {}-{} 创建新用户，ID={}", provider, externalId, user.getId());
+        log.info("为第三方账号 {}-{} 创建新用户，ID={}", provider, maskExternalId(externalId), user.getId());
         return user;
+    }
+
+    private String maskMobile(String mobile) {
+        if (!StringUtils.hasText(mobile)) {
+            return "EMPTY";
+        }
+        String trimmed = mobile.trim();
+        if (trimmed.length() <= 7) {
+            return "***";
+        }
+        return trimmed.substring(0, 3) + "****" + trimmed.substring(trimmed.length() - 4);
+    }
+
+    private String maskEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return "EMPTY";
+        }
+        String trimmed = email.trim();
+        int at = trimmed.indexOf('@');
+        if (at <= 1) {
+            return "***@" + (at >= 0 ? trimmed.substring(at + 1) : "***");
+        }
+        String prefix = trimmed.substring(0, at);
+        String domain = trimmed.substring(at + 1);
+        return prefix.substring(0, 1) + "***@" + domain;
+    }
+
+    private String maskExternalId(String externalId) {
+        if (!StringUtils.hasText(externalId)) {
+            return "EMPTY";
+        }
+        String trimmed = externalId.trim();
+        if (trimmed.length() <= 6) {
+            return "***";
+        }
+        return trimmed.substring(0, 3) + "***" + trimmed.substring(trimmed.length() - 2);
     }
 
 }

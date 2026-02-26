@@ -1,0 +1,107 @@
+﻿{
+    "startedAt":  "2026-02-26 00:18:02",
+    "baseUrl":  "http://localhost:8080",
+    "adminLogin":  {
+                       "response":  {
+                                        "code":  0,
+                                        "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                        "data":  null
+                                    },
+                       "ok":  true
+                   },
+    "baseline":  {
+                     "sql":  {
+                                 "userStatus":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                                 "autoRiskCount":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure."
+                             }
+                 },
+    "scenarioA":  {
+                      "wrongAttempts":  [
+                                            {
+                                                "attempt":  1,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  2,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  3,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  4,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  5,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  6,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                "raw":  null,
+                                                "status":  null
+                                            }
+                                        ],
+                      "correctAfterFreeze":  {
+                                                 "response":  {
+                                                                  "code":  0,
+                                                                  "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                                  "data":  null
+                                                              },
+                                                 "ok":  true
+                                             },
+                      "sql":  {
+                                  "userStatus":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                                  "autoRiskCount":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                                  "latestBan":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure."
+                              }
+                  },
+    "scenarioB":  {
+                      "firstUnban":  null,
+                      "secondUnban":  null,
+                      "sql":  {
+                                  "userStatus":  "SQL_ERROR: mysql: [Warning] Using a password on the command line interface can be insecure."
+                              }
+                  },
+    "scenarioC":  {
+                      "login":  {
+                                    "response":  {
+                                                     "code":  0,
+                                                     "msg":  "ç»å½è´¦å·ä¸è½ä¸ºç©º",
+                                                     "data":  null
+                                                 },
+                                    "ok":  true
+                                }
+                  },
+    "flags":  {
+                  "freezeTriggered":  false,
+                  "autoRiskIncreased":  false,
+                  "unbanRecovered":  false,
+                  "loginRecovered":  false
+              },
+    "finishedAt":  "2026-02-26 00:18:02"
+}

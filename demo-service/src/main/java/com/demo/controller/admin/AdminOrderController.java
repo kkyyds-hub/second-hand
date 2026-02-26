@@ -8,6 +8,7 @@ import com.demo.entity.OrderFlag;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderFlagMapper;
 import com.demo.mapper.OrderMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.result.PageResult;
 import com.demo.result.Result;
 import com.github.pagehelper.PageHelper;
@@ -22,7 +23,10 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Day13 Step7 - 管理员订单接口
@@ -33,6 +37,17 @@ import java.util.List;
 @Slf4j
 @Validated
 public class AdminOrderController {
+
+    /**
+     * Day18 P3-S2：管理端订单排序字段白名单。
+     *
+     * 设计说明：
+     * 1) 仅放行 SQL 中明确分支支持的字段；
+     * 2) 非白名单字段直接失败，避免“兜底排序”掩盖注入探测；
+     * 3) 控制器层先收口，再进入 Mapper 动态排序分支。
+     */
+    private static final Set<String> ORDER_SORT_FIELD_WHITELIST =
+            new HashSet<>(Arrays.asList("createTime", "payTime"));
 
     @Autowired
     private OrderFlagMapper orderFlagMapper;
@@ -58,8 +73,9 @@ public class AdminOrderController {
         query.setPage(page == null || page < 1 ? 1 : page);
         query.setPageSize(pageSize == null || pageSize < 1 ? 10 : Math.min(pageSize, 100));
         query.setStatus(status);
-        query.setSortField(sortField);
-        query.setSortOrder(sortOrder);
+        // Day18 P3-S2：排序参数统一做“白名单 + 方向枚举”校验后再入查询对象。
+        query.setSortField(InputSecurityGuard.normalizeSortField(sortField, ORDER_SORT_FIELD_WHITELIST, "createTime"));
+        query.setSortOrder(InputSecurityGuard.normalizeSortOrder(sortOrder, "desc"));
         query.setStartTime(parseDateTime(startTime));
         query.setEndTime(parseDateTime(endTime));
 
@@ -83,24 +99,27 @@ public class AdminOrderController {
     public Result<String> flagOrder(
             @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId,
             @Validated @RequestBody OrderFlagRequest request) {
-        log.info("管理员标记异常订单: orderId={}, type={}", orderId, request.getType());
+        // Day18 P3-S2：标记类型/备注属于可回显文本，统一经过纯文本守卫后再落库。
+        String safeType = InputSecurityGuard.normalizePlainText(request.getType(), "标记类型", 32, true);
+        String safeRemark = InputSecurityGuard.normalizePlainText(request.getRemark(), "备注", 200, false);
+        log.info("管理员标记异常订单: orderId={}, type={}", orderId, safeType);
 
         // 幂等检查: 同 orderId + type 不重复
-        OrderFlag existing = orderFlagMapper.selectByOrderIdAndType(orderId, request.getType());
+        OrderFlag existing = orderFlagMapper.selectByOrderIdAndType(orderId, safeType);
         if (existing != null) {
             return Result.success("订单已存在该类型标记");
         }
 
         OrderFlag flag = new OrderFlag();
         flag.setOrderId(orderId);
-        flag.setType(request.getType());
-        flag.setRemark(request.getRemark());
+        flag.setType(safeType);
+        flag.setRemark(safeRemark);
         flag.setCreatedBy(BaseContext.getCurrentId());
 
         try {
             orderFlagMapper.insertOrderFlag(flag);
         } catch (DuplicateKeyException e) {
-            log.warn("订单标记唯一键冲突: orderId={}, type={}", orderId, request.getType());
+            log.warn("订单标记唯一键冲突: orderId={}, type={}", orderId, safeType);
             return Result.success("订单已存在该类型标记");
         }
 

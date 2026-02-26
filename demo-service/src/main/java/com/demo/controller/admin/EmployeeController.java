@@ -1,5 +1,6 @@
 package com.demo.controller.admin;
 
+import com.demo.audit.AuditLogUtil;
 import com.demo.constant.JwtClaimsConstant;
 import com.demo.dto.auth.AuthResponse;
 import com.demo.dto.user.PasswordLoginRequest;
@@ -43,22 +44,27 @@ public class EmployeeController {
      */
     @PostMapping("/login")
     public Result<AuthResponse> login(@Valid @RequestBody PasswordLoginRequest req) {
+        String auditId = AuditLogUtil.newAuditId();
         String loginId = req.getLoginId();
         if (!StringUtils.hasText(loginId)) {
+            AuditLogUtil.failed(log, auditId, "ADMIN_LOGIN", "ADMIN", "-", "ACCOUNT", "-", "LOGIN_ID_EMPTY", "loginId is blank");
             throw new BusinessException("账号不能为空");
         }
 
         User user = resolveUser(loginId.trim());
         if (user == null) {
+            AuditLogUtil.failed(log, auditId, "ADMIN_LOGIN", "ADMIN", loginId.trim(), "ACCOUNT", "-", "ACCOUNT_NOT_FOUND", "admin account not found");
             throw new BusinessException("账号不存在");
         }
 
         // 最小实现：通过用户名前缀校验是否管理员。
         if (user.getUsername() == null || !user.getUsername().toLowerCase().startsWith("admin")) {
+            AuditLogUtil.failed(log, auditId, "ADMIN_LOGIN", "ADMIN", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "NOT_ADMIN", "username is not admin prefix");
             throw new BusinessException("非管理员账号");
         }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            AuditLogUtil.failed(log, auditId, "ADMIN_LOGIN", "ADMIN", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "PASSWORD_MISMATCH", "password mismatch");
             throw new BusinessException("账号或密码错误");
         }
 
@@ -69,6 +75,7 @@ public class EmployeeController {
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);
 
+        AuditLogUtil.success(log, auditId, "ADMIN_LOGIN", "ADMIN", String.valueOf(user.getId()), "ACCOUNT", String.valueOf(user.getId()), "SUCCESS", "admin login success");
         return Result.success(new AuthResponse(token, vo));
     }
 

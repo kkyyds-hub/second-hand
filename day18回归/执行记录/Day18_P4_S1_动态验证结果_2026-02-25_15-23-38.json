@@ -1,0 +1,43 @@
+﻿{
+    "executedAt":  "2026-02-25 15:23:37",
+    "scenarioA_userLogin":  {
+                                "success":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMTE0MTcsInVzZXJJZCI6MX0.5SIwY8OBqeww1yU0n690lQe0wpv6y_oQPM71kbkJpa4\",\"user\":{\"id\":1,\"username\":\"buyer01\",\"mobile\":\"13800000001\",\"avatar\":\"https://img.example.com/avatar/buyer01.png\",\"nickname\":\"æµè¯ä¹°å®¶01\",\"bio\":\"ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·\",\"email\":\"buyer01@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":39,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
+                                            },
+                                "failed":  {
+                                               "ok":  true,
+                                               "statusCode":  200,
+                                               "body":  "{\"code\":0,\"msg\":\"ç¨æ·åæå¯ç éè¯¯\",\"data\":null}"
+                                           }
+                            },
+    "scenarioB_adminLogin":  {
+                                 "success":  {
+                                                 "ok":  true,
+                                                 "statusCode":  200,
+                                                 "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDExNDE3fQ._Y1IfGoHewals-0-seKX5eBl9DoWrJqt4YgQY8UQ_54\",\"user\":{\"id\":5,\"username\":\"admin\",\"mobile\":\"13900000001\",\"avatar\":null,\"nickname\":\"ç®¡çå\",\"bio\":\"Day3 åå½ admin å«å\",\"email\":\"admin@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":100,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
+                                             },
+                                 "failed":  {
+                                                "ok":  true,
+                                                "statusCode":  200,
+                                                "body":  "{\"code\":0,\"msg\":\"è´¦å·æå¯ç éè¯¯\",\"data\":null}"
+                                            }
+                             },
+    "scenarioC_order":  {
+                            "error":  "user token missing"
+                        },
+    "scenarioD_paymentCallback":  {
+                                      "error":  "orderNo missing from scenarioC"
+                                  },
+    "scenarioE_banUnban":  {
+                               "error":  "admin token missing"
+                           },
+    "logProbe":  {
+                     "candidateCount":  0,
+                     "auditHits":  [
+
+                                   ],
+                     "note":  "未在仓库目录检出可读取的 AUDIT 日志文件（服务日志可能仅输出在 IDEA Run 控制台）"
+                 }
+}

@@ -13,6 +13,7 @@ import com.demo.enumeration.ProductReportStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ProductReportTicketMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.service.ProductGovernanceEventService;
 import com.demo.service.ProductReportService;
 import com.demo.service.ProductService;
@@ -73,20 +74,9 @@ public class ProductReportServiceImpl implements ProductReportService {
         if (request == null) {
             throw new BusinessException("举报参数不能为空");
         }
-        String reportType = normalizeBlankToNull(request.getReportType());
-        if (reportType == null) {
-            throw new BusinessException("reportType 不能为空");
-        }
-        if (reportType.length() > 64) {
-            throw new BusinessException("reportType 长度不能超过64");
-        }
-        String description = normalizeBlankToNull(request.getDescription());
-        if (description == null) {
-            throw new BusinessException("description 不能为空");
-        }
-        if (description.length() > 500) {
-            throw new BusinessException("description 长度不能超过500");
-        }
+        // Day18 P3-S2：举报类型/描述是高频回显文本，统一做输入安全守卫。
+        String reportType = InputSecurityGuard.normalizePlainText(request.getReportType(), "reportType", 64, true);
+        String description = InputSecurityGuard.normalizePlainText(request.getDescription(), "description", 500, true);
 
         // 限定举报入口只针对“市场可见”商品（on_sale）。
         Product marketProduct = productMapper.getMarketProductById(productId);
@@ -130,10 +120,8 @@ public class ProductReportServiceImpl implements ProductReportService {
         if (resolverId == null) {
             throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
         }
-        String normalizedTicketNo = normalizeBlankToNull(ticketNo);
-        if (normalizedTicketNo == null) {
-            throw new BusinessException("ticketNo 不能为空");
-        }
+        // 工单号/备注都先规范化，避免非法字符进入条件更新与事件载荷。
+        String normalizedTicketNo = InputSecurityGuard.normalizePlainText(ticketNo, "ticketNo", 32, true);
         if (request == null) {
             throw new BusinessException("处理参数不能为空");
         }
@@ -143,10 +131,7 @@ public class ProductReportServiceImpl implements ProductReportService {
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("action 仅支持 dismiss/force_off_shelf");
         }
-        String remark = normalizeBlankToNull(request.getRemark());
-        if (remark != null && remark.length() > 255) {
-            throw new BusinessException("remark 长度不能超过255");
-        }
+        String remark = InputSecurityGuard.normalizePlainText(request.getRemark(), "remark", 255, false);
 
         ProductReportTicket ticket = productReportTicketMapper.selectByTicketNo(normalizedTicketNo);
         if (ticket == null) {

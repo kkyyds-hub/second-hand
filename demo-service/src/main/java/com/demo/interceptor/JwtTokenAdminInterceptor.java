@@ -8,6 +8,7 @@ import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -50,10 +51,10 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
 
         //2、校验令牌
         try {
-            log.info("jwt校验:{}", token);
+            log.info("jwt校验:{}", maskToken(token));
             Claims claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
             Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());
-            log.info("当前员工id：", empId);
+            log.info("当前员工id：{}", empId);
             BaseContext.setCurrentId(empId);
             //3、通过，放行
             return true;
@@ -62,5 +63,15 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+    }
+
+    private String maskToken(String token) {
+        if (!StringUtils.hasText(token)) {
+            return "EMPTY";
+        }
+        if (token.length() <= 10) {
+            return "***";
+        }
+        return token.substring(0, 6) + "..." + token.substring(token.length() - 4);
     }
 }

@@ -1,0 +1,39 @@
+﻿{
+    "executedAt":  "2026-02-25 14:58:26",
+    "protected_user_order_create_no_token":  {
+                                                 "method":  "POST",
+                                                 "uri":  "http://localhost:8080/user/orders",
+                                                 "statusCode":  401,
+                                                 "body":  ""
+                                             },
+    "protected_user_profile_patch_no_token":  {
+                                                  "method":  "PATCH",
+                                                  "uri":  "http://localhost:8080/user/me/profile",
+                                                  "statusCode":  401,
+                                                  "body":  ""
+                                              },
+    "protected_admin_flag_no_token":  {
+                                          "method":  "POST",
+                                          "uri":  "http://localhost:8080/admin/orders/1/flags",
+                                          "statusCode":  401,
+                                          "body":  ""
+                                      },
+    "public_user_login_no_token":  {
+                                       "method":  "POST",
+                                       "uri":  "http://localhost:8080/user/auth/login/password",
+                                       "statusCode":  -1,
+                                       "body":  "Object reference not set to an instance of an object."
+                                   },
+    "public_admin_login_no_token":  {
+                                        "method":  "POST",
+                                        "uri":  "http://localhost:8080/admin/employee/login",
+                                        "statusCode":  -1,
+                                        "body":  "Object reference not set to an instance of an object."
+                                    },
+    "public_payment_callback_no_token":  {
+                                             "method":  "POST",
+                                             "uri":  "http://localhost:8080/payment/callback",
+                                             "statusCode":  -1,
+                                             "body":  "Object reference not set to an instance of an object."
+                                         }
+}

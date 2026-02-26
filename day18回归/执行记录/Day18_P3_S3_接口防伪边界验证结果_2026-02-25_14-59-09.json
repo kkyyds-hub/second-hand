@@ -1,0 +1,74 @@
+﻿{
+    "executedAt":  "2026-02-25 14:59:09",
+    "protected_user_order_create_no_token":  {
+                                                 "method":  "POST",
+                                                 "uri":  "http://localhost:8080/user/orders",
+                                                 "expect":  "401_without_header",
+                                                 "statusCode":  401,
+                                                 "body":  ""
+                                             },
+    "protected_user_profile_patch_no_token":  {
+                                                  "method":  "PATCH",
+                                                  "uri":  "http://localhost:8080/user/me/profile",
+                                                  "expect":  "401_without_header",
+                                                  "statusCode":  401,
+                                                  "body":  ""
+                                              },
+    "protected_admin_flag_no_token":  {
+                                          "method":  "POST",
+                                          "uri":  "http://localhost:8080/admin/orders/1/flags",
+                                          "expect":  "401_without_header",
+                                          "statusCode":  401,
+                                          "body":  ""
+                                      },
+    "public_user_login_no_token":  {
+                                       "method":  "POST",
+                                       "uri":  "http://localhost:8080/user/auth/login/password",
+                                       "expect":  "not_401_public_entry",
+                                       "transportStatus":  200,
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  {
+                                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMDk5NDksInVzZXJJZCI6MX0.O2T0k7QjDiIWVA_UD6KzQ7usevZulQuUEOeWBFArEys",
+                                                                     "user":  {
+                                                                                  "id":  1,
+                                                                                  "username":  "buyer01",
+                                                                                  "mobile":  "13800000001",
+                                                                                  "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                                  "nickname":  "æµè¯ä¹°å®¶01",
+                                                                                  "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                                  "email":  "buyer01@test.com",
+                                                                                  "registerTime":  null,
+                                                                                  "lastLoginIp":  null,
+                                                                                  "creditScore":  39,
+                                                                                  "productCount":  null,
+                                                                                  "status":  "active",
+                                                                                  "region":  null
+                                                                              }
+                                                                 }
+                                                    }
+                                   },
+    "public_admin_login_no_token":  {
+                                        "method":  "POST",
+                                        "uri":  "http://localhost:8080/admin/employee/login",
+                                        "expect":  "not_401_public_entry",
+                                        "transportStatus":  200,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "éç®¡çåè´¦å·",
+                                                         "data":  null
+                                                     }
+                                    },
+    "public_payment_callback_no_token":  {
+                                             "method":  "POST",
+                                             "uri":  "http://localhost:8080/payment/callback",
+                                             "expect":  "not_401_public_entry",
+                                             "transportStatus":  200,
+                                             "response":  {
+                                                              "code":  1,
+                                                              "msg":  "success",
+                                                              "data":  "åè°ç¶æéæåï¼ä¸åå¤ç"
+                                                          }
+                                         }
+}

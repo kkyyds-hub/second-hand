@@ -54,7 +54,7 @@ public class AddressController {
     @PostMapping
     public Result<AddressVO> createAddress(@Valid @RequestBody AddressDTO request) {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("新增收货地址, 用户 ID: {}, 请求: {}", currentUserId, request);
+        log.info("新增收货地址, 用户 ID: {}, isDefault={}", currentUserId, request.getIsDefault());
         AddressVO vo = addressService.createAddress(currentUserId, request);
         return Result.success(vo);
     }
@@ -65,7 +65,8 @@ public class AddressController {
     public Result<AddressVO> updateAddress(@PathVariable Long addressId,
                                           @Valid @RequestBody AddressDTO request) {
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("更新收货地址, 用户 ID: {}, 收货地址 ID: {}, 请求: {}", currentUserId, addressId, request);
+        log.info("更新收货地址, 用户 ID: {}, 收货地址 ID: {}, isDefault={}",
+                currentUserId, addressId, request.getIsDefault());
         AddressVO vo = addressService.updateAddress(currentUserId, addressId, request);
         return Result.success(vo);
     }

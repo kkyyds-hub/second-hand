@@ -1,11 +1,13 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.audit.AuditLogUtil;
 import com.demo.constant.MessageConstant;
 import com.demo.context.BaseContext;
 import com.demo.dto.user.*;
 import com.demo.entity.User;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.UserMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.result.PageResult;
 import com.demo.service.UserService;
 import com.demo.vo.AvatarUploadConfigVO;
@@ -82,12 +84,18 @@ public class UserServiceImpl implements UserService {
     public UserVO updateProfile(UpdateProfileRequest request) {
         log.info("更新用户信息: {}", request);
         User user = getCurrentUserOrThrow();
-        nicknameValidation(request.getNickname());
-        avatarValidation(request.getAvatar());
-        bioValidation(request.getBio());
-        user.setNickname(request.getNickname());
-        user.setAvatar(request.getAvatar());
-        user.setBio(request.getBio());
+        // Day18 P3-S2：昵称/简介是前端可控文本，先统一做 trim/长度/XSS 风险拦截。
+        String nickname = InputSecurityGuard.normalizePlainText(request.getNickname(), "昵称", 20, true);
+        String bio = InputSecurityGuard.normalizePlainText(request.getBio(), "简介", 150, false);
+        // avatar 属于 URL 字段，先做空白归一化，后续由 avatarValidation 做协议/后缀校验。
+        String avatar = StringUtils.isBlank(request.getAvatar()) ? null : request.getAvatar().trim();
+
+        nicknameValidation(nickname);
+        avatarValidation(avatar);
+        bioValidation(bio);
+        user.setNickname(nickname);
+        user.setAvatar(avatar);
+        user.setBio(bio);
         userMapper.updateProfile(user);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
@@ -440,21 +448,35 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public String banUser(Long userId) {
+        String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
         if (user == null) {
+            AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user not found");
             throw new BusinessException("用户不存在");
         }
 
-        if ("banned".equals(user.getStatus())) {
+        if ("banned".equalsIgnoreCase(user.getStatus())) {
+            AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "already banned");
             return "用户已处于封禁状态";
         }
 
-        int rows = userMapper.updateStatus(userId, "banned");
-        if (rows != 1) {
-            throw new BusinessException("操作失败");
+        int rows = userMapper.updateStatusByExpected(userId, user.getStatus(), "banned");
+        if (rows == 0) {
+            User latest = userMapper.selectById(userId);
+            if (latest == null) {
+                AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
+                throw new BusinessException("用户不存在");
+            }
+            if ("banned".equalsIgnoreCase(latest.getStatus())) {
+                AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "latest status banned");
+                return "用户已处于封禁状态";
+            }
+            AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "CAS_CONFLICT", "latest status=" + latest.getStatus());
+            throw new BusinessException("用户状态已变化，请刷新后重试");
         }
 
         log.info("用户封禁成功：userId={}", userId);
+        AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to banned");
         return "用户封禁成功";
     }
 
@@ -463,21 +485,35 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public String unbanUser(Long userId) {
+        String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
         if (user == null) {
+            AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user not found");
             throw new BusinessException("用户不存在");
         }
 
-        if ("active".equals(user.getStatus())) {
+        if ("active".equalsIgnoreCase(user.getStatus())) {
+            AuditLogUtil.success(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "already active");
             return "用户已处于正常状态";
         }
 
-        int rows = userMapper.updateStatus(userId, "active");
-        if (rows != 1) {
-            throw new BusinessException("操作失败");
+        int rows = userMapper.updateStatusByExpected(userId, user.getStatus(), "active");
+        if (rows == 0) {
+            User latest = userMapper.selectById(userId);
+            if (latest == null) {
+                AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
+                throw new BusinessException("用户不存在");
+            }
+            if ("active".equalsIgnoreCase(latest.getStatus())) {
+                AuditLogUtil.success(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "IDEMPOTENT", "latest status active");
+                return "用户已处于正常状态";
+            }
+            AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "CAS_CONFLICT", "latest status=" + latest.getStatus());
+            throw new BusinessException("用户状态已变化，请刷新后重试");
         }
 
         log.info("用户解封成功：userId={}", userId);
+        AuditLogUtil.success(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to active");
         return "用户解封成功";
     }
 

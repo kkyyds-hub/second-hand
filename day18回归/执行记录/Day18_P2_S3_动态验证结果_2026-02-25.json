@@ -1,0 +1,133 @@
+﻿{
+    "executedAt":  "2026-02-25 11:54:33",
+    "login":  {
+                  "adminCode":  1,
+                  "buyerCode":  1,
+                  "sellerCode":  1,
+                  "targetUserId":  2
+              },
+    "baseline":  {
+                     "ensureUnbanMsg":  "success",
+                     "userStatus":  "active",
+                     "autoRiskCount":  "1"
+                 },
+    "scenarioA":  {
+                      "responses":  [
+                                        {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  "ç¨æ·å°ç¦æå",
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "02205118-f47a-4785-844d-65dab5961b7c",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "be27c43c-e302-4d62-921b-30a4eca62793"
+                                        },
+                                        {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  "ç¨æ·å·²å¤äºå°ç¦ç¶æ",
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "34c0285b-fa96-4c5a-8b93-0038914ae0db",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "2052bcb2-7dbd-45db-9cfa-6523bb6b8682"
+                                        }
+                                    ],
+                      "userStatusAfter":  "banned"
+                  },
+    "scenarioB":  {
+                      "responses":  [
+                                        {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  "ç¨æ·è§£å°æå",
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "74031123-0be3-4220-838c-d90b50544c0c",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "e6b37972-be47-424f-be07-e46c09951152"
+                                        },
+                                        {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "f99a3ef6-2887-4c36-a78d-7a277088e120",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "a17d0c00-e808-4a90-9d77-ad4a7d3b569e"
+                                        }
+                                    ],
+                      "userStatusAfter":  "active"
+                  },
+    "scenarioC":  {
+                      "productId":  920019,
+                      "approveMsg":  "success",
+                      "orderId":  900044,
+                      "responses":  [
+                                        {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  "æ¯ä»æå",
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "fc6a55b7-eaf8-4550-bd7d-355c3a2f8aa1",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "9918cffe-e256-4397-9ae0-2ecbdc6f1a0d"
+                                        },
+                                        {
+                                            "code":  0,
+                                            "msg":  "è®¢åå·²æ¯ä»ï¼å½åä¸å\u0085è®¸åæ¶ï¼åç»­èµ°éæ¬¾/å®åï¼",
+                                            "data":  null,
+                                            "PSComputerName":  "localhost",
+                                            "RunspaceId":  "cb49c4c7-0ccc-4477-82c4-91d3d4e70ac8",
+                                            "PSShowComputerName":  false,
+                                            "PSSourceJobInstanceId":  "730b3879-56b7-42bc-9747-de2c9913d2e5"
+                                        }
+                                    ],
+                      "orderStatusApi":  "paid",
+                      "orderStatusSql":  "paid"
+                  },
+    "scenarioD":  {
+                      "autoRiskBefore":  "1",
+                      "failAttempts":  [
+                                           {
+                                               "attempt":  1,
+                                               "code":  0,
+                                               "msg":  "ç¨æ·åæå¯ç éè¯¯"
+                                           },
+                                           {
+                                               "attempt":  2,
+                                               "code":  0,
+                                               "msg":  "ç¨æ·åæå¯ç éè¯¯"
+                                           },
+                                           {
+                                               "attempt":  3,
+                                               "code":  0,
+                                               "msg":  "ç¨æ·åæå¯ç éè¯¯"
+                                           },
+                                           {
+                                               "attempt":  4,
+                                               "code":  0,
+                                               "msg":  "ç¨æ·åæå¯ç éè¯¯"
+                                           },
+                                           {
+                                               "attempt":  5,
+                                               "code":  0,
+                                               "msg":  "ç¨æ·åæå¯ç éè¯¯"
+                                           },
+                                           {
+                                               "attempt":  6,
+                                               "code":  0,
+                                               "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå"
+                                           }
+                                       ],
+                      "correctAfterFails":  {
+                                                "code":  0,
+                                                "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå"
+                                            },
+                      "userStatusAfter":  "frozen",
+                      "autoRiskAfter":  "2",
+                      "autoRiskDelta":  1
+                  },
+    "cleanup":  {
+                    "unbanMsg":  "success",
+                    "finalUserStatus":  "active"
+                }
+}

@@ -1,0 +1,41 @@
+﻿{
+    "executedAt":  "2026-02-25 14:33:17",
+    "login":  {
+                  "code":  1,
+                  "msg":  "success",
+                  "data":  {
+                               "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMDgzOTgsInVzZXJJZCI6MX0.5E4dkymkv3CXWBg98j1XzxHktj2QhFkceN6jcIdRQMI",
+                               "user":  {
+                                            "id":  1,
+                                            "username":  "buyer01",
+                                            "mobile":  "13800000001",
+                                            "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                            "nickname":  "æµè¯ä¹°å®¶01",
+                                            "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                            "email":  "buyer01@test.com",
+                                            "registerTime":  null,
+                                            "lastLoginIp":  null,
+                                            "creditScore":  39,
+                                            "productCount":  null,
+                                            "status":  "active",
+                                            "region":  null
+                                        }
+                           }
+              },
+    "sort_injection_buy":  {
+                               "code":  0,
+                               "msg":  "sortField ä»\u0085æ¯æ: createTime/payTime",
+                               "data":  null
+                           },
+    "xss_profile_update":  {
+                               "code":  0,
+                               "msg":  "æµç§°é¿åº¦éå¨1-20ä¸ªå­ç¬¦å\u0085",
+                               "data":  null
+                           },
+    "market_list_probe_error":  "远程服务器返回错误: (401) 未经授权。",
+    "xss_report_submit":  {
+                              "code":  -1,
+                              "data":  null,
+                              "msg":  "NO_MARKET_PRODUCT_FOR_TEST"
+                          }
+}

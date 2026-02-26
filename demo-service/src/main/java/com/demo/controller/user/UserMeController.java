@@ -30,7 +30,10 @@ public class UserMeController {
      */
     @PatchMapping("/profile")
     public Result<UserVO> updateProfile(@Validated @RequestBody UpdateProfileRequest request) {
-        log.info("更新用户信息: {}", request);
+        log.info("更新用户信息: hasNickname={}, hasAvatar={}, hasBio={}",
+                request.getNickname() != null,
+                request.getAvatar() != null,
+                request.getBio() != null);
         return Result.success(userService.updateProfile(request));
     }
 
@@ -39,7 +42,7 @@ public class UserMeController {
      */
     @PostMapping("/upload-config")
     public Result<AvatarUploadConfigVO> getAvatarUploadConfig(@Validated @RequestBody AvatarUploadConfigRequest request) {
-        log.info("获取头像上传配置: {}", request);
+        log.info("获取头像上传配置: fileName={}, contentType={}", request.getFileName(), request.getContentType());
         return Result.success(userService.generateAvatarUploadConfig(request));
     }
 
@@ -48,7 +51,10 @@ public class UserMeController {
      */
     @PostMapping("/password")
     public Result<String> changePassword(@Validated @RequestBody ChangePasswordRequest request) {
-        log.info("修改密码: {}", request);
+        log.info("修改密码: verifyChannel={}, hasOldPassword={}, hasCode={}",
+                request.getVerifyChannel(),
+                request.getOldPassword() != null && !request.getOldPassword().isEmpty(),
+                request.getCode() != null && !request.getCode().isEmpty());
         userService.changePassword(request);
         return Result.success("修改密码成功");
     }
@@ -58,7 +64,9 @@ public class UserMeController {
      */
     @PostMapping("/bindings/phone")
     public Result<UserVO> bindPhone(@Validated @RequestBody BindPhoneRequest request) {
-        log.info("绑定手机号: {}", request);
+        log.info("绑定手机号: verifyCodeLen={}, targetValueLen={}",
+                request.getVerifyCode() == null ? 0 : request.getVerifyCode().length(),
+                request.getValue() == null ? 0 : request.getValue().length());
         return Result.success(userService.bindPhone(request));
     }
 
@@ -67,7 +75,9 @@ public class UserMeController {
      */
     @PostMapping("/bindings/email")
     public Result<UserVO> bindEmail(@Validated @RequestBody BindEmailRequest request) {
-        log.info("绑定邮箱: {}", request);
+        log.info("绑定邮箱: verifyCodeLen={}, targetValueLen={}",
+                request.getVerifyCode() == null ? 0 : request.getVerifyCode().length(),
+                request.getValue() == null ? 0 : request.getValue().length());
         return Result.success(userService.bindEmail(request));
     }
 
@@ -76,7 +86,10 @@ public class UserMeController {
      */
     @DeleteMapping("/bindings/phone")
     public Result<String> unbindPhone(@Validated @RequestBody UnbindContactRequest request) {
-        log.info("解绑手机号: {}", request);
+        log.info("解绑手机号: verifyChannel={}, hasCurrentPassword={}, hasVerifyCode={}",
+                request.getVerifyChannel(),
+                request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty(),
+                request.getVerifyCode() != null && !request.getVerifyCode().isEmpty());
         userService.unbindPhone(request);
         return Result.success("解绑成功");
     }
@@ -86,7 +99,10 @@ public class UserMeController {
      */
     @DeleteMapping("/bindings/email")
     public Result<String> unbindEmail(@Valid @RequestBody UnbindContactRequest request) {
-        log.info("解绑邮箱: {}", request);
+        log.info("解绑邮箱: verifyChannel={}, hasCurrentPassword={}, hasVerifyCode={}",
+                request.getVerifyChannel(),
+                request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty(),
+                request.getVerifyCode() != null && !request.getVerifyCode().isEmpty());
         userService.unbindEmail(request);
         return Result.success("解绑成功");
     }

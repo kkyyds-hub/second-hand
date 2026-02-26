@@ -1,0 +1,192 @@
+﻿{
+    "startedAt":  "2026-02-26 00:20:03",
+    "baseUrl":  "http://localhost:8080",
+    "adminLogin":  {
+                       "response":  {
+                                        "code":  1,
+                                        "msg":  "success",
+                                        "data":  {
+                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDQzNjAzfQ.yc4B80MzO52zHzw_BUVtuQ3HM1lqlnEy8tSoO6dutnE",
+                                                     "user":  {
+                                                                  "id":  5,
+                                                                  "username":  "admin",
+                                                                  "mobile":  "13900000001",
+                                                                  "avatar":  null,
+                                                                  "nickname":  "ç®¡çå",
+                                                                  "bio":  "Day3 åå½ admin å«å",
+                                                                  "email":  "admin@test.com",
+                                                                  "registerTime":  null,
+                                                                  "lastLoginIp":  null,
+                                                                  "creditScore":  100,
+                                                                  "productCount":  null,
+                                                                  "status":  "active",
+                                                                  "region":  null
+                                                              }
+                                                 }
+                                    },
+                       "ok":  true
+                   },
+    "baseline":  {
+                     "unban":  {
+                                   "response":  {
+                                                    "code":  1,
+                                                    "msg":  "success",
+                                                    "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ"
+                                                },
+                                   "ok":  true
+                               },
+                     "userQuery":  {
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  {
+                                                                     "total":  1,
+                                                                     "page":  1,
+                                                                     "list":  [
+                                                                                  {
+                                                                                      "id":  2,
+                                                                                      "username":  "seller01",
+                                                                                      "mobile":  "13800000002",
+                                                                                      "avatar":  "https://img.example.com/avatar/seller01.png",
+                                                                                      "nickname":  "æµè¯åå®¶01",
+                                                                                      "bio":  "ç¨äºåå¸åå/å®åè®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                                      "email":  "seller01@test.com",
+                                                                                      "registerTime":  null,
+                                                                                      "lastLoginIp":  null,
+                                                                                      "creditScore":  86,
+                                                                                      "productCount":  null,
+                                                                                      "status":  "active",
+                                                                                      "region":  null
+                                                                                  }
+                                                                              ],
+                                                                     "pageSize":  5
+                                                                 }
+                                                    },
+                                       "ok":  true
+                                   },
+                     "sql":  {
+                                 "userStatus":  "2\tactive",
+                                 "autoRiskCount":  "3"
+                             }
+                 },
+    "scenarioA":  {
+                      "wrongAttempts":  [
+                                            {
+                                                "attempt":  1,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  2,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  3,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  4,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  5,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                "raw":  null,
+                                                "status":  null
+                                            },
+                                            {
+                                                "attempt":  6,
+                                                "code":  0,
+                                                "ok":  true,
+                                                "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                                "raw":  null,
+                                                "status":  null
+                                            }
+                                        ],
+                      "correctAfterFreeze":  {
+                                                 "response":  {
+                                                                  "code":  0,
+                                                                  "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                                                  "data":  null
+                                                              },
+                                                 "ok":  true
+                                             },
+                      "sql":  {
+                                  "userStatus":  "2\tfrozen",
+                                  "autoRiskCount":  "4",
+                                  "latestBan":  "16\t2\tTEMP\tAUTO_RISK\t��¼ʧ�ܴ��������Զ�����\t2026-02-26 00:20:04\t2026-02-26 01:20:04"
+                              }
+                  },
+    "scenarioB":  {
+                      "firstUnban":  {
+                                         "response":  {
+                                                          "code":  1,
+                                                          "msg":  "success",
+                                                          "data":  "ç¨æ·è§£å°æå"
+                                                      },
+                                         "ok":  true
+                                     },
+                      "secondUnban":  {
+                                          "response":  {
+                                                           "code":  1,
+                                                           "msg":  "success",
+                                                           "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ"
+                                                       },
+                                          "ok":  true
+                                      },
+                      "sql":  {
+                                  "userStatus":  "2\tactive"
+                              }
+                  },
+    "scenarioC":  {
+                      "login":  {
+                                    "response":  {
+                                                     "code":  1,
+                                                     "msg":  "success",
+                                                     "data":  {
+                                                                  "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwNDM2MDQsInVzZXJJZCI6Mn0.AmbB7GsTu6k9E9j2c7i3MOVykCcgDChN099lp3tDBmA",
+                                                                  "user":  {
+                                                                               "id":  2,
+                                                                               "username":  "seller01",
+                                                                               "mobile":  "13800000002",
+                                                                               "avatar":  "https://img.example.com/avatar/seller01.png",
+                                                                               "nickname":  "æµè¯åå®¶01",
+                                                                               "bio":  "ç¨äºåå¸åå/å®åè®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                               "email":  "seller01@test.com",
+                                                                               "registerTime":  null,
+                                                                               "lastLoginIp":  null,
+                                                                               "creditScore":  86,
+                                                                               "productCount":  null,
+                                                                               "status":  "active",
+                                                                               "region":  null
+                                                                           }
+                                                              }
+                                                 },
+                                    "ok":  true
+                                }
+                  },
+    "flags":  {
+                  "freezeTriggered":  false,
+                  "autoRiskIncreased":  true,
+                  "unbanRecovered":  true,
+                  "loginRecovered":  true
+              },
+    "finishedAt":  "2026-02-26 00:20:04"
+}

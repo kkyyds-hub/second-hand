@@ -1,7 +1,9 @@
 package com.demo.controller;
 
+import com.demo.properties.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +23,9 @@ import java.util.Map;
 @Profile("dev")
 public class Jwtcontroller {
 
+    @Autowired
+    private JwtProperties jwtProperties;
+
     /**
      * 生成测试用 JWT（仅 dev 环境可用）。
      */
@@ -32,7 +37,7 @@ public class Jwtcontroller {
             claims.put("empId", 1L);
             claims.put("username", "admin");
 
-            String secretKey = "second hand";
+            String secretKey = jwtProperties.getAdminSecretKey();
             byte[] keyBytes = Arrays.copyOf(
                     secretKey.getBytes(StandardCharsets.UTF_8),
                     32

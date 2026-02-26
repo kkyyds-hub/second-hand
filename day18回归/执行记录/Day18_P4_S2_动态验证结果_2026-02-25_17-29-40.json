@@ -1,0 +1,488 @@
+﻿{
+    "executedAt":  "2026-02-25 17:29:38",
+    "adminLogin":  {
+                       "ok":  true,
+                       "statusCode":  200,
+                       "body":  {
+                                    "code":  1,
+                                    "msg":  "success",
+                                    "data":  {
+                                                 "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDE4OTc5fQ.IxeqyxDMoMCv-m3TtO2LDtLlm-hEo0qHAVhL5GbMiLk",
+                                                 "user":  {
+                                                              "id":  5,
+                                                              "username":  "admin",
+                                                              "mobile":  "13900000001",
+                                                              "avatar":  null,
+                                                              "nickname":  "ç®¡çå",
+                                                              "bio":  "Day3 åå½ admin å«å",
+                                                              "email":  "admin@test.com",
+                                                              "registerTime":  null,
+                                                              "lastLoginIp":  null,
+                                                              "creditScore":  100,
+                                                              "productCount":  null,
+                                                              "status":  "active",
+                                                              "region":  null
+                                                          }
+                                             }
+                                }
+                   },
+    "outboxMetricsBefore":  {
+                                "ok":  true,
+                                "statusCode":  200,
+                                "body":  {
+                                             "code":  1,
+                                             "msg":  "success",
+                                             "data":  {
+                                                          "new":  0,
+                                                          "fail":  0,
+                                                          "queriedAt":  1772011779836,
+                                                          "sent":  44,
+                                                          "failRetrySum":  0
+                                                      }
+                                         }
+                            },
+    "outboxPublishOnce":  {
+                              "ok":  true,
+                              "statusCode":  200,
+                              "body":  {
+                                           "code":  1,
+                                           "msg":  "success",
+                                           "data":  {
+                                                        "limit":  20,
+                                                        "processedAt":  1772011779894,
+                                                        "failed":  0,
+                                                        "sent":  0,
+                                                        "pulled":  0
+                                                    }
+                                       }
+                          },
+    "outboxMetricsAfter":  {
+                               "ok":  true,
+                               "statusCode":  200,
+                               "body":  {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  {
+                                                         "new":  0,
+                                                         "fail":  0,
+                                                         "queriedAt":  1772011779931,
+                                                         "sent":  44,
+                                                         "failRetrySum":  0
+                                                     }
+                                        }
+                           },
+    "taskShipTimeoutPending":  {
+                                   "ok":  true,
+                                   "statusCode":  200,
+                                   "body":  {
+                                                "code":  1,
+                                                "msg":  "success",
+                                                "data":  {
+                                                             "total":  12,
+                                                             "page":  1,
+                                                             "list":  [
+                                                                          {
+                                                                              "id":  22,
+                                                                              "orderId":  900045,
+                                                                              "deadlineTime":  "2026-02-27 15:24",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-25 15:24",
+                                                                              "updateTime":  "2026-02-25 15:24"
+                                                                          },
+                                                                          {
+                                                                              "id":  21,
+                                                                              "orderId":  900044,
+                                                                              "deadlineTime":  "2026-02-27 11:54",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-25 11:54",
+                                                                              "updateTime":  "2026-02-25 11:54"
+                                                                          },
+                                                                          {
+                                                                              "id":  20,
+                                                                              "orderId":  900043,
+                                                                              "deadlineTime":  "2026-02-27 11:53",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-25 11:53",
+                                                                              "updateTime":  "2026-02-25 11:53"
+                                                                          },
+                                                                          {
+                                                                              "id":  19,
+                                                                              "orderId":  900041,
+                                                                              "deadlineTime":  "2026-02-25 10:58",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  104,
+                                                                              "nextRetryTime":  "2026-02-25 17:31",
+                                                                              "lastError":  "close_rows_0_status_paid",
+                                                                              "createTime":  "2026-02-25 11:00",
+                                                                              "updateTime":  "2026-02-25 17:29"
+                                                                          },
+                                                                          {
+                                                                              "id":  17,
+                                                                              "orderId":  900039,
+                                                                              "deadlineTime":  "2026-02-27 10:53",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-25 10:53",
+                                                                              "updateTime":  "2026-02-25 10:53"
+                                                                          },
+                                                                          {
+                                                                              "id":  15,
+                                                                              "orderId":  900038,
+                                                                              "deadlineTime":  "2026-02-27 10:53",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-25 10:53",
+                                                                              "updateTime":  "2026-02-25 10:53"
+                                                                          },
+                                                                          {
+                                                                              "id":  13,
+                                                                              "orderId":  900037,
+                                                                              "deadlineTime":  "2026-02-26 18:19",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:19",
+                                                                              "updateTime":  "2026-02-24 18:19"
+                                                                          },
+                                                                          {
+                                                                              "id":  11,
+                                                                              "orderId":  900036,
+                                                                              "deadlineTime":  "2026-02-26 18:19",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:19",
+                                                                              "updateTime":  "2026-02-24 18:19"
+                                                                          },
+                                                                          {
+                                                                              "id":  9,
+                                                                              "orderId":  900035,
+                                                                              "deadlineTime":  "2026-02-26 18:18",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:18",
+                                                                              "updateTime":  "2026-02-24 18:18"
+                                                                          },
+                                                                          {
+                                                                              "id":  7,
+                                                                              "orderId":  900034,
+                                                                              "deadlineTime":  "2026-02-26 18:18",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:18",
+                                                                              "updateTime":  "2026-02-24 18:18"
+                                                                          },
+                                                                          {
+                                                                              "id":  5,
+                                                                              "orderId":  900033,
+                                                                              "deadlineTime":  "2026-02-26 18:16",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:16",
+                                                                              "updateTime":  "2026-02-24 18:16"
+                                                                          },
+                                                                          {
+                                                                              "id":  3,
+                                                                              "orderId":  900032,
+                                                                              "deadlineTime":  "2026-02-26 18:16",
+                                                                              "status":  "PENDING",
+                                                                              "retryCount":  0,
+                                                                              "nextRetryTime":  null,
+                                                                              "lastError":  null,
+                                                                              "createTime":  "2026-02-24 18:16",
+                                                                              "updateTime":  "2026-02-24 18:16"
+                                                                          }
+                                                                      ],
+                                                             "pageSize":  20
+                                                         }
+                                            }
+                               },
+    "taskRefundFailed":  {
+                             "ok":  true,
+                             "statusCode":  200,
+                             "body":  {
+                                          "code":  1,
+                                          "msg":  "success",
+                                          "data":  {
+                                                       "total":  0,
+                                                       "page":  1,
+                                                       "list":  [
+
+                                                                ],
+                                                       "pageSize":  20
+                                                   }
+                                      }
+                         },
+    "taskShipReminderFailed":  {
+                                   "ok":  true,
+                                   "statusCode":  200,
+                                   "body":  {
+                                                "code":  1,
+                                                "msg":  "success",
+                                                "data":  {
+                                                             "total":  0,
+                                                             "page":  1,
+                                                             "list":  [
+
+                                                                      ],
+                                                             "pageSize":  20
+                                                         }
+                                            }
+                               },
+    "runShipTimeoutOnce":  {
+                               "ok":  true,
+                               "statusCode":  200,
+                               "body":  {
+                                            "code":  1,
+                                            "msg":  "success",
+                                            "data":  {
+                                                         "processedAt":  1772011780082,
+                                                         "taskType":  "ship-timeout",
+                                                         "batchSize":  20,
+                                                         "success":  0
+                                                     }
+                                        }
+                           },
+    "runRefundOnce":  {
+                          "ok":  true,
+                          "statusCode":  200,
+                          "body":  {
+                                       "code":  1,
+                                       "msg":  "success",
+                                       "data":  {
+                                                    "processedAt":  1772011780112,
+                                                    "taskType":  "refund",
+                                                    "batchSize":  20,
+                                                    "success":  0
+                                                }
+                                   }
+                      },
+    "runShipReminderOnce":  {
+                                "ok":  true,
+                                "statusCode":  200,
+                                "body":  {
+                                             "code":  1,
+                                             "msg":  "success",
+                                             "data":  {
+                                                          "processedAt":  1772011780147,
+                                                          "taskType":  "ship-reminder",
+                                                          "batchSize":  20,
+                                                          "success":  0
+                                                      }
+                                         }
+                            },
+    "taskShipTimeoutAfter":  {
+                                 "ok":  true,
+                                 "statusCode":  200,
+                                 "body":  {
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  {
+                                                           "total":  12,
+                                                           "page":  1,
+                                                           "list":  [
+                                                                        {
+                                                                            "id":  22,
+                                                                            "orderId":  900045,
+                                                                            "deadlineTime":  "2026-02-27 15:24",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-25 15:24",
+                                                                            "updateTime":  "2026-02-25 15:24"
+                                                                        },
+                                                                        {
+                                                                            "id":  21,
+                                                                            "orderId":  900044,
+                                                                            "deadlineTime":  "2026-02-27 11:54",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-25 11:54",
+                                                                            "updateTime":  "2026-02-25 11:54"
+                                                                        },
+                                                                        {
+                                                                            "id":  20,
+                                                                            "orderId":  900043,
+                                                                            "deadlineTime":  "2026-02-27 11:53",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-25 11:53",
+                                                                            "updateTime":  "2026-02-25 11:53"
+                                                                        },
+                                                                        {
+                                                                            "id":  19,
+                                                                            "orderId":  900041,
+                                                                            "deadlineTime":  "2026-02-25 10:58",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  104,
+                                                                            "nextRetryTime":  "2026-02-25 17:31",
+                                                                            "lastError":  "close_rows_0_status_paid",
+                                                                            "createTime":  "2026-02-25 11:00",
+                                                                            "updateTime":  "2026-02-25 17:29"
+                                                                        },
+                                                                        {
+                                                                            "id":  17,
+                                                                            "orderId":  900039,
+                                                                            "deadlineTime":  "2026-02-27 10:53",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-25 10:53",
+                                                                            "updateTime":  "2026-02-25 10:53"
+                                                                        },
+                                                                        {
+                                                                            "id":  15,
+                                                                            "orderId":  900038,
+                                                                            "deadlineTime":  "2026-02-27 10:53",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-25 10:53",
+                                                                            "updateTime":  "2026-02-25 10:53"
+                                                                        },
+                                                                        {
+                                                                            "id":  13,
+                                                                            "orderId":  900037,
+                                                                            "deadlineTime":  "2026-02-26 18:19",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:19",
+                                                                            "updateTime":  "2026-02-24 18:19"
+                                                                        },
+                                                                        {
+                                                                            "id":  11,
+                                                                            "orderId":  900036,
+                                                                            "deadlineTime":  "2026-02-26 18:19",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:19",
+                                                                            "updateTime":  "2026-02-24 18:19"
+                                                                        },
+                                                                        {
+                                                                            "id":  9,
+                                                                            "orderId":  900035,
+                                                                            "deadlineTime":  "2026-02-26 18:18",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:18",
+                                                                            "updateTime":  "2026-02-24 18:18"
+                                                                        },
+                                                                        {
+                                                                            "id":  7,
+                                                                            "orderId":  900034,
+                                                                            "deadlineTime":  "2026-02-26 18:18",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:18",
+                                                                            "updateTime":  "2026-02-24 18:18"
+                                                                        },
+                                                                        {
+                                                                            "id":  5,
+                                                                            "orderId":  900033,
+                                                                            "deadlineTime":  "2026-02-26 18:16",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:16",
+                                                                            "updateTime":  "2026-02-24 18:16"
+                                                                        },
+                                                                        {
+                                                                            "id":  3,
+                                                                            "orderId":  900032,
+                                                                            "deadlineTime":  "2026-02-26 18:16",
+                                                                            "status":  "PENDING",
+                                                                            "retryCount":  0,
+                                                                            "nextRetryTime":  null,
+                                                                            "lastError":  null,
+                                                                            "createTime":  "2026-02-24 18:16",
+                                                                            "updateTime":  "2026-02-24 18:16"
+                                                                        }
+                                                                    ],
+                                                           "pageSize":  20
+                                                       }
+                                          }
+                             },
+    "taskRefundAfter":  {
+                            "ok":  true,
+                            "statusCode":  200,
+                            "body":  {
+                                         "code":  1,
+                                         "msg":  "success",
+                                         "data":  {
+                                                      "total":  0,
+                                                      "page":  1,
+                                                      "list":  [
+
+                                                               ],
+                                                      "pageSize":  20
+                                                  }
+                                     }
+                        },
+    "taskShipReminderAfter":  {
+                                  "ok":  true,
+                                  "statusCode":  200,
+                                  "body":  {
+                                               "code":  1,
+                                               "msg":  "success",
+                                               "data":  {
+                                                            "total":  0,
+                                                            "page":  1,
+                                                            "list":  [
+
+                                                                     ],
+                                                            "pageSize":  20
+                                                        }
+                                           }
+                              },
+    "dbProbe":  {
+                    "outboxStatus":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "outboxFailRetrySum":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "outboxFailCount":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "shipTimeoutDuePending":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "shipTimeoutHighRetry":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "refundFailedCount":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "refundHighRetry":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "shipReminderFailedCount":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "shipReminderStaleRunning":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "mqFail30m":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "mqProcessingOver5m":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure.",
+                    "autoRiskToday":  "ERR: mysql: [Warning] Using a password on the command line interface can be insecure."
+                }
+}

@@ -1,0 +1,1259 @@
+﻿{
+    "info":  {
+                 "_postman_id":  "c8d2807f-95f8-4a8f-b240-2d89ae23b9d8",
+                 "name":  "Day18 Regression v2 (Local)",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "event":  [
+                  {
+                      "listen":  "prerequest",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+                                                  "var url = pm.request.url.toString();",
+                                                  "var tag = pm.environment.get(\u0027runTag\u0027);",
+                                                  "if (!tag) { tag = Date.now().toString().slice(-8); pm.environment.set(\u0027runTag\u0027, tag); }",
+                                                  "pm.environment.set(\u0027title_d\u0027, \u0027DAY18-D-\u0027 + tag);",
+                                                  "pm.environment.set(\u0027title_e\u0027, \u0027DAY18-E-\u0027 + tag);",
+                                                  "pm.environment.set(\u0027title_f\u0027, \u0027DAY18-F-\u0027 + tag);",
+                                                  "pm.environment.set(\u0027shippingAddress_d\u0027, \u0027DAY18收货地址D-\u0027 + tag);",
+                                                  "pm.environment.set(\u0027shippingAddress_e\u0027, \u0027DAY18收货地址E-\u0027 + tag);",
+                                                  "if (url.includes(\u0027/admin/\u0027) \u0026\u0026 !url.includes(\u0027/admin/employee/login\u0027)) {",
+                                                  "  var tAdmin = pm.environment.get(\u0027token_admin\u0027); if (tAdmin) pm.request.headers.upsert({ key: \u0027token\u0027, value: tAdmin });",
+                                                  "}",
+                                                  "if (url.includes(\u0027/user/\u0027) \u0026\u0026 !url.includes(\u0027/user/auth/\u0027)) {",
+                                                  "  var reqName = pm.info \u0026\u0026 pm.info.requestName ? pm.info.requestName : \u0027\u0027;",
+                                                  "  var useSeller = reqName.indexOf(\u0027[Seller]\u0027) === 0;",
+                                                  "  var tBuyer = pm.environment.get(\u0027token_buyer\u0027);",
+                                                  "  var tSeller = pm.environment.get(\u0027token_seller\u0027);",
+                                                  "  var t = useSeller ? (tSeller || tBuyer) : tBuyer;",
+                                                  "  if (t) pm.request.headers.upsert({ key: \u0027authentication\u0027, value: t });",
+                                                  "}"
+                                              ]
+                                 }
+                  }
+              ],
+    "item":  [
+                 {
+                     "name":  "01-Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Buyer Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/auth/login/password",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"loginId\": \"{{buyer_username}}\",\n  \"password\": \"{{buyer_password}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027buyer token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) { pm.environment.set(\u0027token_buyer\u0027, j.data.token); if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027buyerId\u0027, String(j.data.user.id)); }"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Seller Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/auth/login/password",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"loginId\": \"{{seller_username}}\",\n  \"password\": \"{{seller_password}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027seller token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) { pm.environment.set(\u0027token_seller\u0027, j.data.token); if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027sellerId\u0027, String(j.data.user.id)); }"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/employee/login",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"loginId\": \"{{admin_loginId}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027admin token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) { pm.environment.set(\u0027token_admin\u0027, j.data.token); if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027adminId\u0027, String(j.data.user.id)); }"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02-Day17-Setup",
+                     "item":  [
+                                  {
+                                      "name":  "[Seller] Create Product D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/products",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"{{title_d}}\",\n  \"description\": \"Day17 回归商品 D\",\n  \"price\": 188.00,\n  \"images\": [\"https://img.example.com/day17/d-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027create D has productId\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.productId).to.be.ok; });",
+                                                                                    "if (j.data \u0026\u0026 j.data.productId) pm.environment.set(\u0027productId_d\u0027, String(j.data.productId));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] Create Product E",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/products",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"{{title_e}}\",\n  \"description\": \"Day17 回归商品 E\",\n  \"price\": 166.00,\n  \"images\": [\"https://img.example.com/day17/e-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027create E has productId\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.productId).to.be.ok; });",
+                                                                                    "if (j.data \u0026\u0026 j.data.productId) pm.environment.set(\u0027productId_e\u0027, String(j.data.productId));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Approve Product D",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/products/{{productId_d}}/approve"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] Create Product F (For Favorite)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/products",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"{{title_f}}\",\n  \"description\": \"Day17 回归商品 F，仅用于收藏回归\",\n  \"price\": 88.00,\n  \"images\": [\"https://img.example.com/day17/f-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027create F has productId\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.productId).to.be.ok; });",
+                                                                                    "if (j.data \u0026\u0026 j.data.productId) pm.environment.set(\u0027productId_f\u0027, String(j.data.productId));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Approve Product E",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/products/{{productId_e}}/approve"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Approve Product F",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/products/{{productId_f}}/approve"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Create Order D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"productId\": {{productId_d}},\n  \"shippingAddress\": \"{{shippingAddress_d}}\",\n  \"quantity\": 1\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "if (j.data) { if (j.data.orderId) pm.environment.set(\u0027orderId_d\u0027, String(j.data.orderId)); if (j.data.orderNo) pm.environment.set(\u0027orderNo_d\u0027, String(j.data.orderNo)); if (j.data.totalAmount != null) pm.environment.set(\u0027orderAmount_d\u0027, String(j.data.totalAmount)); }"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Pay Order D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_d}}/pay"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Pay Order D Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_d}}/pay"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Create Order E",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"productId\": {{productId_e}},\n  \"shippingAddress\": \"{{shippingAddress_e}}\",\n  \"quantity\": 1\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "if (j.data) { if (j.data.orderId) pm.environment.set(\u0027orderId_e\u0027, String(j.data.orderId)); if (j.data.orderNo) pm.environment.set(\u0027orderNo_e\u0027, String(j.data.orderNo)); if (j.data.totalAmount != null) pm.environment.set(\u0027orderAmount_e\u0027, String(j.data.totalAmount)); }"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Public] Payment Callback E First",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/payment/callback",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"channel\": \"mock\",\n  \"orderNo\": \"{{orderNo_e}}\",\n  \"tradeNo\": \"{{tradeNo_e_1}}\",\n  \"amount\": {{orderAmount_e}},\n  \"status\": \"SUCCESS\",\n  \"timestamp\": {{payTimestamp}},\n  \"sign\": \"day17-sign\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "prerequest",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.environment.set(\u0027payTimestamp\u0027, Math.floor(Date.now() / 1000));",
+                                                                                    "pm.environment.set(\u0027tradeNo_e_1\u0027, \u0027D17-E-1-\u0027 + Date.now());"
+                                                                                ]
+                                                                   }
+                                                    },
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Public] Payment Callback E Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/payment/callback",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"channel\": \"mock\",\n  \"orderNo\": \"{{orderNo_e}}\",\n  \"tradeNo\": \"{{tradeNo_e_2}}\",\n  \"amount\": {{orderAmount_e}},\n  \"status\": \"SUCCESS\",\n  \"timestamp\": {{payTimestamp}},\n  \"sign\": \"day17-sign\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "prerequest",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.environment.set(\u0027payTimestamp\u0027, Math.floor(Date.now() / 1000));",
+                                                                                    "pm.environment.set(\u0027tradeNo_e_2\u0027, \u0027D17-E-2-\u0027 + Date.now());"
+                                                                                ]
+                                                                   }
+                                                    },
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] Ship Order D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_d}}/ship",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"shippingCompany\": \"SF\",\n  \"trackingNo\": \"D17{{runTag}}\",\n  \"remark\": \"Day17 自动回归发货\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Confirm Receipt D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_d}}/confirm-receipt"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03-Day17-MP-CRUD",
+                     "item":  [
+                                  {
+                                      "name":  "[Buyer] Favorite Product F",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/favorites/{{productId_f}}"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Favorites Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/favorites?page=1\u0026pageSize=10"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var p = j.data || {}; var records = p.records || p.list || [];",
+                                                                                    "pm.test(\u0027favorites records array\u0027, function () { pm.expect(Array.isArray(records)).to.eql(true); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Create Review For Order D",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/reviews",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"orderId\": {{orderId_d}},\n  \"rating\": 5,\n  \"content\": \"Day17 自动回归评价\",\n  \"isAnonymous\": false\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] List My Reviews",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/reviews/mine?page=1\u0026pageSize=10"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] List Product Reviews D",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/market/products/{{productId_d}}/reviews?page=1\u0026pageSize=10"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04-Day17-Pagination-And-Mixed",
+                     "item":  [
+                                  {
+                                      "name":  "[Buyer] Addresses Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/addresses?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Credit Logs Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/credit/logs?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Credit Logs Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/credit/logs?userId={{buyerId}}\u0026page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Product Violations Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/products/{{productId_d}}/violations?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Ship Timeout Tasks Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Refund Tasks Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Ship Reminder Tasks Page",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder?page=1\u0026pageSize=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "05-Day17-Idempotency-And-Async",
+                     "item":  [
+                                  {
+                                      "name":  "[Buyer] Send Order Message First",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_d}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"toUserId\": {{sellerId}},\n  \"clientMsgId\": \"DAY17-MSG-{{runTag}}\",\n  \"content\": \"Day17 回归消息首发\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] Send Order Message Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_d}}",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"toUserId\": {{sellerId}},\n  \"clientMsgId\": \"DAY17-MSG-{{runTag}}\",\n  \"content\": \"Day17 回归消息重复\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Outbox Metrics",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/outbox/metrics"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Outbox Publish Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/outbox/publish-once?limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Run Ship Timeout Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout/run-once?limit=100"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Run Ship Timeout Once Repeat",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout/run-once?limit=100"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Run Refund Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund/run-once?limit=100"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Run Ship Reminder Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder/run-once?limit=100"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "06-Day18-Consistency-And-Safety",
+                     "item":  [
+                                  {
+                                      "name":  "[Admin] Outbox Trigger Missing Event",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/outbox/event/missing-{{runTag}}/trigger-now",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027updatedRows == 0 for missing event\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.updatedRows).to.eql(0); });",
+                                                                                    "pm.test(\u0027success == false for missing event\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.success).to.eql(false); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Outbox Metrics After Trigger",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/outbox/metrics"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027metrics fields exist\u0027, function () { pm.expect(j.data).to.have.property(\u0027new\u0027); pm.expect(j.data).to.have.property(\u0027sent\u0027); pm.expect(j.data).to.have.property(\u0027fail\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Flag Order D First",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/orders/{{orderId_d}}/flags",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"type\":\"RISK_REVIEW\",\"remark\":\"Day18-P7-S1-{{runTag}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027flag result message stable\u0027, function () { pm.expect([\u0027标记成功\u0027,\u0027订单已存在该类型标记\u0027]).to.include(j.data); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Flag Order D Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/orders/{{orderId_d}}/flags",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"type\":\"RISK_REVIEW\",\"remark\":\"Day18-P7-S1-{{runTag}}-repeat\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027repeat flag hit idempotent branch\u0027, function () { pm.expect(j.data).to.eql(\u0027订单已存在该类型标记\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Ban Buyer",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/user/{{buyerId}}/ban"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027ban message stable\u0027, function () { pm.expect([\u0027用户封禁成功\u0027,\u0027用户已处于封禁状态\u0027]).to.include(j.data); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Ban Buyer Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/user/{{buyerId}}/ban"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027repeat ban idempotent\u0027, function () { pm.expect(j.data).to.eql(\u0027用户已处于封禁状态\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Unban Buyer",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/user/{{buyerId}}/unban"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027unban message stable\u0027, function () { pm.expect([\u0027用户解封成功\u0027,\u0027用户已处于正常状态\u0027]).to.include(j.data); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Admin] Unban Buyer Repeat Idempotent",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/admin/user/{{buyerId}}/unban"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027repeat unban idempotent\u0027, function () { pm.expect(j.data).to.eql(\u0027用户已处于正常状态\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ]
+}

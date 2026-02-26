@@ -1,0 +1,540 @@
+﻿{
+    "startedAt":  "2026-02-26 00:42:49",
+    "baseUrl":  "http://localhost:8080",
+    "adminLogin":  {
+                       "response":  {
+                                        "code":  1,
+                                        "msg":  "success",
+                                        "data":  {
+                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDQ0OTY5fQ.HExtXyvJkB-Ixfw92zL2jjdCyV9nW4Ron89jN5I2jjI",
+                                                     "user":  {
+                                                                  "id":  5,
+                                                                  "username":  "admin",
+                                                                  "mobile":  "13900000001",
+                                                                  "avatar":  null,
+                                                                  "nickname":  "ç®¡çå",
+                                                                  "bio":  "Day3 åå½ admin å«å",
+                                                                  "email":  "admin@test.com",
+                                                                  "registerTime":  null,
+                                                                  "lastLoginIp":  null,
+                                                                  "creditScore":  100,
+                                                                  "productCount":  null,
+                                                                  "status":  "active",
+                                                                  "region":  null
+                                                              }
+                                                 }
+                                    },
+                       "ok":  true
+                   },
+    "baseline":  {
+                     "user6Before":  "6\tactive"
+                 },
+    "seedData":  {
+                     "r1":  {
+                                "orderId":  900046,
+                                "buyerId":  1,
+                                "amount":  6000,
+                                "orderNo":  "P5S3260226004249652180",
+                                "cancelReason":  "",
+                                "sellerId":  2,
+                                "status":  "paid"
+                            },
+                     "r2o1":  {
+                                  "orderId":  900047,
+                                  "buyerId":  1,
+                                  "amount":  120,
+                                  "orderNo":  "P5S3260226004249731207",
+                                  "cancelReason":  "",
+                                  "sellerId":  2,
+                                  "status":  "paid"
+                              },
+                     "r2o2":  {
+                                  "orderId":  900048,
+                                  "buyerId":  1,
+                                  "amount":  130,
+                                  "orderNo":  "P5S3260226004249792181",
+                                  "cancelReason":  "",
+                                  "sellerId":  2,
+                                  "status":  "paid"
+                              },
+                     "r2o3":  {
+                                  "orderId":  900049,
+                                  "buyerId":  1,
+                                  "amount":  140,
+                                  "orderNo":  "P5S3260226004249850182",
+                                  "cancelReason":  "",
+                                  "sellerId":  2,
+                                  "status":  "paid"
+                              },
+                     "r3c1":  {
+                                  "orderId":  900050,
+                                  "buyerId":  6,
+                                  "amount":  66,
+                                  "orderNo":  "P5S3260226004249911849",
+                                  "cancelReason":  "buyer_cancel",
+                                  "sellerId":  2,
+                                  "status":  "cancelled"
+                              },
+                     "r3c2":  {
+                                  "orderId":  900051,
+                                  "buyerId":  6,
+                                  "amount":  67,
+                                  "orderNo":  "P5S3260226004249973958",
+                                  "cancelReason":  "buyer_cancel",
+                                  "sellerId":  2,
+                                  "status":  "cancelled"
+                              },
+                     "r3c3":  {
+                                  "orderId":  900052,
+                                  "buyerId":  6,
+                                  "amount":  68,
+                                  "orderNo":  "P5S3260226004250039282",
+                                  "cancelReason":  "buyer_cancel",
+                                  "sellerId":  2,
+                                  "status":  "cancelled"
+                              },
+                     "r3p1":  {
+                                  "orderId":  900053,
+                                  "buyerId":  6,
+                                  "amount":  69,
+                                  "orderNo":  "P5S3260226004250102417",
+                                  "cancelReason":  "",
+                                  "sellerId":  2,
+                                  "status":  "paid"
+                              },
+                     "r3p2":  {
+                                  "orderId":  900054,
+                                  "buyerId":  6,
+                                  "amount":  70,
+                                  "orderNo":  "P5S3260226004250184695",
+                                  "cancelReason":  "",
+                                  "sellerId":  2,
+                                  "status":  "paid"
+                              }
+                 },
+    "ruleHits":  {
+                     "r1":  "900046\t6000.00\t1\t2\t2026-02-26 00:42:49",
+                     "r2":  "2\t3\t900049",
+                     "r3":  "6\t5\t3\t0.6000\t900052"
+                 },
+    "targets":  {
+                    "r1OrderId":  900046,
+                    "r2OrderId":  900049,
+                    "r3OrderId":  900052
+                },
+    "flagging":  {
+                     "r1_first":  {
+                                      "response":  {
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  "æ è®°æå"
+                                                   },
+                                      "ok":  true
+                                  },
+                     "r1_second":  {
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  "è®¢åå·²å­å¨è¯¥ç±»åæ è®°"
+                                                    },
+                                       "ok":  true
+                                   },
+                     "r2_first":  {
+                                      "response":  {
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  "æ è®°æå"
+                                                   },
+                                      "ok":  true
+                                  },
+                     "r2_second":  {
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  "è®¢åå·²å­å¨è¯¥ç±»åæ è®°"
+                                                    },
+                                       "ok":  true
+                                   },
+                     "r3_first":  {
+                                      "response":  {
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  "æ è®°æå"
+                                                   },
+                                      "ok":  true
+                                  },
+                     "r3_second":  {
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  "è®¢åå·²å­å¨è¯¥ç±»åæ è®°"
+                                                    },
+                                       "ok":  true
+                                   }
+                 },
+    "manual":  {
+                   "adminOrders":  {
+                                       "response":  {
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  {
+                                                                     "total":  52,
+                                                                     "page":  1,
+                                                                     "list":  [
+                                                                                  {
+                                                                                      "orderId":  900053,
+                                                                                      "orderNo":  "P5S3260226004250102417",
+                                                                                      "buyerId":  6,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  69.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900052,
+                                                                                      "orderNo":  "P5S3260226004250039282",
+                                                                                      "buyerId":  6,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  68.00,
+                                                                                      "status":  "cancelled",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  null,
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  "2026-02-26 00:42",
+                                                                                      "cancelReason":  "buyer_cancel"
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900051,
+                                                                                      "orderNo":  "P5S3260226004249973958",
+                                                                                      "buyerId":  6,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  67.00,
+                                                                                      "status":  "cancelled",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  null,
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  "2026-02-26 00:42",
+                                                                                      "cancelReason":  "buyer_cancel"
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900054,
+                                                                                      "orderNo":  "P5S3260226004250184695",
+                                                                                      "buyerId":  6,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  70.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900050,
+                                                                                      "orderNo":  "P5S3260226004249911849",
+                                                                                      "buyerId":  6,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  66.00,
+                                                                                      "status":  "cancelled",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  null,
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  "2026-02-26 00:42",
+                                                                                      "cancelReason":  "buyer_cancel"
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900048,
+                                                                                      "orderNo":  "P5S3260226004249792181",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  130.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900049,
+                                                                                      "orderNo":  "P5S3260226004249850182",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  140.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900047,
+                                                                                      "orderNo":  "P5S3260226004249731207",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  120.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900046,
+                                                                                      "orderNo":  "P5S3260226004249652180",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  6000.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-26 00:42",
+                                                                                      "payTime":  "2026-02-26 00:42",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900045,
+                                                                                      "orderNo":  "2026022515242112497",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  199.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 15:24",
+                                                                                      "payTime":  "2026-02-25 15:24",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900044,
+                                                                                      "orderNo":  "2026022511543113927",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  199.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 11:54",
+                                                                                      "payTime":  "2026-02-25 11:54",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900043,
+                                                                                      "orderNo":  "2026022511535316813",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  188.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 11:53",
+                                                                                      "payTime":  "2026-02-25 11:53",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900042,
+                                                                                      "orderNo":  "2026022511532817755",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  199.00,
+                                                                                      "status":  "cancelled",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 11:53",
+                                                                                      "payTime":  null,
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  "2026-02-25 12:08",
+                                                                                      "cancelReason":  "timeout"
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900041,
+                                                                                      "orderNo":  "2026022511002319367",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  99.90,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 11:00",
+                                                                                      "payTime":  "2026-02-25 11:00",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900039,
+                                                                                      "orderNo":  "2026022510533011735",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  88.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 10:53",
+                                                                                      "payTime":  "2026-02-25 10:53",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900038,
+                                                                                      "orderNo":  "2026022510530914061",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  88.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-25 10:53",
+                                                                                      "payTime":  "2026-02-25 10:53",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900037,
+                                                                                      "orderNo":  "2026022418194812089",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  166.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-24 18:19",
+                                                                                      "payTime":  "2026-02-24 18:19",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900036,
+                                                                                      "orderNo":  "2026022418194815794",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  188.00,
+                                                                                      "status":  "completed",
+                                                                                      "shippingCompany":  "SF",
+                                                                                      "trackingNo":  "D1728387500",
+                                                                                      "createTime":  "2026-02-24 18:19",
+                                                                                      "payTime":  "2026-02-24 18:19",
+                                                                                      "shipTime":  "2026-02-24 18:19",
+                                                                                      "completeTime":  "2026-02-24 18:19",
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900035,
+                                                                                      "orderNo":  "2026022418183716284",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  166.00,
+                                                                                      "status":  "paid",
+                                                                                      "shippingCompany":  null,
+                                                                                      "trackingNo":  null,
+                                                                                      "createTime":  "2026-02-24 18:18",
+                                                                                      "payTime":  "2026-02-24 18:18",
+                                                                                      "shipTime":  null,
+                                                                                      "completeTime":  null,
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  },
+                                                                                  {
+                                                                                      "orderId":  900034,
+                                                                                      "orderNo":  "2026022418183718374",
+                                                                                      "buyerId":  1,
+                                                                                      "sellerId":  2,
+                                                                                      "totalAmount":  188.00,
+                                                                                      "status":  "completed",
+                                                                                      "shippingCompany":  "SF",
+                                                                                      "trackingNo":  "D1728316169",
+                                                                                      "createTime":  "2026-02-24 18:18",
+                                                                                      "payTime":  "2026-02-24 18:18",
+                                                                                      "shipTime":  "2026-02-24 18:18",
+                                                                                      "completeTime":  "2026-02-24 18:18",
+                                                                                      "cancelTime":  null,
+                                                                                      "cancelReason":  null
+                                                                                  }
+                                                                              ],
+                                                                     "pageSize":  20
+                                                                 }
+                                                    },
+                                       "ok":  true
+                                   },
+                   "banUser6":  {
+                                    "response":  {
+                                                     "code":  1,
+                                                     "msg":  "success",
+                                                     "data":  "ç¨æ·å°ç¦æå"
+                                                 },
+                                    "ok":  true
+                                },
+                   "unbanUser6":  {
+                                      "response":  {
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  "ç¨æ·è§£å°æå"
+                                                   },
+                                      "ok":  true
+                                  },
+                   "user6After":  "6\tactive"
+               },
+    "sqlCheck":  {
+                     "flagsRows":  "4\t900052\trisk_abnormal_cancel\t5\t2026-02-26 00:42:50\r\n3\t900049\trisk_frequent_refund\t5\t2026-02-26 00:42:50\r\n2\t900046\trisk_high_amount\t5\t2026-02-26 00:42:50",
+                     "flagsDup":  ""
+                 },
+    "flags":  {
+                  "r1":  true,
+                  "r2":  true,
+                  "r3":  true,
+                  "idempotent":  false,
+                  "manualChain":  true
+              },
+    "finishedAt":  "2026-02-26 00:42:50"
+}

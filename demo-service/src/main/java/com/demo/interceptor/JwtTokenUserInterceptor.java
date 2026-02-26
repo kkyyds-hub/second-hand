@@ -64,7 +64,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
         try {
             // 3. 解析 JWT
-            log.info("用户端 jwt 校验: {}", token);
+            log.info("用户端 jwt 校验: {}", maskToken(token));
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
             if (claims == null) {
                 // token 过期/非法时，JwtUtil 返回 null
@@ -120,6 +120,16 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+    }
+
+    private String maskToken(String token) {
+        if (!StringUtils.hasText(token)) {
+            return "EMPTY";
+        }
+        if (token.length() <= 10) {
+            return "***";
+        }
+        return token.substring(0, 6) + "..." + token.substring(token.length() - 4);
     }
 }
 

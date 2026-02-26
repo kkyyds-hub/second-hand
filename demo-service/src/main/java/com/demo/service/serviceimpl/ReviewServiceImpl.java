@@ -19,6 +19,7 @@ import com.demo.mapper.OrderMapper;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ReviewMapper;
 import com.demo.mapper.UserMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.result.PageResult;
 import com.demo.service.ReviewService;
 import lombok.extern.slf4j.Slf4j;
@@ -58,9 +59,10 @@ public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> impleme
     @Override
     public Long createReview(Long currentUserId, ReviewCreateRequest request) {
         Long orderId = request.getOrderId();
-        String content = request.getContent();
+        // Day18 P3-S2：评价内容是典型回显字段，先做统一输入安全守卫再做业务长度下限判断。
+        String content = InputSecurityGuard.normalizePlainText(request.getContent(), "评价内容", 500, true);
         if (content != null) {
-            int len = content.trim().length();
+            int len = content.length();
             if (len < 10) {
                 throw new BusinessException(MessageConstant.REVIEW_CONTENT_TOO_SHORT);
             }

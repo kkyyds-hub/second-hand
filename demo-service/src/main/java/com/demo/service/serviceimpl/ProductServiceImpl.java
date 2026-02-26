@@ -15,6 +15,7 @@ import com.demo.exception.BusinessException;
 import com.demo.exception.ProductNotFoundException;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.ProductViolationMapper;
+import com.demo.security.InputSecurityGuard;
 import com.demo.result.PageResult;
 import com.demo.service.ProductAuditService;
 import com.demo.service.CreditService;
@@ -145,14 +146,8 @@ public class ProductServiceImpl implements ProductService {
             return result.isIdempotent() ? result.getMessage() : "商品审核通过";
         }
 
-        // 驳回场景：先去除首尾空白，再做非空与长度校验。
-        String r = (reason == null) ? null : reason.trim();
-        if (r == null || r.isEmpty()) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_REQUIRED);
-        }
-        if (r.length() > 200) {
-            throw new BusinessException(ProductMessageConstant.PRODUCT_REJECT_REASON_TOO_LONG);
-        }
+        // Day18 P3-S2：驳回原因会进入审计日志与通知文案，统一按纯文本口径收口。
+        String r = InputSecurityGuard.normalizePlainText(reason, "驳回原因", 200, true);
 
         TransitionResult result = transit(
                 productId,
@@ -213,24 +208,10 @@ public class ProductServiceImpl implements ProductService {
         if (request == null) {
             throw new BusinessException("强制下架参数不能为空");
         }
-        String reasonCode = normalizeBlankToNull(request.getReasonCode());
-        if (reasonCode == null) {
-            throw new BusinessException("reasonCode 不能为空");
-        }
-        if (reasonCode.length() > 64) {
-            throw new BusinessException("reasonCode 长度不能超过64");
-        }
-        String reasonText = normalizeBlankToNull(request.getReasonText());
-        if (reasonText == null) {
-            throw new BusinessException("reasonText 不能为空");
-        }
-        if (reasonText.length() > 255) {
-            throw new BusinessException("reasonText 长度不能超过255");
-        }
-        String reportTicketNo = normalizeBlankToNull(request.getReportTicketNo());
-        if (reportTicketNo != null && reportTicketNo.length() > 32) {
-            throw new BusinessException("reportTicketNo 长度不能超过32");
-        }
+        // Day18 P3-S2：管理员输入参数统一走纯文本守卫，避免非法片段进入审计/消息链路。
+        String reasonCode = InputSecurityGuard.normalizePlainText(request.getReasonCode(), "reasonCode", 64, true);
+        String reasonText = InputSecurityGuard.normalizePlainText(request.getReasonText(), "reasonText", 255, true);
+        String reportTicketNo = InputSecurityGuard.normalizePlainText(request.getReportTicketNo(), "reportTicketNo", 32, false);
 
         TransitionResult result = transit(
                 productId,
@@ -391,9 +372,13 @@ public class ProductServiceImpl implements ProductService {
     public ProductDetailDTO updateMyProduct(Long currentUserId,
                                             Long productId,
                                             ProductUpdateRequest request) {
+        // Day18 P3-S2：商品标题/描述是核心展示字段，先做统一输入安全守卫。
+        String safeTitle = InputSecurityGuard.normalizePlainText(request.getTitle(), "商品标题", 120, true);
+        String safeDescription = InputSecurityGuard.normalizePlainText(request.getDescription(), "商品描述", 2000, false);
+
         // Day13 Step6 - 敏感词检测（编辑时）
-        String checkText = (request.getTitle() != null ? request.getTitle() : "") + " " +
-                          (request.getDescription() != null ? request.getDescription() : "");
+        String checkText = (safeTitle != null ? safeTitle : "") + " " +
+                (safeDescription != null ? safeDescription : "");
         if (sensitiveWordService.containsSensitiveWord(checkText)) {
             String matched = sensitiveWordService.getMatchedWords(checkText);
             log.warn("商品编辑包含敏感词：productId={}, words={}", productId, matched);
@@ -407,9 +392,11 @@ public class ProductServiceImpl implements ProductService {
             if (request.getImages().isEmpty()) {
                 imagesForUpdate = "";
             } else {
+                // 图片 URL 同样按纯文本规则校验，避免事件属性注入或非法片段进入存储。
                 List<String> cleaned = request.getImages().stream()
                         .filter(Objects::nonNull)
-                        .map(String::trim)
+                        .map(s -> InputSecurityGuard.normalizePlainText(s, "商品图片URL", 500, false))
+                        .filter(Objects::nonNull)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
                 imagesForUpdate = cleaned.isEmpty() ? "" : String.join(",", cleaned);
@@ -434,8 +421,8 @@ public class ProductServiceImpl implements ProductService {
                         currentStatus.getDbValue(),
                         ProductStatus.UNDER_REVIEW.getDbValue(),
                         null,
-                        request.getTitle(),
-                        request.getDescription(),
+                        safeTitle,
+                        safeDescription,
                         request.getPrice(),
                         finalImagesForUpdate
                 )
@@ -495,9 +482,14 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public ProductDetailDTO createProduct(Long currentUserId, ProductCreateRequest request) {
+        // Day18 P3-S2：创建链路与编辑链路保持同口径的输入安全校验。
+        String safeTitle = InputSecurityGuard.normalizePlainText(request.getTitle(), "商品标题", 120, true);
+        String safeDescription = InputSecurityGuard.normalizePlainText(request.getDescription(), "商品描述", 2000, false);
+        String safeCategory = InputSecurityGuard.normalizePlainText(request.getCategory(), "商品分类", 60, false);
+
         // Day13 Step6 - 敏感词检测（创建时）
-        String checkText = (request.getTitle() != null ? request.getTitle() : "") + " " +
-                          (request.getDescription() != null ? request.getDescription() : "");
+        String checkText = (safeTitle != null ? safeTitle : "") + " " +
+                (safeDescription != null ? safeDescription : "");
         if (sensitiveWordService.containsSensitiveWord(checkText)) {
             String matched = sensitiveWordService.getMatchedWords(checkText);
             log.warn("商品创建包含敏感词：userId={}, words={}", currentUserId, matched);
@@ -507,14 +499,21 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = new Product();
         product.setOwnerId(currentUserId);
-        product.setTitle(request.getTitle());
-        product.setDescription(request.getDescription());
+        product.setTitle(safeTitle);
+        product.setDescription(safeDescription);
         product.setPrice(request.getPrice());
-        product.setCategory(request.getCategory());
+        product.setCategory(safeCategory);
 
         // 2) images: List<String> -> "a,b,c"
         if (request.getImages() != null && !request.getImages().isEmpty()) {
-            product.setImages(String.join(",", request.getImages()));
+            // 多图场景逐个规范化，保证 join 之后的 images 字段可控。
+            List<String> safeImages = request.getImages().stream()
+                    .filter(Objects::nonNull)
+                    .map(s -> InputSecurityGuard.normalizePlainText(s, "商品图片URL", 500, false))
+                    .filter(Objects::nonNull)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+            product.setImages(safeImages.isEmpty() ? null : String.join(",", safeImages));
         } else {
             product.setImages(null);
         }

@@ -1,0 +1,230 @@
+﻿{
+    "generatedAt":  "2026-02-26 00:13:27",
+    "baseUrl":  "http://localhost:8080",
+    "accounts":  {
+                     "admin":  "13900000001",
+                     "seller":  "13800000002",
+                     "sellerUserId":  2
+                 },
+    "adminLogin":  {
+                       "method":  "Post",
+                       "uri":  "http://localhost:8080/admin/employee/login",
+                       "ok":  true,
+                       "response":  {
+                                        "code":  1,
+                                        "msg":  "success",
+                                        "data":  {
+                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDQzMjA3fQ.EGb-jAamNldcx5Iu_g2SOQGW1ge41TLLLd6WqS5ehGA",
+                                                     "user":  {
+                                                                  "id":  5,
+                                                                  "username":  "admin",
+                                                                  "mobile":  "13900000001",
+                                                                  "avatar":  null,
+                                                                  "nickname":  "ç®¡çå",
+                                                                  "bio":  "Day3 åå½ admin å«å",
+                                                                  "email":  "admin@test.com",
+                                                                  "registerTime":  null,
+                                                                  "lastLoginIp":  null,
+                                                                  "creditScore":  100,
+                                                                  "productCount":  null,
+                                                                  "status":  "active",
+                                                                  "region":  null
+                                                              }
+                                                 }
+                                    },
+                       "error":  null
+                   },
+    "preUnban":  {
+                     "method":  "Put",
+                     "uri":  "http://localhost:8080/admin/user/2/unban",
+                     "ok":  true,
+                     "response":  {
+                                      "code":  1,
+                                      "msg":  "success",
+                                      "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ"
+                                  },
+                     "error":  null
+                 },
+    "preUserStatusApi":  {
+                             "method":  "Get",
+                             "uri":  "http://localhost:8080/admin/user?page=1\u0026pageSize=5\u0026keyword=13800000002",
+                             "ok":  true,
+                             "response":  {
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  {
+                                                           "total":  1,
+                                                           "page":  1,
+                                                           "list":  [
+                                                                        {
+                                                                            "id":  2,
+                                                                            "username":  "seller01",
+                                                                            "mobile":  "13800000002",
+                                                                            "avatar":  "https://img.example.com/avatar/seller01.png",
+                                                                            "nickname":  "æµè¯åå®¶01",
+                                                                            "bio":  "ç¨äºåå¸åå/å®åè®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                            "email":  "seller01@test.com",
+                                                                            "registerTime":  null,
+                                                                            "lastLoginIp":  null,
+                                                                            "creditScore":  86,
+                                                                            "productCount":  null,
+                                                                            "status":  "active",
+                                                                            "region":  null
+                                                                        }
+                                                                    ],
+                                                           "pageSize":  5
+                                                       }
+                                          },
+                             "error":  null
+                         },
+    "preDbUser":  "2\tactive\t2026-02-25 15:24:21",
+    "preDbAutoRiskCount":  "2",
+    "scenarioA_wrongAttempts":  [
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    },
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    },
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    },
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    },
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    },
+                                    {
+                                        "method":  "Post",
+                                        "uri":  "http://localhost:8080/user/auth/login/password",
+                                        "ok":  true,
+                                        "response":  {
+                                                         "code":  0,
+                                                         "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                                         "data":  null
+                                                     },
+                                        "error":  null
+                                    }
+                                ],
+    "scenarioA_correctAfterFreeze":  {
+                                         "method":  "Post",
+                                         "uri":  "http://localhost:8080/user/auth/login/password",
+                                         "ok":  true,
+                                         "response":  {
+                                                          "code":  0,
+                                                          "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                                          "data":  null
+                                                      },
+                                         "error":  null
+                                     },
+    "afterFreezeDbUser":  "2\tfrozen\t2026-02-26 00:13:29",
+    "afterFreezeDbBan":  [
+                             "15\tAUTO_RISK\tTEMP\t��¼ʧ�ܴ��������Զ�����\t2026-02-26 00:13:29\t2026-02-26 01:13:29",
+                             "14\tAUTO_RISK\tTEMP\t��¼ʧ�ܴ��������Զ�����\t2026-02-25 11:54:33\t2026-02-25 12:54:33",
+                             "13\tAUTO_RISK\tTEMP\t��¼ʧ�ܴ��������Զ�����\t2026-02-25 11:53:30\t2026-02-25 12:53:30"
+                         ],
+    "afterFreezeDbAutoRiskCount":  "3",
+    "scenarioB_unban1":  {
+                             "method":  "Put",
+                             "uri":  "http://localhost:8080/admin/user/2/unban",
+                             "ok":  true,
+                             "response":  {
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  "ç¨æ·è§£å°æå"
+                                          },
+                             "error":  null
+                         },
+    "scenarioB_unban2":  {
+                             "method":  "Put",
+                             "uri":  "http://localhost:8080/admin/user/2/unban",
+                             "ok":  true,
+                             "response":  {
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ"
+                                          },
+                             "error":  null
+                         },
+    "afterUnbanDbUser":  "2\tactive\t2026-02-26 00:13:29",
+    "scenarioC_loginAfterUnban":  {
+                                      "method":  "Post",
+                                      "uri":  "http://localhost:8080/user/auth/login/password",
+                                      "ok":  true,
+                                      "response":  {
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  {
+                                                                    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwNDMyMDksInVzZXJJZCI6Mn0._wDoEquT0kgijhcEnOZgmSa9NTQnw_Oob90OkInG3zo",
+                                                                    "user":  {
+                                                                                 "id":  2,
+                                                                                 "username":  "seller01",
+                                                                                 "mobile":  "13800000002",
+                                                                                 "avatar":  "https://img.example.com/avatar/seller01.png",
+                                                                                 "nickname":  "æµè¯åå®¶01",
+                                                                                 "bio":  "ç¨äºåå¸åå/å®åè®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                                 "email":  "seller01@test.com",
+                                                                                 "registerTime":  null,
+                                                                                 "lastLoginIp":  null,
+                                                                                 "creditScore":  86,
+                                                                                 "productCount":  null,
+                                                                                 "status":  "active",
+                                                                                 "region":  null
+                                                                             }
+                                                                }
+                                                   },
+                                      "error":  null
+                                  },
+    "scenarioD_auditCheck":  {
+                                 "status":  "pending_manual_console_check",
+                                 "reason":  "当前环境无法直接读取 IDEA Run 控制台日志，请按 AUDIT 关键字手工检索 LOGIN_RISK_FREEZE/USER_LOGIN/USER_UNBAN"
+                             },
+    "summary":  {
+                    "wrongAttempt6_msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                    "correctAfterFreeze_msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                    "unban1_msg":  "success",
+                    "unban2_msg":  "success",
+                    "loginAfterUnban_msg":  "success"
+                }
+}

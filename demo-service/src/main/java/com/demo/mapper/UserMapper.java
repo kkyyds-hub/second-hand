@@ -44,6 +44,13 @@ public interface UserMapper {
                      @Param("status") String status);
 
     /**
+     * 条件更新用户状态（CAS：id + expectedStatus）。
+     */
+    int updateStatusByExpected(@Param("userId") Long userId,
+                               @Param("expectedStatus") String expectedStatus,
+                               @Param("targetStatus") String targetStatus);
+
+    /**
      * 按用户 ID 查询用户。
      */
     User selectById(@Param("userId") Long userId);
