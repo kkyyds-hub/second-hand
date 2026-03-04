@@ -39,13 +39,16 @@ public interface MessageOutboxMapper {
      * 规则：
      * - status = NEW 或 FAIL
      * - nextRetryTime 为空 或 nextRetryTime <= 当前时间
+     * - 可按交换机黑名单排除测试注入事件
      * - 按 id ASC 返回前 limit（保语义）
      * - SQL 内部采用分支限流后再合并排序，收口 filesort 影响范围
      *
      * @param limit 拉取条数
+     * @param excludeExchanges 需排除的交换机（可空）
      * @return 待发送消息列表
      */
-    List<MessageOutbox> listPending(@Param("limit") int limit);
+    List<MessageOutbox> listPending(@Param("limit") int limit,
+                                    @Param("excludeExchanges") List<String> excludeExchanges);
 
     /**
      * 标记发送成功
@@ -99,12 +102,36 @@ public interface MessageOutboxMapper {
     int countByStatus(@Param("status") String status);
 
     /**
+     * 统计指定状态数量（可排除部分交换机）。
+     *
+     * 用途：
+     * 1) 监控场景下忽略“失败注入测试交换机”样本；
+     * 2) 避免测试残留事件长期污染生产告警指标。
+     *
+     * @param status 状态：NEW / SENT / FAIL
+     * @param excludeExchanges 需要排除的交换机列表（可空）
+     * @return 数量
+     */
+    int countByStatusExcludeExchanges(@Param("status") String status,
+                                      @Param("excludeExchanges") List<String> excludeExchanges);
+
+    /**
      * 统计指定状态的累计重试次数（用于监控）
      *
      * @param status 状态：NEW / SENT / FAIL
      * @return 重试次数总和
      */
     int sumRetryCountByStatus(@Param("status") String status);
+
+    /**
+     * 统计指定状态累计重试次数（可排除部分交换机）。
+     *
+     * @param status 状态：NEW / SENT / FAIL
+     * @param excludeExchanges 需要排除的交换机列表（可空）
+     * @return 重试次数总和
+     */
+    int sumRetryCountByStatusExcludeExchanges(@Param("status") String status,
+                                              @Param("excludeExchanges") List<String> excludeExchanges);
 
     /**
      * 人工补偿：按 eventId 立即重试。

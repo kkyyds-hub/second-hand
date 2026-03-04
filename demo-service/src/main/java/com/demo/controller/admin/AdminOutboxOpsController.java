@@ -6,6 +6,7 @@ import com.demo.mapper.MessageOutboxMapper;
 import com.demo.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,8 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Outbox 运维接口（P4-S4）。
@@ -37,6 +42,12 @@ public class AdminOutboxOpsController {
 
     private final MessageOutboxMapper messageOutboxMapper;
     private final OutboxPublishJob outboxPublishJob;
+
+    @Value("${outbox.monitor.exclude-test-exchanges-enabled:true}")
+    private boolean excludeTestExchangesEnabled;
+
+    @Value("${outbox.monitor.exclude-exchanges:bad.exchange}")
+    private String excludeExchangesRaw;
 
     /**
      * 按事件 ID 查询 Outbox 记录。
@@ -85,17 +96,33 @@ public class AdminOutboxOpsController {
      */
     @GetMapping("/metrics")
     public Result<Map<String, Object>> metrics() {
-        int newCount = messageOutboxMapper.countByStatus("NEW");
-        int sentCount = messageOutboxMapper.countByStatus("SENT");
-        int failCount = messageOutboxMapper.countByStatus("FAIL");
-        int failRetrySum = messageOutboxMapper.sumRetryCountByStatus("FAIL");
+        List<String> excludeExchanges = resolveExcludeExchanges();
+        int newCount = messageOutboxMapper.countByStatusExcludeExchanges("NEW", excludeExchanges);
+        int sentCount = messageOutboxMapper.countByStatusExcludeExchanges("SENT", excludeExchanges);
+        int failCount = messageOutboxMapper.countByStatusExcludeExchanges("FAIL", excludeExchanges);
+        int failRetrySum = messageOutboxMapper.sumRetryCountByStatusExcludeExchanges("FAIL", excludeExchanges);
 
         Map<String, Object> data = new HashMap<>(5);
         data.put("new", newCount);
         data.put("sent", sentCount);
         data.put("fail", failCount);
         data.put("failRetrySum", failRetrySum);
+        data.put("excludeExchanges", excludeExchanges);
         data.put("queriedAt", System.currentTimeMillis());
         return Result.success(data);
+    }
+
+    private List<String> resolveExcludeExchanges() {
+        if (!excludeTestExchangesEnabled) {
+            return Collections.emptyList();
+        }
+        if (excludeExchangesRaw == null || excludeExchangesRaw.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(excludeExchangesRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

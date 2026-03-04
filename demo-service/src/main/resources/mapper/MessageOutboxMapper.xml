@@ -85,6 +85,12 @@
                   FROM message_outbox
                   WHERE status = 'NEW'
                     AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+                  <if test="excludeExchanges != null and excludeExchanges.size > 0">
+                    AND exchange_name NOT IN
+                    <foreach collection="excludeExchanges" item="exchange" open="(" separator="," close=")">
+                      #{exchange}
+                    </foreach>
+                  </if>
                   ORDER BY id ASC
                   LIMIT #{limit})
                  UNION ALL
@@ -94,6 +100,12 @@
                   FROM message_outbox
                   WHERE status = 'FAIL'
                     AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW())
+                  <if test="excludeExchanges != null and excludeExchanges.size > 0">
+                    AND exchange_name NOT IN
+                    <foreach collection="excludeExchanges" item="exchange" open="(" separator="," close=")">
+                      #{exchange}
+                    </foreach>
+                  </if>
                   ORDER BY id ASC
                   LIMIT #{limit})
              ) t
@@ -154,11 +166,37 @@
     WHERE status = #{status}
 </select>
 
+<!-- 统计 Outbox 状态数量（监控用，可排除测试交换机） -->
+<select id="countByStatusExcludeExchanges" resultType="int">
+    SELECT COUNT(*)
+    FROM message_outbox
+    WHERE status = #{status}
+    <if test="excludeExchanges != null and excludeExchanges.size > 0">
+      AND exchange_name NOT IN
+      <foreach collection="excludeExchanges" item="exchange" open="(" separator="," close=")">
+        #{exchange}
+      </foreach>
+    </if>
+</select>
+
 <!-- 统计指定状态累计重试次数（监控用） -->
 <select id="sumRetryCountByStatus" resultType="int">
     SELECT COALESCE(SUM(retry_count), 0)
     FROM message_outbox
     WHERE status = #{status}
+</select>
+
+<!-- 统计指定状态累计重试次数（监控用，可排除测试交换机） -->
+<select id="sumRetryCountByStatusExcludeExchanges" resultType="int">
+    SELECT COALESCE(SUM(retry_count), 0)
+    FROM message_outbox
+    WHERE status = #{status}
+    <if test="excludeExchanges != null and excludeExchanges.size > 0">
+      AND exchange_name NOT IN
+      <foreach collection="excludeExchanges" item="exchange" open="(" separator="," close=")">
+        #{exchange}
+      </foreach>
+    </if>
 </select>
 
     <!-- 人工补偿：按 eventId 立即重试 -->

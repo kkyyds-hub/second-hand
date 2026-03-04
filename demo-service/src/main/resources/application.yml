@@ -73,6 +73,19 @@ demo:
     secret: ${demo.wechat.secret}  # 替换为实际值
   redis:
     enabled: false  # 若本地未启动Redis，可改为false以跳过Redis相关Bean创建
+  cache:
+    enabled: true
+    product:
+      jitter-percent: 20
+      detail:
+        enabled: true
+        ttl-seconds: 120
+        null-ttl-seconds: 20
+        lock-seconds: 3
+      list:
+        enabled: true
+        ttl-seconds: 45
+        lock-seconds: 3
 
   # Day14 RabbitMQ（仅配置项；队列/交换机声明与业务骨架后续落地）
   rabbitmq:
@@ -135,9 +148,13 @@ outbox:
   publish:
     batch-size: 50
     retry-delay-seconds: 30
+    exclude-test-exchanges-enabled: true
+    exclude-exchanges: bad.exchange
   monitor:
     fail-threshold: 5
     fail-retry-threshold: 10
+    exclude-test-exchanges-enabled: true
+    exclude-exchanges: bad.exchange
 
 # Day16 商品治理通知开关（支持灰度/故障快速隔离）
 product:

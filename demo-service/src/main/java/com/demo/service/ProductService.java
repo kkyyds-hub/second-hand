@@ -46,9 +46,12 @@ public interface ProductService {
     void addProductViolation(ProductViolation violation);
 
     /**
-     * 通过管理端或系统流程直接更新商品状态。
+     * 管理端兼容入口：按“目标状态”分发到统一状态迁移链路。
+     * 说明：
+     * 1) 该方法不直接改数据库状态，避免绕过状态机语义。
+     * 2) 返回值用于 Controller 直接透传，便于前端看到真实迁移结果（如“商品审核通过”“商品已下架”“已处理”）。
      */
-    void updateProductStatus(Long productId, String status);
+    String updateProductStatus(Long productId, String status);
 
     /**
      * 分页查询当前用户商品列表。

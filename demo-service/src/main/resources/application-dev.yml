@@ -14,6 +14,19 @@ demo:
     port: 6379
     database: 2
     enabled: true
+  cache:
+    enabled: true
+    product:
+      jitter-percent: 20
+      detail:
+        enabled: true
+        ttl-seconds: 120
+        null-ttl-seconds: 20
+        lock-seconds: 3
+      list:
+        enabled: true
+        ttl-seconds: 45
+        lock-seconds: 3
 
   # MongoDB（站内消息）无认证直连
   mongodb:

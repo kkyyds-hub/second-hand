@@ -13,9 +13,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Day14 - Outbox 定时发布任务。
@@ -55,6 +58,19 @@ public class OutboxPublishJob {
     private int retryDelaySeconds;
 
     /**
+     * 是否在发布扫描口径中排除测试交换机。
+     * 默认开启，避免 P7-S2 失败注入残留持续刷失败日志。
+     */
+    @Value("${outbox.publish.exclude-test-exchanges-enabled:true}")
+    private boolean excludeTestExchangesEnabled;
+
+    /**
+     * 发布扫描排除交换机列表（逗号分隔）。
+     */
+    @Value("${outbox.publish.exclude-exchanges:bad.exchange}")
+    private String excludeExchangesRaw;
+
+    /**
      * 每 5 秒扫描一次 Outbox。
      */
     @Scheduled(fixedDelay = 5000)
@@ -76,7 +92,8 @@ public class OutboxPublishJob {
         int effectiveLimit = (limit == null || limit <= 0) ? Math.max(defaultBatchSize, 1) : limit;
 
         // 第一步：拉取一批可发送的 Outbox（NEW/FAIL 且满足 next_retry_time 条件）
-        List<MessageOutbox> list = messageOutboxMapper.listPending(effectiveLimit);
+        List<String> excludeExchanges = resolveExcludeExchanges();
+        List<MessageOutbox> list = messageOutboxMapper.listPending(effectiveLimit, excludeExchanges);
         if (list == null || list.isEmpty()) {
             return publishResult(effectiveLimit, 0, 0, 0);
         }
@@ -124,6 +141,20 @@ public class OutboxPublishJob {
                     list.size(), sentIds.size(), failIds.size(), nextRetry);
         }
         return publishResult(effectiveLimit, list.size(), sentIds.size(), failIds.size());
+    }
+
+    private List<String> resolveExcludeExchanges() {
+        if (!excludeTestExchangesEnabled) {
+            return Collections.emptyList();
+        }
+        if (excludeExchangesRaw == null || excludeExchangesRaw.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(excludeExchangesRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private java.util.Map<String, Object> publishResult(int limit, int pulled, int sent, int failed) {

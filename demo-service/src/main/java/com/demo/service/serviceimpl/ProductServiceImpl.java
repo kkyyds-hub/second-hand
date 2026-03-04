@@ -21,21 +21,33 @@ import com.demo.service.ProductAuditService;
 import com.demo.service.CreditService;
 import com.demo.service.ProductGovernanceEventService;
 import com.demo.service.ProductService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +57,62 @@ import java.util.stream.Collectors;
  * ProductServiceImpl 业务组件。
  */
 public class ProductServiceImpl implements ProductService {
+    /**
+     * Day18 P6-S3 缓存键设计说明：
+     * 1) 详情键按 productId 精确定位，适合点删；
+     * 2) 列表键带 version + queryHash，写链路通过 version 递增实现“整体失效”；
+     * 3) suffix(v1) 预留结构升级位，后续可通过升版本平滑换格式。
+     */
+    private static final String MARKET_PRODUCT_DETAIL_KEY_PREFIX = "cache:product:detail:";
+    private static final String MARKET_PRODUCT_LIST_KEY_PREFIX = "cache:product:list:";
+    private static final String MARKET_PRODUCT_LIST_VERSION_KEY = "cache:product:list:version";
+    private static final String CACHE_KEY_VERSION_SUFFIX = ":v1";
+    /** 缓存空值占位符：用于“对象不存在”的短期缓存，防止穿透。 */
+    private static final String CACHE_NULL_MARKER = "__NULL__";
+    /**
+     * 兼容旧管理端入口（/update-status）触发强制下架时的默认原因。
+     * 说明：
+     * 1) reasonCode 用于审计/事件做结构化检索；
+     * 2) reasonText 用于人类可读排障；
+     * 3) 固定值能保证同类入口口径一致，避免后续统计口径分叉。
+     */
+    private static final String ADMIN_COMPAT_REASON_CODE_MANUAL_UPDATE = "manual_update";
+    private static final String ADMIN_COMPAT_REASON_TEXT_MANUAL_UPDATE = "管理员通过兼容入口触发下架";
+    /**
+     * Redis 安全解锁脚本（compare-and-delete）。
+     *
+     * 背景：
+     * 1) 旧实现是“固定值上锁 + 直接 delete 解锁”；
+     * 2) 当线程 A 的锁已过期、线程 B 拿到新锁后，A finally 里的 delete 可能误删 B 的锁；
+     * 3) 误删后会放大并发回源，导致“锁形同虚设”。
+     *
+     * 设计：
+     * 1) 上锁时写入随机 token（每个持锁线程唯一）；
+     * 2) 解锁时仅在“当前 key 的值 == 自己 token”时删除；
+     * 3) 判断与删除在 Redis 内同一条 Lua 中执行，保证原子性。
+     */
+    private static final DefaultRedisScript<Long> SAFE_UNLOCK_SCRIPT = buildSafeUnlockScript();
+    private static final TypeReference<PageResult<MarketProductSummaryDTO>> MARKET_LIST_PAGE_TYPE =
+            new TypeReference<PageResult<MarketProductSummaryDTO>>() {
+            };
+
+    /**
+     * 构造安全解锁脚本。
+     *
+     * 返回值约定：
+     * - 1：成功删除（当前线程确实持有该锁）；
+     * - 0：未删除（锁已过期 / 被他人重建 / token 不匹配）。
+     */
+    private static DefaultRedisScript<Long> buildSafeUnlockScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setResultType(Long.class);
+        script.setScriptText(
+                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                        "return redis.call('del', KEYS[1]) " +
+                        "else return 0 end"
+        );
+        return script;
+    }
 
     @Autowired
     private ProductMapper productMapper;
@@ -66,6 +134,45 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductGovernanceEventService productGovernanceEventService;
+
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
+    /** 总开关：关闭后所有商品读缓存都退化为 DB 直读。 */
+    @Value("${demo.cache.enabled:true}")
+    private boolean cacheEnabled;
+
+    /** 商品详情缓存开关。 */
+    @Value("${demo.cache.product.detail.enabled:true}")
+    private boolean productDetailCacheEnabled;
+
+    /** 详情缓存 TTL（秒）。 */
+    @Value("${demo.cache.product.detail.ttl-seconds:120}")
+    private int productDetailTtlSeconds;
+
+    /** 详情空值缓存 TTL（秒），建议短于正常 TTL。 */
+    @Value("${demo.cache.product.detail.null-ttl-seconds:20}")
+    private int productDetailNullTtlSeconds;
+
+    /** 详情重建锁 TTL（秒），用于热点过期时防击穿。 */
+    @Value("${demo.cache.product.detail.lock-seconds:3}")
+    private int productDetailLockSeconds;
+
+    /** 商品列表缓存开关。 */
+    @Value("${demo.cache.product.list.enabled:true}")
+    private boolean productListCacheEnabled;
+
+    /** 列表缓存 TTL（秒）。 */
+    @Value("${demo.cache.product.list.ttl-seconds:45}")
+    private int productListTtlSeconds;
+
+    /** 列表重建锁 TTL（秒）。 */
+    @Value("${demo.cache.product.list.lock-seconds:3}")
+    private int productListLockSeconds;
+
+    /** TTL 抖动百分比，避免大量 key 同时过期导致雪崩。 */
+    @Value("${demo.cache.product.jitter-percent:20}")
+    private int productCacheTtlJitterPercent;
 
     @Override
     public PageResult<ProductDTO> getPendingApprovalProducts(int page, int pageSize, String productName, String category, String status) {
@@ -142,6 +249,7 @@ public class ProductServiceImpl implements ProductService {
                         result.getProduct().getStatus(),
                         null
                 );
+                markMarketProductReadCachesDirty(result.getProduct().getId());
             }
             return result.isIdempotent() ? result.getMessage() : "商品审核通过";
         }
@@ -185,6 +293,7 @@ public class ProductServiceImpl implements ProductService {
                     result.getProduct().getStatus(),
                     r
             );
+            markMarketProductReadCachesDirty(result.getProduct().getId());
         }
         return result.isIdempotent() ? result.getMessage() : "商品审核驳回";
     }
@@ -255,6 +364,7 @@ public class ProductServiceImpl implements ProductService {
                     reasonText,
                     reportTicketNo
             );
+            markMarketProductReadCachesDirty(result.getProduct().getId());
         }
 
         return result.isIdempotent() ? result.getMessage() : "强制下架成功";
@@ -288,37 +398,63 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * 直接更新商品状态（慎用：建议只在内部封装好场景再调用）
+     * 管理端“update-status 兼容入口”状态分发器（Day18 修正）。
+     *
+     * 背景问题（旧实现）：
+     * 1) 直接 setStatus + update，会绕过 transit 统一迁移内核；
+     * 2) 审计、事件、缓存失效容易与主链路分叉（同样状态变更，不同副作用）。
+     *
+     * 修正策略：
+     * 1) 保留旧接口地址兼容前端，但内部不再直接改库；
+     * 2) 按“目标状态”分发到已有动作方法，复用统一迁移内核：
+     *    - on_sale   -> approveProduct（审核通过语义）
+     *    - off_shelf -> forceOffShelfProduct（强制下架语义）
+     * 3) 对 under_review/sold 直接拒绝，避免破坏状态机语义：
+     *    - under_review 应由卖家提审/撤回链路驱动；
+     *    - sold 应由成交链路驱动，而不是后台手工改值。
+     *
+     * 返回值说明：
+     * - 透传被分发动作的业务文案，包含幂等命中场景（如“已处理”“商品已下架”）。
      */
     @Override
-    public void updateProductStatus(Long productId, String statusDbValue) {
-        Product product = productMapper.getProductById(productId);
-        if (product == null) {
-            throw new ProductNotFoundException("商品未找到，ID: " + productId);
+    public String updateProductStatus(Long productId, String statusDbValue) {
+        // Controller 已做 normalize；这里再次做严格枚举校验，防止被其他调用方绕过。
+        ProductStatus targetStatus = ProductStatus.fromDbValue(statusDbValue);
+
+        switch (targetStatus) {
+            case ON_SHELF:
+                // 目标是“上架(on_sale)”时，语义应等价于“管理员审核通过”。
+                // 好处：自动复用审核链路里的状态校验、幂等、审计、事件与缓存处理。
+                return approveProduct(productId, true, null);
+            case OFF_SHELF:
+                // 目标是“下架(off_shelf)”时，语义应等价于“管理员强制下架”。
+                // 注意：不要直接改 status，否则会丢失强制下架链路的审计与治理事件。
+                Long operatorId = BaseContext.getCurrentId();
+                if (operatorId == null) {
+                    throw new BusinessException(ProductMessageConstant.PRODUCT_NO_PERMISSION_OPERATE);
+                }
+                return forceOffShelfProduct(operatorId, productId, buildManualUpdateForceOffShelfRequest());
+            case UNDER_REVIEW:
+                throw new BusinessException("不支持通过该入口直接改为审核中，请走卖家提审/撤回流程");
+            case SOLD:
+                throw new BusinessException("不支持通过该入口直接改为已售，已售状态应由成交链路驱动");
+            default:
+                // 理论上 fromDbValue 已经兜底，这里保留 default 仅用于 switch 完整性保护。
+                throw new BusinessException("非法商品状态: " + statusDbValue);
         }
+    }
 
-        // 使用枚举做一层校验，防止乱写
-        ProductStatus newStatus = ProductStatus.fromDbValue(statusDbValue);
-        String beforeStatus = product.getStatus();
-        product.setStatus(newStatus.getDbValue());
-        productMapper.updateProduct(product);
-
-        // 后台“直接改状态”兜底审计（非 Day16 主链路，但属于状态变更）。
-        if (!Objects.equals(beforeStatus, newStatus.getDbValue())) {
-            productAuditService.record(
-                    product.getId(),
-                    "update_status",
-                    safeOperatorId(BaseContext.getCurrentId()),
-                    "admin",
-                    beforeStatus,
-                    newStatus.getDbValue(),
-                    "manual_update",
-                    null,
-                    null
-            );
-        }
-
-        log.info("商品状态更新成功，商品 ID: {}, 新状态: {}", productId, newStatus);
+    /**
+     * 兼容入口触发“强制下架”时的默认参数。
+     * 设计目的：
+     * 1) 让旧入口也能完整走强制下架主链路（校验 + 并发 + 审计 + 事件 + 缓存）；
+     * 2) 固定 reasonCode，后续审计检索“哪些是兼容入口触发”会更直接。
+     */
+    private ForceOffShelfRequest buildManualUpdateForceOffShelfRequest() {
+        ForceOffShelfRequest request = new ForceOffShelfRequest();
+        request.setReasonCode(ADMIN_COMPAT_REASON_CODE_MANUAL_UPDATE);
+        request.setReasonText(ADMIN_COMPAT_REASON_TEXT_MANUAL_UPDATE);
+        return request;
     }
 
     /**
@@ -437,6 +573,7 @@ public class ProductServiceImpl implements ProductService {
                 null,
                 null
         );
+        markMarketProductReadCachesDirty(result.getProduct().getId());
         return toProductDetailDTO(result.getProduct());
     }
 
@@ -474,6 +611,9 @@ public class ProductServiceImpl implements ProductService {
                 null,
                 null
         );
+        if (!result.isIdempotent()) {
+            markMarketProductReadCachesDirty(result.getProduct().getId());
+        }
         return result.isIdempotent() ? result.getMessage() : "下架成功";
     }
 
@@ -549,10 +689,71 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * 查询并返回相关结果。
+     * 市场商品列表（用户侧）。
+     *
+     * 缓存读流程：
+     * 1) 先按 version + queryHash 读取列表缓存；
+     * 2) 命中直接返回，miss 进入重建；
+     * 3) 仅“拿到重建锁”的线程回源 DB 并回填缓存；
+     * 4) 未拿到锁的线程短暂等待后重读一次缓存，避免并发回源放大。
+     *
+     * 注意：
+     * - Redis 故障时走 fail-open（直接 DB 查询），不影响主流程可用性；
+     * - 列表失效不做全量扫 key，依赖 version 递增实现批量淘汰。
      */
     @Override
     public PageResult<MarketProductSummaryDTO> getMarketProductList(MarketProductQueryDTO queryDTO) {
+        if (!isMarketProductListCacheEnabled()) {
+            return loadMarketProductListFromDb(queryDTO);
+        }
+
+        String listVersion = getMarketProductListCacheVersion();
+        String cacheKey = buildMarketProductListCacheKey(queryDTO, listVersion);
+        String cacheJson = safeGetCache(cacheKey);
+        if (cacheJson != null) {
+            try {
+                return objectMapper.readValue(cacheJson, MARKET_LIST_PAGE_TYPE);
+            } catch (Exception ex) {
+                // 反序列化异常视为脏缓存，删除后回源重建。
+                log.warn("商品列表缓存反序列化失败，回源重建: key={}, err={}", cacheKey, ex.getMessage());
+                safeDeleteCache(cacheKey);
+            }
+        }
+
+        String lockKey = cacheKey + ":lock";
+        // 注意：这里拿到的不是 boolean，而是“锁凭证 token”。
+        // 只有持有同一个 token 的线程，才有资格在 finally 里释放该锁。
+        String lockToken = tryAcquireRebuildLock(lockKey, productListLockSeconds);
+        if (lockToken != null) {
+            try {
+                PageResult<MarketProductSummaryDTO> fresh = loadMarketProductListFromDb(queryDTO);
+                safeSetCache(cacheKey, toJsonQuietly(fresh), withTtlJitterSeconds(productListTtlSeconds));
+                return fresh;
+            } finally {
+                // 传 token 做 compare-and-delete，避免误删并发线程新拿到的锁。
+                safeReleaseRebuildLock(lockKey, lockToken);
+            }
+        }
+
+        // 未拿到锁，短暂等待后再读一次缓存，避免并发同时回源。
+        sleepQuietly(60);
+        String retriedCacheJson = safeGetCache(cacheKey);
+        if (retriedCacheJson != null) {
+            try {
+                return objectMapper.readValue(retriedCacheJson, MARKET_LIST_PAGE_TYPE);
+            } catch (Exception ex) {
+                log.warn("商品列表缓存二次读取反序列化失败，直接回源: key={}, err={}", cacheKey, ex.getMessage());
+                safeDeleteCache(cacheKey);
+            }
+        }
+
+        return loadMarketProductListFromDb(queryDTO);
+    }
+
+    /**
+     * 统一封装商品列表 DB 查询，便于复用到缓存 miss 场景。
+     */
+    private PageResult<MarketProductSummaryDTO> loadMarketProductListFromDb(MarketProductQueryDTO queryDTO) {
         PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
         List<Product> productList = productMapper.getMarketProductList(queryDTO.getKeyword(), queryDTO.getCategory());
         PageInfo<Product> pageInfo = new PageInfo<>(productList);
@@ -579,7 +780,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * 查询并返回相关结果。
+     * 市场商品详情（用户侧）。
+     *
+     * 缓存读流程：
+     * 1) 先读详情缓存；
+     * 2) 命中空值标记时，直接按“不可用”返回，避免反复打 DB；
+     * 3) miss 时通过短锁控制仅一个线程回源重建；
+     * 4) 回源查不到时写入空值短缓存（防穿透）。
      */
     @Override
     public MarketProductDetailDTO getMarketProductDetail(Long productId) {
@@ -587,11 +794,73 @@ public class ProductServiceImpl implements ProductService {
             throw new BusinessException(ProductMessageConstant.PRODUCT_ID_REQUIRED);
         }
 
+        if (!isMarketProductDetailCacheEnabled()) {
+            return loadMarketProductDetailFromDb(productId);
+        }
+
+        String cacheKey = buildMarketProductDetailCacheKey(productId);
+        String cacheJson = safeGetCache(cacheKey);
+        if (cacheJson != null) {
+            if (CACHE_NULL_MARKER.equals(cacheJson)) {
+                throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_UNAVAILABLE);
+            }
+            try {
+                return objectMapper.readValue(cacheJson, MarketProductDetailDTO.class);
+            } catch (Exception ex) {
+                log.warn("商品详情缓存反序列化失败，回源重建: key={}, err={}", cacheKey, ex.getMessage());
+                safeDeleteCache(cacheKey);
+            }
+        }
+
+        String lockKey = cacheKey + ":lock";
+        // 同列表缓存：必须持有 token 才能安全释放锁。
+        String lockToken = tryAcquireRebuildLock(lockKey, productDetailLockSeconds);
+        if (lockToken != null) {
+            try {
+                Product product = productMapper.getMarketProductById(productId);
+                if (product == null) {
+                    safeSetCache(cacheKey, CACHE_NULL_MARKER, normalizeTtlSeconds(productDetailNullTtlSeconds));
+                    throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_UNAVAILABLE);
+                }
+
+                MarketProductDetailDTO fresh = toMarketProductDetailDTO(product);
+                safeSetCache(cacheKey, toJsonQuietly(fresh), withTtlJitterSeconds(productDetailTtlSeconds));
+                return fresh;
+            } finally {
+                // compare-and-delete，规避“锁过期后误删他人锁”。
+                safeReleaseRebuildLock(lockKey, lockToken);
+            }
+        }
+
+        sleepQuietly(60);
+        String retriedCacheJson = safeGetCache(cacheKey);
+        if (retriedCacheJson != null) {
+            if (CACHE_NULL_MARKER.equals(retriedCacheJson)) {
+                throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_UNAVAILABLE);
+            }
+            try {
+                return objectMapper.readValue(retriedCacheJson, MarketProductDetailDTO.class);
+            } catch (Exception ex) {
+                log.warn("商品详情缓存二次读取反序列化失败，直接回源: key={}, err={}", cacheKey, ex.getMessage());
+                safeDeleteCache(cacheKey);
+            }
+        }
+
+        return loadMarketProductDetailFromDb(productId);
+    }
+
+    /**
+     * 统一封装商品详情 DB 查询，便于复用到缓存 miss 场景。
+     */
+    private MarketProductDetailDTO loadMarketProductDetailFromDb(Long productId) {
         Product product = productMapper.getMarketProductById(productId);
         if (product == null) {
             throw new BusinessException(ProductMessageConstant.PRODUCT_NOT_FOUND_OR_UNAVAILABLE);
         }
+        return toMarketProductDetailDTO(product);
+    }
 
+    private MarketProductDetailDTO toMarketProductDetailDTO(Product product) {
         MarketProductDetailDTO dto = new MarketProductDetailDTO();
         dto.setProductId(product.getId());
         dto.setTitle(product.getTitle());
@@ -623,6 +892,7 @@ public class ProductServiceImpl implements ProductService {
         // 执行软删除更新。
         int rows = productMapper.softDeleteByOwner(productId, currentUserId);
         if (rows == 0) throw new BusinessException(ProductMessageConstant.PRODUCT_DELETE_FAILED_RETRY);
+        markMarketProductReadCachesDirty(productId);
     }
 
     /**
@@ -659,6 +929,7 @@ public class ProductServiceImpl implements ProductService {
                 null,
                 null
         );
+        markMarketProductReadCachesDirty(result.getProduct().getId());
         return toProductDetailDTO(result.getProduct());
     }
 
@@ -696,6 +967,7 @@ public class ProductServiceImpl implements ProductService {
                 null,
                 null
         );
+        markMarketProductReadCachesDirty(result.getProduct().getId());
         return toProductDetailDTO(result.getProduct());
     }
 
@@ -732,6 +1004,7 @@ public class ProductServiceImpl implements ProductService {
                 ProductReason.SELLER_WITHDRAW,
                 null
         );
+        markMarketProductReadCachesDirty(result.getProduct().getId());
         return toProductDetailDTO(result.getProduct());
     }
 
@@ -1021,6 +1294,239 @@ public class ProductServiceImpl implements ProductService {
     }
 
     // ================== 私有工具方法 ==================
+
+    /**
+     * 商品读缓存统一失效入口。
+     *
+     * 规则：
+     * 1) 详情缓存按 productId 精确删除；
+     * 2) 列表缓存使用 version 键递增触发批量失效；
+     * 3) 默认在事务提交后执行，避免“回滚但缓存已删”的时序问题。
+     */
+    private void markMarketProductReadCachesDirty(Long productId) {
+        // 统一放在 afterCommit 执行，保证“提交成功才删缓存”。
+        runAfterCommitOrNow(() -> {
+            if (productId != null) {
+                safeDeleteCache(buildMarketProductDetailCacheKey(productId));
+            }
+            if (isMarketProductListCacheEnabled()) {
+                // version 递增后，新请求会自然落到新 key，旧 key 由 TTL 自然淘汰。
+                safeIncrement(MARKET_PRODUCT_LIST_VERSION_KEY);
+            }
+        });
+    }
+
+    /**
+     * 事务后置执行器：
+     * - 有事务：注册 afterCommit；
+     * - 无事务：立即执行（例如非事务读改场景）。
+     */
+    private void runAfterCommitOrNow(Runnable action) {
+        if (action == null) {
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+            return;
+        }
+        action.run();
+    }
+
+    private boolean isMarketProductDetailCacheEnabled() {
+        return cacheEnabled && productDetailCacheEnabled && stringRedisTemplate != null;
+    }
+
+    private boolean isMarketProductListCacheEnabled() {
+        return cacheEnabled && productListCacheEnabled && stringRedisTemplate != null;
+    }
+
+    private String buildMarketProductDetailCacheKey(Long productId) {
+        return MARKET_PRODUCT_DETAIL_KEY_PREFIX + productId + CACHE_KEY_VERSION_SUFFIX;
+    }
+
+    private String getMarketProductListCacheVersion() {
+        String version = safeGetCache(MARKET_PRODUCT_LIST_VERSION_KEY);
+        return (version == null || version.trim().isEmpty()) ? "0" : version.trim();
+    }
+
+    private String buildMarketProductListCacheKey(MarketProductQueryDTO queryDTO, String version) {
+        String querySignature = buildMarketProductListQuerySignature(queryDTO);
+        return MARKET_PRODUCT_LIST_KEY_PREFIX + version + ":" + querySignature + CACHE_KEY_VERSION_SUFFIX;
+    }
+
+    /**
+     * 查询参数签名统一口径，避免同义参数生成不同 key。
+     */
+    private String buildMarketProductListQuerySignature(MarketProductQueryDTO queryDTO) {
+        String keyword = normalizeQueryField(queryDTO.getKeyword());
+        String category = normalizeQueryField(queryDTO.getCategory());
+        Integer page = queryDTO.getPage() == null ? 1 : queryDTO.getPage();
+        Integer pageSize = queryDTO.getPageSize() == null ? 10 : queryDTO.getPageSize();
+        // 只纳入会影响结果集的数据字段，避免无关参数导致缓存碎片化。
+        String normalized = "keyword=" + keyword + "&category=" + category + "&page=" + page + "&pageSize=" + pageSize;
+        return sha256Hex(normalized);
+    }
+
+    private String normalizeQueryField(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase();
+    }
+
+    private String sha256Hex(String source) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(source.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            // JDK 常规环境不会进入该分支，兜底避免影响主流程。
+            return Integer.toHexString(source.hashCode());
+        }
+    }
+
+    private int withTtlJitterSeconds(int baseTtlSeconds) {
+        int safeBase = normalizeTtlSeconds(baseTtlSeconds);
+        int jitterPercent = Math.max(0, productCacheTtlJitterPercent);
+        if (jitterPercent == 0) {
+            return safeBase;
+        }
+        // 抖动区间：[-range, +range]，避免同批 key 在同一秒到期。
+        int jitterRange = Math.max(1, safeBase * jitterPercent / 100);
+        int delta = ThreadLocalRandom.current().nextInt(-jitterRange, jitterRange + 1);
+        return Math.max(1, safeBase + delta);
+    }
+
+    private int normalizeTtlSeconds(int ttlSeconds) {
+        return ttlSeconds <= 0 ? 1 : ttlSeconds;
+    }
+
+    private String toJsonQuietly(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception ex) {
+            log.warn("缓存序列化失败，跳过写缓存: err={}", ex.getMessage());
+            return null;
+        }
+    }
+
+    private void safeSetCache(String key, String value, int ttlSeconds) {
+        if (stringRedisTemplate == null || key == null || value == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.opsForValue().set(key, value, Duration.ofSeconds(normalizeTtlSeconds(ttlSeconds)));
+        } catch (Exception ex) {
+            // 缓存写失败不打断业务，交给下次读请求回源重建。
+            log.warn("缓存写入失败（降级回源）: key={}, err={}", key, ex.getMessage());
+        }
+    }
+
+    private String safeGetCache(String key) {
+        if (stringRedisTemplate == null || key == null) {
+            return null;
+        }
+        try {
+            return stringRedisTemplate.opsForValue().get(key);
+        } catch (Exception ex) {
+            // 读取失败直接回源 DB，保证请求可用性优先。
+            log.warn("缓存读取失败（降级回源）: key={}, err={}", key, ex.getMessage());
+            return null;
+        }
+    }
+
+    private void safeDeleteCache(String key) {
+        if (stringRedisTemplate == null || key == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(key);
+        } catch (Exception ex) {
+            log.warn("缓存删除失败: key={}, err={}", key, ex.getMessage());
+        }
+    }
+
+    private void safeIncrement(String key) {
+        if (stringRedisTemplate == null || key == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.opsForValue().increment(key);
+        } catch (Exception ex) {
+            log.warn("缓存版本递增失败: key={}, err={}", key, ex.getMessage());
+        }
+    }
+
+    /**
+     * 尝试获取缓存重建锁。
+     *
+     * @return
+     * - 非 null：获取成功，返回本线程持有的 lockToken；
+     * - null：获取失败（未拿到锁或 Redis 异常）。
+     */
+    private String tryAcquireRebuildLock(String lockKey, int lockSeconds) {
+        if (stringRedisTemplate == null || lockKey == null) {
+            return null;
+        }
+        try {
+            // 关键点：每次上锁都生成唯一 token，避免不同线程共享同一锁值。
+            String lockToken = UUID.randomUUID().toString();
+            Boolean locked = stringRedisTemplate.opsForValue().setIfAbsent(
+                    lockKey,
+                    lockToken,
+                    Duration.ofSeconds(normalizeTtlSeconds(lockSeconds))
+            );
+            // setIfAbsent 成功表示当前线程获得“唯一重建资格”并持有唯一 token。
+            return Boolean.TRUE.equals(locked) ? lockToken : null;
+        } catch (Exception ex) {
+            log.warn("缓存重建锁获取失败: key={}, err={}", lockKey, ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 安全释放缓存重建锁（compare-and-delete）。
+     *
+     * 说明：
+     * 1) 仅当 key 当前值仍等于 lockToken 才会删除；
+     * 2) 不做兜底 delete，宁可“删不掉自己的过期锁”，也不能误删别人新锁；
+     * 3) 返回 0 常见于锁已过期或已被其他线程覆盖，属于预期并发现象。
+     */
+    private void safeReleaseRebuildLock(String lockKey, String lockToken) {
+        if (stringRedisTemplate == null || lockKey == null || lockToken == null) {
+            return;
+        }
+        try {
+            Long unlocked = stringRedisTemplate.execute(
+                    SAFE_UNLOCK_SCRIPT,
+                    Collections.singletonList(lockKey),
+                    lockToken
+            );
+            if (unlocked != null && unlocked == 0L) {
+                log.debug("缓存重建锁未释放（token 不匹配或已过期）: key={}", lockKey);
+            }
+        } catch (Exception ex) {
+            // 释放失败不做兜底 delete，避免误删后续线程持有的新锁。
+            log.warn("缓存重建锁释放失败: key={}, err={}", lockKey, ex.getMessage());
+        }
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     private ProductDTO toProductDTO(Product product) {
         ProductDTO dto = new ProductDTO();

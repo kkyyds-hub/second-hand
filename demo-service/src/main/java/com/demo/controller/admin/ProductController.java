@@ -155,7 +155,11 @@ public class ProductController {
     }
 
     /**
-     * 更新商品状态。
+     * 兼容旧管理端入口：按目标状态触发统一状态迁移。
+     * 说明：
+     * 1) 该接口仍保留原 URL，避免前端一次性改动过大；
+     * 2) 但实现已改为走统一迁移内核，不再允许“直接改库状态”；
+     * 3) 返回文案透传 Service 结果，便于区分“真实迁移成功”和“幂等命中（已处理）”。
      */
     @PostMapping("/{productId}/update-status")
     public Result<String> updateProductStatus(@PathVariable Long productId, @RequestParam String status) {
@@ -166,8 +170,8 @@ public class ProductController {
                 return Result.error("status 不能为空");
             }
 
-            productService.updateProductStatus(productId, statusDb);
-            return Result.success("商品状态更新成功");
+            String message = productService.updateProductStatus(productId, statusDb);
+            return Result.success(message);
         } catch (BusinessException e) {
             return Result.error(e.getMessage());
         } catch (ProductNotFoundException e) {
