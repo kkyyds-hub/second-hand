@@ -175,6 +175,8 @@ public class ProductServiceImpl implements ProductService {
     private int productCacheTtlJitterPercent;
 
     @Override
+    // Read-only transaction: keeps routing/consistency semantics while reducing write-transaction overhead.
+    @Transactional(readOnly = true)
     public PageResult<ProductDTO> getPendingApprovalProducts(int page, int pageSize, String productName, String category, String status) {
         int safePage = page <= 0 ? 1 : page;
         int safePageSize = pageSize <= 0 ? 10 : pageSize;
@@ -376,6 +378,8 @@ public class ProductServiceImpl implements ProductService {
      * 查询商品的违规记录。
      */
     @Override
+    // Pure query path; readOnly helps prevent accidental flush/write participation.
+    @Transactional(readOnly = true)
     public PageResult<ProductViolation> getProductViolations(Long productId, Integer page, Integer pageSize) {
         int safePage = (page == null || page < 1) ? 1 : page;
         int safePageSize = (pageSize == null || pageSize < 1) ? 20 : Math.min(pageSize, 100);
@@ -461,6 +465,8 @@ public class ProductServiceImpl implements ProductService {
      * 查询用户自己的商品列表。
      */
     @Override
+    // User product list is read-only; keep transaction lightweight for high-frequency list requests.
+    @Transactional(readOnly = true)
     public PageResult<Product> getUserProducts(UserProductQueryDTO queryDTO) {
         // 这里也可以直接用 BaseContext.getCurrentId()，避免前端传 userId
         PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
@@ -480,6 +486,8 @@ public class ProductServiceImpl implements ProductService {
      * 查询当前登录用户的某个商品详情。
      */
     @Override
+    // Detail lookup has no mutation; mark readOnly to reduce unnecessary transaction cost.
+    @Transactional(readOnly = true)
     public ProductDetailDTO getProductDetail(Long productId) {
         Long currentUserId = BaseContext.getCurrentId();
 
@@ -702,6 +710,8 @@ public class ProductServiceImpl implements ProductService {
      * - 列表失效不做全量扫 key，依赖 version 递增实现批量淘汰。
      */
     @Override
+    // Market list is a read path (cache + DB fallback); readOnly avoids full write-transaction overhead.
+    @Transactional(readOnly = true)
     public PageResult<MarketProductSummaryDTO> getMarketProductList(MarketProductQueryDTO queryDTO) {
         if (!isMarketProductListCacheEnabled()) {
             return loadMarketProductListFromDb(queryDTO);
@@ -789,6 +799,8 @@ public class ProductServiceImpl implements ProductService {
      * 4) 回源查不到时写入空值短缓存（防穿透）。
      */
     @Override
+    // Market detail is also read-only (cache + DB fallback), so use readOnly transaction semantics.
+    @Transactional(readOnly = true)
     public MarketProductDetailDTO getMarketProductDetail(Long productId) {
         if (productId == null) {
             throw new BusinessException(ProductMessageConstant.PRODUCT_ID_REQUIRED);
