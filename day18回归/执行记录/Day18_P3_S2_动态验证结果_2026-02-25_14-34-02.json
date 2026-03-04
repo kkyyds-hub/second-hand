@@ -1,10 +1,10 @@
-﻿{
+{
     "executedAt":  "2026-02-25 14:34:02",
     "login":  {
                   "code":  1,
                   "msg":  "success",
                   "data":  {
-                               "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMDg0NDIsInVzZXJJZCI6MX0.PlCzNXzFPKCpFQO2U1PhpU9GjExRXcXNvJC4JwkFNDQ",
+                               "token":  "<redacted_jwt>",
                                "user":  {
                                             "id":  1,
                                             "username":  "buyer01",

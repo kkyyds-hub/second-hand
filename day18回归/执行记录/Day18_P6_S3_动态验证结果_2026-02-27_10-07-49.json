@@ -1,0 +1,35 @@
+﻿{
+    "executedAt":  "2026-02-27 10:07:51",
+    "p6s3":  {
+                 "productId":  920012,
+                 "detailKey":  "cache:product:detail:920012:v1",
+                 "detailExistsAfterFirst":  1,
+                 "detailTtlAfterFirst":  141,
+                 "detailExistsAfterSecond":  1,
+                 "detailTtlAfterSecond":  141,
+                 "listVersionBefore":  2,
+                 "listKey":  "cache:product:list:2:f6a93b4721ffa1ec474935b77dc2390c0328ecba0ba80e620215c55464fcae6d:v1",
+                 "listExists":  1,
+                 "listTtl":  22,
+                 "writeProductId":  920012,
+                 "offShelfCode":  1,
+                 "offShelfData":  "ä¸æ¶æå",
+                 "listVersionAfterWrite":  3,
+                 "detailExistsAfterWrite":  0
+             },
+    "outbox":  {
+                   "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                   "eventStatus":  "FAIL",
+                   "eventExchange":  "order.events.exchange",
+                   "eventRoutingKey":  "order.status.changed",
+                   "eventRetryCount":  1099,
+                   "publishPulled":  0,
+                   "publishSent":  0,
+                   "publishFailed":  0,
+                   "metricsFail":  1,
+                   "metricsFailRetrySum":  1099,
+                   "metricsExcludeExchanges":  [
+                                                   "bad.exchange"
+                                               ]
+               }
+}

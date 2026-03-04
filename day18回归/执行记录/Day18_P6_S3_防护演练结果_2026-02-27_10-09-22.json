@@ -1,0 +1,13 @@
+﻿{
+    "executedAt":  "2026-02-27 10:09:24",
+    "missingId":  999999991,
+    "firstCode":  0,
+    "secondCode":  0,
+    "firstMsg":  "ååä¸å­å¨æä¸å¯æ¥ç",
+    "secondMsg":  "ååä¸å­å¨æä¸å¯æ¥ç",
+    "nullKey":  "cache:product:detail:999999991:v1",
+    "nullKeyExists":  1,
+    "nullKeyValue":  "__NULL__",
+    "nullKeyTtl":  20,
+    "nullKeyTtlAfterConcurrent":  19
+}

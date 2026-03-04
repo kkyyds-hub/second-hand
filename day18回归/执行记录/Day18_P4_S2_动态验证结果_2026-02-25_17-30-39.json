@@ -1,4 +1,4 @@
-﻿{
+{
     "executedAt":  "2026-02-25 17:30:37",
     "adminLogin":  {
                        "ok":  true,
@@ -7,7 +7,7 @@
                                     "code":  1,
                                     "msg":  "success",
                                     "data":  {
-                                                 "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDE5MDM3fQ.dT1bFZI6QZMiggaqp6uz2mh3iQwKhJr5yKKWgHXUv_o",
+                                                 "token":  "<redacted_jwt>",
                                                  "user":  {
                                                               "id":  5,
                                                               "username":  "admin",

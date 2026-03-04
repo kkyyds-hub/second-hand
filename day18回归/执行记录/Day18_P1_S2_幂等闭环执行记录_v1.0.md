@@ -31,7 +31,7 @@ rg -n "DuplicateKeyException|幂等命中：consumer=|eventId" `
 
 ---
 
-## 2. 动态验证执行结果（2026-02-25）
+## 2. 动态验证执行结果（2026-02-25 + 2026-03-04补跑）
 
 ### 2.1 场景 A：重复支付
 
@@ -59,6 +59,14 @@ rg -n "DuplicateKeyException|幂等命中：consumer=|eventId" `
    - `mq_consume_log(consumer,event_id)`：0  
    - `points_ledger(user,biz_type,biz_id)`：0
 
+### 2.4 2026-03-04 补充证据（运行态日志可检索）
+
+1. 新增证据文件：`day18回归/执行记录/Day18_CloseLoop_Dynamic_Result_2026-03-04_10-53-17.json`。  
+2. 幂等命中日志样本已补齐（`_tmp_day18_app18080.out.log`）：  
+   - `幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid`  
+   - `幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid`  
+3. 审计样本可对应同一业务链路：`ORDER_PAY result=SUCCESS/IDEMPOTENT` 均可检索。
+
 ---
 
 ## 3. 静态核对结果摘要
@@ -74,14 +82,14 @@ rg -n "DuplicateKeyException|幂等命中：consumer=|eventId" `
 
 1. P1-S2 已完成动态幂等验证（重复支付、重复回调、重复任务触发）且结果符合预期。  
 2. 关键唯一键未出现重复数据组，说明“幂等键 + 唯一约束/CAS”闭环有效。  
-3. 本次由 IDEA 启动服务，终端无法直接读取 IDEA 控制台日志；“`幂等命中：`运行日志样本”需在 IDEA 控制台补采。
+3. `幂等命中` 运行日志样本已在 2026-03-04 补采，P1-S2 DoD 全部达成。
 
 ---
 
 ## 5. DoD 勾选（本次）
 
 - [x] 重复请求不会写出重复业务记录。  
-- [ ] 幂等命中日志可检索、可追踪（待补采 IDEA 控制台运行日志样本）。  
+- [x] 幂等命中日志可检索、可追踪（已补充运行态日志样本与证据文件）。  
 - [x] 唯一约束与 `insertIgnore`/CAS 语义一致性核对完成。  
 - [x] 已输出幂等策略清单 v2 与唯一约束核对结果。  
 

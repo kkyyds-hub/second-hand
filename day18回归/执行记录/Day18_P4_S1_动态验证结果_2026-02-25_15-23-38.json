@@ -1,10 +1,10 @@
-﻿{
+{
     "executedAt":  "2026-02-25 15:23:37",
     "scenarioA_userLogin":  {
                                 "success":  {
                                                 "ok":  true,
                                                 "statusCode":  200,
-                                                "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMTE0MTcsInVzZXJJZCI6MX0.5SIwY8OBqeww1yU0n690lQe0wpv6y_oQPM71kbkJpa4\",\"user\":{\"id\":1,\"username\":\"buyer01\",\"mobile\":\"13800000001\",\"avatar\":\"https://img.example.com/avatar/buyer01.png\",\"nickname\":\"æµè¯ä¹°å®¶01\",\"bio\":\"ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·\",\"email\":\"buyer01@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":39,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
+                                                "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"<redacted_jwt>\",\"user\":{\"id\":1,\"username\":\"buyer01\",\"mobile\":\"13800000001\",\"avatar\":\"https://img.example.com/avatar/buyer01.png\",\"nickname\":\"æµè¯ä¹°å®¶01\",\"bio\":\"ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·\",\"email\":\"buyer01@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":39,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
                                             },
                                 "failed":  {
                                                "ok":  true,
@@ -16,7 +16,7 @@
                                  "success":  {
                                                  "ok":  true,
                                                  "statusCode":  200,
-                                                 "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDExNDE3fQ._Y1IfGoHewals-0-seKX5eBl9DoWrJqt4YgQY8UQ_54\",\"user\":{\"id\":5,\"username\":\"admin\",\"mobile\":\"13900000001\",\"avatar\":null,\"nickname\":\"ç®¡çå\",\"bio\":\"Day3 åå½ admin å«å\",\"email\":\"admin@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":100,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
+                                                 "body":  "{\"code\":1,\"msg\":\"success\",\"data\":{\"token\":\"<redacted_jwt>\",\"user\":{\"id\":5,\"username\":\"admin\",\"mobile\":\"13900000001\",\"avatar\":null,\"nickname\":\"ç®¡çå\",\"bio\":\"Day3 åå½ admin å«å\",\"email\":\"admin@test.com\",\"registerTime\":null,\"lastLoginIp\":null,\"creditScore\":100,\"productCount\":null,\"status\":\"active\",\"region\":null}}}"
                                              },
                                  "failed":  {
                                                 "ok":  true,

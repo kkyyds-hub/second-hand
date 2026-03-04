@@ -1,4 +1,4 @@
-﻿{
+{
     "executedAt":  "2026-02-25 15:24:20",
     "scenarioA_userLogin":  {
                                 "success":  {
@@ -8,7 +8,7 @@
                                                              "code":  1,
                                                              "msg":  "success",
                                                              "data":  {
-                                                                          "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwMTE0NjAsInVzZXJJZCI6MX0.ArTZg2wVNneA_xoGI8ToqfOmqzBwmBKCNR-TrbferO4",
+                                                                          "token":  "<redacted_jwt>",
                                                                           "user":  {
                                                                                        "id":  1,
                                                                                        "username":  "buyer01",
@@ -45,7 +45,7 @@
                                                               "code":  1,
                                                               "msg":  "success",
                                                               "data":  {
-                                                                           "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDExNDYwfQ.5KDIl6E46PmZv2E_BPE_OjON8UcDred1p-N_VGB2oJ4",
+                                                                           "token":  "<redacted_jwt>",
                                                                            "user":  {
                                                                                         "id":  5,
                                                                                         "username":  "admin",

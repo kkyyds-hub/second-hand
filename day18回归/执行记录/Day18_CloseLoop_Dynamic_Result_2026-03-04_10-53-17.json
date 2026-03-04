@@ -1,0 +1,710 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-04 10:53:17",
+                 "baseUrl":  "http://localhost:18080",
+                 "runTag":  "D18CLOSE0304105317",
+                 "note":  "all credentials/tokens are redacted in this artifact",
+                 "bootstrap_seller_credit":  {
+                                                 "target":  90,
+                                                 "beforeScore":  90,
+                                                 "delta":  0,
+                                                 "adjust":  {
+                                                                "httpStatus":  200,
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  {
+                                                                             "userId":  2,
+                                                                             "creditScore":  90,
+                                                                             "creditLevel":  "lv3",
+                                                                             "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                         },
+                                                                "error":  null
+                                                            },
+                                                 "after":  {
+                                                               "httpStatus":  200,
+                                                               "code":  1,
+                                                               "msg":  "success",
+                                                               "data":  {
+                                                                            "userId":  2,
+                                                                            "creditScore":  90,
+                                                                            "creditLevel":  "lv3",
+                                                                            "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                        },
+                                                               "error":  null
+                                                           }
+                                             }
+             },
+    "runtime_impact":  {
+                           "order_900056_task_27":  [
+
+                                                    ]
+                       },
+    "p1_s2":  {
+                  "product_order_pay_flow":  {
+                                                 "createProduct":  {
+                                                                       "httpStatus":  200,
+                                                                       "code":  1,
+                                                                       "msg":  "success",
+                                                                       "data":  {
+                                                                                    "productId":  920039,
+                                                                                    "title":  "DAY18-P1-A-D18CLOSE0304105317",
+                                                                                    "description":  "Day18 close loop D18CLOSE0304105317",
+                                                                                    "price":  99.00,
+                                                                                    "imageUrls":  "https://img.example.com/day18/D18CLOSE0304105317.jpg",
+                                                                                    "status":  "under_review",
+                                                                                    "category":  "Day18",
+                                                                                    "reviewRemark":  null,
+                                                                                    "createTime":  "2026-03-04 10:53",
+                                                                                    "updateTime":  "2026-03-04 10:53",
+                                                                                    "submitTime":  "2026-03-04 10:53"
+                                                                                },
+                                                                       "error":  null
+                                                                   },
+                                                 "approveProduct":  {
+                                                                        "httpStatus":  200,
+                                                                        "code":  1,
+                                                                        "msg":  "success",
+                                                                        "data":  "ååå®¡æ ¸éè¿",
+                                                                        "error":  null
+                                                                    },
+                                                 "createOrder":  {
+                                                                     "httpStatus":  200,
+                                                                     "code":  1,
+                                                                     "msg":  "success",
+                                                                     "data":  {
+                                                                                  "orderId":  900065,
+                                                                                  "orderNo":  "2026030410531814955",
+                                                                                  "status":  "pending",
+                                                                                  "totalAmount":  99.00,
+                                                                                  "createTime":  "2026-03-04 10:53"
+                                                                              },
+                                                                     "error":  null
+                                                                 },
+                                                 "payFirst":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  1,
+                                                                  "msg":  "success",
+                                                                  "data":  "æ¯ä»æå",
+                                                                  "error":  null
+                                                              },
+                                                 "payRepeat":  {
+                                                                   "httpStatus":  200,
+                                                                   "code":  1,
+                                                                   "msg":  "success",
+                                                                   "data":  "è®¢åå·²æ¯ä»ï¼æ ééå¤æä½",
+                                                                   "error":  null
+                                                               },
+                                                 "runShipTimeout1":  {
+                                                                         "httpStatus":  200,
+                                                                         "code":  1,
+                                                                         "msg":  "success",
+                                                                         "data":  {
+                                                                                      "processedAt":  1772592798295,
+                                                                                      "taskType":  "ship-timeout",
+                                                                                      "batchSize":  100,
+                                                                                      "success":  0
+                                                                                  },
+                                                                         "error":  null
+                                                                     },
+                                                 "runShipTimeout2":  {
+                                                                         "httpStatus":  200,
+                                                                         "code":  1,
+                                                                         "msg":  "success",
+                                                                         "data":  {
+                                                                                      "processedAt":  1772592798303,
+                                                                                      "taskType":  "ship-timeout",
+                                                                                      "batchSize":  100,
+                                                                                      "success":  0
+                                                                                  },
+                                                                         "error":  null
+                                                                     },
+                                                 "runRefund1":  {
+                                                                    "httpStatus":  200,
+                                                                    "code":  1,
+                                                                    "msg":  "success",
+                                                                    "data":  {
+                                                                                 "processedAt":  1772592798311,
+                                                                                 "taskType":  "refund",
+                                                                                 "batchSize":  100,
+                                                                                 "success":  0
+                                                                             },
+                                                                    "error":  null
+                                                                },
+                                                 "runRefund2":  {
+                                                                    "httpStatus":  200,
+                                                                    "code":  1,
+                                                                    "msg":  "success",
+                                                                    "data":  {
+                                                                                 "processedAt":  1772592798318,
+                                                                                 "taskType":  "refund",
+                                                                                 "batchSize":  100,
+                                                                                 "success":  0
+                                                                             },
+                                                                    "error":  null
+                                                                }
+                                             },
+                  "duplicate_sql_checks":  {
+                                               "ship_timeout":  0,
+                                               "ship_reminder":  0,
+                                               "refund_task":  0,
+                                               "refund_idempotency_key":  0,
+                                               "mq_consume_log":  0,
+                                               "points_ledger":  0
+                                           }
+              },
+    "p4_s1":  {
+                  "user_login_fail":  {
+                                          "httpStatus":  200,
+                                          "code":  0,
+                                          "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                          "data":  null,
+                                          "error":  null
+                                      },
+                  "user_login_success":  {
+                                             "httpStatus":  200,
+                                             "code":  1,
+                                             "msg":  "success",
+                                             "data":  {
+                                                          "token":  "\u003credacted\u003e",
+                                                          "user":  {
+                                                                       "id":  1,
+                                                                       "username":  "buyer01",
+                                                                       "mobile":  "13800000001",
+                                                                       "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                       "nickname":  "æµè¯ä¹°å®¶01",
+                                                                       "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                       "email":  "buyer01@test.com",
+                                                                       "registerTime":  null,
+                                                                       "lastLoginIp":  null,
+                                                                       "creditScore":  41,
+                                                                       "productCount":  null,
+                                                                       "status":  "active",
+                                                                       "region":  null
+                                                                   }
+                                                      },
+                                             "error":  null
+                                         },
+                  "admin_login_fail":  {
+                                           "httpStatus":  200,
+                                           "code":  0,
+                                           "msg":  "è´¦å·æå¯ç éè¯¯",
+                                           "data":  null,
+                                           "error":  null
+                                       },
+                  "admin_login_success":  {
+                                              "httpStatus":  200,
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  {
+                                                           "token":  "\u003credacted\u003e",
+                                                           "user":  {
+                                                                        "id":  5,
+                                                                        "username":  "admin",
+                                                                        "mobile":  "13900000001",
+                                                                        "avatar":  null,
+                                                                        "nickname":  "ç®¡çå",
+                                                                        "bio":  "Day3 åå½ admin å«å",
+                                                                        "email":  "admin@test.com",
+                                                                        "registerTime":  null,
+                                                                        "lastLoginIp":  null,
+                                                                        "creditScore":  100,
+                                                                        "productCount":  null,
+                                                                        "status":  "active",
+                                                                        "region":  null
+                                                                    }
+                                                       },
+                                              "error":  null
+                                          },
+                  "order_pay_cancel":  {
+                                           "paySuccess":  {
+                                                              "httpStatus":  200,
+                                                              "code":  1,
+                                                              "msg":  "success",
+                                                              "data":  "æ¯ä»æå",
+                                                              "error":  null
+                                                          },
+                                           "payIdempotent":  {
+                                                                 "httpStatus":  200,
+                                                                 "code":  1,
+                                                                 "msg":  "success",
+                                                                 "data":  "è®¢åå·²æ¯ä»ï¼æ ééå¤æä½",
+                                                                 "error":  null
+                                                             },
+                                           "cancelAfterPay":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  0,
+                                                                  "msg":  "è®¢åå·²æ¯ä»ï¼å½åä¸å\u0085è®¸åæ¶ï¼åç»­èµ°éæ¬¾/å®åï¼",
+                                                                  "data":  null,
+                                                                  "error":  null
+                                                              }
+                                       },
+                  "payment_callback":  {
+                                           "failStatusIgnored":  {
+                                                                     "httpStatus":  200,
+                                                                     "code":  1,
+                                                                     "msg":  "success",
+                                                                     "data":  "åè°ç¶æéæåï¼ä¸åå¤ç",
+                                                                     "error":  null
+                                                                 },
+                                           "expiredTimestamp":  {
+                                                                    "httpStatus":  200,
+                                                                    "code":  0,
+                                                                    "msg":  "åè°æ¶é´æ³è¶\u0085æ¶ï¼è¶\u0085è¿5åéï¼",
+                                                                    "data":  null,
+                                                                    "error":  null
+                                                                },
+                                           "successFirst":  {
+                                                                "httpStatus":  200,
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  "æ¯ä»åè°å¤çæå",
+                                                                "error":  null
+                                                            },
+                                           "successRepeat":  {
+                                                                 "httpStatus":  200,
+                                                                 "code":  1,
+                                                                 "msg":  "success",
+                                                                 "data":  "è®¢åå·²æ¯ä»ï¼åè°å¹ç­æå!",
+                                                                 "error":  null
+                                                             }
+                                       },
+                  "ban_unban":  {
+                                    "banFirst":  {
+                                                     "httpStatus":  200,
+                                                     "code":  1,
+                                                     "msg":  "success",
+                                                     "data":  "ç¨æ·å°ç¦æå",
+                                                     "error":  null
+                                                 },
+                                    "banRepeat":  {
+                                                      "httpStatus":  200,
+                                                      "code":  1,
+                                                      "msg":  "success",
+                                                      "data":  "ç¨æ·å·²å¤äºå°ç¦ç¶æ",
+                                                      "error":  null
+                                                  },
+                                    "unbanFirst":  {
+                                                       "httpStatus":  200,
+                                                       "code":  1,
+                                                       "msg":  "success",
+                                                       "data":  "ç¨æ·è§£å°æå",
+                                                       "error":  null
+                                                   },
+                                    "unbanRepeat":  {
+                                                        "httpStatus":  200,
+                                                        "code":  1,
+                                                        "msg":  "success",
+                                                        "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                                        "error":  null
+                                                    }
+                                }
+              },
+    "p5_s1":  {
+                  "sellerId":  2,
+                  "credit_before":  {
+                                        "httpStatus":  200,
+                                        "code":  1,
+                                        "msg":  "success",
+                                        "data":  {
+                                                     "userId":  2,
+                                                     "creditScore":  90,
+                                                     "creditLevel":  "lv3",
+                                                     "creditUpdatedAt":  "2026-03-04 10:53"
+                                                 },
+                                        "error":  null
+                                    },
+                  "source_stats":  {
+                                       "completed_as_buyer":  0,
+                                       "completed_as_seller":  19,
+                                       "cancelled_as_buyer":  0,
+                                       "violation_credit_sum":  -110,
+                                       "active_bans":  0,
+                                       "admin_adjust_sum":  62
+                                   },
+                  "recalc":  {
+                                 "httpStatus":  200,
+                                 "code":  1,
+                                 "msg":  "success",
+                                 "data":  {
+                                              "userId":  2,
+                                              "creditScore":  90,
+                                              "creditLevel":  "lv3",
+                                              "creditUpdatedAt":  "2026-03-04 10:53"
+                                          },
+                                 "error":  null
+                             },
+                  "credit_after_recalc":  {
+                                              "httpStatus":  200,
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  {
+                                                           "userId":  2,
+                                                           "creditScore":  90,
+                                                           "creditLevel":  "lv3",
+                                                           "creditUpdatedAt":  "2026-03-04 10:53"
+                                                       },
+                                              "error":  null
+                                          },
+                  "lv1":  {
+                              "set_target":  {
+                                                 "target":  20,
+                                                 "beforeScore":  90,
+                                                 "delta":  -70,
+                                                 "adjust":  {
+                                                                "httpStatus":  200,
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  {
+                                                                             "userId":  2,
+                                                                             "creditScore":  20,
+                                                                             "creditLevel":  "lv1",
+                                                                             "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                         },
+                                                                "error":  null
+                                                            },
+                                                 "after":  {
+                                                               "httpStatus":  200,
+                                                               "code":  1,
+                                                               "msg":  "success",
+                                                               "data":  {
+                                                                            "userId":  2,
+                                                                            "creditScore":  20,
+                                                                            "creditLevel":  "lv1",
+                                                                            "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                        },
+                                                               "error":  null
+                                                           }
+                                             },
+                              "create_product":  {
+                                                     "httpStatus":  200,
+                                                     "code":  0,
+                                                     "msg":  "ä¿¡ç¨ç­çº§è¿ä½ï¼LV1ï¼ï¼æä¸å¯åå¸åå",
+                                                     "data":  null,
+                                                     "error":  null
+                                                 }
+                          },
+                  "lv2":  {
+                              "active_before":  0,
+                              "set_target":  {
+                                                 "target":  65,
+                                                 "beforeScore":  20,
+                                                 "delta":  45,
+                                                 "adjust":  {
+                                                                "httpStatus":  200,
+                                                                "code":  1,
+                                                                "msg":  "success",
+                                                                "data":  {
+                                                                             "userId":  2,
+                                                                             "creditScore":  65,
+                                                                             "creditLevel":  "lv2",
+                                                                             "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                         },
+                                                                "error":  null
+                                                            },
+                                                 "after":  {
+                                                               "httpStatus":  200,
+                                                               "code":  1,
+                                                               "msg":  "success",
+                                                               "data":  {
+                                                                            "userId":  2,
+                                                                            "creditScore":  65,
+                                                                            "creditLevel":  "lv2",
+                                                                            "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                        },
+                                                               "error":  null
+                                                           }
+                                             },
+                              "attempts":  [
+                                               {
+                                                   "attempt":  1,
+                                                   "result":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  1,
+                                                                  "msg":  "success",
+                                                                  "data":  {
+                                                                               "productId":  920041,
+                                                                               "title":  "DAY18-LV2-D18CLOSE0304105317-1",
+                                                                               "description":  "Day18 close loop D18CLOSE0304105317",
+                                                                               "price":  99.00,
+                                                                               "imageUrls":  "https://img.example.com/day18/D18CLOSE0304105317.jpg",
+                                                                               "status":  "under_review",
+                                                                               "category":  "Day18",
+                                                                               "reviewRemark":  null,
+                                                                               "createTime":  "2026-03-04 10:53",
+                                                                               "updateTime":  "2026-03-04 10:53",
+                                                                               "submitTime":  "2026-03-04 10:53"
+                                                                           },
+                                                                  "error":  null
+                                                              }
+                                               },
+                                               {
+                                                   "attempt":  2,
+                                                   "result":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  1,
+                                                                  "msg":  "success",
+                                                                  "data":  {
+                                                                               "productId":  920042,
+                                                                               "title":  "DAY18-LV2-D18CLOSE0304105317-2",
+                                                                               "description":  "Day18 close loop D18CLOSE0304105317",
+                                                                               "price":  99.00,
+                                                                               "imageUrls":  "https://img.example.com/day18/D18CLOSE0304105317.jpg",
+                                                                               "status":  "under_review",
+                                                                               "category":  "Day18",
+                                                                               "reviewRemark":  null,
+                                                                               "createTime":  "2026-03-04 10:53",
+                                                                               "updateTime":  "2026-03-04 10:53",
+                                                                               "submitTime":  "2026-03-04 10:53"
+                                                                           },
+                                                                  "error":  null
+                                                              }
+                                               },
+                                               {
+                                                   "attempt":  3,
+                                                   "result":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  1,
+                                                                  "msg":  "success",
+                                                                  "data":  {
+                                                                               "productId":  920043,
+                                                                               "title":  "DAY18-LV2-D18CLOSE0304105317-3",
+                                                                               "description":  "Day18 close loop D18CLOSE0304105317",
+                                                                               "price":  99.00,
+                                                                               "imageUrls":  "https://img.example.com/day18/D18CLOSE0304105317.jpg",
+                                                                               "status":  "under_review",
+                                                                               "category":  "Day18",
+                                                                               "reviewRemark":  null,
+                                                                               "createTime":  "2026-03-04 10:53",
+                                                                               "updateTime":  "2026-03-04 10:53",
+                                                                               "submitTime":  "2026-03-04 10:53"
+                                                                           },
+                                                                  "error":  null
+                                                              }
+                                               },
+                                               {
+                                                   "attempt":  4,
+                                                   "result":  {
+                                                                  "httpStatus":  200,
+                                                                  "code":  0,
+                                                                  "msg":  "ä¿¡ç¨ç­çº§ä¸º LV2ï¼æ´»è·ååæ°éå·²è¾¾ä¸éï¼3",
+                                                                  "data":  null,
+                                                                  "error":  null
+                                                              }
+                                               }
+                                           ],
+                              "active_after":  3
+                          },
+                  "lv3_plus":  {
+                                   "set_target":  {
+                                                      "target":  90,
+                                                      "beforeScore":  65,
+                                                      "delta":  25,
+                                                      "adjust":  {
+                                                                     "httpStatus":  200,
+                                                                     "code":  1,
+                                                                     "msg":  "success",
+                                                                     "data":  {
+                                                                                  "userId":  2,
+                                                                                  "creditScore":  90,
+                                                                                  "creditLevel":  "lv3",
+                                                                                  "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                              },
+                                                                     "error":  null
+                                                                 },
+                                                      "after":  {
+                                                                    "httpStatus":  200,
+                                                                    "code":  1,
+                                                                    "msg":  "success",
+                                                                    "data":  {
+                                                                                 "userId":  2,
+                                                                                 "creditScore":  90,
+                                                                                 "creditLevel":  "lv3",
+                                                                                 "creditUpdatedAt":  "2026-03-04 10:53"
+                                                                             },
+                                                                    "error":  null
+                                                                }
+                                                  },
+                                   "create_product":  {
+                                                          "httpStatus":  200,
+                                                          "code":  1,
+                                                          "msg":  "success",
+                                                          "data":  {
+                                                                       "productId":  920044,
+                                                                       "title":  "DAY18-LV3-D18CLOSE0304105317",
+                                                                       "description":  "Day18 close loop D18CLOSE0304105317",
+                                                                       "price":  99.00,
+                                                                       "imageUrls":  "https://img.example.com/day18/D18CLOSE0304105317.jpg",
+                                                                       "status":  "under_review",
+                                                                       "category":  "Day18",
+                                                                       "reviewRemark":  null,
+                                                                       "createTime":  "2026-03-04 10:53",
+                                                                       "updateTime":  "2026-03-04 10:53",
+                                                                       "submitTime":  "2026-03-04 10:53"
+                                                                   },
+                                                          "error":  null
+                                                      }
+                               }
+              },
+    "p6_s2":  {
+                  "scenario":  "paid-order repeated pay endpoint pressure",
+                  "orderId":  900065,
+                  "totalRequests":  100,
+                  "totalErrors":  0,
+                  "elapsedSeconds":  1.84,
+                  "throughputRps":  54.49,
+                  "codeDistribution":  {
+                                           "1":  100
+                                       },
+                  "latencyMs":  {
+                                    "p50":  24.43,
+                                    "p95":  146.64,
+                                    "p99":  182.77
+                                }
+              },
+    "p7_s2":  {
+                  "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                  "jsonValidBefore":  1,
+                  "eventBefore":  {
+                                      "httpStatus":  200,
+                                      "code":  1,
+                                      "msg":  "success",
+                                      "data":  {
+                                                   "id":  52,
+                                                   "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                   "eventType":  "ORDER_STATUS_CHANGED",
+                                                   "exchangeName":  "order.events.exchange",
+                                                   "routingKey":  "order.status.changed",
+                                                   "bizId":  900055,
+                                                   "payloadJson":  "{\"bizId\": 900055, \"eventId\": \"P7S2_MQ_FAIL_20260226104148\", \"payload\": {\"orderId\": 900055}, \"version\": 1, \"eventType\": \"ORDER_STATUS_CHANGED\", \"occurredAt\": \"2026-03-04T10:30:00\", \"routingKey\": \"order.status.changed\"}",
+                                                   "status":  "SENT",
+                                                   "retryCount":  1718,
+                                                   "nextRetryTime":  null,
+                                                   "createdAt":  "2026-02-26 10:41",
+                                                   "updatedAt":  "2026-03-04 10:52"
+                                               },
+                                      "error":  null
+                                  },
+                  "jsonValidAfterFix":  1,
+                  "triggerNow":  {
+                                     "httpStatus":  200,
+                                     "code":  1,
+                                     "msg":  "success",
+                                     "data":  {
+                                                  "processedAt":  1772592802475,
+                                                  "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                  "updatedRows":  0,
+                                                  "success":  false
+                                              },
+                                     "error":  null
+                                 },
+                  "publishOnce":  {
+                                      "httpStatus":  200,
+                                      "code":  1,
+                                      "msg":  "success",
+                                      "data":  {
+                                                   "limit":  10,
+                                                   "processedAt":  1772592802484,
+                                                   "failed":  0,
+                                                   "sent":  0,
+                                                   "pulled":  0
+                                               },
+                                      "error":  null
+                                  },
+                  "eventAfter":  {
+                                     "httpStatus":  200,
+                                     "code":  1,
+                                     "msg":  "success",
+                                     "data":  {
+                                                  "id":  52,
+                                                  "eventId":  "P7S2_MQ_FAIL_20260226104148",
+                                                  "eventType":  "ORDER_STATUS_CHANGED",
+                                                  "exchangeName":  "order.events.exchange",
+                                                  "routingKey":  "order.status.changed",
+                                                  "bizId":  900055,
+                                                  "payloadJson":  "{\"bizId\": 900055, \"eventId\": \"P7S2_MQ_FAIL_20260226104148\", \"payload\": {\"orderId\": 900055}, \"version\": 1, \"eventType\": \"ORDER_STATUS_CHANGED\", \"occurredAt\": \"2026-03-04T10:30:00\", \"routingKey\": \"order.status.changed\"}",
+                                                  "status":  "SENT",
+                                                  "retryCount":  1718,
+                                                  "nextRetryTime":  null,
+                                                  "createdAt":  "2026-02-26 10:41",
+                                                  "updatedAt":  "2026-03-04 10:52"
+                                              },
+                                     "error":  null
+                                 }
+              },
+    "log_samples":  {
+                        "audit_actions":  [
+                                              "2026-03-04 10:53:21.903  INFO 36080 --- [io-18080-exec-2] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=3657c9b58e154123839e2ef691bdc213, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.922  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=6a21d92fa52d417a90dd4267c67f9b2c, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.927  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=c82e35fd617844378536131947f9a4f3, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.943  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=0075e3de7f2e44da95f52591ac4bf9c7, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.951  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=7c0798518d1146279b640a4685fc35ad, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.969  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e49cbc416dd845e980a82deab9212374, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.983  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=1185437d9972479b889849ecc72b7d14, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:21.993  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=beecef8a2ac3494dbf2edc7dd8e8bba5, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.002  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=a2209c32f9b14e3aa0e47f2844ffae70, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.009  INFO 36080 --- [io-18080-exec-2] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=85cc4864bcf64ca3b8956b7410ede6f1, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.015  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=ab7eb0026713437a9b6496dfc93f087b, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.022  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e5de38f84ffe414ba971f92f0c60c7d3, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.035  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=5a39b10b8871446bae0d680299232062, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.041  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=526ba17aefe840678e573e8a8cb5db08, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.060  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=be741b1ba02343b89016b5955f0e5dcf, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.065  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=ff0082240654476cbe0300b861874d2d, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.084  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=a2af64e3e5904d458fbbeae50084eb1f, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.092  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e31defdf7edd42319a8603a5780fdb9e, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.098  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=2426a07906544ec6a7d7ac492c488cc5, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.116  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=68b7f6e221ab46de87fa137dbba1c02d, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.122  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=2c1b2ad94cd749059ef4603eefb5c202, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.141  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=eb303b27124a45159bc0ad4a807342ad, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.146  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=73969a87cea541edb546b6eeb4783676, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.159  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e2af7d60182a4bd08c0e907d149bbc86, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.169  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=c45f1bf6d0034d94a938939f20154338, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.190  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=9b2936ce936640f99e6bf6117da7f47b, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.210  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=c0bebc9cf2b44f16872e71af54934704, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.229  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=587a73113d5c41319ffb155774ade2fd, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.247  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=694592bb46004d40b2b96de8d12845ee, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                              "2026-03-04 10:53:22.267  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=f43d8af807814cc8bc117dcfc609baf8, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid"
+                                          ],
+                        "idempotent_hits":  [
+                                                "2026-03-04 10:53:22.063  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.065  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.082  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.084  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.089  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.091  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.095  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.098  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.113  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.116  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.120  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.122  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.138  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.140  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.143  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.145  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.156  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.158  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.166  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.168  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.188  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.190  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.207  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.209  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.225  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.229  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.244  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.247  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid",
+                                                "2026-03-04 10:53:22.264  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid",
+                                                "2026-03-04 10:53:22.266  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : 幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid"
+                                            ]
+                    },
+    "dod":  {
+                "p1_repeat_no_duplicate":  true,
+                "p1_idempotent_log_searchable":  true,
+                "p4_audit_chain_searchable":  true,
+                "p5_lv1_blocked":  true,
+                "p5_lv2_quota_enforced":  true,
+                "p5_lv3_plus_allowed":  true,
+                "p6_load_data_archived":  true,
+                "p7_fail_to_sent_recovered":  true
+            }
+}

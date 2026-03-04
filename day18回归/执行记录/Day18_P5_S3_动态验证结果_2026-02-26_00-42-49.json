@@ -1,4 +1,4 @@
-﻿{
+{
     "startedAt":  "2026-02-26 00:42:49",
     "baseUrl":  "http://localhost:8080",
     "adminLogin":  {
@@ -6,7 +6,7 @@
                                         "code":  1,
                                         "msg":  "success",
                                         "data":  {
-                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDQ0OTY5fQ.HExtXyvJkB-Ixfw92zL2jjdCyV9nW4Ron89jN5I2jjI",
+                                                     "token":  "<redacted_jwt>",
                                                      "user":  {
                                                                   "id":  5,
                                                                   "username":  "admin",

@@ -1,4 +1,4 @@
-﻿{
+{
     "startedAt":  "2026-02-26 00:20:03",
     "baseUrl":  "http://localhost:8080",
     "adminLogin":  {
@@ -6,7 +6,7 @@
                                         "code":  1,
                                         "msg":  "success",
                                         "data":  {
-                                                     "token":  "eyJhbGciOiJIUzI1NiJ9.eyJlbXBJZCI6NSwiZXhwIjoxNzcyMDQzNjAzfQ.yc4B80MzO52zHzw_BUVtuQ3HM1lqlnEy8tSoO6dutnE",
+                                                     "token":  "<redacted_jwt>",
                                                      "user":  {
                                                                   "id":  5,
                                                                   "username":  "admin",
@@ -161,7 +161,7 @@
                                                      "code":  1,
                                                      "msg":  "success",
                                                      "data":  {
-                                                                  "token":  "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NzIwNDM2MDQsInVzZXJJZCI6Mn0.AmbB7GsTu6k9E9j2c7i3MOVykCcgDChN099lp3tDBmA",
+                                                                  "token":  "<redacted_jwt>",
                                                                   "user":  {
                                                                                "id":  2,
                                                                                "username":  "seller01",
