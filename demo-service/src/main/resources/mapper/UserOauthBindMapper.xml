@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.UserOauthBindMapper">
+
+    <!--
+      查询有效绑定（bind_status=1）。
+      provider + external_id 由唯一索引约束，最多返回一条。
+    -->
+    <select id="selectActiveByProviderAndExternalId" resultType="com.demo.entity.UserOauthBind">
+        SELECT
+            id,
+            user_id,
+            provider,
+            external_id,
+            bind_status,
+            last_login_time,
+            remark,
+            create_time,
+            update_time
+        FROM user_oauth_bind
+        WHERE provider = #{provider}
+          AND external_id = #{externalId}
+          AND bind_status = 1
+        LIMIT 1
+    </select>
+
+    <!-- 严格插入，交由唯一键控制并发竞争 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_oauth_bind (
+            user_id,
+            provider,
+            external_id,
+            bind_status,
+            last_login_time,
+            remark,
+            create_time,
+            update_time
+        ) VALUES (
+            #{userId},
+            #{provider},
+            #{externalId},
+            #{bindStatus},
+            #{lastLoginTime},
+            #{remark},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!--
+      兼容历史 Redis-only 映射回填：
+      - 新增成功返回 1；
+      - 命中唯一键冲突返回 0，不抛错，避免影响登录主流程。
+    -->
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO user_oauth_bind (
+            user_id,
+            provider,
+            external_id,
+            bind_status,
+            last_login_time,
+            remark,
+            create_time,
+            update_time
+        ) VALUES (
+            #{userId},
+            #{provider},
+            #{externalId},
+            #{bindStatus},
+            #{lastLoginTime},
+            #{remark},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 仅刷新最近登录时间，不改 user_id 绑定关系 -->
+    <update id="touchLoginTime">
+        UPDATE user_oauth_bind
+        SET last_login_time = #{lastLoginTime},
+            update_time = NOW()
+        WHERE provider = #{provider}
+          AND external_id = #{externalId}
+          AND bind_status = 1
+    </update>
+
+</mapper>
+

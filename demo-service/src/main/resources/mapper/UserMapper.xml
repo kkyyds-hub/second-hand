@@ -116,7 +116,7 @@
 
 
     <!-- SQL：insertUser，insert 语句用于对应 Mapper 方法的数据访问。 -->
-    <insert id="insertUser" parameterType="com.demo.entity.User">
+    <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users
         (username, nickname, password, mobile, email, avatar, bio,
          credit_score, credit_level, credit_updated_at,

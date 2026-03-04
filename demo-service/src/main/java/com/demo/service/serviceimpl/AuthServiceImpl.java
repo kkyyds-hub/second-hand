@@ -6,12 +6,14 @@ import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
 import com.demo.entity.User;
 import com.demo.entity.UserBan;
+import com.demo.entity.UserOauthBind;
 import com.demo.enumeration.CreditLevel;
 import com.demo.enumeration.CreditReasonType;
 import com.demo.enumeration.UserStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
+import com.demo.mapper.UserOauthBindMapper;
 import com.demo.properties.JwtProperties;
 import com.demo.security.InputSecurityGuard;
 import com.demo.service.AuthService;
@@ -23,16 +25,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -50,6 +55,8 @@ public class AuthServiceImpl implements AuthService {
     private static final String EMAIL_ACTIVATION_KEY_PREFIX = "auth:email:activation:";
     private static final String THIRD_PARTY_BIND_KEY_PREFIX = "auth:oauth:";
     private static final String LOGIN_FAIL_KEY_PREFIX = "auth:login_fail:"; // 后面拼 userId 或用户名
+    private static final String OAUTH_CACHE_DB_TAG = "db:"; // 新口径缓存值：db:{userId}
+    private static final long OAUTH_CACHE_TTL_DAYS = 30L;   // 避免永久脏缓存，周期性回源 DB 复核
     private static final int MAX_FAIL_COUNT = 5;      // 允许最大连续失败次数
     private static final int FAIL_WINDOW_MINUTES = 30; // 统计窗口（分钟）
 
@@ -75,6 +82,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserBanMapper userBanMapper;
+
+    @Autowired
+    private UserOauthBindMapper userOauthBindMapper;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @Setter
     @Value("${spring.mail.username:}")
@@ -192,23 +205,30 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public AuthResponse loginWithThirdParty(ThirdPartyLoginRequest request) {
-        String provider = request.getProvider().toLowerCase();
+        // provider 统一规范化（大小写口径收口），避免 "GitHub" 与 "github" 产生双份绑定。
+        String provider = InputSecurityGuard.normalizePlainText(request.getProvider(), "provider", 32, true)
+                .toLowerCase(Locale.ROOT);
         String externalId = resolveExternalId(request);
-        String redisKey = THIRD_PARTY_BIND_KEY_PREFIX + provider + ":" + externalId;
-        Long userId;
-        String cachedUserId = stringRedisTemplate.opsForValue().get(redisKey);
-        if (StringUtils.hasText(cachedUserId)) {
-            userId = Long.valueOf(cachedUserId);
-        } else {
-            User newUser = createThirdPartyUser(provider, externalId);
-            userId = newUser.getId();
-            stringRedisTemplate.opsForValue().set(redisKey, String.valueOf(userId));
+        String redisKey = buildThirdPartyCacheKey(provider, externalId);
+
+        // 第一优先：Redis 加速路径。
+        // 说明：只要缓存命中且 user 存在，就不走 DB 绑定查询。
+        // 对“历史 Redis-only 旧值（纯数字）”做一次懒迁移，迁移完成后改写为 db:{userId} 新格式。
+        User cachedUser = tryLoginByOauthCache(redisKey, provider, externalId);
+        if (cachedUser != null) {
+            return buildAuthResponse(cachedUser);
         }
 
-        User user = userMapper.selectById(userId);
-        UserVO userVO = toUserVO(user);
-        String token = buildJwt(user);
-        return new AuthResponse(token, userVO);
+        // 第二优先：DB 真源查询（provider + externalId）。
+        User dbBindUser = loadUserByOauthBind(provider, externalId, redisKey);
+        if (dbBindUser != null) {
+            return buildAuthResponse(dbBindUser);
+        }
+
+        // 最后一段：首次登录（Redis/DB 都没有绑定）。
+        // 使用事务模板保证“创建用户 + 插入绑定”原子性，避免并发下出现孤儿用户。
+        User createdUser = createAndBindThirdPartyUserWithRaceRecover(provider, externalId, redisKey);
+        return buildAuthResponse(createdUser);
     }
 
     /**
@@ -476,12 +496,234 @@ public class AuthServiceImpl implements AuthService {
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
         return JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
     }
+
+    /**
+     * 构建第三方登录 JWT 返回对象。
+     */
+    private AuthResponse buildAuthResponse(User user) {
+        if (user == null) {
+            throw new BusinessException("登录失败：用户不存在");
+        }
+        UserVO userVO = toUserVO(user);
+        String token = buildJwt(user);
+        return new AuthResponse(token, userVO);
+    }
+
+    /**
+     * 构造 OAuth 缓存 key。
+     */
+    private String buildThirdPartyCacheKey(String provider, String externalId) {
+        return THIRD_PARTY_BIND_KEY_PREFIX + provider + ":" + externalId;
+    }
+
+    /**
+     * Redis 加速路径。
+     *
+     * 关键口径：
+     * 1) 新缓存格式：db:{userId}，表示该映射已落库；
+     * 2) 旧缓存格式：{userId}，表示历史 Redis-only 数据，登录时执行一次懒迁移；
+     * 3) 若缓存 userId 对应用户不存在，视为脏缓存，直接删除并回源 DB。
+     */
+    private User tryLoginByOauthCache(String redisKey, String provider, String externalId) {
+        String cachedValue = stringRedisTemplate.opsForValue().get(redisKey);
+        if (!StringUtils.hasText(cachedValue)) {
+            return null;
+        }
+
+        Long cachedUserId = parseUserIdFromOauthCache(cachedValue);
+        if (cachedUserId == null) {
+            // 值格式异常（可能人工误写），直接清理，避免后续重复报错。
+            stringRedisTemplate.delete(redisKey);
+            return null;
+        }
+
+        User user = userMapper.selectById(cachedUserId);
+        if (user == null) {
+            // 缓存命中但用户不存在，说明缓存已脏（用户删改/导库/历史残留），清掉后回源 DB。
+            stringRedisTemplate.delete(redisKey);
+            return null;
+        }
+
+        // 仅对历史旧缓存做一次 DB 回填，避免每次登录都访问绑定表。
+        if (!cachedValue.startsWith(OAUTH_CACHE_DB_TAG)) {
+            Long authoritativeUserId = backfillLegacyOauthCache(provider, externalId, cachedUserId);
+            cacheThirdPartyBind(redisKey, authoritativeUserId);
+            if (!authoritativeUserId.equals(cachedUserId)) {
+                User authoritativeUser = userMapper.selectById(authoritativeUserId);
+                if (authoritativeUser == null) {
+                    throw new BusinessException("第三方账号绑定异常，请联系管理员");
+                }
+                return authoritativeUser;
+            }
+        }
+        return user;
+    }
+
+    /**
+     * DB 真源路径：按 provider + externalId 查询绑定，再回填 Redis。
+     */
+    private User loadUserByOauthBind(String provider, String externalId, String redisKey) {
+        UserOauthBind bind = userOauthBindMapper.selectActiveByProviderAndExternalId(provider, externalId);
+        if (bind == null) {
+            return null;
+        }
+        User user = userMapper.selectById(bind.getUserId());
+        if (user == null) {
+            // DB 绑定存在但用户不存在，属于数据完整性问题，需要显式暴露。
+            throw new BusinessException("第三方账号绑定异常，请联系管理员");
+        }
+        userOauthBindMapper.touchLoginTime(provider, externalId, LocalDateTime.now());
+        cacheThirdPartyBind(redisKey, bind.getUserId());
+        return user;
+    }
+
+    /**
+     * 首次第三方登录：创建用户并写入绑定（带并发冲突恢复）。
+     *
+     * 并发说明：
+     * - 两个请求同时首次登录同一 externalId 时，唯一键可能冲突；
+     * - 冲突请求回滚后读取已有绑定，最终都指向同一 userId。
+     */
+    private User createAndBindThirdPartyUserWithRaceRecover(String provider, String externalId, String redisKey) {
+        Long userId;
+        try {
+            userId = createAndBindThirdPartyUserTx(provider, externalId);
+        } catch (DuplicateKeyException ex) {
+            // 竞争下的正常分支：说明另一请求已经先完成绑定，当前请求直接回读即可。
+            UserOauthBind existing = userOauthBindMapper.selectActiveByProviderAndExternalId(provider, externalId);
+            if (existing == null) {
+                throw new BusinessException("第三方登录失败，请稍后重试");
+            }
+            userOauthBindMapper.touchLoginTime(provider, externalId, LocalDateTime.now());
+            userId = existing.getUserId();
+            log.info("第三方登录并发冲突恢复：provider={}, externalId={}, userId={}",
+                    provider, maskExternalId(externalId), userId);
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("第三方登录失败：用户不存在");
+        }
+        cacheThirdPartyBind(redisKey, userId);
+        return user;
+    }
+
+    /**
+     * 事务块：创建用户 + 绑定落库（原子）。
+     */
+    private Long createAndBindThirdPartyUserTx(String provider, String externalId) {
+        Long createdUserId = transactionTemplate.execute(status -> {
+            // 双检：避免事务开启后仍重复创建。
+            UserOauthBind existing = userOauthBindMapper.selectActiveByProviderAndExternalId(provider, externalId);
+            if (existing != null) {
+                userOauthBindMapper.touchLoginTime(provider, externalId, LocalDateTime.now());
+                return existing.getUserId();
+            }
+
+            User user = createThirdPartyUser(provider, externalId);
+            userMapper.insertUser(user);
+            if (user.getId() == null) {
+                throw new BusinessException("第三方登录失败：用户创建异常");
+            }
+
+            UserOauthBind bind = buildOauthBind(user.getId(), provider, externalId, LocalDateTime.now());
+            userOauthBindMapper.insert(bind);
+            log.info("第三方账号首次绑定成功：provider={}, externalId={}, userId={}",
+                    provider, maskExternalId(externalId), user.getId());
+            return user.getId();
+        });
+        if (createdUserId == null) {
+            throw new BusinessException("第三方登录失败：事务未返回用户");
+        }
+        return createdUserId;
+    }
+
+    /**
+     * 历史 Redis-only 缓存懒迁移。
+     *
+     * 行为：
+     * 1) 先看 DB 是否已有绑定（DB 优先）；
+     * 2) DB 无记录时尝试 insert ignore 回填；
+     * 3) 回填竞争冲突时再次读 DB，确保返回最终一致 userId。
+     */
+    private Long backfillLegacyOauthCache(String provider, String externalId, Long cachedUserId) {
+        LocalDateTime now = LocalDateTime.now();
+        UserOauthBind existing = userOauthBindMapper.selectActiveByProviderAndExternalId(provider, externalId);
+        if (existing != null) {
+            userOauthBindMapper.touchLoginTime(provider, externalId, now);
+            return existing.getUserId();
+        }
+
+        UserOauthBind backfill = buildOauthBind(cachedUserId, provider, externalId, now);
+        int inserted = userOauthBindMapper.insertIgnore(backfill);
+        if (inserted == 1) {
+            return cachedUserId;
+        }
+
+        UserOauthBind recovered = userOauthBindMapper.selectActiveByProviderAndExternalId(provider, externalId);
+        if (recovered != null) {
+            return recovered.getUserId();
+        }
+
+        // 极小概率：冲突发生但立即读不到（如隔离级别/短暂异常），先保底返回缓存用户并记录告警。
+        log.warn("第三方绑定懒迁移异常回退：provider={}, externalId={}, cachedUserId={}",
+                provider, maskExternalId(externalId), cachedUserId);
+        return cachedUserId;
+    }
+
+    /**
+     * 构建绑定实体（统一默认值，避免各分支字段漏填）。
+     */
+    private UserOauthBind buildOauthBind(Long userId, String provider, String externalId, LocalDateTime now) {
+        UserOauthBind bind = new UserOauthBind();
+        bind.setUserId(userId);
+        bind.setProvider(provider);
+        bind.setExternalId(externalId);
+        bind.setBindStatus(1);
+        bind.setLastLoginTime(now);
+        bind.setRemark("day18_oauth_binding");
+        return bind;
+    }
+
+    /**
+     * 写入 OAuth 缓存（统一使用 db:{userId} 作为新格式）。
+     */
+    private void cacheThirdPartyBind(String redisKey, Long userId) {
+        stringRedisTemplate.opsForValue().set(
+                redisKey,
+                OAUTH_CACHE_DB_TAG + userId,
+                Duration.ofDays(OAUTH_CACHE_TTL_DAYS)
+        );
+    }
+
+    /**
+     * 解析 OAuth 缓存值为 userId。
+     *
+     * 兼容两种格式：
+     * - 新格式：db:{userId}
+     * - 旧格式：{userId}
+     */
+    private Long parseUserIdFromOauthCache(String cachedValue) {
+        if (!StringUtils.hasText(cachedValue)) {
+            return null;
+        }
+        String trimmed = cachedValue.trim();
+        String pureUserId = trimmed.startsWith(OAUTH_CACHE_DB_TAG)
+                ? trimmed.substring(OAUTH_CACHE_DB_TAG.length())
+                : trimmed;
+        try {
+            return Long.parseLong(pureUserId);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private User createThirdPartyUser(String provider, String externalId) {
         User user = buildBaseUser();
         user.setUsername(provider + "_" + externalId.substring(0, Math.min(12, externalId.length())));
         user.setStatus("active");
-        userMapper.insertUser(user);
-        log.info("为第三方账号 {}-{} 创建新用户，ID={}", provider, maskExternalId(externalId), user.getId());
+        // 该方法只负责构建实体，不做 insert。
+        // 插入必须放在事务块里，与 user_oauth_bind 同事务提交。
         return user;
     }
 
