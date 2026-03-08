@@ -1,0 +1,767 @@
+﻿{
+  "info": {
+    "_postman_id": "1f4e6678-9c14-4f8b-9f38-5f6a16d4e201",
+    "name": "Day16 Regression (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "var url = pm.request.url.toString();",
+          "var tag = pm.environment.get('runTag');",
+          "if (!tag) {",
+          "  tag = Date.now().toString().slice(-8);",
+          "  pm.environment.set('runTag', tag);",
+          "}",
+          "pm.environment.set('title_a', 'DAY16-A-' + tag);",
+          "pm.environment.set('title_b', 'DAY16-B-' + tag);",
+          "pm.environment.set('title_c', 'DAY16-C-' + tag);",
+          "",
+          "if (url.includes('/admin/') && !url.includes('/admin/employee/login')) {",
+          "  var tAdmin = pm.environment.get('token_admin');",
+          "  if (tAdmin) pm.request.headers.upsert({ key: 'token', value: tAdmin });",
+          "}",
+          "",
+          "if (url.includes('/user/') && !url.includes('/user/auth/')) {",
+          "  var reqName = pm.info && pm.info.requestName ? pm.info.requestName : '';",
+          "  var useSeller = reqName.indexOf('[Seller]') === 0;",
+          "  var tBuyer = pm.environment.get('token_buyer');",
+          "  var tSeller = pm.environment.get('token_seller');",
+          "  var t = useSeller ? (tSeller || tBuyer) : tBuyer;",
+          "  if (t) pm.request.headers.upsert({ key: 'authentication', value: t });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{buyer_username}}\",\n  \"password\": \"{{buyer_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('buyer token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_buyer', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('buyerId', String(j.data.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{seller_username}}\",\n  \"password\": \"{{seller_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('seller token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_seller', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('sellerId', String(j.data.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/employee/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{admin_loginId}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('admin token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j && j.code === 1 && j.data && j.data.token) {",
+                  "  pm.environment.set('token_admin', j.data.token);",
+                  "  if (j.data.user && j.data.user.id) pm.environment.set('adminId', String(j.data.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-Day16-Setup",
+      "item": [
+        {
+          "name": "[Seller] Create Product A",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_a}}\",\n  \"description\": \"Day16 回归商品 A\",\n  \"price\": 199.00,\n  \"images\": [\"https://img.example.com/day16/a-1.jpg\"],\n  \"category\": \"Day16\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('create A code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create A has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "pm.test('create A status under_review', function () { pm.expect((j.data && j.data.status) || '').to.eql('under_review'); });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_a', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Create Product B",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_b}}\",\n  \"description\": \"Day16 回归商品 B（强制下架用）\",\n  \"price\": 299.00,\n  \"images\": [\"https://img.example.com/day16/b-1.jpg\"],\n  \"category\": \"Day16\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('create B code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create B has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_b', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Create Product C",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_c}}\",\n  \"description\": \"Day16 回归商品 C（举报闭环用）\",\n  \"price\": 399.00,\n  \"images\": [\"https://img.example.com/day16/c-1.jpg\"],\n  \"category\": \"Day16\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('create C code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create C has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_c', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Pending Approval By Title A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/products/pending-approval?page=1&pageSize=20&productName={{title_a}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('pending list code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "var list = (j.data && (j.data.list || j.data.records)) || [];",
+                  "var pid = pm.environment.get('productId_a');",
+                  "var hit = list.find(function (x) { return String(x.productId) === String(pid); });",
+                  "pm.test('A exists in pending list', function () { pm.expect(hit).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Approve Product A",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/products/{{productId_a}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('approve A code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('approve A message', function () { pm.expect(['商品审核通过', '已处理']).to.include(j.data); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Approve Product C",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/products/{{productId_c}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('approve C code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('approve C message', function () { pm.expect(['商品审核通过', '已处理']).to.include(j.data); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-Day16-StateMachine",
+      "item": [
+        {
+          "name": "[Seller] Off Shelf A First",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/products/{{productId_a}}/off-shelf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('off-shelf A first code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('off-shelf A first msg', function () { pm.expect(['下架成功', '商品已下架']).to.include(j.data); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Off Shelf A Repeat Idempotent",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/products/{{productId_a}}/off-shelf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('off-shelf repeat code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('off-shelf repeat == 商品已下架', function () { pm.expect(j.data).to.eql('商品已下架'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Resubmit A",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/products/{{productId_a}}/resubmit"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('resubmit code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('resubmit status under_review', function () { pm.expect((j.data && j.data.status) || '').to.eql('under_review'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Withdraw A",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/products/{{productId_a}}/withdraw"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('withdraw code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('withdraw status off_shelf', function () { pm.expect((j.data && j.data.status) || '').to.eql('off_shelf'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] On Shelf Alias A",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/products/{{productId_a}}/on-shelf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('on-shelf alias code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('on-shelf alias => under_review', function () { pm.expect((j.data && j.data.status) || '').to.eql('under_review'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Edit A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/products/{{productId_a}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_a}}-EDIT\",\n  \"description\": \"Day16 编辑后回审\",\n  \"price\": 188.88,\n  \"images\": [\"https://img.example.com/day16/a-edit-1.jpg\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('edit code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('edit status under_review', function () { pm.expect((j.data && j.data.status) || '').to.eql('under_review'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Reject A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/products/{{productId_a}}/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Day16 回归驳回原因：信息需补充\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('reject code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('reject message ok', function () { pm.expect(['商品审核驳回', '已处理']).to.include(j.data); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Force Off Shelf B",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/products/{{productId_b}}/force-off-shelf",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reasonCode\": \"violation_reported\",\n  \"reasonText\": \"Day16 回归：管理员强制下架验证\",\n  \"reportTicketNo\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('force-off-shelf code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('force-off-shelf message ok', function () { pm.expect(['强制下架成功', '商品已下架']).to.include(j.data); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Force Off Shelf B Repeat Idempotent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/products/{{productId_b}}/force-off-shelf",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reasonCode\": \"violation_reported\",\n  \"reasonText\": \"Day16 回归：重复强制下架\",\n  \"reportTicketNo\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('force-off-shelf repeat code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('force-off-shelf repeat == 商品已下架', function () { pm.expect(j.data).to.eql('商品已下架'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-Day16-ReportWorkflow",
+      "item": [
+        {
+          "name": "[Buyer] Report Product C Ticket1",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/market/products/{{productId_c}}/report",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportType\": \"misleading_desc\",\n  \"description\": \"Day16 回归举报 1：描述与实物不符\",\n  \"evidenceUrls\": [\"https://img.example.com/day16/report-1.jpg\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('report 1 code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('report 1 ticket exists', function () { pm.expect(j.data && j.data.ticketNo).to.be.ok; });",
+                  "if (j.data && j.data.ticketNo) pm.environment.set('ticket_no_1', j.data.ticketNo);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Resolve Ticket1 Dismiss",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/products/reports/{{ticket_no_1}}/resolve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"dismiss\",\n  \"remark\": \"Day16 回归：举报不成立\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('resolve dismiss code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('resolve dismiss success msg', function () { pm.expect(j.data).to.eql('工单处理成功'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Report Product C Ticket2",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/market/products/{{productId_c}}/report",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportType\": \"fake_description\",\n  \"description\": \"Day16 回归举报 2：二次举报走成立分支\",\n  \"evidenceUrls\": [\"https://img.example.com/day16/report-2.jpg\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('report 2 code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('report 2 ticket exists', function () { pm.expect(j.data && j.data.ticketNo).to.be.ok; });",
+                  "if (j.data && j.data.ticketNo) pm.environment.set('ticket_no_2', j.data.ticketNo);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Resolve Ticket2 Force Off Shelf",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/products/reports/{{ticket_no_2}}/resolve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"force_off_shelf\",\n  \"remark\": \"Day16 回归：举报成立，执行强制下架\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('resolve force-off-shelf code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('resolve force-off-shelf success msg', function () { pm.expect(j.data).to.eql('工单处理成功'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-Day16-SystemNotices",
+      "item": [
+        {
+          "name": "[Seller] List System Notices",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/system-notices?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('seller notices code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "var list = (j.data && (j.data.list || j.data.records)) || [];",
+                  "pm.test('seller notices list is array', function () { pm.expect(Array.isArray(list)).to.eql(true); });",
+                  "if (list.length > 0 && list[0].id) pm.environment.set('seller_notice_id', String(list[0].id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Get System Notice Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/system-notices/{{seller_notice_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('seller detail code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('seller detail has id', function () { pm.expect(j.data && j.data.id).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Mark System Notices Read",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/messages/system-notices/read"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('seller mark read code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('seller mark read text exists', function () { pm.expect((j.data || '') + '').to.not.eql(''); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] List System Notices",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/system-notices?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('buyer notices code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "var list = (j.data && (j.data.list || j.data.records)) || [];",
+                  "pm.test('buyer notices list is array', function () { pm.expect(Array.isArray(list)).to.eql(true); });",
+                  "if (list.length > 0 && list[0].id) pm.environment.set('buyer_notice_id', String(list[0].id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Get System Notice Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/messages/system-notices/{{buyer_notice_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('buyer detail code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('buyer detail has id', function () { pm.expect(j.data && j.data.id).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Mark System Notices Read",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/user/messages/system-notices/read"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var j = pm.response.json();",
+                  "pm.test('buyer mark read code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('buyer mark read text exists', function () { pm.expect((j.data || '') + '').to.not.eql(''); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
