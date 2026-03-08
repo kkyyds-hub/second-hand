@@ -1,0 +1,819 @@
+﻿{
+    "info":  {
+                 "_postman_id":  "f5f2b4e7-5f7f-4e57-9b59-6fd4b4d31515",
+                 "name":  "Day15 Regression (Local)",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "event":  [
+                  {
+                      "listen":  "prerequest",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+                                                  "var url = pm.request.url.toString();",
+                                                  "if (!pm.environment.get(\u0027runTag\u0027)) {",
+                                                  "  pm.environment.set(\u0027runTag\u0027, Date.now().toString().slice(-8));",
+                                                  "}",
+                                                  "",
+                                                  "// Admin token auto inject",
+                                                  "if (url.includes(\u0027/admin/\u0027) \u0026\u0026 !url.includes(\u0027/admin/employee/login\u0027)) {",
+                                                  "  var tAdmin = pm.environment.get(\u0027token_admin\u0027);",
+                                                  "  if (tAdmin) pm.request.headers.upsert({ key: \u0027token\u0027, value: tAdmin });",
+                                                  "}",
+                                                  "",
+                                                  "// User token auto inject",
+                                                  "if (url.includes(\u0027/user/\u0027) \u0026\u0026 !url.includes(\u0027/user/auth/\u0027)) {",
+                                                  "  var reqName = pm.info \u0026\u0026 pm.info.requestName ? pm.info.requestName : \u0027\u0027;",
+                                                  "  var useSeller = url.includes(\u0027/user/orders/sell\u0027) || url.includes(\u0027/ship\u0027) || url.includes(\u0027/seller-decision\u0027) || (url.includes(\u0027/user/messages/orders/\u0027) \u0026\u0026 reqName.includes(\u0027[Seller]\u0027));",
+                                                  "  var tBuyer = pm.environment.get(\u0027token_buyer\u0027);",
+                                                  "  var tSeller = pm.environment.get(\u0027token_seller\u0027);",
+                                                  "  var t = useSeller ? (tSeller || tBuyer) : tBuyer;",
+                                                  "  if (t) pm.request.headers.upsert({ key: \u0027authentication\u0027, value: t });",
+                                                  "}"
+                                              ]
+                                 }
+                  }
+              ],
+    "item":  [
+                 {
+                     "name":  "01-Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Buyer Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/user/auth/login/password",
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"loginId\":\"{{buyer_username}}\",\"password\":\"{{buyer_password}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027buyer token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j \u0026\u0026 j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) {",
+                                                                                    "  pm.environment.set(\u0027token_buyer\u0027, j.data.token);",
+                                                                                    "  if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027buyerId\u0027, String(j.data.user.id));",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Seller Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/user/auth/login/password",
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"loginId\":\"{{seller_username}}\",\"password\":\"{{seller_password}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027seller token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j \u0026\u0026 j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) {",
+                                                                                    "  pm.environment.set(\u0027token_seller\u0027, j.data.token);",
+                                                                                    "  if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027sellerId\u0027, String(j.data.user.id));",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/admin/employee/login",
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"loginId\":\"{{admin_loginId}}\",\"password\":\"{{admin_password}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027admin token exists\u0027, function () { pm.expect(j.data \u0026\u0026 j.data.token).to.be.ok; });",
+                                                                                    "if (j \u0026\u0026 j.code === 1 \u0026\u0026 j.data \u0026\u0026 j.data.token) {",
+                                                                                    "  pm.environment.set(\u0027token_admin\u0027, j.data.token);",
+                                                                                    "  if (j.data.user \u0026\u0026 j.data.user.id) pm.environment.set(\u0027adminId\u0027, String(j.data.user.id));",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02-Fixture-Discover",
+                     "item":  [
+                                  {
+                                      "name":  "Seller List Orders And Capture Fixture IDs",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/orders/sell?page=1\u0026pageSize=100\u0026sortField=createTime\u0026sortOrder=desc"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var orderNoShip = pm.environment.get(\u0027fixture_order_no_paid_ship\u0027);",
+                                                                                    "var orderNoTimeout = pm.environment.get(\u0027fixture_order_no_paid_timeout\u0027);",
+                                                                                    "var rowShip = list.find(function (x) { return x.orderNo === orderNoShip; });",
+                                                                                    "var rowTimeout = list.find(function (x) { return x.orderNo === orderNoTimeout; });",
+                                                                                    "pm.test(\u0027fixture paid-ship exists in seller orders\u0027, function () { pm.expect(rowShip).to.be.ok; });",
+                                                                                    "pm.test(\u0027fixture paid-timeout exists in seller orders\u0027, function () { pm.expect(rowTimeout).to.be.ok; });",
+                                                                                    "if (rowShip \u0026\u0026 rowShip.orderId) pm.environment.set(\u0027orderId_paid_ship\u0027, String(rowShip.orderId));",
+                                                                                    "if (rowTimeout \u0026\u0026 rowTimeout.orderId) pm.environment.set(\u0027orderId_paid_timeout\u0027, String(rowTimeout.orderId));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin List Ship Reminder Tasks (Paid Ship)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder?orderId={{orderId_paid_ship}}\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var arr = j.data || [];",
+                                                                                    "pm.test(\u0027paid-ship reminder tasks \u003e= 3\u0027, function () { pm.expect(arr.length).to.be.at.least(3); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin List Ship Reminder Tasks (Paid Timeout) And Pick Task",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder?orderId={{orderId_paid_timeout}}\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var arr = j.data || [];",
+                                                                                    "pm.test(\u0027paid-timeout reminder tasks \u003e= 3\u0027, function () { pm.expect(arr.length).to.be.at.least(3); });",
+                                                                                    "var pending = arr.find(function (x) { return x.status === \u0027PENDING\u0027; }) || arr[0];",
+                                                                                    "if (pending \u0026\u0026 pending.id) pm.environment.set(\u0027reminder_task_id_timeout\u0027, String(pending.id));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Trigger Reminder Task Now",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder/{{reminder_task_id_timeout}}/trigger-now"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027taskId echoed\u0027, function () { pm.expect(String(j.data.taskId)).to.eql(pm.environment.get(\u0027reminder_task_id_timeout\u0027)); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin List Ship Timeout Task (Paid Timeout)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout?orderId={{orderId_paid_timeout}}\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var arr = j.data || [];",
+                                                                                    "pm.test(\u0027timeout task exists\u0027, function () { pm.expect(arr.length).to.be.at.least(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03-Ship-And-Logistics",
+                     "item":  [
+                                  {
+                                      "name":  "Seller Ship Paid Order",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_paid_ship}}/ship",
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"shippingCompany\":\"SF\",\"trackingNo\":\"D15{{runTag}}01\",\"remark\":\"Day15回归发货\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027ship result text ok\u0027, function () {",
+                                                                                    "  pm.expect(String(j.data || \u0027\u0027)).to.match(/发货成功|已发货|无需重复/);",
+                                                                                    "});",
+                                                                                    "pm.environment.set(\u0027tracking_no_used\u0027, \u0027D15\u0027 + pm.environment.get(\u0027runTag\u0027) + \u002701\u0027);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Buyer Get Order Detail (Expect Shipped)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_paid_ship}}"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027status shipped\u0027, function () { pm.expect((j.data \u0026\u0026 j.data.status) || \u0027\u0027).to.eql(\u0027shipped\u0027); });",
+                                                                                    "pm.test(\u0027tracking exists\u0027, function () { pm.expect((j.data \u0026\u0026 j.data.trackingNo) || \u0027\u0027).to.not.eql(\u0027\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Buyer Get Logistics (Mock Trace)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_paid_ship}}/logistics"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027provider is mock\u0027, function () { pm.expect(((j.data \u0026\u0026 j.data.provider) || \u0027\u0027).toLowerCase()).to.eql(\u0027mock\u0027); });",
+                                                                                    "pm.test(\u0027trace has nodes\u0027, function () { pm.expect((j.data \u0026\u0026 j.data.trace \u0026\u0026 j.data.trace.length) || 0).to.be.at.least(1); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Seller Repeat Ship (Idempotent)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/user/orders/{{orderId_paid_ship}}/ship",
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"shippingCompany\":\"SF\",\"trackingNo\":\"D15{{runTag}}01\",\"remark\":\"Day15回归重复发货\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027idempotent message\u0027, function () {",
+                                                                                    "  pm.expect(String(j.data || \u0027\u0027)).to.match(/发货成功|已发货|无需重复/);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04-Reminder-Notify",
+                     "item":  [
+                                  {
+                                      "name":  "Admin Run Ship Reminder Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder/run-once?limit=200"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027run-once has success field\u0027, function () { pm.expect(j.data).to.have.property(\u0027success\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Check Reminder Tasks (Timeout Order)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder?orderId={{orderId_paid_timeout}}\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var arr = j.data || [];",
+                                                                                    "pm.test(\u0027has SUCCESS or CANCELLED\u0027, function () {",
+                                                                                    "  var ok = arr.some(function (x) { return x.status === \u0027SUCCESS\u0027 || x.status === \u0027CANCELLED\u0027; });",
+                                                                                    "  pm.expect(ok).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] List Messages For Timeout Order (Reminder)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_paid_timeout}}?page=1\u0026pageSize=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "pm.test(\u0027seller got reminder notice\u0027, function () {",
+                                                                                    "  var hit = list.some(function (m) { return String(m.content || \u0027\u0027).indexOf(\u0027距离自动取消还剩\u0027) \u003e= 0; });",
+                                                                                    "  pm.expect(hit).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] Mark Timeout Conversation As Read",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_paid_timeout}}/read"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027mark read response exists\u0027, function () { pm.expect((j.data || \u0027\u0027) + \u0027\u0027).to.not.eql(\u0027\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Seller] List Messages After Read (All Read)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_paid_timeout}}?page=1\u0026pageSize=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var sellerId = String(pm.environment.get(\u0027sellerId\u0027) || \u0027\u0027);",
+                                                                                    "pm.test(\u0027seller message list not empty\u0027, function () { pm.expect(list.length).to.be.at.least(1); });",
+                                                                                    "pm.test(\u0027all inbound messages to seller are read\u0027, function () {",
+                                                                                    "  var inbound = list.filter(function (m) { return String(m.toUserId || \u0027\u0027) === sellerId; });",
+                                                                                    "  pm.expect(inbound.length).to.be.at.least(1);",
+                                                                                    "  var allRead = inbound.every(function (m) { return m.read === true || m.read === 1; });",
+                                                                                    "  pm.expect(allRead).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "05-Timeout-Refund-Closure",
+                     "item":  [
+                                  {
+                                      "name":  "Admin Run Ship Timeout Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout/run-once?limit=200"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027has success count\u0027, function () { pm.expect(j.data).to.have.property(\u0027success\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Verify Cancelled Order Reason = ship_timeout",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/orders?page=1\u0026pageSize=100\u0026status=cancelled\u0026sortField=createTime\u0026sortOrder=desc"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var orderNo = pm.environment.get(\u0027fixture_order_no_paid_timeout\u0027);",
+                                                                                    "var row = list.find(function (x) { return x.orderNo === orderNo; });",
+                                                                                    "pm.test(\u0027timeout order visible in admin cancelled list\u0027, function () { pm.expect(row).to.be.ok; });",
+                                                                                    "pm.test(\u0027cancel reason is ship_timeout\u0027, function () { pm.expect((row \u0026\u0026 row.cancelReason) || \u0027\u0027).to.eql(\u0027ship_timeout\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Run Refund Once",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund/run-once?limit=200"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027refund run-once has success count\u0027, function () { pm.expect(j.data).to.have.property(\u0027success\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Verify Refund Task SUCCESS",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund?orderId={{orderId_paid_timeout}}\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var arr = j.data || [];",
+                                                                                    "pm.test(\u0027refund task has SUCCESS\u0027, function () {",
+                                                                                    "  var ok = arr.some(function (x) { return x.status === \u0027SUCCESS\u0027; });",
+                                                                                    "  pm.expect(ok).to.eql(true);",
+                                                                                    "});",
+                                                                                    "var s = arr.find(function (x) { return x.status === \u0027SUCCESS\u0027; });",
+                                                                                    "if (s \u0026\u0026 s.id) pm.environment.set(\u0027refund_task_id_timeout\u0027, String(s.id));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Buyer Wallet Transactions Contains ORDER_REFUND",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/wallet/transactions?page=1\u0026pageSize=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var oid = pm.environment.get(\u0027orderId_paid_timeout\u0027);",
+                                                                                    "var hits = list.filter(function (x) {",
+                                                                                    "  return String(x.bizType || \u0027\u0027) === \u0027ORDER_REFUND\u0027 \u0026\u0026 String(x.remark || \u0027\u0027).indexOf(\u0027orderId=\u0027 + oid) \u003e= 0;",
+                                                                                    "});",
+                                                                                    "pm.environment.set(\u0027refund_tx_count_timeout\u0027, String(hits.length));",
+                                                                                    "pm.test(\u0027wallet has refund transaction for timeout order\u0027, function () {",
+                                                                                    "  pm.expect(hits.length).to.be.at.least(1);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "[Buyer] List Messages For Timeout Order (Cancel + Refund)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/messages/orders/{{orderId_paid_timeout}}?page=1\u0026pageSize=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var hasCancel = list.some(function (m) { return String(m.content || \u0027\u0027).indexOf(\u0027已自动取消\u0027) \u003e= 0; });",
+                                                                                    "var hasRefund = list.some(function (m) { return String(m.content || \u0027\u0027).indexOf(\u0027退款处理成功\u0027) \u003e= 0; });",
+                                                                                    "pm.test(\u0027buyer got timeout-cancel notice\u0027, function () { pm.expect(hasCancel).to.eql(true); });",
+                                                                                    "pm.test(\u0027buyer got refund-success notice\u0027, function () { pm.expect(hasRefund).to.eql(true); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Verify Seller Violation Created (ship_timeout)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/users?userId={{sellerId}}\u0026page=1\u0026size=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 j.data.list) || [];",
+                                                                                    "pm.test(\u0027has ship_timeout violation\u0027, function () {",
+                                                                                    "  var hit = list.some(function (x) {",
+                                                                                    "    var t = String(x.violationType || \u0027\u0027).toLowerCase();",
+                                                                                    "    var d = String(x.description || \u0027\u0027);",
+                                                                                    "    return t === \u0027ship_timeout\u0027 || d.indexOf(\u0027超时未发货\u0027) \u003e= 0;",
+                                                                                    "  });",
+                                                                                    "  pm.expect(hit).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin Run Refund Once Again (Idempotent Guard)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund/run-once?limit=50"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027refund rerun response has success\u0027, function () { pm.expect(j.data).to.have.property(\u0027success\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Buyer Wallet Refund Count Stable After Re-Run",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/user/wallet/transactions?page=1\u0026pageSize=100"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "var list = (j.data \u0026\u0026 (j.data.list || j.data.records)) || [];",
+                                                                                    "var oid = pm.environment.get(\u0027orderId_paid_timeout\u0027);",
+                                                                                    "var nowCount = list.filter(function (x) {",
+                                                                                    "  return String(x.bizType || \u0027\u0027) === \u0027ORDER_REFUND\u0027 \u0026\u0026 String(x.remark || \u0027\u0027).indexOf(\u0027orderId=\u0027 + oid) \u003e= 0;",
+                                                                                    "}).length;",
+                                                                                    "var prev = parseInt(pm.environment.get(\u0027refund_tx_count_timeout\u0027) || \u00270\u0027, 10);",
+                                                                                    "pm.test(\u0027refund tx still exists\u0027, function () { pm.expect(nowCount).to.be.at.least(1); });",
+                                                                                    "pm.test(\u0027refund tx count stable after rerun\u0027, function () {",
+                                                                                    "  if (!isNaN(prev) \u0026\u0026 prev \u003e 0) {",
+                                                                                    "    pm.expect(nowCount).to.eql(prev);",
+                                                                                    "  } else {",
+                                                                                    "    pm.expect(nowCount).to.be.at.least(1);",
+                                                                                    "  }",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "06-Ops-Sanity",
+                     "item":  [
+                                  {
+                                      "name":  "Admin List Ship Timeout Tasks By Status",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-timeout?status=PENDING\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027data is array\u0027, function () { pm.expect(Array.isArray(j.data)).to.eql(true); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin List Refund Tasks By Status",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/refund?status=SUCCESS\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027data is array\u0027, function () { pm.expect(Array.isArray(j.data)).to.eql(true); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Admin List Ship Reminder Tasks By Status",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/admin/ops/tasks/ship-reminder?status=SUCCESS\u0026limit=20"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "var j = pm.response.json();",
+                                                                                    "pm.test(\u0027code == 1\u0027, function () { pm.expect(j.code).to.eql(1); });",
+                                                                                    "pm.test(\u0027data is array\u0027, function () { pm.expect(Array.isArray(j.data)).to.eql(true); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ]
+}
