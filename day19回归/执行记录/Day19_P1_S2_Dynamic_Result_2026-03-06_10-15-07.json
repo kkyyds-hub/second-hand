@@ -1,0 +1,816 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-06 10:15:07",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P1_S2_Dynamic_Result_2026-03-06_10-15-07.json",
+                 "sampleRounds":  3,
+                 "sampleIntervalSeconds":  10,
+                 "outboxPublishLimit":  100,
+                 "taskRunLimit":  200,
+                 "dbTarget":  "root@localhost:3306/secondhand2",
+                 "note":  "sensitive fields redacted"
+             },
+    "sqlCatalog":  {
+                       "outboxNew":  "SELECT COUNT(*) FROM message_outbox WHERE status=\u0027NEW\u0027 AND exchange_name NOT IN (\u0027bad.exchange\u0027);",
+                       "outboxFail":  "SELECT COUNT(*) FROM message_outbox WHERE status=\u0027FAIL\u0027 AND exchange_name NOT IN (\u0027bad.exchange\u0027);",
+                       "outboxFailRetrySum":  "SELECT COALESCE(SUM(retry_count),0) FROM message_outbox WHERE status=\u0027FAIL\u0027 AND exchange_name NOT IN (\u0027bad.exchange\u0027);",
+                       "shipTimeoutBacklog":  "SELECT COUNT(1) FROM order_ship_timeout_task WHERE status=\u0027PENDING\u0027 AND deadline_time\u003c=NOW() AND (next_retry_time IS NULL OR next_retry_time\u003c=NOW());",
+                       "refundBacklog":  "SELECT COUNT(1) FROM order_refund_task WHERE status IN (\u0027PENDING\u0027,\u0027FAILED\u0027) AND (next_retry_time IS NULL OR next_retry_time\u003c=NOW());",
+                       "shipReminderBacklog":  "SELECT COUNT(1) FROM order_ship_reminder_task WHERE status IN (\u0027PENDING\u0027,\u0027FAILED\u0027) AND remind_time\u003c=NOW();",
+                       "taskHighRetryCount":  "SELECT COALESCE(SUM(cnt),0) FROM (SELECT COUNT(*) AS cnt FROM order_ship_timeout_task WHERE retry_count\u003e=3 UNION ALL SELECT COUNT(*) AS cnt FROM order_refund_task WHERE retry_count\u003e=3 UNION ALL SELECT COUNT(*) AS cnt FROM order_ship_reminder_task WHERE retry_count\u003e=3) t;",
+                       "taskSevereRetryCount":  "SELECT COALESCE(SUM(cnt),0) FROM (SELECT COUNT(*) AS cnt FROM order_ship_timeout_task WHERE retry_count\u003e=5 UNION ALL SELECT COUNT(*) AS cnt FROM order_refund_task WHERE retry_count\u003e=5 UNION ALL SELECT COUNT(*) AS cnt FROM order_ship_reminder_task WHERE retry_count\u003e=5) t;"
+                   },
+    "rounds":  [
+                   {
+                       "round":  1,
+                       "at":  "2026-03-06 10:15:07",
+                       "metrics":  {
+                                       "outboxNew":  0,
+                                       "outboxFail":  0,
+                                       "outboxBacklog":  0,
+                                       "outboxFailRetrySum":  0,
+                                       "shipTimeoutBacklog":  0,
+                                       "refundBacklog":  0,
+                                       "shipReminderBacklog":  0,
+                                       "taskHighRetryCount":  2,
+                                       "taskSevereRetryCount":  1,
+                                       "outboxPublishSuccessRate":  null,
+                                       "shipTimeoutRunSuccessRate":  null,
+                                       "refundRunSuccessRate":  null,
+                                       "shipReminderRunSuccessRate":  null,
+                                       "taskRunSuccessRate":  null
+                                   },
+                       "apis":  {
+                                    "outboxMetrics":  {
+                                                          "url":  "http://localhost:8080/admin/ops/outbox/metrics",
+                                                          "costMs":  8.77,
+                                                          "method":  "GET",
+                                                          "httpStatus":  200,
+                                                          "at":  "2026-03-06 10:15:08.029",
+                                                          "error":  null,
+                                                          "response":  {
+                                                                           "msg":  "success",
+                                                                           "code":  1,
+                                                                           "data":  {
+                                                                                        "sent":  81,
+                                                                                        "queriedAt":  1772763308034,
+                                                                                        "fail":  0,
+                                                                                        "failRetrySum":  0,
+                                                                                        "excludeExchanges":  "bad.exchange",
+                                                                                        "new":  0
+                                                                                    }
+                                                                       },
+                                                          "name":  "outbox_metrics",
+                                                          "ok":  true
+                                                      },
+                                    "outboxPublishOnce":  {
+                                                              "url":  "http://localhost:8080/admin/ops/outbox/publish-once?limit=100",
+                                                              "costMs":  4.24,
+                                                              "method":  "POST",
+                                                              "httpStatus":  200,
+                                                              "at":  "2026-03-06 10:15:08.038",
+                                                              "error":  null,
+                                                              "response":  {
+                                                                               "msg":  "success",
+                                                                               "code":  1,
+                                                                               "data":  {
+                                                                                            "processedAt":  1772763308041,
+                                                                                            "sent":  0,
+                                                                                            "pulled":  0,
+                                                                                            "limit":  100,
+                                                                                            "failed":  0
+                                                                                        }
+                                                                           },
+                                                              "name":  "outbox_publish_once",
+                                                              "ok":  true
+                                                          },
+                                    "runShipTimeout":  {
+                                                           "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout/run-once?limit=200",
+                                                           "costMs":  3.87,
+                                                           "method":  "POST",
+                                                           "httpStatus":  200,
+                                                           "at":  "2026-03-06 10:15:08.042",
+                                                           "error":  null,
+                                                           "response":  {
+                                                                            "msg":  "success",
+                                                                            "code":  1,
+                                                                            "data":  {
+                                                                                         "processedAt":  1772763308046,
+                                                                                         "taskType":  "ship-timeout",
+                                                                                         "success":  0,
+                                                                                         "batchSize":  200
+                                                                                     }
+                                                                        },
+                                                           "name":  "task_run_ship_timeout",
+                                                           "ok":  true
+                                                       },
+                                    "runRefund":  {
+                                                      "url":  "http://localhost:8080/admin/ops/tasks/refund/run-once?limit=200",
+                                                      "costMs":  3.6,
+                                                      "method":  "POST",
+                                                      "httpStatus":  200,
+                                                      "at":  "2026-03-06 10:15:08.047",
+                                                      "error":  null,
+                                                      "response":  {
+                                                                       "msg":  "success",
+                                                                       "code":  1,
+                                                                       "data":  {
+                                                                                    "processedAt":  1772763308049,
+                                                                                    "taskType":  "refund",
+                                                                                    "success":  0,
+                                                                                    "batchSize":  200
+                                                                                }
+                                                                   },
+                                                      "name":  "task_run_refund",
+                                                      "ok":  true
+                                                  },
+                                    "runShipReminder":  {
+                                                            "url":  "http://localhost:8080/admin/ops/tasks/ship-reminder/run-once?limit=200",
+                                                            "costMs":  6.15,
+                                                            "method":  "POST",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-06 10:15:08.050",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "success",
+                                                                             "code":  1,
+                                                                             "data":  {
+                                                                                          "processedAt":  1772763308056,
+                                                                                          "taskType":  "ship-reminder",
+                                                                                          "success":  0,
+                                                                                          "batchSize":  200
+                                                                                      }
+                                                                         },
+                                                            "name":  "task_run_ship_reminder",
+                                                            "ok":  true
+                                                        }
+                                },
+                       "db":  {
+                                  "outboxNew":  {
+                                                    "costMs":  136.18,
+                                                    "raw":  "0",
+                                                    "error":  null,
+                                                    "value":  0,
+                                                    "name":  "outbox_new",
+                                                    "ok":  true
+                                                },
+                                  "outboxFail":  {
+                                                     "costMs":  60.31,
+                                                     "raw":  "0",
+                                                     "error":  null,
+                                                     "value":  0,
+                                                     "name":  "outbox_fail",
+                                                     "ok":  true
+                                                 },
+                                  "outboxFailRetrySum":  {
+                                                             "costMs":  59.01,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "outbox_fail_retry_sum",
+                                                             "ok":  true
+                                                         },
+                                  "shipTimeoutBacklog":  {
+                                                             "costMs":  57.22,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "ship_timeout_backlog",
+                                                             "ok":  true
+                                                         },
+                                  "refundBacklog":  {
+                                                        "costMs":  57.09,
+                                                        "raw":  "0",
+                                                        "error":  null,
+                                                        "value":  0,
+                                                        "name":  "refund_backlog",
+                                                        "ok":  true
+                                                    },
+                                  "shipReminderBacklog":  {
+                                                              "costMs":  57.25,
+                                                              "raw":  "0",
+                                                              "error":  null,
+                                                              "value":  0,
+                                                              "name":  "ship_reminder_backlog",
+                                                              "ok":  true
+                                                          },
+                                  "taskHighRetryCount":  {
+                                                             "costMs":  61.46,
+                                                             "raw":  "2",
+                                                             "error":  null,
+                                                             "value":  2,
+                                                             "name":  "task_high_retry_count",
+                                                             "ok":  true
+                                                         },
+                                  "taskSevereRetryCount":  {
+                                                               "costMs":  57.24,
+                                                               "raw":  "1",
+                                                               "error":  null,
+                                                               "value":  1,
+                                                               "name":  "task_severe_retry_count",
+                                                               "ok":  true
+                                                           }
+                              }
+                   },
+                   {
+                       "round":  2,
+                       "at":  "2026-03-06 10:15:18",
+                       "metrics":  {
+                                       "outboxNew":  0,
+                                       "outboxFail":  0,
+                                       "outboxBacklog":  0,
+                                       "outboxFailRetrySum":  0,
+                                       "shipTimeoutBacklog":  0,
+                                       "refundBacklog":  0,
+                                       "shipReminderBacklog":  0,
+                                       "taskHighRetryCount":  2,
+                                       "taskSevereRetryCount":  1,
+                                       "outboxPublishSuccessRate":  null,
+                                       "shipTimeoutRunSuccessRate":  null,
+                                       "refundRunSuccessRate":  null,
+                                       "shipReminderRunSuccessRate":  null,
+                                       "taskRunSuccessRate":  null
+                                   },
+                       "apis":  {
+                                    "outboxMetrics":  {
+                                                          "url":  "http://localhost:8080/admin/ops/outbox/metrics",
+                                                          "costMs":  5.84,
+                                                          "method":  "GET",
+                                                          "httpStatus":  200,
+                                                          "at":  "2026-03-06 10:15:18.578",
+                                                          "error":  null,
+                                                          "response":  {
+                                                                           "msg":  "success",
+                                                                           "code":  1,
+                                                                           "data":  {
+                                                                                        "sent":  81,
+                                                                                        "queriedAt":  1772763318584,
+                                                                                        "fail":  0,
+                                                                                        "failRetrySum":  0,
+                                                                                        "excludeExchanges":  "bad.exchange",
+                                                                                        "new":  0
+                                                                                    }
+                                                                       },
+                                                          "name":  "outbox_metrics",
+                                                          "ok":  true
+                                                      },
+                                    "outboxPublishOnce":  {
+                                                              "url":  "http://localhost:8080/admin/ops/outbox/publish-once?limit=100",
+                                                              "costMs":  4.08,
+                                                              "method":  "POST",
+                                                              "httpStatus":  200,
+                                                              "at":  "2026-03-06 10:15:18.585",
+                                                              "error":  null,
+                                                              "response":  {
+                                                                               "msg":  "success",
+                                                                               "code":  1,
+                                                                               "data":  {
+                                                                                            "processedAt":  1772763318588,
+                                                                                            "sent":  0,
+                                                                                            "pulled":  0,
+                                                                                            "limit":  100,
+                                                                                            "failed":  0
+                                                                                        }
+                                                                           },
+                                                              "name":  "outbox_publish_once",
+                                                              "ok":  true
+                                                          },
+                                    "runShipTimeout":  {
+                                                           "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout/run-once?limit=200",
+                                                           "costMs":  3.55,
+                                                           "method":  "POST",
+                                                           "httpStatus":  200,
+                                                           "at":  "2026-03-06 10:15:18.589",
+                                                           "error":  null,
+                                                           "response":  {
+                                                                            "msg":  "success",
+                                                                            "code":  1,
+                                                                            "data":  {
+                                                                                         "processedAt":  1772763318592,
+                                                                                         "taskType":  "ship-timeout",
+                                                                                         "success":  0,
+                                                                                         "batchSize":  200
+                                                                                     }
+                                                                        },
+                                                           "name":  "task_run_ship_timeout",
+                                                           "ok":  true
+                                                       },
+                                    "runRefund":  {
+                                                      "url":  "http://localhost:8080/admin/ops/tasks/refund/run-once?limit=200",
+                                                      "costMs":  3.06,
+                                                      "method":  "POST",
+                                                      "httpStatus":  200,
+                                                      "at":  "2026-03-06 10:15:18.593",
+                                                      "error":  null,
+                                                      "response":  {
+                                                                       "msg":  "success",
+                                                                       "code":  1,
+                                                                       "data":  {
+                                                                                    "processedAt":  1772763318595,
+                                                                                    "taskType":  "refund",
+                                                                                    "success":  0,
+                                                                                    "batchSize":  200
+                                                                                }
+                                                                   },
+                                                      "name":  "task_run_refund",
+                                                      "ok":  true
+                                                  },
+                                    "runShipReminder":  {
+                                                            "url":  "http://localhost:8080/admin/ops/tasks/ship-reminder/run-once?limit=200",
+                                                            "costMs":  6.51,
+                                                            "method":  "POST",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-06 10:15:18.596",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "success",
+                                                                             "code":  1,
+                                                                             "data":  {
+                                                                                          "processedAt":  1772763318601,
+                                                                                          "taskType":  "ship-reminder",
+                                                                                          "success":  0,
+                                                                                          "batchSize":  200
+                                                                                      }
+                                                                         },
+                                                            "name":  "task_run_ship_reminder",
+                                                            "ok":  true
+                                                        }
+                                },
+                       "db":  {
+                                  "outboxNew":  {
+                                                    "costMs":  72.72,
+                                                    "raw":  "0",
+                                                    "error":  null,
+                                                    "value":  0,
+                                                    "name":  "outbox_new",
+                                                    "ok":  true
+                                                },
+                                  "outboxFail":  {
+                                                     "costMs":  55.44,
+                                                     "raw":  "0",
+                                                     "error":  null,
+                                                     "value":  0,
+                                                     "name":  "outbox_fail",
+                                                     "ok":  true
+                                                 },
+                                  "outboxFailRetrySum":  {
+                                                             "costMs":  54.56,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "outbox_fail_retry_sum",
+                                                             "ok":  true
+                                                         },
+                                  "shipTimeoutBacklog":  {
+                                                             "costMs":  60.04,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "ship_timeout_backlog",
+                                                             "ok":  true
+                                                         },
+                                  "refundBacklog":  {
+                                                        "costMs":  58.83,
+                                                        "raw":  "0",
+                                                        "error":  null,
+                                                        "value":  0,
+                                                        "name":  "refund_backlog",
+                                                        "ok":  true
+                                                    },
+                                  "shipReminderBacklog":  {
+                                                              "costMs":  57.99,
+                                                              "raw":  "0",
+                                                              "error":  null,
+                                                              "value":  0,
+                                                              "name":  "ship_reminder_backlog",
+                                                              "ok":  true
+                                                          },
+                                  "taskHighRetryCount":  {
+                                                             "costMs":  58.53,
+                                                             "raw":  "2",
+                                                             "error":  null,
+                                                             "value":  2,
+                                                             "name":  "task_high_retry_count",
+                                                             "ok":  true
+                                                         },
+                                  "taskSevereRetryCount":  {
+                                                               "costMs":  57.5,
+                                                               "raw":  "1",
+                                                               "error":  null,
+                                                               "value":  1,
+                                                               "name":  "task_severe_retry_count",
+                                                               "ok":  true
+                                                           }
+                              }
+                   },
+                   {
+                       "round":  3,
+                       "at":  "2026-03-06 10:15:28",
+                       "metrics":  {
+                                       "outboxNew":  0,
+                                       "outboxFail":  0,
+                                       "outboxBacklog":  0,
+                                       "outboxFailRetrySum":  0,
+                                       "shipTimeoutBacklog":  0,
+                                       "refundBacklog":  0,
+                                       "shipReminderBacklog":  0,
+                                       "taskHighRetryCount":  2,
+                                       "taskSevereRetryCount":  1,
+                                       "outboxPublishSuccessRate":  null,
+                                       "shipTimeoutRunSuccessRate":  null,
+                                       "refundRunSuccessRate":  null,
+                                       "shipReminderRunSuccessRate":  null,
+                                       "taskRunSuccessRate":  null
+                                   },
+                       "apis":  {
+                                    "outboxMetrics":  {
+                                                          "url":  "http://localhost:8080/admin/ops/outbox/metrics",
+                                                          "costMs":  6.88,
+                                                          "method":  "GET",
+                                                          "httpStatus":  200,
+                                                          "at":  "2026-03-06 10:15:29.895",
+                                                          "error":  null,
+                                                          "response":  {
+                                                                           "msg":  "success",
+                                                                           "code":  1,
+                                                                           "data":  {
+                                                                                        "sent":  81,
+                                                                                        "queriedAt":  1772763329902,
+                                                                                        "fail":  0,
+                                                                                        "failRetrySum":  0,
+                                                                                        "excludeExchanges":  "bad.exchange",
+                                                                                        "new":  0
+                                                                                    }
+                                                                       },
+                                                          "name":  "outbox_metrics",
+                                                          "ok":  true
+                                                      },
+                                    "outboxPublishOnce":  {
+                                                              "url":  "http://localhost:8080/admin/ops/outbox/publish-once?limit=100",
+                                                              "costMs":  3.79,
+                                                              "method":  "POST",
+                                                              "httpStatus":  200,
+                                                              "at":  "2026-03-06 10:15:29.902",
+                                                              "error":  null,
+                                                              "response":  {
+                                                                               "msg":  "success",
+                                                                               "code":  1,
+                                                                               "data":  {
+                                                                                            "processedAt":  1772763329905,
+                                                                                            "sent":  0,
+                                                                                            "pulled":  0,
+                                                                                            "limit":  100,
+                                                                                            "failed":  0
+                                                                                        }
+                                                                           },
+                                                              "name":  "outbox_publish_once",
+                                                              "ok":  true
+                                                          },
+                                    "runShipTimeout":  {
+                                                           "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout/run-once?limit=200",
+                                                           "costMs":  2.62,
+                                                           "method":  "POST",
+                                                           "httpStatus":  200,
+                                                           "at":  "2026-03-06 10:15:29.907",
+                                                           "error":  null,
+                                                           "response":  {
+                                                                            "msg":  "success",
+                                                                            "code":  1,
+                                                                            "data":  {
+                                                                                         "processedAt":  1772763329909,
+                                                                                         "taskType":  "ship-timeout",
+                                                                                         "success":  0,
+                                                                                         "batchSize":  200
+                                                                                     }
+                                                                        },
+                                                           "name":  "task_run_ship_timeout",
+                                                           "ok":  true
+                                                       },
+                                    "runRefund":  {
+                                                      "url":  "http://localhost:8080/admin/ops/tasks/refund/run-once?limit=200",
+                                                      "costMs":  3.24,
+                                                      "method":  "POST",
+                                                      "httpStatus":  200,
+                                                      "at":  "2026-03-06 10:15:29.909",
+                                                      "error":  null,
+                                                      "response":  {
+                                                                       "msg":  "success",
+                                                                       "code":  1,
+                                                                       "data":  {
+                                                                                    "processedAt":  1772763329912,
+                                                                                    "taskType":  "refund",
+                                                                                    "success":  0,
+                                                                                    "batchSize":  200
+                                                                                }
+                                                                   },
+                                                      "name":  "task_run_refund",
+                                                      "ok":  true
+                                                  },
+                                    "runShipReminder":  {
+                                                            "url":  "http://localhost:8080/admin/ops/tasks/ship-reminder/run-once?limit=200",
+                                                            "costMs":  10.5,
+                                                            "method":  "POST",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-06 10:15:29.913",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "success",
+                                                                             "code":  1,
+                                                                             "data":  {
+                                                                                          "processedAt":  1772763329923,
+                                                                                          "taskType":  "ship-reminder",
+                                                                                          "success":  0,
+                                                                                          "batchSize":  200
+                                                                                      }
+                                                                         },
+                                                            "name":  "task_run_ship_reminder",
+                                                            "ok":  true
+                                                        }
+                                },
+                       "db":  {
+                                  "outboxNew":  {
+                                                    "costMs":  850.22,
+                                                    "raw":  "0",
+                                                    "error":  null,
+                                                    "value":  0,
+                                                    "name":  "outbox_new",
+                                                    "ok":  true
+                                                },
+                                  "outboxFail":  {
+                                                     "costMs":  69.88,
+                                                     "raw":  "0",
+                                                     "error":  null,
+                                                     "value":  0,
+                                                     "name":  "outbox_fail",
+                                                     "ok":  true
+                                                 },
+                                  "outboxFailRetrySum":  {
+                                                             "costMs":  62.51,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "outbox_fail_retry_sum",
+                                                             "ok":  true
+                                                         },
+                                  "shipTimeoutBacklog":  {
+                                                             "costMs":  57.58,
+                                                             "raw":  "0",
+                                                             "error":  null,
+                                                             "value":  0,
+                                                             "name":  "ship_timeout_backlog",
+                                                             "ok":  true
+                                                         },
+                                  "refundBacklog":  {
+                                                        "costMs":  60.32,
+                                                        "raw":  "0",
+                                                        "error":  null,
+                                                        "value":  0,
+                                                        "name":  "refund_backlog",
+                                                        "ok":  true
+                                                    },
+                                  "shipReminderBacklog":  {
+                                                              "costMs":  59.95,
+                                                              "raw":  "0",
+                                                              "error":  null,
+                                                              "value":  0,
+                                                              "name":  "ship_reminder_backlog",
+                                                              "ok":  true
+                                                          },
+                                  "taskHighRetryCount":  {
+                                                             "costMs":  59.75,
+                                                             "raw":  "2",
+                                                             "error":  null,
+                                                             "value":  2,
+                                                             "name":  "task_high_retry_count",
+                                                             "ok":  true
+                                                         },
+                                  "taskSevereRetryCount":  {
+                                                               "costMs":  58.6,
+                                                               "raw":  "1",
+                                                               "error":  null,
+                                                               "value":  1,
+                                                               "name":  "task_severe_retry_count",
+                                                               "ok":  true
+                                                           }
+                              }
+                   }
+               ],
+    "alerts":  [
+                   {
+                       "alertId":  "BKL-OUTBOX",
+                       "metric":  "outboxBacklog",
+                       "warn":  100,
+                       "err":  300,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-A",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "BKL-ST",
+                       "metric":  "shipTimeoutBacklog",
+                       "warn":  200,
+                       "err":  600,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-A",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "BKL-RF",
+                       "metric":  "refundBacklog",
+                       "warn":  200,
+                       "err":  600,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-A",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "BKL-SR",
+                       "metric":  "shipReminderBacklog",
+                       "warn":  200,
+                       "err":  600,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-A",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "RETRY-OUTBOX-CNT",
+                       "metric":  "outboxFailCount",
+                       "warn":  5,
+                       "err":  10,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-B",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "RETRY-OUTBOX-SUM",
+                       "metric":  "outboxFailRetrySum",
+                       "warn":  10,
+                       "err":  20,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  0,
+                       "flow":  "FLOW-B",
+                       "values":  [
+                                      0,
+                                      0,
+                                      0
+                                  ]
+                   },
+                   {
+                       "alertId":  "RETRY-TASK-HIGH",
+                       "metric":  "taskHighRetryCount",
+                       "warn":  5,
+                       "err":  15,
+                       "direction":  "ge",
+                       "level":  "NORMAL",
+                       "latest":  2,
+                       "flow":  "FLOW-B",
+                       "values":  [
+                                      2,
+                                      2,
+                                      2
+                                  ]
+                   },
+                   {
+                       "alertId":  "RETRY-TASK-SEV",
+                       "metric":  "taskSevereRetryCount",
+                       "warn":  1,
+                       "err":  5,
+                       "direction":  "ge",
+                       "level":  "WARNING",
+                       "latest":  1,
+                       "flow":  "FLOW-B",
+                       "values":  [
+                                      1,
+                                      1,
+                                      1
+                                  ]
+                   },
+                   {
+                       "alertId":  "SR-OUTBOX",
+                       "metric":  "outboxPublishSuccessRate",
+                       "warn":  95,
+                       "err":  90,
+                       "direction":  "lt",
+                       "level":  "NO_SAMPLE",
+                       "latest":  null,
+                       "flow":  "FLOW-C",
+                       "values":  [
+                                      null,
+                                      null,
+                                      null
+                                  ]
+                   },
+                   {
+                       "alertId":  "SR-TASK",
+                       "metric":  "taskRunSuccessRate",
+                       "warn":  90,
+                       "err":  80,
+                       "direction":  "lt",
+                       "level":  "NO_SAMPLE",
+                       "latest":  null,
+                       "flow":  "FLOW-C",
+                       "values":  [
+                                      null,
+                                      null,
+                                      null
+                                  ]
+                   }
+               ],
+    "ops":  {
+                "adminLogin":  {
+                                   "url":  "http://localhost:8080/admin/employee/login",
+                                   "costMs":  170.25,
+                                   "method":  "POST",
+                                   "httpStatus":  200,
+                                   "at":  "2026-03-06 10:15:07.249",
+                                   "error":  null,
+                                   "response":  {
+                                                    "msg":  "success",
+                                                    "code":  1,
+                                                    "data":  {
+                                                                 "user":  {
+                                                                              "id":  5,
+                                                                              "username":  "admin",
+                                                                              "creditScore":  100,
+                                                                              "registerTime":  null,
+                                                                              "bio":  "Day3 åå½ admin å«å",
+                                                                              "lastLoginIp":  null,
+                                                                              "avatar":  null,
+                                                                              "productCount":  null,
+                                                                              "status":  "active",
+                                                                              "mobile":  "13900000001",
+                                                                              "nickname":  "ç®¡çå",
+                                                                              "email":  "admin@test.com",
+                                                                              "region":  null
+                                                                          },
+                                                                 "token":  "\u003credacted\u003e"
+                                                             }
+                                                },
+                                   "name":  "admin_login",
+                                   "ok":  true
+                               },
+                "flowActions":  {
+                                    "FLOW-A":  [
+                                                   "POST /admin/ops/outbox/publish-once?limit=100",
+                                                   "POST /admin/ops/tasks/ship-timeout/run-once?limit=200",
+                                                   "POST /admin/ops/tasks/refund/run-once?limit=200",
+                                                   "POST /admin/ops/tasks/ship-reminder/run-once?limit=200",
+                                                   "if still high: trigger-now/reset"
+                                               ],
+                                    "FLOW-B":  [
+                                                   "query high retry samples by SQL",
+                                                   "run trigger-now/reset on samples",
+                                                   "run publish-once/run-once again",
+                                                   "verify retry growth stops"
+                                               ],
+                                    "FLOW-C":  [
+                                                   "run 3 rounds for success rate",
+                                                   "if below threshold run compensation + rerun",
+                                                   "verify rate recovers"
+                                               ]
+                                }
+            },
+    "logs":  {
+                 "keywordCount":  {
+
+                                  }
+             },
+    "dod":  {
+                "dod1_each_threshold_has_actions":  true,
+                "dod2_actions_operable_via_ops_api":  true
+            },
+    "notes":  [
+                  "log keyword count skipped (LogFile missing)"
+              ]
+}

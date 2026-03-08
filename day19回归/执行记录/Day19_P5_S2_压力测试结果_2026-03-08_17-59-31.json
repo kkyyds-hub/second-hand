@@ -1,0 +1,384 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-08 17:59:31",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "C:\\Users\\kk\\Desktop\\demo\\day19回归\\执行记录\\Day19_P5_S2_压力测试结果_2026-03-08_17-59-31.json",
+                 "script":  "C:\\Users\\kk\\Desktop\\demo\\day19回归\\执行复现步骤\\Day19_P5_S2_压力测试脚本化_执行复现_v1.0.ps1",
+                 "note":  "Success = HTTP 2xx and Result.code=1; stop immediately if the service becomes unavailable"
+             },
+    "config":  {
+                   "profile":  "standard",
+                   "rounds":  3,
+                   "warmupRequests":  60,
+                   "measuredRequests":  300,
+                   "concurrency":  12,
+                   "timeoutSec":  15
+               },
+    "preflight":  {
+                      "serviceAlive":  true,
+                      "probeStatus":  "HTTP_401",
+                      "userLoginCode":  1,
+                      "userId":  1,
+                      "userMobileMasked":  "138****0001",
+                      "tokenAcquired":  true,
+                      "callbackSampleSource":  "auto-generated",
+                      "orderNo":  "2026030817593214150",
+                      "orderAmount":  "109.00",
+                      "callbackProductId":  920127,
+                      "callbackOrderId":  907597
+                  },
+    "scenarios":  [
+                      {
+                          "name":  "login_password",
+                          "chain":  "Login",
+                          "endpoint":  "POST /user/auth/login/password",
+                          "method":  "POST",
+                          "uri":  "http://localhost:8080/user/auth/login/password",
+                          "params":  {
+                                         "profile":  "standard",
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-08 17:59:36.064",
+                                             "endedAt":  "2026-03-08 17:59:45.614",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  31.41,
+                                             "p50Ms":  100.25,
+                                             "p95Ms":  389.02,
+                                             "minMs":  71.95,
+                                             "maxMs":  1259.58,
+                                             "durationSec":  9.55,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-08 17:59:45.634",
+                                             "endedAt":  "2026-03-08 17:59:58.110",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  24.05,
+                                             "p50Ms":  109.4,
+                                             "p95Ms":  472.95,
+                                             "minMs":  72.06,
+                                             "maxMs":  1408.28,
+                                             "durationSec":  12.476,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-08 17:59:58.128",
+                                             "endedAt":  "2026-03-08 18:00:10.067",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  25.13,
+                                             "p50Ms":  107.58,
+                                             "p95Ms":  141.9,
+                                             "minMs":  73.95,
+                                             "maxMs":  463.19,
+                                             "durationSec":  11.94,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "aggregate":  {
+                                            "totalRequests":  900,
+                                            "successRequests":  900,
+                                            "failedRequests":  0,
+                                            "connectivityFailureCount":  0,
+                                            "errorRatePct":  0,
+                                            "throughputRps":  26.5,
+                                            "p50Ms":  105.41,
+                                            "p95Ms":  353.13,
+                                            "minMs":  71.95,
+                                            "maxMs":  1408.28,
+                                            "durationSec":  33.966,
+                                            "rounds":  3,
+                                            "verdict":  "PASS",
+                                            "errorGroupsTop10":  [
+
+                                                                 ]
+                                        }
+                      },
+                      {
+                          "name":  "market_product_list",
+                          "chain":  "MarketProductList",
+                          "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                          "method":  "GET",
+                          "uri":  "http://localhost:8080/user/market/products?page=1\u0026pageSize=20",
+                          "params":  {
+                                         "profile":  "standard",
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-08 18:00:13.337",
+                                             "endedAt":  "2026-03-08 18:00:20.704",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  40.72,
+                                             "p50Ms":  11.78,
+                                             "p95Ms":  16.78,
+                                             "minMs":  7.3,
+                                             "maxMs":  290.83,
+                                             "durationSec":  7.367,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-08 18:00:20.719",
+                                             "endedAt":  "2026-03-08 18:00:28.255",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  39.81,
+                                             "p50Ms":  13.49,
+                                             "p95Ms":  29.15,
+                                             "minMs":  7.75,
+                                             "maxMs":  361.21,
+                                             "durationSec":  7.535,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-08 18:00:28.276",
+                                             "endedAt":  "2026-03-08 18:00:35.704",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  40.39,
+                                             "p50Ms":  11.72,
+                                             "p95Ms":  22.56,
+                                             "minMs":  7.51,
+                                             "maxMs":  319.39,
+                                             "durationSec":  7.428,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "aggregate":  {
+                                            "totalRequests":  900,
+                                            "successRequests":  900,
+                                            "failedRequests":  0,
+                                            "connectivityFailureCount":  0,
+                                            "errorRatePct":  0,
+                                            "throughputRps":  40.3,
+                                            "p50Ms":  12.34,
+                                            "p95Ms":  24.01,
+                                            "minMs":  7.3,
+                                            "maxMs":  361.21,
+                                            "durationSec":  22.33,
+                                            "rounds":  3,
+                                            "verdict":  "PASS",
+                                            "errorGroupsTop10":  [
+
+                                                                 ]
+                                        }
+                      },
+                      {
+                          "name":  "payment_callback",
+                          "chain":  "PaymentCallback",
+                          "endpoint":  "POST /payment/callback",
+                          "method":  "POST",
+                          "uri":  "http://localhost:8080/payment/callback",
+                          "params":  {
+                                         "profile":  "standard",
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-08 18:00:38.969",
+                                             "endedAt":  "2026-03-08 18:00:47.002",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  37.34,
+                                             "p50Ms":  15.8,
+                                             "p95Ms":  56.36,
+                                             "minMs":  11.51,
+                                             "maxMs":  512.26,
+                                             "durationSec":  8.033,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-08 18:00:47.016",
+                                             "endedAt":  "2026-03-08 18:00:55.100",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  37.11,
+                                             "p50Ms":  15.63,
+                                             "p95Ms":  31.57,
+                                             "minMs":  11.6,
+                                             "maxMs":  341.9,
+                                             "durationSec":  8.084,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-08 18:00:55.115",
+                                             "endedAt":  "2026-03-08 18:01:02.433",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "connectivityFailureCount":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  40.99,
+                                             "p50Ms":  14.95,
+                                             "p95Ms":  26.86,
+                                             "minMs":  9.54,
+                                             "maxMs":  346.07,
+                                             "durationSec":  7.319,
+                                             "verdict":  "PASS",
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "aggregate":  {
+                                            "totalRequests":  900,
+                                            "successRequests":  900,
+                                            "failedRequests":  0,
+                                            "connectivityFailureCount":  0,
+                                            "errorRatePct":  0,
+                                            "throughputRps":  38.4,
+                                            "p50Ms":  15.43,
+                                            "p95Ms":  42.59,
+                                            "minMs":  9.54,
+                                            "maxMs":  512.26,
+                                            "durationSec":  23.436,
+                                            "rounds":  3,
+                                            "verdict":  "PASS",
+                                            "errorGroupsTop10":  [
+
+                                                                 ]
+                                        }
+                      }
+                  ],
+    "interviewSummary":  [
+                             {
+                                 "scenario":  "login_password",
+                                 "chain":  "Login",
+                                 "endpoint":  "POST /user/auth/login/password",
+                                 "totalRequests":  900,
+                                 "p95Ms":  353.13,
+                                 "errorRatePct":  0,
+                                 "throughputRps":  26.5,
+                                 "verdict":  "PASS"
+                             },
+                             {
+                                 "scenario":  "market_product_list",
+                                 "chain":  "MarketProductList",
+                                 "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                                 "totalRequests":  900,
+                                 "p95Ms":  24.01,
+                                 "errorRatePct":  0,
+                                 "throughputRps":  40.3,
+                                 "verdict":  "PASS"
+                             },
+                             {
+                                 "scenario":  "payment_callback",
+                                 "chain":  "PaymentCallback",
+                                 "endpoint":  "POST /payment/callback",
+                                 "totalRequests":  900,
+                                 "p95Ms":  42.59,
+                                 "errorRatePct":  0,
+                                 "throughputRps":  38.4,
+                                 "verdict":  "PASS"
+                             }
+                         ],
+    "summary":  {
+                    "login_password":  {
+                                           "chain":  "Login",
+                                           "endpoint":  "POST /user/auth/login/password",
+                                           "p95Ms":  353.13,
+                                           "errorRatePct":  0,
+                                           "throughputRps":  26.5,
+                                           "connectivityFailureCount":  0,
+                                           "totalMeasuredRequests":  900,
+                                           "verdict":  "PASS"
+                                       },
+                    "market_product_list":  {
+                                                "chain":  "MarketProductList",
+                                                "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                                                "p95Ms":  24.01,
+                                                "errorRatePct":  0,
+                                                "throughputRps":  40.3,
+                                                "connectivityFailureCount":  0,
+                                                "totalMeasuredRequests":  900,
+                                                "verdict":  "PASS"
+                                            },
+                    "payment_callback":  {
+                                             "chain":  "PaymentCallback",
+                                             "endpoint":  "POST /payment/callback",
+                                             "p95Ms":  42.59,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  38.4,
+                                             "connectivityFailureCount":  0,
+                                             "totalMeasuredRequests":  900,
+                                             "verdict":  "PASS"
+                                         }
+                }
+}

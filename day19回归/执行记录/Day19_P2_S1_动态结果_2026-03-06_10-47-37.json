@@ -1,0 +1,316 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-06 10:47:37",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P2_S1_动态结果_2026-03-06_10-47-37.json",
+                 "script":  "day19回归/执行复现步骤/Day19_P2_S1_核心接口性能基线_执行复现_v1.0.ps1",
+                 "note":  "业务成功口径: HTTP 2xx 且 Result.code=1"
+             },
+    "config":  {
+                   "rounds":  3,
+                   "warmupRequests":  60,
+                   "measuredRequests":  300,
+                   "concurrency":  12,
+                   "timeoutSec":  15
+               },
+    "preflight":  {
+                      "userLoginCode":  1,
+                      "userId":  1,
+                      "userMobileMasked":  "138****0001",
+                      "tokenAcquired":  true,
+                      "orderNo":  "2026030410531818448",
+                      "orderAmount":  "99"
+                  },
+    "scenarios":  [
+                      {
+                          "name":  "login_password",
+                          "chain":  "登录",
+                          "endpoint":  "POST /user/auth/login/password",
+                          "method":  "POST",
+                          "uri":  "http://localhost:8080/user/auth/login/password",
+                          "params":  {
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-06 10:47:42.856",
+                                             "endedAt":  "2026-03-06 10:47:51.650",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  34.12,
+                                             "p50Ms":  101.11,
+                                             "p95Ms":  483.5,
+                                             "minMs":  84.2,
+                                             "maxMs":  1003.58,
+                                             "durationSec":  8.793,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-06 10:47:51.677",
+                                             "endedAt":  "2026-03-06 10:48:00.922",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  32.45,
+                                             "p50Ms":  103.26,
+                                             "p95Ms":  505,
+                                             "minMs":  79.3,
+                                             "maxMs":  1002.27,
+                                             "durationSec":  9.245,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-06 10:48:00.953",
+                                             "endedAt":  "2026-03-06 10:48:11.350",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  28.85,
+                                             "p50Ms":  105.77,
+                                             "p95Ms":  294.53,
+                                             "minMs":  87.41,
+                                             "maxMs":  907.72,
+                                             "durationSec":  10.397,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "baseline":  {
+                                           "totalRequests":  900,
+                                           "successRequests":  900,
+                                           "failedRequests":  0,
+                                           "errorRatePct":  0,
+                                           "throughputRps":  31.65,
+                                           "p50Ms":  103.5,
+                                           "p95Ms":  423.53,
+                                           "minMs":  79.3,
+                                           "maxMs":  1003.58,
+                                           "durationSec":  28.435,
+                                           "rounds":  3,
+                                           "errorGroupsTop10":  [
+
+                                                                ]
+                                       }
+                      },
+                      {
+                          "name":  "market_product_list",
+                          "chain":  "商品列表",
+                          "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                          "method":  "GET",
+                          "uri":  "http://localhost:8080/user/market/products?page=1\u0026pageSize=20",
+                          "params":  {
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-06 10:48:14.262",
+                                             "endedAt":  "2026-03-06 10:48:21.342",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  42.37,
+                                             "p50Ms":  7.1,
+                                             "p95Ms":  9.7,
+                                             "minMs":  3.58,
+                                             "maxMs":  153.8,
+                                             "durationSec":  7.08,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-06 10:48:21.364",
+                                             "endedAt":  "2026-03-06 10:48:28.258",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  43.52,
+                                             "p50Ms":  7.47,
+                                             "p95Ms":  14.76,
+                                             "minMs":  4.11,
+                                             "maxMs":  170.75,
+                                             "durationSec":  6.894,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-06 10:48:28.278",
+                                             "endedAt":  "2026-03-06 10:48:35.620",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  40.86,
+                                             "p50Ms":  7.19,
+                                             "p95Ms":  9.78,
+                                             "minMs":  4.61,
+                                             "maxMs":  156.19,
+                                             "durationSec":  7.342,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "baseline":  {
+                                           "totalRequests":  900,
+                                           "successRequests":  900,
+                                           "failedRequests":  0,
+                                           "errorRatePct":  0,
+                                           "throughputRps":  42.22,
+                                           "p50Ms":  7.23,
+                                           "p95Ms":  12.69,
+                                           "minMs":  3.58,
+                                           "maxMs":  170.75,
+                                           "durationSec":  21.316,
+                                           "rounds":  3,
+                                           "errorGroupsTop10":  [
+
+                                                                ]
+                                       }
+                      },
+                      {
+                          "name":  "payment_callback",
+                          "chain":  "支付回调",
+                          "endpoint":  "POST /payment/callback",
+                          "method":  "POST",
+                          "uri":  "http://localhost:8080/payment/callback",
+                          "params":  {
+                                         "rounds":  3,
+                                         "warmupRequests":  60,
+                                         "measuredRequestsPerRound":  300,
+                                         "totalMeasuredRequests":  900,
+                                         "concurrency":  12,
+                                         "timeoutSec":  15
+                                     },
+                          "rounds":  [
+                                         {
+                                             "round":  1,
+                                             "startedAt":  "2026-03-06 10:48:38.311",
+                                             "endedAt":  "2026-03-06 10:48:46.254",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  37.77,
+                                             "p50Ms":  10.95,
+                                             "p95Ms":  18.48,
+                                             "minMs":  8.47,
+                                             "maxMs":  171.03,
+                                             "durationSec":  7.944,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  2,
+                                             "startedAt":  "2026-03-06 10:48:46.272",
+                                             "endedAt":  "2026-03-06 10:48:55.039",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  34.22,
+                                             "p50Ms":  11.63,
+                                             "p95Ms":  16.33,
+                                             "minMs":  9.11,
+                                             "maxMs":  283.55,
+                                             "durationSec":  8.767,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         },
+                                         {
+                                             "round":  3,
+                                             "startedAt":  "2026-03-06 10:48:55.052",
+                                             "endedAt":  "2026-03-06 10:49:03.265",
+                                             "totalRequests":  300,
+                                             "successRequests":  300,
+                                             "failedRequests":  0,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  36.53,
+                                             "p50Ms":  10.63,
+                                             "p95Ms":  15.92,
+                                             "minMs":  7.83,
+                                             "maxMs":  186.17,
+                                             "durationSec":  8.213,
+                                             "errorGroupsTop10":  [
+
+                                                                  ]
+                                         }
+                                     ],
+                          "baseline":  {
+                                           "totalRequests":  900,
+                                           "successRequests":  900,
+                                           "failedRequests":  0,
+                                           "errorRatePct":  0,
+                                           "throughputRps":  36.11,
+                                           "p50Ms":  11.06,
+                                           "p95Ms":  17.2,
+                                           "minMs":  7.83,
+                                           "maxMs":  283.55,
+                                           "durationSec":  24.924,
+                                           "rounds":  3,
+                                           "errorGroupsTop10":  [
+
+                                                                ]
+                                       }
+                      }
+                  ],
+    "summary":  {
+                    "login_password":  {
+                                           "chain":  "登录",
+                                           "endpoint":  "POST /user/auth/login/password",
+                                           "p50Ms":  103.5,
+                                           "p95Ms":  423.53,
+                                           "errorRatePct":  0,
+                                           "throughputRps":  31.65,
+                                           "totalMeasuredRequests":  900
+                                       },
+                    "market_product_list":  {
+                                                "chain":  "商品列表",
+                                                "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                                                "p50Ms":  7.23,
+                                                "p95Ms":  12.69,
+                                                "errorRatePct":  0,
+                                                "throughputRps":  42.22,
+                                                "totalMeasuredRequests":  900
+                                            },
+                    "payment_callback":  {
+                                             "chain":  "支付回调",
+                                             "endpoint":  "POST /payment/callback",
+                                             "p50Ms":  11.06,
+                                             "p95Ms":  17.2,
+                                             "errorRatePct":  0,
+                                             "throughputRps":  36.11,
+                                             "totalMeasuredRequests":  900
+                                         }
+                }
+}

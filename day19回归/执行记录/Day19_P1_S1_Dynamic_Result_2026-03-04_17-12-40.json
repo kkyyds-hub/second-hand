@@ -1,0 +1,708 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-04 17:12:40",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P1_S1_Dynamic_Result_2026-03-04_17-12-40.json",
+                 "note":  "敏感字段已脱敏"
+             },
+    "discovery":  {
+                      "audit":  {
+                                    "user_login_fail":  {
+                                                            "url":  "http://localhost:8080/user/auth/login/password",
+                                                            "costMs":  163.18,
+                                                            "method":  "POST",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-04 17:12:40.255",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                                             "code":  0,
+                                                                             "data":  null
+                                                                         },
+                                                            "name":  "user_login_fail",
+                                                            "ok":  true
+                                                        },
+                                    "user_login_success":  {
+                                                               "url":  "http://localhost:8080/user/auth/login/password",
+                                                               "costMs":  88.17,
+                                                               "method":  "POST",
+                                                               "httpStatus":  200,
+                                                               "at":  "2026-03-04 17:12:40.426",
+                                                               "error":  null,
+                                                               "response":  {
+                                                                                "msg":  "success",
+                                                                                "code":  1,
+                                                                                "data":  {
+                                                                                             "user":  {
+                                                                                                          "id":  1,
+                                                                                                          "username":  "buyer01",
+                                                                                                          "creditScore":  0,
+                                                                                                          "registerTime":  null,
+                                                                                                          "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                                                          "lastLoginIp":  null,
+                                                                                                          "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                                                          "productCount":  null,
+                                                                                                          "status":  "active",
+                                                                                                          "mobile":  "13800000001",
+                                                                                                          "nickname":  "æµè¯ä¹°å®¶01",
+                                                                                                          "email":  "buyer01@test.com",
+                                                                                                          "region":  null
+                                                                                                      },
+                                                                                             "token":  "\u003credacted\u003e"
+                                                                                         }
+                                                                            },
+                                                               "name":  "user_login_success",
+                                                               "ok":  true
+                                                           },
+                                    "admin_login_success":  {
+                                                                "url":  "http://localhost:8080/admin/employee/login",
+                                                                "costMs":  90.68,
+                                                                "method":  "POST",
+                                                                "httpStatus":  200,
+                                                                "at":  "2026-03-04 17:12:40.601",
+                                                                "error":  null,
+                                                                "response":  {
+                                                                                 "msg":  "success",
+                                                                                 "code":  1,
+                                                                                 "data":  {
+                                                                                              "user":  {
+                                                                                                           "id":  5,
+                                                                                                           "username":  "admin",
+                                                                                                           "creditScore":  100,
+                                                                                                           "registerTime":  null,
+                                                                                                           "bio":  "Day3 åå½ admin å«å",
+                                                                                                           "lastLoginIp":  null,
+                                                                                                           "avatar":  null,
+                                                                                                           "productCount":  null,
+                                                                                                           "status":  "active",
+                                                                                                           "mobile":  "13900000001",
+                                                                                                           "nickname":  "ç®¡çå",
+                                                                                                           "email":  "admin@test.com",
+                                                                                                           "region":  null
+                                                                                                       },
+                                                                                              "token":  "\u003credacted\u003e"
+                                                                                          }
+                                                                             },
+                                                                "name":  "admin_login_success",
+                                                                "ok":  true
+                                                            },
+                                    "admin_login_fail":  {
+                                                             "url":  "http://localhost:8080/admin/employee/login",
+                                                             "costMs":  85.51,
+                                                             "method":  "POST",
+                                                             "httpStatus":  200,
+                                                             "at":  "2026-03-04 17:12:40.514",
+                                                             "error":  null,
+                                                             "response":  {
+                                                                              "msg":  "è´¦å·æå¯ç éè¯¯",
+                                                                              "code":  0,
+                                                                              "data":  null
+                                                                          },
+                                                             "name":  "admin_login_fail",
+                                                             "ok":  true
+                                                         }
+                                },
+                      "outbox":  {
+                                     "publish_once":  {
+                                                          "url":  "http://localhost:8080/admin/ops/outbox/publish-once?limit=20",
+                                                          "costMs":  5.29,
+                                                          "method":  "POST",
+                                                          "httpStatus":  200,
+                                                          "at":  "2026-03-04 17:12:40.759",
+                                                          "error":  null,
+                                                          "response":  {
+                                                                           "msg":  "success",
+                                                                           "code":  1,
+                                                                           "data":  {
+                                                                                        "processedAt":  1772615560763,
+                                                                                        "sent":  0,
+                                                                                        "pulled":  0,
+                                                                                        "limit":  20,
+                                                                                        "failed":  0
+                                                                                    }
+                                                                       },
+                                                          "name":  "outbox_publish_once",
+                                                          "ok":  true
+                                                      },
+                                     "metrics_before":  {
+                                                            "url":  "http://localhost:8080/admin/ops/outbox/metrics",
+                                                            "costMs":  10.79,
+                                                            "method":  "GET",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-04 17:12:40.747",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "success",
+                                                                             "code":  1,
+                                                                             "data":  {
+                                                                                          "sent":  76,
+                                                                                          "queriedAt":  1772615560753,
+                                                                                          "fail":  0,
+                                                                                          "failRetrySum":  0,
+                                                                                          "excludeExchanges":  "bad.exchange",
+                                                                                          "new":  0
+                                                                                      }
+                                                                         },
+                                                            "name":  "outbox_metrics_before",
+                                                            "ok":  true
+                                                        },
+                                     "event_query":  {
+                                                         "url":  "http://localhost:8080/admin/ops/outbox/event/d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99",
+                                                         "costMs":  6.94,
+                                                         "method":  "GET",
+                                                         "httpStatus":  200,
+                                                         "at":  "2026-03-04 17:12:40.780",
+                                                         "error":  null,
+                                                         "response":  {
+                                                                          "msg":  "success",
+                                                                          "code":  1,
+                                                                          "data":  {
+                                                                                       "eventType":  "ORDER_PAID",
+                                                                                       "eventId":  "d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99",
+                                                                                       "id":  77,
+                                                                                       "createdAt":  "2026-03-04 10:53",
+                                                                                       "nextRetryTime":  null,
+                                                                                       "routingKey":  "order.paid",
+                                                                                       "retryCount":  0,
+                                                                                       "status":  "SENT",
+                                                                                       "updatedAt":  "2026-03-04 10:53",
+                                                                                       "bizId":  900066,
+                                                                                       "payloadJson":  "{\"eventId\":\"d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99\",\"eventType\":\"ORDER_PAID\",\"routingKey\":\"order.paid\",\"bizId\":900066,\"occurredAt\":\"2026-03-04T10:53:18.4716177\",\"payload\":{\"orderId\":900066,\"orderNo\":\"2026030410531818448\",\"buyerId\":1,\"payAmount\":99.00,\"payMethod\":\"mock\",\"payTime\":\"2026-03-04T10:53:18.4716177\"},\"version\":1}",
+                                                                                       "exchangeName":  "order.events.exchange"
+                                                                                   }
+                                                                      },
+                                                         "name":  "outbox_event_query",
+                                                         "ok":  true
+                                                     },
+                                     "metrics_after":  {
+                                                           "url":  "http://localhost:8080/admin/ops/outbox/metrics",
+                                                           "costMs":  9.08,
+                                                           "method":  "GET",
+                                                           "httpStatus":  200,
+                                                           "at":  "2026-03-04 17:12:40.764",
+                                                           "error":  null,
+                                                           "response":  {
+                                                                            "msg":  "success",
+                                                                            "code":  1,
+                                                                            "data":  {
+                                                                                         "sent":  76,
+                                                                                         "queriedAt":  1772615560772,
+                                                                                         "fail":  0,
+                                                                                         "failRetrySum":  0,
+                                                                                         "excludeExchanges":  "bad.exchange",
+                                                                                         "new":  0
+                                                                                     }
+                                                                        },
+                                                           "name":  "outbox_metrics_after",
+                                                           "ok":  true
+                                                       },
+                                     "event_trigger_now":  {
+                                                               "url":  "http://localhost:8080/admin/ops/outbox/event/d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99/trigger-now",
+                                                               "costMs":  6.22,
+                                                               "method":  "POST",
+                                                               "httpStatus":  200,
+                                                               "at":  "2026-03-04 17:12:40.773",
+                                                               "error":  null,
+                                                               "response":  {
+                                                                                "msg":  "success",
+                                                                                "code":  1,
+                                                                                "data":  {
+                                                                                             "processedAt":  1772615560778,
+                                                                                             "eventId":  "d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99",
+                                                                                             "success":  false,
+                                                                                             "updatedRows":  0
+                                                                                         }
+                                                                            },
+                                                               "name":  "outbox_event_trigger_now",
+                                                               "ok":  true
+                                                           }
+                                 },
+                      "task":  {
+                                   "run_ship_timeout":  {
+                                                            "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout/run-once?limit=20",
+                                                            "costMs":  4.62,
+                                                            "method":  "POST",
+                                                            "httpStatus":  200,
+                                                            "at":  "2026-03-04 17:12:40.825",
+                                                            "error":  null,
+                                                            "response":  {
+                                                                             "msg":  "success",
+                                                                             "code":  1,
+                                                                             "data":  {
+                                                                                          "processedAt":  1772615560828,
+                                                                                          "taskType":  "ship-timeout",
+                                                                                          "success":  0,
+                                                                                          "batchSize":  20
+                                                                                      }
+                                                                         },
+                                                            "name":  "task_run_ship_timeout",
+                                                            "ok":  true
+                                                        },
+                                   "list_ship_timeout":  {
+                                                             "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout?status=PENDING\u0026page=1\u0026pageSize=20",
+                                                             "costMs":  8.56,
+                                                             "method":  "GET",
+                                                             "httpStatus":  200,
+                                                             "at":  "2026-03-04 17:12:40.804",
+                                                             "error":  null,
+                                                             "response":  {
+                                                                              "msg":  "success",
+                                                                              "code":  1,
+                                                                              "data":  {
+                                                                                           "list":  [
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 17:10",
+                                                                                                            "id":  247,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:53",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900066,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:53"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:53",
+                                                                                                            "id":  245,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:53",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900065,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:53"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:50",
+                                                                                                            "id":  143,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:50",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900064,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:50"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:50",
+                                                                                                            "id":  141,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:50",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900063,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:50"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:49",
+                                                                                                            "id":  39,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:49",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900062,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:49"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:49",
+                                                                                                            "id":  37,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:49",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900061,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:49"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:48",
+                                                                                                            "id":  35,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:48",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900060,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:48"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:48",
+                                                                                                            "id":  33,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:48",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900059,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:48"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:47",
+                                                                                                            "id":  31,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:47",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900058,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:47"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 10:47",
+                                                                                                            "id":  29,
+                                                                                                            "lastError":  null,
+                                                                                                            "createTime":  "2026-03-04 10:47",
+                                                                                                            "retryCount":  0,
+                                                                                                            "orderId":  900057,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  null,
+                                                                                                            "deadlineTime":  "2026-03-06 10:47"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "updateTime":  "2026-03-04 17:10",
+                                                                                                            "id":  19,
+                                                                                                            "lastError":  "close_rows_0_status_paid",
+                                                                                                            "createTime":  "2026-02-25 11:00",
+                                                                                                            "retryCount":  739,
+                                                                                                            "orderId":  900041,
+                                                                                                            "status":  "PENDING",
+                                                                                                            "nextRetryTime":  "2026-03-04 17:12",
+                                                                                                            "deadlineTime":  "2026-02-25 10:58"
+                                                                                                        }
+                                                                                                    ],
+                                                                                           "pageSize":  20,
+                                                                                           "page":  1,
+                                                                                           "total":  11
+                                                                                       }
+                                                                          },
+                                                             "name":  "task_list_ship_timeout",
+                                                             "ok":  true
+                                                         },
+                                   "run_ship_reminder":  {
+                                                             "url":  "http://localhost:8080/admin/ops/tasks/ship-reminder/run-once?limit=20",
+                                                             "costMs":  8.39,
+                                                             "method":  "POST",
+                                                             "httpStatus":  200,
+                                                             "at":  "2026-03-04 17:12:40.836",
+                                                             "error":  null,
+                                                             "response":  {
+                                                                              "msg":  "success",
+                                                                              "code":  1,
+                                                                              "data":  {
+                                                                                           "processedAt":  1772615560843,
+                                                                                           "taskType":  "ship-reminder",
+                                                                                           "success":  0,
+                                                                                           "batchSize":  20
+                                                                                       }
+                                                                          },
+                                                             "name":  "task_run_ship_reminder",
+                                                             "ok":  true
+                                                         },
+                                   "list_refund":  {
+                                                       "url":  "http://localhost:8080/admin/ops/tasks/refund?status=FAILED\u0026page=1\u0026pageSize=20",
+                                                       "costMs":  6.17,
+                                                       "method":  "GET",
+                                                       "httpStatus":  200,
+                                                       "at":  "2026-03-04 17:12:40.812",
+                                                       "error":  null,
+                                                       "response":  {
+                                                                        "msg":  "success",
+                                                                        "code":  1,
+                                                                        "data":  {
+                                                                                     "list":  {
+
+                                                                                              },
+                                                                                     "pageSize":  20,
+                                                                                     "page":  1,
+                                                                                     "total":  0
+                                                                                 }
+                                                                    },
+                                                       "name":  "task_list_refund",
+                                                       "ok":  true
+                                                   },
+                                   "run_refund":  {
+                                                      "url":  "http://localhost:8080/admin/ops/tasks/refund/run-once?limit=20",
+                                                      "costMs":  5.91,
+                                                      "method":  "POST",
+                                                      "httpStatus":  200,
+                                                      "at":  "2026-03-04 17:12:40.829",
+                                                      "error":  null,
+                                                      "response":  {
+                                                                       "msg":  "success",
+                                                                       "code":  1,
+                                                                       "data":  {
+                                                                                    "processedAt":  1772615560833,
+                                                                                    "taskType":  "refund",
+                                                                                    "success":  0,
+                                                                                    "batchSize":  20
+                                                                                }
+                                                                   },
+                                                      "name":  "task_run_refund",
+                                                      "ok":  true
+                                                  },
+                                   "list_ship_reminder":  {
+                                                              "url":  "http://localhost:8080/admin/ops/tasks/ship-reminder?status=FAILED\u0026page=1\u0026pageSize=20",
+                                                              "costMs":  4.86,
+                                                              "method":  "GET",
+                                                              "httpStatus":  200,
+                                                              "at":  "2026-03-04 17:12:40.819",
+                                                              "error":  null,
+                                                              "response":  {
+                                                                               "msg":  "success",
+                                                                               "code":  1,
+                                                                               "data":  {
+                                                                                            "list":  {
+
+                                                                                                     },
+                                                                                            "pageSize":  20,
+                                                                                            "page":  1,
+                                                                                            "total":  0
+                                                                                        }
+                                                                           },
+                                                              "name":  "task_list_ship_reminder",
+                                                              "ok":  true
+                                                          },
+                                   "compensate":  {
+                                                      "url":  "http://localhost:8080/admin/ops/tasks/ship-timeout/247/trigger-now",
+                                                      "costMs":  14.4,
+                                                      "method":  "POST",
+                                                      "httpStatus":  200,
+                                                      "at":  "2026-03-04 17:12:40.855",
+                                                      "error":  null,
+                                                      "response":  {
+                                                                       "msg":  "success",
+                                                                       "code":  1,
+                                                                       "data":  {
+                                                                                    "updatedRows":  1,
+                                                                                    "success":  true,
+                                                                                    "taskId":  247
+                                                                                }
+                                                                   },
+                                                      "name":  "task_compensate",
+                                                      "ok":  true
+                                                  }
+                               }
+                  },
+    "unifiedSchema":  {
+                          "fields":  [
+                                         "action",
+                                         "actor",
+                                         "result",
+                                         "errorCode",
+                                         "costMs"
+                                     ],
+                          "rows":  [
+                                       {
+                                           "entryType":  "AUDIT",
+                                           "action":  "USER_LOGIN",
+                                           "actor":  "USER:13800000001",
+                                           "result":  "FAILED",
+                                           "errorCode":  "ç¨æ·åæå¯ç éè¯¯",
+                                           "costMs":  163.18,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /user/auth/login/password bad"
+                                       },
+                                       {
+                                           "entryType":  "AUDIT",
+                                           "action":  "USER_LOGIN",
+                                           "actor":  "USER:13800000001",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  88.17,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /user/auth/login/password ok"
+                                       },
+                                       {
+                                           "entryType":  "AUDIT",
+                                           "action":  "ADMIN_LOGIN",
+                                           "actor":  "ADMIN:13900000001",
+                                           "result":  "FAILED",
+                                           "errorCode":  "è´¦å·æå¯ç éè¯¯",
+                                           "costMs":  85.51,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /admin/employee/login bad"
+                                       },
+                                       {
+                                           "entryType":  "AUDIT",
+                                           "action":  "ADMIN_LOGIN",
+                                           "actor":  "ADMIN:13900000001",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  90.68,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /admin/employee/login ok"
+                                       },
+                                       {
+                                           "entryType":  "OUTBOX",
+                                           "action":  "OUTBOX_METRICS_QUERY",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  10.79,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "GET /admin/ops/outbox/metrics"
+                                       },
+                                       {
+                                           "entryType":  "OUTBOX",
+                                           "action":  "OUTBOX_PUBLISH_ONCE",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  5.29,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /admin/ops/outbox/publish-once"
+                                       },
+                                       {
+                                           "entryType":  "OUTBOX",
+                                           "action":  "OUTBOX_TRIGGER_NOW",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  6.22,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "POST /admin/ops/outbox/event/d45ffd92-4ea1-4f3a-bdf9-a37b1edebd99/trigger-now"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_LIST",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  8.56,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/ship-timeout?status=PENDING\u0026page=1\u0026pageSize=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_LIST",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  6.17,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/refund?status=FAILED\u0026page=1\u0026pageSize=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_LIST",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  4.86,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/ship-reminder?status=FAILED\u0026page=1\u0026pageSize=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_RUN_ONCE",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  4.62,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/ship-timeout/run-once?limit=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_RUN_ONCE",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  5.91,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/refund/run-once?limit=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_RUN_ONCE",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  8.39,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/ship-reminder/run-once?limit=20"
+                                       },
+                                       {
+                                           "entryType":  "TASK",
+                                           "action":  "TASK_COMPENSATE",
+                                           "actor":  "ADMIN:-",
+                                           "result":  "SUCCESS",
+                                           "errorCode":  "",
+                                           "costMs":  14.4,
+                                           "serverMeasured":  false,
+                                           "rawRef":  "http://localhost:8080/admin/ops/tasks/ship-timeout/247/trigger-now"
+                                       }
+                                   ]
+                      },
+    "checklist":  {
+                      "c1_audit_success_and_failed":  true,
+                      "c2_auditid_searchable":  true,
+                      "c3_outbox_metrics_fields":  true,
+                      "c4_outbox_publish_fields":  true,
+                      "c5_outbox_single_event_recovery":  true,
+                      "c6_task_list_available":  true,
+                      "c7_task_run_once_available":  true,
+                      "c8_task_compensation_available":  true,
+                      "c9_unified_schema_mapped":  true,
+                      "c10_each_entry_has_repro":  true
+                  },
+    "logs":  {
+                 "audit_last50":  [
+                                      "2026-03-04 10:53:22.060  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=be741b1ba02343b89016b5955f0e5dcf, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.065  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=ff0082240654476cbe0300b861874d2d, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.084  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=a2af64e3e5904d458fbbeae50084eb1f, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.092  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e31defdf7edd42319a8603a5780fdb9e, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.098  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=2426a07906544ec6a7d7ac492c488cc5, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.116  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=68b7f6e221ab46de87fa137dbba1c02d, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.122  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=2c1b2ad94cd749059ef4603eefb5c202, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.141  INFO 36080 --- [io-18080-exec-6] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=eb303b27124a45159bc0ad4a807342ad, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.146  INFO 36080 --- [io-18080-exec-7] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=73969a87cea541edb546b6eeb4783676, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.159  INFO 36080 --- [o-18080-exec-10] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=e2af7d60182a4bd08c0e907d149bbc86, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.169  INFO 36080 --- [io-18080-exec-5] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=c45f1bf6d0034d94a938939f20154338, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.190  INFO 36080 --- [io-18080-exec-9] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=9b2936ce936640f99e6bf6117da7f47b, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.210  INFO 36080 --- [io-18080-exec-4] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=c0bebc9cf2b44f16872e71af54934704, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.229  INFO 36080 --- [io-18080-exec-8] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=587a73113d5c41319ffb155774ade2fd, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.247  INFO 36080 --- [io-18080-exec-3] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=694592bb46004d40b2b96de8d12845ee, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 10:53:22.267  INFO 36080 --- [io-18080-exec-1] c.d.s.serviceimpl.OrderServiceImpl       : AUDIT auditId=f43d8af807814cc8bc117dcfc609baf8, action=ORDER_PAY, actorType=USER, actorId=1, targetType=ORDER, targetId=900065, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=status=paid",
+                                      "2026-03-04 11:09:26.251  INFO 36080 --- [io-18080-exec-4] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=e10fdc6759894fe08062b5580c0d3ae8, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:13:45.063  INFO 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=62f395768d994b02b5bf825e1e87d234, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:45:50.868  INFO 36080 --- [io-18080-exec-6] c.d.controller.admin.EmployeeController  : AUDIT auditId=51a7a5829d5644678be2f4a381236672, action=ADMIN_LOGIN, actorType=ADMIN, actorId=5, targetType=ACCOUNT, targetId=5, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=admin login success",
+                                      "2026-03-04 11:45:51.027  INFO 36080 --- [io-18080-exec-7] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=09c1a24b39f94c65b311a4855a54cc24, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:45:51.059  INFO 36080 --- [o-18080-exec-10] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=e70b9ee1c491415889923e738e074626, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:45:51.066  INFO 36080 --- [io-18080-exec-5] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=401aa04b2c61448c9a9d2ed53b568c70, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:45:51.146  INFO 36080 --- [io-18080-exec-2] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=98891059b39142e9ad26da9d4d7f4a24, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:45:51.234  WARN 36080 --- [io-18080-exec-9] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=d7e97e62e770481c87359f366b3b02c5, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:45:51.318  WARN 36080 --- [io-18080-exec-4] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=c93bba59349849fb8d9fccacc4c29c90, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:45:51.396  WARN 36080 --- [io-18080-exec-8] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=86b2fcf278194173947573357dbb6719, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:45:51.474  WARN 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=4b91ffa868dd41f2bfd0b9bdd08d01ce, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:45:51.696  INFO 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=fef21e2a8fb74527a8c6376a9e37e919, action=LOGIN_RISK_FREEZE, actorType=SYSTEM, actorId=RISK_ENGINE, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=failCount=5,source=AUTO_RISK,banId=17",
+                                      "2026-03-04 11:45:51.697  WARN 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=fef21e2a8fb74527a8c6376a9e37e919, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:45:51.703  WARN 36080 --- [io-18080-exec-6] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=fec0163f0d294db0b659fe925daf7c3d, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=ACCOUNT_FROZEN, detail=user frozen",
+                                      "2026-03-04 11:45:51.709  WARN 36080 --- [io-18080-exec-7] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=d614573ecec14ce98171325a5d369545, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=ACCOUNT_FROZEN, detail=user frozen",
+                                      "2026-03-04 11:45:51.718  INFO 36080 --- [o-18080-exec-10] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=879d39a46b93498496397c4db13b4cd1, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=status changed to active",
+                                      "2026-03-04 11:45:51.731  INFO 36080 --- [io-18080-exec-5] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=4f488facc3a34b60a87a28c96c01aee9, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:45:51.805  INFO 36080 --- [io-18080-exec-2] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=412608f86e834a9f840f0018fe95bf0c, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:52:17.369  INFO 36080 --- [io-18080-exec-4] c.d.controller.admin.EmployeeController  : AUDIT auditId=d9f91cb6a34e46f4af1f0ee8642de7de, action=ADMIN_LOGIN, actorType=ADMIN, actorId=5, targetType=ACCOUNT, targetId=5, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=admin login success",
+                                      "2026-03-04 11:52:17.518  INFO 36080 --- [io-18080-exec-8] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=174832aa52ad4330ae01676c3c5f5307, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:52:17.538  INFO 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=9659088c99cf4d3c865c5f3260d569e5, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:52:17.560  INFO 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=82c6061700fc47de946b7c0aacc55688, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:52:17.639  INFO 36080 --- [io-18080-exec-6] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=4c97302eaed04011b5d55fed07573c51, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                      "2026-03-04 11:52:17.721  WARN 36080 --- [io-18080-exec-7] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=75958153836748d4b10030c65f855e02, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:52:17.799  WARN 36080 --- [o-18080-exec-10] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=1f49ccc2bd4a40fa928944add6a70002, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:52:17.883  WARN 36080 --- [io-18080-exec-5] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=67b96af1ec8f4781b1cfbb783aa24db2, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:52:17.966  WARN 36080 --- [io-18080-exec-2] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=588e118c2a52449a9601225de9268e57, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:52:18.137  INFO 36080 --- [io-18080-exec-9] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=44cd7271b2174475ad63784fa4f01d97, action=LOGIN_RISK_FREEZE, actorType=SYSTEM, actorId=RISK_ENGINE, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=failCount=5,source=AUTO_RISK,banId=18",
+                                      "2026-03-04 11:52:18.137  WARN 36080 --- [io-18080-exec-9] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=44cd7271b2174475ad63784fa4f01d97, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                      "2026-03-04 11:52:18.146  WARN 36080 --- [io-18080-exec-4] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=acd061ba21b94dd793d7bd385487b32e, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=ACCOUNT_FROZEN, detail=user frozen",
+                                      "2026-03-04 11:52:18.153  WARN 36080 --- [io-18080-exec-8] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=9c1d2666673c4709b0f9c92fcc5faa67, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=ACCOUNT_FROZEN, detail=user frozen",
+                                      "2026-03-04 11:52:18.167  INFO 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=a072b00406fe4e9194b111ad3f18f6af, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=status changed to active",
+                                      "2026-03-04 11:52:18.181  INFO 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=49a3b889a61a4d00bbe0713c293564d7, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                      "2026-03-04 11:52:18.269  INFO 36080 --- [io-18080-exec-6] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=818eb8fad45844f68254186d7550e7ad, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success"
+                                  ]
+             },
+    "notes":  [
+
+              ]
+}

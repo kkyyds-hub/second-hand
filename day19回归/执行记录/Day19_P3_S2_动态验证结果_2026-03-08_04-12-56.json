@@ -1,0 +1,560 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-08 04:13:59",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P3_S2_动态验证结果_2026-03-08_04-12-56.json",
+                 "script":  "C:\\Users\\kk\\Desktop\\demo\\day19回归\\执行复现步骤\\Day19_P3_S2_缓存命中与回源对比_执行复现_v1.0.ps1"
+             },
+    "config":  {
+                   "coldSamples":  5,
+                   "warmRounds":  3,
+                   "warmRequests":  180,
+                   "concurrency":  12,
+                   "burstRequests":  24,
+                   "burstConcurrency":  24,
+                   "nullRequests":  60,
+                   "nullConcurrency":  12,
+                   "jitterSamples":  8,
+                   "invalidProductId":  999999999
+               },
+    "preflight":  {
+                      "tokenAcquired":  true,
+                      "onSaleTotal":  48,
+                      "detailProductId":  920086,
+                      "detailTitle":  "DAY19-P3-S2-CACHE-036",
+                      "listVersion":  "15",
+                      "listCacheKey":  "cache:product:list:15:db39d49d89f0fbdaf47244dcc7845525918261b1693f6c05a18edb7d088f5e7b:v1",
+                      "detailCacheKey":  "cache:product:detail:920086:v1",
+                      "invalidCacheKey":  "cache:product:detail:999999999:v1"
+                  },
+    "scenarios":  [
+                      {
+                          "name":  "market_product_list",
+                          "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                          "cold":  {
+                                       "samples":  [
+                                                       {
+                                                           "sample":  1,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  48.31,
+                                                           "ttlAfterRequestSec":  42,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  2,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  34.9,
+                                                           "ttlAfterRequestSec":  49,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  3,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  33.71,
+                                                           "ttlAfterRequestSec":  36,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  4,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  32.59,
+                                                           "ttlAfterRequestSec":  46,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  5,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  41.41,
+                                                           "ttlAfterRequestSec":  41,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       }
+                                                   ],
+                                       "summary":  {
+                                                       "totalRequests":  5,
+                                                       "successRequests":  5,
+                                                       "failedRequests":  0,
+                                                       "errorRatePct":  0,
+                                                       "throughputRps":  4.06,
+                                                       "p50Ms":  34.9,
+                                                       "p95Ms":  48.31,
+                                                       "minMs":  32.59,
+                                                       "maxMs":  48.31,
+                                                       "avgMs":  38.18,
+                                                       "durationSec":  1.23
+                                                   }
+                                   },
+                          "warm":  {
+                                       "prime":  {
+                                                     "latencyMs":  31.38,
+                                                     "success":  true,
+                                                     "ttlAfterPrimeSec":  24
+                                                 },
+                                       "rounds":  [
+                                                      {
+                                                          "round":  1,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  30.93,
+                                                          "p50Ms":  11.96,
+                                                          "p95Ms":  115.52,
+                                                          "avgMs":  19.7
+                                                      },
+                                                      {
+                                                          "round":  2,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  31.57,
+                                                          "p50Ms":  12.71,
+                                                          "p95Ms":  121.63,
+                                                          "avgMs":  20.93
+                                                      },
+                                                      {
+                                                          "round":  3,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  32.83,
+                                                          "p50Ms":  11.44,
+                                                          "p95Ms":  111.63,
+                                                          "avgMs":  18.32
+                                                      }
+                                                  ],
+                                       "summary":  {
+                                                       "totalRequests":  540,
+                                                       "successRequests":  540,
+                                                       "failedRequests":  0,
+                                                       "errorRatePct":  0,
+                                                       "throughputRps":  31.68,
+                                                       "p50Ms":  12.02,
+                                                       "p95Ms":  115.52,
+                                                       "minMs":  6.08,
+                                                       "maxMs":  165.09,
+                                                       "avgMs":  19.65,
+                                                       "durationSec":  17.043
+                                                   }
+                                   },
+                          "burst":  {
+                                        "thresholdMs":  231.04,
+                                        "slowRequests":  0,
+                                        "cacheExistsAfter":  true,
+                                        "lockExistsAfter":  false,
+                                        "summary":  {
+                                                        "totalRequests":  24,
+                                                        "successRequests":  24,
+                                                        "failedRequests":  0,
+                                                        "errorRatePct":  0,
+                                                        "throughputRps":  5.14,
+                                                        "p50Ms":  99.45,
+                                                        "p95Ms":  119.02,
+                                                        "minMs":  83.03,
+                                                        "maxMs":  121.74,
+                                                        "avgMs":  100.54,
+                                                        "durationSec":  4.673
+                                                    }
+                                    }
+                      },
+                      {
+                          "name":  "market_product_detail",
+                          "endpoint":  "GET /user/market/products/920086",
+                          "cold":  {
+                                       "samples":  [
+                                                       {
+                                                           "sample":  1,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  23.32,
+                                                           "ttlAfterRequestSec":  97,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  2,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  20.92,
+                                                           "ttlAfterRequestSec":  142,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  3,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  26.34,
+                                                           "ttlAfterRequestSec":  109,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  4,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  27.64,
+                                                           "ttlAfterRequestSec":  114,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       },
+                                                       {
+                                                           "sample":  5,
+                                                           "httpStatus":  200,
+                                                           "businessCode":  1,
+                                                           "success":  true,
+                                                           "latencyMs":  24.86,
+                                                           "ttlAfterRequestSec":  124,
+                                                           "errorType":  null,
+                                                           "errorMessage":  null
+                                                       }
+                                                   ],
+                                       "summary":  {
+                                                       "totalRequests":  5,
+                                                       "successRequests":  5,
+                                                       "failedRequests":  0,
+                                                       "errorRatePct":  0,
+                                                       "throughputRps":  5.03,
+                                                       "p50Ms":  24.86,
+                                                       "p95Ms":  27.64,
+                                                       "minMs":  20.92,
+                                                       "maxMs":  27.64,
+                                                       "avgMs":  24.62,
+                                                       "durationSec":  0.993
+                                                   }
+                                   },
+                          "warm":  {
+                                       "prime":  {
+                                                     "latencyMs":  24.52,
+                                                     "success":  true,
+                                                     "ttlAfterPrimeSec":  108
+                                                 },
+                                       "rounds":  [
+                                                      {
+                                                          "round":  1,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  34.74,
+                                                          "p50Ms":  9.75,
+                                                          "p95Ms":  96.4,
+                                                          "avgMs":  16.16
+                                                      },
+                                                      {
+                                                          "round":  2,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  33.51,
+                                                          "p50Ms":  10.05,
+                                                          "p95Ms":  101.12,
+                                                          "avgMs":  16.77
+                                                      },
+                                                      {
+                                                          "round":  3,
+                                                          "totalRequests":  180,
+                                                          "successRequests":  180,
+                                                          "failedRequests":  0,
+                                                          "errorRatePct":  0,
+                                                          "throughputRps":  35.6,
+                                                          "p50Ms":  10.08,
+                                                          "p95Ms":  109.16,
+                                                          "avgMs":  16.91
+                                                      }
+                                                  ],
+                                       "summary":  {
+                                                       "totalRequests":  540,
+                                                       "successRequests":  540,
+                                                       "failedRequests":  0,
+                                                       "errorRatePct":  0,
+                                                       "throughputRps":  34.56,
+                                                       "p50Ms":  10,
+                                                       "p95Ms":  101.12,
+                                                       "minMs":  4.99,
+                                                       "maxMs":  139.85,
+                                                       "avgMs":  16.61,
+                                                       "durationSec":  15.627
+                                                   }
+                                   },
+                          "burst":  {
+                                        "thresholdMs":  202.24,
+                                        "slowRequests":  0,
+                                        "cacheExistsAfter":  true,
+                                        "lockExistsAfter":  false,
+                                        "summary":  {
+                                                        "totalRequests":  24,
+                                                        "successRequests":  24,
+                                                        "failedRequests":  0,
+                                                        "errorRatePct":  0,
+                                                        "throughputRps":  4.97,
+                                                        "p50Ms":  97.35,
+                                                        "p95Ms":  109.03,
+                                                        "minMs":  84.11,
+                                                        "maxMs":  127.96,
+                                                        "avgMs":  99.34,
+                                                        "durationSec":  4.829
+                                                    }
+                                    }
+                      }
+                  ],
+    "nullCache":  {
+                      "firstRequestLatencyMs":  26.39,
+                      "firstRequestCode":  0,
+                      "markerValue":  "__NULL__",
+                      "ttlAfterFirstRequestSec":  20,
+                      "repeatedSummary":  {
+                                              "totalRequests":  60,
+                                              "successRequests":  60,
+                                              "failedRequests":  0,
+                                              "errorRatePct":  0,
+                                              "throughputRps":  17.32,
+                                              "p50Ms":  10.8,
+                                              "p95Ms":  111.94,
+                                              "minMs":  7.37,
+                                              "maxMs":  139.71,
+                                              "avgMs":  30.34,
+                                              "durationSec":  3.463
+                                          }
+                  },
+    "lockObservation":  {
+                            "list":  {
+                                         "lockObserved":  false,
+                                         "attempts":  [
+                                                          {
+                                                              "attempt":  1,
+                                                              "lockSeen":  false,
+                                                              "maxObservedLockTtlSec":  null,
+                                                              "requestLatencyMs":  85.89,
+                                                              "success":  true
+                                                          },
+                                                          {
+                                                              "attempt":  2,
+                                                              "lockSeen":  false,
+                                                              "maxObservedLockTtlSec":  null,
+                                                              "requestLatencyMs":  80.41,
+                                                              "success":  true
+                                                          },
+                                                          {
+                                                              "attempt":  3,
+                                                              "lockSeen":  false,
+                                                              "maxObservedLockTtlSec":  null,
+                                                              "requestLatencyMs":  80.91,
+                                                              "success":  true
+                                                          },
+                                                          {
+                                                              "attempt":  4,
+                                                              "lockSeen":  false,
+                                                              "maxObservedLockTtlSec":  null,
+                                                              "requestLatencyMs":  107.94,
+                                                              "success":  true
+                                                          },
+                                                          {
+                                                              "attempt":  5,
+                                                              "lockSeen":  false,
+                                                              "maxObservedLockTtlSec":  null,
+                                                              "requestLatencyMs":  129.97,
+                                                              "success":  true
+                                                          }
+                                                      ]
+                                     },
+                            "detail":  {
+                                           "lockObserved":  false,
+                                           "attempts":  [
+                                                            {
+                                                                "attempt":  1,
+                                                                "lockSeen":  false,
+                                                                "maxObservedLockTtlSec":  null,
+                                                                "requestLatencyMs":  88.19,
+                                                                "success":  true
+                                                            },
+                                                            {
+                                                                "attempt":  2,
+                                                                "lockSeen":  false,
+                                                                "maxObservedLockTtlSec":  null,
+                                                                "requestLatencyMs":  87.45,
+                                                                "success":  true
+                                                            },
+                                                            {
+                                                                "attempt":  3,
+                                                                "lockSeen":  false,
+                                                                "maxObservedLockTtlSec":  null,
+                                                                "requestLatencyMs":  94.64,
+                                                                "success":  true
+                                                            },
+                                                            {
+                                                                "attempt":  4,
+                                                                "lockSeen":  false,
+                                                                "maxObservedLockTtlSec":  null,
+                                                                "requestLatencyMs":  84.17,
+                                                                "success":  true
+                                                            },
+                                                            {
+                                                                "attempt":  5,
+                                                                "lockSeen":  false,
+                                                                "maxObservedLockTtlSec":  null,
+                                                                "requestLatencyMs":  86.3,
+                                                                "success":  true
+                                                            }
+                                                        ]
+                                       }
+                        },
+    "ttlJitter":  {
+                      "detail":  {
+                                     "samples":  [
+                                                     {
+                                                         "sample":  1,
+                                                         "success":  true,
+                                                         "latencyMs":  27.38,
+                                                         "ttlSec":  119
+                                                     },
+                                                     {
+                                                         "sample":  2,
+                                                         "success":  true,
+                                                         "latencyMs":  24.45,
+                                                         "ttlSec":  122
+                                                     },
+                                                     {
+                                                         "sample":  3,
+                                                         "success":  true,
+                                                         "latencyMs":  19.88,
+                                                         "ttlSec":  125
+                                                     },
+                                                     {
+                                                         "sample":  4,
+                                                         "success":  true,
+                                                         "latencyMs":  24.27,
+                                                         "ttlSec":  116
+                                                     },
+                                                     {
+                                                         "sample":  5,
+                                                         "success":  true,
+                                                         "latencyMs":  23.72,
+                                                         "ttlSec":  111
+                                                     },
+                                                     {
+                                                         "sample":  6,
+                                                         "success":  true,
+                                                         "latencyMs":  32.2,
+                                                         "ttlSec":  98
+                                                     },
+                                                     {
+                                                         "sample":  7,
+                                                         "success":  true,
+                                                         "latencyMs":  48.92,
+                                                         "ttlSec":  106
+                                                     },
+                                                     {
+                                                         "sample":  8,
+                                                         "success":  true,
+                                                         "latencyMs":  27.9,
+                                                         "ttlSec":  117
+                                                     }
+                                                 ],
+                                     "summary":  {
+                                                     "count":  8,
+                                                     "minTtlSec":  98,
+                                                     "maxTtlSec":  125,
+                                                     "avgTtlSec":  114.25
+                                                 }
+                                 },
+                      "list":  {
+                                   "samples":  [
+                                                   {
+                                                       "sample":  1,
+                                                       "success":  true,
+                                                       "latencyMs":  36.1,
+                                                       "ttlSec":  36
+                                                   },
+                                                   {
+                                                       "sample":  2,
+                                                       "success":  true,
+                                                       "latencyMs":  32.43,
+                                                       "ttlSec":  48
+                                                   },
+                                                   {
+                                                       "sample":  3,
+                                                       "success":  true,
+                                                       "latencyMs":  35.02,
+                                                       "ttlSec":  38
+                                                   },
+                                                   {
+                                                       "sample":  4,
+                                                       "success":  true,
+                                                       "latencyMs":  32.98,
+                                                       "ttlSec":  42
+                                                   },
+                                                   {
+                                                       "sample":  5,
+                                                       "success":  true,
+                                                       "latencyMs":  31.28,
+                                                       "ttlSec":  41
+                                                   },
+                                                   {
+                                                       "sample":  6,
+                                                       "success":  true,
+                                                       "latencyMs":  88.56,
+                                                       "ttlSec":  38
+                                                   },
+                                                   {
+                                                       "sample":  7,
+                                                       "success":  true,
+                                                       "latencyMs":  30.09,
+                                                       "ttlSec":  53
+                                                   },
+                                                   {
+                                                       "sample":  8,
+                                                       "success":  true,
+                                                       "latencyMs":  34.34,
+                                                       "ttlSec":  36
+                                                   }
+                                               ],
+                                   "summary":  {
+                                                   "count":  8,
+                                                   "minTtlSec":  36,
+                                                   "maxTtlSec":  53,
+                                                   "avgTtlSec":  41.5
+                                               }
+                               }
+                  },
+    "safeUnlock":  {
+                       "wrongTokenEvalResult":  "0",
+                       "valueAfterWrongToken":  "token-b",
+                       "ttlAfterWrongTokenSec":  10,
+                       "correctTokenEvalResult":  "1",
+                       "valueAfterCorrectToken":  null,
+                       "wrongTokenDidNotDeleteNewLock":  true,
+                       "correctTokenDeletedLock":  true
+                   },
+    "conclusions":  {
+                        "listColdVsWarmP50DeltaMs":  22.88,
+                        "listColdVsWarmP50GainPct":  65.56,
+                        "detailColdVsWarmP50DeltaMs":  14.86,
+                        "detailColdVsWarmP50GainPct":  59.77,
+                        "nullCacheMarkerOk":  true,
+                        "listLockObserved":  false,
+                        "detailLockObserved":  false,
+                        "safeUnlockOk":  true
+                    }
+}

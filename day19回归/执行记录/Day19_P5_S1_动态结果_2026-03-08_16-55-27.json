@@ -1,0 +1,297 @@
+﻿{
+    "step":  "Day19-P5-S1",
+    "title":  "核心并发链路回归",
+    "executedAt":  "2026-03-08 16:55:38",
+    "baseUrl":  "http://localhost:8080",
+    "runPrefix":  "DAY19-P5-S1-20260308165527",
+    "concurrency":  50,
+    "buyerUserId":  1,
+    "sellerUserId":  2,
+    "adminUserId":  5,
+    "banTargetUserId":  6,
+    "startedAt":  "2026-03-08 16:55:27",
+    "endedAt":  "2026-03-08 16:55:38",
+    "elapsedMs":  10875.2,
+    "overallPassed":  true,
+    "scenarios":  [
+                      {
+                          "scenarioCode":  "S1_DUPLICATE_PAY",
+                          "title":  "同订单重复支付",
+                          "order":  {
+                                        "orderId":  907594,
+                                        "orderNo":  "2026030816552817287",
+                                        "status":  "pending",
+                                        "totalAmount":  101.00
+                                    },
+                          "product":  {
+                                          "productId":  920124,
+                                          "title":  "DAY19-P5-S1-20260308165527-PAY",
+                                          "ownerId":  2,
+                                          "price":  101
+                                      },
+                          "requestCount":  50,
+                          "summary":  {
+                                          "total":  50,
+                                          "successCount":  50,
+                                          "failureCount":  0,
+                                          "avgElapsedMs":  777.61,
+                                          "p95ElapsedMs":  2059.12,
+                                          "messageCounts":  [
+                                                                {
+                                                                    "message":  "订单已支付，无需重复操作",
+                                                                    "count":  49
+                                                                },
+                                                                {
+                                                                    "message":  "支付成功",
+                                                                    "count":  1
+                                                                }
+                                                            ]
+                                      },
+                          "splitRatio":  {
+                                             "primarySuccessRatio":  2,
+                                             "branchRatio":  98
+                                         },
+                          "db":  {
+                                     "orderStatus":  "paid",
+                                     "cancelReason":  "",
+                                     "shipTimeoutTaskCount":  1,
+                                     "refundTaskCount":  0,
+                                     "orderPaidOutboxCount":  0,
+                                     "orderCreatedOutboxCount":  1,
+                                     "shipTimeoutTaskStatus":  "PENDING",
+                                     "shipTimeoutRetryCount":  0,
+                                     "refundTaskStatus":  "",
+                                     "productId":  920124
+                                 },
+                          "passed":  true,
+                          "responseSamples":  [
+                                                  {
+                                                      "message":  "订单已支付，无需重复操作",
+                                                      "count":  49
+                                                  },
+                                                  {
+                                                      "message":  "支付成功",
+                                                      "count":  1
+                                                  }
+                                              ]
+                      },
+                      {
+                          "scenarioCode":  "S2_DUPLICATE_CALLBACK",
+                          "title":  "同订单重复成功回调",
+                          "order":  {
+                                        "orderId":  907595,
+                                        "orderNo":  "2026030816553114641",
+                                        "status":  "pending",
+                                        "totalAmount":  102.00
+                                    },
+                          "product":  {
+                                          "productId":  920125,
+                                          "title":  "DAY19-P5-S1-20260308165527-CALLBACK",
+                                          "ownerId":  2,
+                                          "price":  102
+                                      },
+                          "requestCount":  50,
+                          "summary":  {
+                                          "total":  50,
+                                          "successCount":  50,
+                                          "failureCount":  0,
+                                          "avgElapsedMs":  709.13,
+                                          "p95ElapsedMs":  1677.01,
+                                          "messageCounts":  [
+                                                                {
+                                                                    "message":  "订单已支付，回调幂等成功",
+                                                                    "count":  49
+                                                                },
+                                                                {
+                                                                    "message":  "支付回调处理成功",
+                                                                    "count":  1
+                                                                }
+                                                            ]
+                                      },
+                          "splitRatio":  {
+                                             "primarySuccessRatio":  2,
+                                             "branchRatio":  98
+                                         },
+                          "db":  {
+                                     "orderStatus":  "paid",
+                                     "cancelReason":  "",
+                                     "shipTimeoutTaskCount":  1,
+                                     "refundTaskCount":  0,
+                                     "orderPaidOutboxCount":  1,
+                                     "orderCreatedOutboxCount":  1,
+                                     "shipTimeoutTaskStatus":  "PENDING",
+                                     "shipTimeoutRetryCount":  0,
+                                     "refundTaskStatus":  "",
+                                     "productId":  920125
+                                 },
+                          "passed":  true,
+                          "responseSamples":  [
+                                                  {
+                                                      "message":  "订单已支付，回调幂等成功",
+                                                      "count":  49
+                                                  },
+                                                  {
+                                                      "message":  "支付回调处理成功",
+                                                      "count":  1
+                                                  }
+                                              ]
+                      },
+                      {
+                          "scenarioCode":  "S3_DUPLICATE_BAN",
+                          "title":  "同用户重复封禁",
+                          "targetUserId":  6,
+                          "requestCount":  50,
+                          "summary":  {
+                                          "total":  50,
+                                          "successCount":  50,
+                                          "failureCount":  0,
+                                          "avgElapsedMs":  326.66,
+                                          "p95ElapsedMs":  745.73,
+                                          "messageCounts":  [
+                                                                {
+                                                                    "message":  "用户封禁成功",
+                                                                    "count":  1
+                                                                },
+                                                                {
+                                                                    "message":  "用户已处于封禁状态",
+                                                                    "count":  49
+                                                                }
+                                                            ]
+                                      },
+                          "splitRatio":  {
+                                             "primarySuccessRatio":  2,
+                                             "branchRatio":  98
+                                         },
+                          "db":  {
+                                     "userStatus":  "banned"
+                                 },
+                          "passed":  true,
+                          "responseSamples":  [
+                                                  {
+                                                      "message":  "用户封禁成功",
+                                                      "count":  1
+                                                  },
+                                                  {
+                                                      "message":  "用户已处于封禁状态",
+                                                      "count":  49
+                                                  }
+                                              ]
+                      },
+                      {
+                          "scenarioCode":  "S4_DUPLICATE_UNBAN",
+                          "title":  "同用户重复解封",
+                          "targetUserId":  6,
+                          "requestCount":  50,
+                          "summary":  {
+                                          "total":  50,
+                                          "successCount":  50,
+                                          "failureCount":  0,
+                                          "avgElapsedMs":  362.02,
+                                          "p95ElapsedMs":  765.61,
+                                          "messageCounts":  [
+                                                                {
+                                                                    "message":  "用户解封成功",
+                                                                    "count":  1
+                                                                },
+                                                                {
+                                                                    "message":  "用户已处于正常状态",
+                                                                    "count":  49
+                                                                }
+                                                            ]
+                                      },
+                          "splitRatio":  {
+                                             "primarySuccessRatio":  2,
+                                             "branchRatio":  98
+                                         },
+                          "db":  {
+                                     "userStatus":  "active"
+                                 },
+                          "passed":  true,
+                          "responseSamples":  [
+                                                  {
+                                                      "message":  "用户解封成功",
+                                                      "count":  1
+                                                  },
+                                                  {
+                                                      "message":  "用户已处于正常状态",
+                                                      "count":  49
+                                                  }
+                                              ]
+                      },
+                      {
+                          "scenarioCode":  "S5_SHIP_TIMEOUT_TASK_RACE",
+                          "title":  "发货超时任务并发抢同一条任务",
+                          "order":  {
+                                        "orderId":  907596,
+                                        "orderNo":  "2026030816553519436",
+                                        "status":  "pending",
+                                        "totalAmount":  103.00
+                                    },
+                          "product":  {
+                                          "productId":  920126,
+                                          "title":  "DAY19-P5-S1-20260308165527-SHIPTIMEOUT",
+                                          "ownerId":  2,
+                                          "price":  103
+                                      },
+                          "requestCount":  50,
+                          "summary":  {
+                                          "total":  50,
+                                          "successCount":  50,
+                                          "failureCount":  0,
+                                          "avgElapsedMs":  648.88,
+                                          "p95ElapsedMs":  1394.38,
+                                          "messageCounts":  {
+                                                                "message":  "success",
+                                                                "count":  50
+                                                            }
+                                      },
+                          "splitRatio":  {
+                                             "primarySuccessRatio":  2,
+                                             "branchRatio":  98
+                                         },
+                          "db":  {
+                                     "orderStatus":  "cancelled",
+                                     "cancelReason":  "ship_timeout",
+                                     "shipTimeoutTaskCount":  1,
+                                     "shipTimeoutTaskStatus":  "DONE",
+                                     "shipTimeoutRetryCount":  0,
+                                     "refundTaskCount":  1,
+                                     "refundTaskStatus":  "PENDING",
+                                     "productStatus":  "on_sale",
+                                     "adminTaskView":  {
+                                                           "id":  7239,
+                                                           "orderId":  907596,
+                                                           "deadlineTime":  "2026-03-08 16:55",
+                                                           "status":  "DONE",
+                                                           "retryCount":  0,
+                                                           "nextRetryTime":  null,
+                                                           "lastError":  null,
+                                                           "createTime":  "2026-03-08 16:55",
+                                                           "updateTime":  "2026-03-08 16:55"
+                                                       }
+                                 },
+                          "passed":  true,
+                          "responseSamples":  {
+                                                  "message":  "success",
+                                                  "count":  50
+                                              }
+                      }
+                  ],
+    "cleanup":  {
+                    "ordersRemaining":  0,
+                    "orderItemsRemaining":  0,
+                    "shipTimeoutTasksRemaining":  0,
+                    "refundTasksRemaining":  0,
+                    "outboxRemaining":  0,
+                    "productsRemaining":  0,
+                    "productAuditRemaining":  0,
+                    "banTargetStatus":  "active",
+                    "activeBanRows":  0
+                },
+    "notes":  [
+
+              ],
+    "warnings":  [
+
+                 ]
+}

@@ -1,0 +1,210 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-06 10:47:37",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P2_S2_动态结果_2026-03-06_10-47-37.json",
+                 "runRegression":  true,
+                 "script":  "day19回归/执行复现步骤/Day19_P2_S2_性能预算与发布门槛_执行复现_v1.0.ps1"
+             },
+    "inputs":  {
+                   "baselineFile":  "day19回归/执行记录/Day19_P2_S1_动态结果_2026-03-06_09-54-21.json",
+                   "candidateFile":  "C:\\Users\\kk\\Desktop\\demo\\day19回归\\执行记录\\Day19_P2_S1_动态结果_2026-03-06_10-47-37.json",
+                   "regressionScript":  "day19回归/执行复现步骤/Day19_P2_S1_核心接口性能基线_执行复现_v1.0.ps1",
+                   "regressionArgs":  {
+                                          "rounds":  3,
+                                          "warmupRequests":  60,
+                                          "measuredRequests":  300,
+                                          "concurrency":  12,
+                                          "timeoutSec":  15
+                                      }
+               },
+    "budgets":  [
+                    {
+                        "scenario":  "login_password",
+                        "endpoint":  "POST /user/auth/login/password",
+                        "absP95Ms":  500,
+                        "absErrorRatePct":  1,
+                        "absThroughputRps":  30,
+                        "minSamples":  600,
+                        "relP95IncreasePct":  20,
+                        "relThroughputDropPct":  20,
+                        "relErrorRateIncreasePctPoint":  0.5
+                    },
+                    {
+                        "scenario":  "market_product_list",
+                        "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                        "absP95Ms":  80,
+                        "absErrorRatePct":  1,
+                        "absThroughputRps":  40,
+                        "minSamples":  600,
+                        "relP95IncreasePct":  20,
+                        "relThroughputDropPct":  20,
+                        "relErrorRateIncreasePctPoint":  0.5
+                    },
+                    {
+                        "scenario":  "payment_callback",
+                        "endpoint":  "POST /payment/callback",
+                        "absP95Ms":  120,
+                        "absErrorRatePct":  1,
+                        "absThroughputRps":  35,
+                        "minSamples":  600,
+                        "relP95IncreasePct":  20,
+                        "relThroughputDropPct":  20,
+                        "relErrorRateIncreasePctPoint":  0.5
+                    }
+                ],
+    "scenarioResults":  [
+                            {
+                                "scenario":  "login_password",
+                                "endpoint":  "POST /user/auth/login/password",
+                                "decisionLevel":  "PASS",
+                                "baseline":  {
+                                                 "p95Ms":  449.26,
+                                                 "errorRatePct":  0,
+                                                 "throughputRps":  38.86,
+                                                 "totalRequests":  900
+                                             },
+                                "current":  {
+                                                "p95Ms":  423.53,
+                                                "errorRatePct":  0,
+                                                "throughputRps":  31.65,
+                                                "totalRequests":  900
+                                            },
+                                "absoluteBudget":  {
+                                                       "p95Ms":  500,
+                                                       "errorRatePct":  1,
+                                                       "throughputRps":  30,
+                                                       "minSamples":  600
+                                                   },
+                                "absoluteCheck":  {
+                                                      "p95Pass":  true,
+                                                      "errorRatePass":  true,
+                                                      "throughputPass":  true,
+                                                      "samplePass":  true
+                                                  },
+                                "relativeBudget":  {
+                                                       "p95IncreasePct":  20,
+                                                       "throughputDropPct":  20,
+                                                       "errorRateIncreasePctPoint":  0.5
+                                                   },
+                                "relativeActual":  {
+                                                       "p95IncreasePct":  -5.73,
+                                                       "throughputDropPct":  18.55,
+                                                       "errorRateIncreasePctPoint":  0
+                                                   },
+                                "relativeCheck":  {
+                                                      "p95Pass":  true,
+                                                      "throughputPass":  true,
+                                                      "errorRatePass":  true
+                                                  }
+                            },
+                            {
+                                "scenario":  "market_product_list",
+                                "endpoint":  "GET /user/market/products?page=1\u0026pageSize=20",
+                                "decisionLevel":  "MINOR",
+                                "baseline":  {
+                                                 "p95Ms":  13.46,
+                                                 "errorRatePct":  0,
+                                                 "throughputRps":  54.55,
+                                                 "totalRequests":  900
+                                             },
+                                "current":  {
+                                                "p95Ms":  12.69,
+                                                "errorRatePct":  0,
+                                                "throughputRps":  42.22,
+                                                "totalRequests":  900
+                                            },
+                                "absoluteBudget":  {
+                                                       "p95Ms":  80,
+                                                       "errorRatePct":  1,
+                                                       "throughputRps":  40,
+                                                       "minSamples":  600
+                                                   },
+                                "absoluteCheck":  {
+                                                      "p95Pass":  true,
+                                                      "errorRatePass":  true,
+                                                      "throughputPass":  true,
+                                                      "samplePass":  true
+                                                  },
+                                "relativeBudget":  {
+                                                       "p95IncreasePct":  20,
+                                                       "throughputDropPct":  20,
+                                                       "errorRateIncreasePctPoint":  0.5
+                                                   },
+                                "relativeActual":  {
+                                                       "p95IncreasePct":  -5.72,
+                                                       "throughputDropPct":  22.6,
+                                                       "errorRateIncreasePctPoint":  0
+                                                   },
+                                "relativeCheck":  {
+                                                      "p95Pass":  true,
+                                                      "throughputPass":  false,
+                                                      "errorRatePass":  true
+                                                  }
+                            },
+                            {
+                                "scenario":  "payment_callback",
+                                "endpoint":  "POST /payment/callback",
+                                "decisionLevel":  "MINOR",
+                                "baseline":  {
+                                                 "p95Ms":  17.89,
+                                                 "errorRatePct":  0,
+                                                 "throughputRps":  48.54,
+                                                 "totalRequests":  900
+                                             },
+                                "current":  {
+                                                "p95Ms":  17.2,
+                                                "errorRatePct":  0,
+                                                "throughputRps":  36.11,
+                                                "totalRequests":  900
+                                            },
+                                "absoluteBudget":  {
+                                                       "p95Ms":  120,
+                                                       "errorRatePct":  1,
+                                                       "throughputRps":  35,
+                                                       "minSamples":  600
+                                                   },
+                                "absoluteCheck":  {
+                                                      "p95Pass":  true,
+                                                      "errorRatePass":  true,
+                                                      "throughputPass":  true,
+                                                      "samplePass":  true
+                                                  },
+                                "relativeBudget":  {
+                                                       "p95IncreasePct":  20,
+                                                       "throughputDropPct":  20,
+                                                       "errorRateIncreasePctPoint":  0.5
+                                                   },
+                                "relativeActual":  {
+                                                       "p95IncreasePct":  -3.86,
+                                                       "throughputDropPct":  25.61,
+                                                       "errorRateIncreasePctPoint":  0
+                                                   },
+                                "relativeCheck":  {
+                                                      "p95Pass":  true,
+                                                      "throughputPass":  false,
+                                                      "errorRatePass":  true
+                                                  }
+                            }
+                        ],
+    "overallDecision":  "MINOR",
+    "rollbackAdvice":  {
+                           "releaseAction":  "RELEASE_WITH_RISK",
+                           "advice":  "Release is allowed with risk note and enhanced monitoring.",
+                           "requiredActions":  [
+                                                   "Record risk in release note",
+                                                   "Set temporary watch on affected APIs",
+                                                   "Plan fix in next iteration"
+                                               ]
+                       },
+    "checklist":  {
+                      "check_01_regression_executed_or_candidate_present":  true,
+                      "check_02_rounds_ge_3":  true,
+                      "check_03_each_scenario_sample_ge_600":  true,
+                      "check_04_each_scenario_error_le_1pct":  true,
+                      "check_05_each_scenario_p95_within_budget":  true,
+                      "check_06_each_scenario_rps_within_budget":  true,
+                      "check_07_relative_degradation_evaluated":  true,
+                      "check_08_release_decision_generated":  true
+                  }
+}

@@ -1,0 +1,979 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-08 04:34:52",
+                 "baseUrl":  "http://localhost:8080",
+                 "outputPath":  "day19回归\\执行记录\\Day19_P4_S1_动态结果_2026-03-08_04-34-39.json",
+                 "script":  "C:\\Users\\kk\\Desktop\\demo\\day19回归\\执行复现步骤\\Day19_P4_S1_Outbox发布性能_执行复现_v1.0.ps1",
+                 "note":  "Success samples use an existing exchange with an unbound routing key to avoid hitting real consumers"
+             },
+    "config":  {
+                   "batchSizes":  [
+                                      10,
+                                      25,
+                                      50,
+                                      100
+                                  ],
+                   "roundsPerLimit":  3,
+                   "failureBatchSize":  12,
+                   "recoveryBatchSize":  8,
+                   "monitorFailThreshold":  5,
+                   "monitorFailRetryThreshold":  10
+               },
+    "preflight":  {
+                      "adminLoginId":  "13900000001",
+                      "adminTokenAcquired":  true,
+                      "rabbitPortReachable":  true,
+                      "templateOutboxId":  82,
+                      "baselineMetrics":  {
+                                              "new":  0,
+                                              "fail":  0,
+                                              "queriedAt":  1772915680136,
+                                              "excludeExchanges":  [
+                                                                       "bad.exchange"
+                                                                   ],
+                                              "sent":  81,
+                                              "failRetrySum":  0
+                                          }
+                  },
+    "successBenchmarks":  [
+                              {
+                                  "limit":  10,
+                                  "rounds":  [
+                                                 {
+                                                     "round":  1,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L10-R1",
+                                                     "seed":  {
+                                                                  "total":  10,
+                                                                  "new":  10,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  10,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915680501,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  51.82,
+                                                     "publishResult":  {
+                                                                           "limit":  10,
+                                                                           "processedAt":  1772915680650,
+                                                                           "failed":  0,
+                                                                           "sent":  10,
+                                                                           "pulled":  10
+                                                                       },
+                                                     "throughputMsgsPerSec":  192.98,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  10,
+                                                                               "new":  0,
+                                                                               "sent":  10,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915680782,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  91,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  2,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L10-R2",
+                                                     "seed":  {
+                                                                  "total":  10,
+                                                                  "new":  10,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  10,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915682271,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  43.06,
+                                                     "publishResult":  {
+                                                                           "limit":  10,
+                                                                           "processedAt":  1772915682427,
+                                                                           "failed":  0,
+                                                                           "sent":  10,
+                                                                           "pulled":  10
+                                                                       },
+                                                     "throughputMsgsPerSec":  232.23,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  10,
+                                                                               "new":  0,
+                                                                               "sent":  10,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915682566,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  91,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  3,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L10-R3",
+                                                     "seed":  {
+                                                                  "total":  10,
+                                                                  "new":  10,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  10,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915682947,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  36.42,
+                                                     "publishResult":  {
+                                                                           "limit":  10,
+                                                                           "processedAt":  1772915683089,
+                                                                           "failed":  0,
+                                                                           "sent":  10,
+                                                                           "pulled":  10
+                                                                       },
+                                                     "throughputMsgsPerSec":  274.57,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  10,
+                                                                               "new":  0,
+                                                                               "sent":  10,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915683201,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  91,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 }
+                                             ],
+                                  "throughputSummary":  {
+                                                            "count":  3,
+                                                            "min":  192.98,
+                                                            "p50":  232.23,
+                                                            "p95":  274.57,
+                                                            "max":  274.57,
+                                                            "avg":  233.26
+                                                        },
+                                  "elapsedSummary":  {
+                                                         "count":  3,
+                                                         "min":  36.42,
+                                                         "p50":  43.06,
+                                                         "p95":  51.82,
+                                                         "max":  51.82,
+                                                         "avg":  43.77
+                                                     },
+                                  "totalSent":  30,
+                                  "totalFailed":  0
+                              },
+                              {
+                                  "limit":  25,
+                                  "rounds":  [
+                                                 {
+                                                     "round":  1,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L25-R1",
+                                                     "seed":  {
+                                                                  "total":  25,
+                                                                  "new":  25,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  25,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915683692,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  50.91,
+                                                     "publishResult":  {
+                                                                           "limit":  25,
+                                                                           "processedAt":  1772915683840,
+                                                                           "failed":  0,
+                                                                           "sent":  25,
+                                                                           "pulled":  25
+                                                                       },
+                                                     "throughputMsgsPerSec":  491.06,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  25,
+                                                                               "new":  0,
+                                                                               "sent":  25,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915683955,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  106,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  2,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L25-R2",
+                                                     "seed":  {
+                                                                  "total":  25,
+                                                                  "new":  25,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  25,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915684354,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  50.6,
+                                                     "publishResult":  {
+                                                                           "limit":  25,
+                                                                           "processedAt":  1772915684518,
+                                                                           "failed":  0,
+                                                                           "sent":  25,
+                                                                           "pulled":  25
+                                                                       },
+                                                     "throughputMsgsPerSec":  494.07,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  25,
+                                                                               "new":  0,
+                                                                               "sent":  25,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915684634,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  106,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  3,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L25-R3",
+                                                     "seed":  {
+                                                                  "total":  25,
+                                                                  "new":  25,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  25,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915685016,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  81.57,
+                                                     "publishResult":  {
+                                                                           "limit":  25,
+                                                                           "processedAt":  1772915685173,
+                                                                           "failed":  0,
+                                                                           "sent":  25,
+                                                                           "pulled":  25
+                                                                       },
+                                                     "throughputMsgsPerSec":  306.49,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  25,
+                                                                               "new":  0,
+                                                                               "sent":  25,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915685320,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  106,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 }
+                                             ],
+                                  "throughputSummary":  {
+                                                            "count":  3,
+                                                            "min":  306.49,
+                                                            "p50":  491.06,
+                                                            "p95":  494.07,
+                                                            "max":  494.07,
+                                                            "avg":  430.54
+                                                        },
+                                  "elapsedSummary":  {
+                                                         "count":  3,
+                                                         "min":  50.6,
+                                                         "p50":  50.91,
+                                                         "p95":  81.57,
+                                                         "max":  81.57,
+                                                         "avg":  61.03
+                                                     },
+                                  "totalSent":  75,
+                                  "totalFailed":  0
+                              },
+                              {
+                                  "limit":  50,
+                                  "rounds":  [
+                                                 {
+                                                     "round":  1,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L50-R1",
+                                                     "seed":  {
+                                                                  "total":  50,
+                                                                  "new":  50,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  50,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915685710,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  82.21,
+                                                     "publishResult":  {
+                                                                           "limit":  50,
+                                                                           "processedAt":  1772915685909,
+                                                                           "failed":  0,
+                                                                           "sent":  50,
+                                                                           "pulled":  50
+                                                                       },
+                                                     "throughputMsgsPerSec":  608.2,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  50,
+                                                                               "new":  0,
+                                                                               "sent":  50,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915686046,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  131,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  2,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L50-R2",
+                                                     "seed":  {
+                                                                  "total":  50,
+                                                                  "new":  50,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  50,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915686467,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  78.64,
+                                                     "publishResult":  {
+                                                                           "limit":  50,
+                                                                           "processedAt":  1772915686652,
+                                                                           "failed":  0,
+                                                                           "sent":  50,
+                                                                           "pulled":  50
+                                                                       },
+                                                     "throughputMsgsPerSec":  635.81,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  50,
+                                                                               "new":  0,
+                                                                               "sent":  50,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915686776,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  131,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  3,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L50-R3",
+                                                     "seed":  {
+                                                                  "total":  50,
+                                                                  "new":  50,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  50,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915687188,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  78.04,
+                                                     "publishResult":  {
+                                                                           "limit":  50,
+                                                                           "processedAt":  1772915687394,
+                                                                           "failed":  0,
+                                                                           "sent":  50,
+                                                                           "pulled":  50
+                                                                       },
+                                                     "throughputMsgsPerSec":  640.7,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  50,
+                                                                               "new":  0,
+                                                                               "sent":  50,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915687527,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  131,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 }
+                                             ],
+                                  "throughputSummary":  {
+                                                            "count":  3,
+                                                            "min":  608.2,
+                                                            "p50":  635.81,
+                                                            "p95":  640.7,
+                                                            "max":  640.7,
+                                                            "avg":  628.24
+                                                        },
+                                  "elapsedSummary":  {
+                                                         "count":  3,
+                                                         "min":  78.04,
+                                                         "p50":  78.64,
+                                                         "p95":  82.21,
+                                                         "max":  82.21,
+                                                         "avg":  79.63
+                                                     },
+                                  "totalSent":  150,
+                                  "totalFailed":  0
+                              },
+                              {
+                                  "limit":  100,
+                                  "rounds":  [
+                                                 {
+                                                     "round":  1,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L100-R1",
+                                                     "seed":  {
+                                                                  "total":  100,
+                                                                  "new":  100,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  100,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915687932,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  104.84,
+                                                     "publishResult":  {
+                                                                           "limit":  100,
+                                                                           "processedAt":  1772915688142,
+                                                                           "failed":  0,
+                                                                           "sent":  100,
+                                                                           "pulled":  100
+                                                                       },
+                                                     "throughputMsgsPerSec":  953.83,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  100,
+                                                                               "new":  0,
+                                                                               "sent":  100,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915688254,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  181,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  2,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L100-R2",
+                                                     "seed":  {
+                                                                  "total":  100,
+                                                                  "new":  100,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  100,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915688663,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  147.42,
+                                                     "publishResult":  {
+                                                                           "limit":  100,
+                                                                           "processedAt":  1772915688911,
+                                                                           "failed":  0,
+                                                                           "sent":  100,
+                                                                           "pulled":  100
+                                                                       },
+                                                     "throughputMsgsPerSec":  678.33,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  100,
+                                                                               "new":  0,
+                                                                               "sent":  100,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915689042,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  181,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 },
+                                                 {
+                                                     "round":  3,
+                                                     "prefix":  "DAY19-P4-S1-SUCCESS-L100-R3",
+                                                     "seed":  {
+                                                                  "total":  100,
+                                                                  "new":  100,
+                                                                  "sent":  0,
+                                                                  "fail":  0,
+                                                                  "failRetrySum":  0
+                                                              },
+                                                     "metricsAfterSeed":  {
+                                                                              "new":  100,
+                                                                              "fail":  0,
+                                                                              "queriedAt":  1772915689453,
+                                                                              "excludeExchanges":  [
+                                                                                                       "bad.exchange"
+                                                                                                   ],
+                                                                              "sent":  81,
+                                                                              "failRetrySum":  0
+                                                                          },
+                                                     "publishElapsedMs":  93.9,
+                                                     "publishResult":  {
+                                                                           "limit":  100,
+                                                                           "processedAt":  1772915689653,
+                                                                           "failed":  0,
+                                                                           "sent":  100,
+                                                                           "pulled":  100
+                                                                       },
+                                                     "throughputMsgsPerSec":  1064.96,
+                                                     "batchAfterPublish":  {
+                                                                               "total":  100,
+                                                                               "new":  0,
+                                                                               "sent":  100,
+                                                                               "fail":  0,
+                                                                               "failRetrySum":  0
+                                                                           },
+                                                     "metricsAfterPublish":  {
+                                                                                 "new":  0,
+                                                                                 "fail":  0,
+                                                                                 "queriedAt":  1772915689771,
+                                                                                 "excludeExchanges":  [
+                                                                                                          "bad.exchange"
+                                                                                                      ],
+                                                                                 "sent":  181,
+                                                                                 "failRetrySum":  0
+                                                                             }
+                                                 }
+                                             ],
+                                  "throughputSummary":  {
+                                                            "count":  3,
+                                                            "min":  678.33,
+                                                            "p50":  953.83,
+                                                            "p95":  1064.96,
+                                                            "max":  1064.96,
+                                                            "avg":  899.04
+                                                        },
+                                  "elapsedSummary":  {
+                                                         "count":  3,
+                                                         "min":  93.9,
+                                                         "p50":  104.84,
+                                                         "p95":  147.42,
+                                                         "max":  147.42,
+                                                         "avg":  115.39
+                                                     },
+                                  "totalSent":  300,
+                                  "totalFailed":  0
+                              }
+                          ],
+    "failureCurve":  {
+                         "batchSize":  12,
+                         "snapshots":  [
+                                           {
+                                               "stage":  "baseline",
+                                               "metrics":  {
+                                                               "new":  0,
+                                                               "fail":  0,
+                                                               "queriedAt":  1772915689997,
+                                                               "excludeExchanges":  [
+                                                                                        "bad.exchange"
+                                                                                    ],
+                                                               "sent":  81,
+                                                               "failRetrySum":  0
+                                                           },
+                                               "batch":  {
+                                                             "total":  0,
+                                                             "new":  0,
+                                                             "sent":  0,
+                                                             "fail":  0,
+                                                             "failRetrySum":  0
+                                                         }
+                                           },
+                                           {
+                                               "stage":  "after_seed",
+                                               "metrics":  {
+                                                               "new":  12,
+                                                               "fail":  0,
+                                                               "queriedAt":  1772915690131,
+                                                               "excludeExchanges":  [
+                                                                                        "bad.exchange"
+                                                                                    ],
+                                                               "sent":  81,
+                                                               "failRetrySum":  0
+                                                           },
+                                               "batch":  {
+                                                             "total":  12,
+                                                             "new":  12,
+                                                             "sent":  0,
+                                                             "fail":  0,
+                                                             "failRetrySum":  0
+                                                         }
+                                           },
+                                           {
+                                               "stage":  "after_publish_1",
+                                               "metrics":  {
+                                                               "new":  0,
+                                                               "fail":  12,
+                                                               "queriedAt":  1772915690428,
+                                                               "excludeExchanges":  [
+                                                                                        "bad.exchange"
+                                                                                    ],
+                                                               "sent":  81,
+                                                               "failRetrySum":  12
+                                                           },
+                                               "batch":  {
+                                                             "total":  12,
+                                                             "new":  0,
+                                                             "sent":  0,
+                                                             "fail":  12,
+                                                             "failRetrySum":  12
+                                                         },
+                                               "publish":  {
+                                                               "elapsedMs":  81.1,
+                                                               "result":  {
+                                                                              "limit":  12,
+                                                                              "processedAt":  1772915690389,
+                                                                              "failed":  12,
+                                                                              "sent":  0,
+                                                                              "pulled":  12
+                                                                          }
+                                                           }
+                                           },
+                                           {
+                                               "stage":  "after_publish_2",
+                                               "metrics":  {
+                                                               "new":  0,
+                                                               "fail":  12,
+                                                               "queriedAt":  1772915690708,
+                                                               "excludeExchanges":  [
+                                                                                        "bad.exchange"
+                                                                                    ],
+                                                               "sent":  81,
+                                                               "failRetrySum":  24
+                                                           },
+                                               "batch":  {
+                                                             "total":  12,
+                                                             "new":  0,
+                                                             "sent":  0,
+                                                             "fail":  12,
+                                                             "failRetrySum":  24
+                                                         },
+                                               "publish":  {
+                                                               "elapsedMs":  70.34,
+                                                               "result":  {
+                                                                              "limit":  12,
+                                                                              "processedAt":  1772915690677,
+                                                                              "failed":  12,
+                                                                              "sent":  0,
+                                                                              "pulled":  12
+                                                                          }
+                                                           }
+                                           },
+                                           {
+                                               "stage":  "after_cleanup",
+                                               "metrics":  {
+                                                               "new":  0,
+                                                               "fail":  0,
+                                                               "queriedAt":  1772915690943,
+                                                               "excludeExchanges":  [
+                                                                                        "bad.exchange"
+                                                                                    ],
+                                                               "sent":  81,
+                                                               "failRetrySum":  0
+                                                           },
+                                               "batch":  {
+                                                             "total":  0,
+                                                             "new":  0,
+                                                             "sent":  0,
+                                                             "fail":  0,
+                                                             "failRetrySum":  0
+                                                         }
+                                           }
+                                       ],
+                         "currentThresholdWouldAlert":  true
+                     },
+    "recoveryClosure":  {
+                            "batchSize":  8,
+                            "metricsBefore":  {
+                                                  "new":  0,
+                                                  "fail":  0,
+                                                  "queriedAt":  1772915691268,
+                                                  "excludeExchanges":  [
+                                                                           "bad.exchange"
+                                                                       ],
+                                                  "sent":  81,
+                                                  "failRetrySum":  0
+                                              },
+                            "metricsAfterSeed":  {
+                                                     "new":  0,
+                                                     "fail":  8,
+                                                     "queriedAt":  1772915691398,
+                                                     "excludeExchanges":  [
+                                                                              "bad.exchange"
+                                                                          ],
+                                                     "sent":  81,
+                                                     "failRetrySum":  16
+                                                 },
+                            "metricsAfterPublish":  {
+                                                        "new":  0,
+                                                        "fail":  0,
+                                                        "queriedAt":  1772915691966,
+                                                        "excludeExchanges":  [
+                                                                                 "bad.exchange"
+                                                                             ],
+                                                        "sent":  89,
+                                                        "failRetrySum":  0
+                                                    },
+                            "metricsAfterCleanup":  {
+                                                        "new":  0,
+                                                        "fail":  0,
+                                                        "queriedAt":  1772915692213,
+                                                        "excludeExchanges":  [
+                                                                                 "bad.exchange"
+                                                                             ],
+                                                        "sent":  81,
+                                                        "failRetrySum":  0
+                                                    },
+                            "batchAfterSeed":  {
+                                                   "total":  8,
+                                                   "new":  0,
+                                                   "sent":  0,
+                                                   "fail":  8,
+                                                   "failRetrySum":  16
+                                               },
+                            "batchAfterPublish":  {
+                                                      "total":  8,
+                                                      "new":  0,
+                                                      "sent":  8,
+                                                      "fail":  0,
+                                                      "failRetrySum":  16
+                                                  },
+                            "sampleEventId":  "DAY19-P4-S1-RECOVERY-001",
+                            "sampleEventBefore":  {
+                                                      "id":  1546,
+                                                      "eventId":  "DAY19-P4-S1-RECOVERY-001",
+                                                      "eventType":  "P4_S1_RECOVERY",
+                                                      "exchangeName":  "order.events.exchange",
+                                                      "routingKey":  "day19.outbox.safe.recovery.day19-p4-s1-recovery",
+                                                      "bizId":  940300001,
+                                                      "payloadJson":  "{\"eventId\":\"DAY19-P4-S1-RECOVERY-001\",\"eventType\":\"P4_S1_RECOVERY\",\"routingKey\":\"day19.outbox.safe.recovery.day19-p4-s1-recovery\",\"bizId\":900068,\"occurredAt\":\"2026-03-04T17:57:14.0159516\",\"payload\":{\"orderId\":900068,\"orderNo\":\"2026030417571315383\",\"buyerId\":1,\"payAmount\":99.00,\"payMethod\":\"mock\",\"payTime\":\"2026-03-04T17:57:14.0159516\"},\"version\":1}",
+                                                      "status":  "FAIL",
+                                                      "retryCount":  2,
+                                                      "nextRetryTime":  "2026-03-08 05:04",
+                                                      "createdAt":  "2026-03-08 04:34",
+                                                      "updatedAt":  "2026-03-08 04:34"
+                                                  },
+                            "sampleEventAfter":  {
+                                                     "id":  1546,
+                                                     "eventId":  "DAY19-P4-S1-RECOVERY-001",
+                                                     "eventType":  "P4_S1_RECOVERY",
+                                                     "exchangeName":  "order.events.exchange",
+                                                     "routingKey":  "day19.outbox.safe.recovery.day19-p4-s1-recovery",
+                                                     "bizId":  940300001,
+                                                     "payloadJson":  "{\"eventId\":\"DAY19-P4-S1-RECOVERY-001\",\"eventType\":\"P4_S1_RECOVERY\",\"routingKey\":\"day19.outbox.safe.recovery.day19-p4-s1-recovery\",\"bizId\":900068,\"occurredAt\":\"2026-03-04T17:57:14.0159516\",\"payload\":{\"orderId\":900068,\"orderNo\":\"2026030417571315383\",\"buyerId\":1,\"payAmount\":99.00,\"payMethod\":\"mock\",\"payTime\":\"2026-03-04T17:57:14.0159516\"},\"version\":1}",
+                                                     "status":  "SENT",
+                                                     "retryCount":  2,
+                                                     "nextRetryTime":  null,
+                                                     "createdAt":  "2026-03-08 04:34",
+                                                     "updatedAt":  "2026-03-08 04:34"
+                                                 },
+                            "triggerResults":  [
+                                                   {
+                                                       "processedAt":  1772915691652,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-001",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691692,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-002",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691721,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-003",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691753,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-004",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691785,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-005",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691817,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-006",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691853,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-007",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   },
+                                                   {
+                                                       "processedAt":  1772915691890,
+                                                       "eventId":  "DAY19-P4-S1-RECOVERY-008",
+                                                       "updatedRows":  1,
+                                                       "success":  true
+                                                   }
+                                               ],
+                            "publish":  {
+                                            "elapsedMs":  40.51,
+                                            "result":  {
+                                                           "limit":  8,
+                                                           "processedAt":  1772915691933,
+                                                           "failed":  0,
+                                                           "sent":  8,
+                                                           "pulled":  8
+                                                       }
+                                        }
+                        },
+    "recommendation":  {
+                           "recommendedBatchSize":  100,
+                           "recommendedAvgThroughputMsgsPerSec":  899.04,
+                           "reason":  "Prefer the batch-size with zero failures and best or near-best average throughput",
+                           "monitorFailThresholdSuggestion":  5,
+                           "monitorFailRetryThresholdSuggestion":  10,
+                           "observationThresholdSuggestion":  {
+                                                                  "fail":  3,
+                                                                  "failRetrySum":  6
+                                                              }
+                       }
+}

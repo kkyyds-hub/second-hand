@@ -1,0 +1,1764 @@
+﻿{
+    "meta":  {
+                 "script":  "day19回归/执行复现步骤/Day19_P4_S2_任务链路性能_执行复现_v1.0.ps1",
+                 "executedAt":  "2026-03-08 15:30:35",
+                 "baseUrl":  "http://localhost:8080",
+                 "mysqlDatabase":  "secondhand2",
+                 "batchSizes":  [
+                                    10,
+                                    25,
+                                    50,
+                                    100
+                                ],
+                 "roundsPerLimit":  3,
+                 "autoRecoveryMaxWaitSeconds":  180,
+                 "adminTokenAcquired":  true,
+                 "baselineRunnable":  {
+                                          "ship-reminder":  0,
+                                          "ship-timeout":  0,
+                                          "ship-reminder-stale-running":  0,
+                                          "refund":  0
+                                      }
+             },
+    "throughputBenchmarks":  {
+                                 "ship-reminder":  [
+                                                       {
+                                                           "taskType":  "ship-reminder",
+                                                           "limit":  10,
+                                                           "rounds":  [
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L10-R1",
+                                                                              "round":  1,
+                                                                              "limit":  10,
+                                                                              "elapsedMs":  138.84,
+                                                                              "apiSuccess":  10,
+                                                                              "batchSize":  10,
+                                                                              "successCount":  10,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  72.03,
+                                                                              "before":  {
+                                                                                             "total":  10,
+                                                                                             "pending":  10,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  10,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  10
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  10,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  10,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L10-R2",
+                                                                              "round":  2,
+                                                                              "limit":  10,
+                                                                              "elapsedMs":  134.49,
+                                                                              "apiSuccess":  10,
+                                                                              "batchSize":  10,
+                                                                              "successCount":  10,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  74.35,
+                                                                              "before":  {
+                                                                                             "total":  10,
+                                                                                             "pending":  10,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  10,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  10
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  10,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  10,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L10-R3",
+                                                                              "round":  3,
+                                                                              "limit":  10,
+                                                                              "elapsedMs":  148.66,
+                                                                              "apiSuccess":  10,
+                                                                              "batchSize":  10,
+                                                                              "successCount":  10,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  67.27,
+                                                                              "before":  {
+                                                                                             "total":  10,
+                                                                                             "pending":  10,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  10,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  10
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  10,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  10,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          }
+                                                                      ],
+                                                           "elapsedSummary":  {
+                                                                                  "count":  3,
+                                                                                  "min":  134.49,
+                                                                                  "p50":  138.84,
+                                                                                  "p95":  148.66,
+                                                                                  "max":  148.66,
+                                                                                  "avg":  140.66
+                                                                              },
+                                                           "throughputSummary":  {
+                                                                                     "count":  3,
+                                                                                     "min":  67.27,
+                                                                                     "p50":  72.03,
+                                                                                     "p95":  74.35,
+                                                                                     "max":  74.35,
+                                                                                     "avg":  71.22
+                                                                                 },
+                                                           "totalFailureCount":  0,
+                                                           "totalSuccessCount":  30
+                                                       },
+                                                       {
+                                                           "taskType":  "ship-reminder",
+                                                           "limit":  25,
+                                                           "rounds":  [
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L25-R1",
+                                                                              "round":  1,
+                                                                              "limit":  25,
+                                                                              "elapsedMs":  313.23,
+                                                                              "apiSuccess":  25,
+                                                                              "batchSize":  25,
+                                                                              "successCount":  25,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  79.81,
+                                                                              "before":  {
+                                                                                             "total":  25,
+                                                                                             "pending":  25,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  25,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  25
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  25,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  25,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L25-R2",
+                                                                              "round":  2,
+                                                                              "limit":  25,
+                                                                              "elapsedMs":  331.7,
+                                                                              "apiSuccess":  25,
+                                                                              "batchSize":  25,
+                                                                              "successCount":  25,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  75.37,
+                                                                              "before":  {
+                                                                                             "total":  25,
+                                                                                             "pending":  25,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  25,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  25
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  25,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  25,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L25-R3",
+                                                                              "round":  3,
+                                                                              "limit":  25,
+                                                                              "elapsedMs":  303.29,
+                                                                              "apiSuccess":  25,
+                                                                              "batchSize":  25,
+                                                                              "successCount":  25,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  82.43,
+                                                                              "before":  {
+                                                                                             "total":  25,
+                                                                                             "pending":  25,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  25,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  25
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  25,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  25,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          }
+                                                                      ],
+                                                           "elapsedSummary":  {
+                                                                                  "count":  3,
+                                                                                  "min":  303.29,
+                                                                                  "p50":  313.23,
+                                                                                  "p95":  331.7,
+                                                                                  "max":  331.7,
+                                                                                  "avg":  316.07
+                                                                              },
+                                                           "throughputSummary":  {
+                                                                                     "count":  3,
+                                                                                     "min":  75.37,
+                                                                                     "p50":  79.81,
+                                                                                     "p95":  82.43,
+                                                                                     "max":  82.43,
+                                                                                     "avg":  79.2
+                                                                                 },
+                                                           "totalFailureCount":  0,
+                                                           "totalSuccessCount":  75
+                                                       },
+                                                       {
+                                                           "taskType":  "ship-reminder",
+                                                           "limit":  50,
+                                                           "rounds":  [
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L50-R1",
+                                                                              "round":  1,
+                                                                              "limit":  50,
+                                                                              "elapsedMs":  482.12,
+                                                                              "apiSuccess":  50,
+                                                                              "batchSize":  50,
+                                                                              "successCount":  50,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  103.71,
+                                                                              "before":  {
+                                                                                             "total":  50,
+                                                                                             "pending":  50,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  50,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  50
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  50,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  50,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L50-R2",
+                                                                              "round":  2,
+                                                                              "limit":  50,
+                                                                              "elapsedMs":  492.04,
+                                                                              "apiSuccess":  50,
+                                                                              "batchSize":  50,
+                                                                              "successCount":  50,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  101.62,
+                                                                              "before":  {
+                                                                                             "total":  50,
+                                                                                             "pending":  50,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  50,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  50
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  50,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  50,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L50-R3",
+                                                                              "round":  3,
+                                                                              "limit":  50,
+                                                                              "elapsedMs":  603.45,
+                                                                              "apiSuccess":  50,
+                                                                              "batchSize":  50,
+                                                                              "successCount":  50,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  82.86,
+                                                                              "before":  {
+                                                                                             "total":  50,
+                                                                                             "pending":  50,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  50,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  50
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  50,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  50,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          }
+                                                                      ],
+                                                           "elapsedSummary":  {
+                                                                                  "count":  3,
+                                                                                  "min":  482.12,
+                                                                                  "p50":  492.04,
+                                                                                  "p95":  603.45,
+                                                                                  "max":  603.45,
+                                                                                  "avg":  525.87
+                                                                              },
+                                                           "throughputSummary":  {
+                                                                                     "count":  3,
+                                                                                     "min":  82.86,
+                                                                                     "p50":  101.62,
+                                                                                     "p95":  103.71,
+                                                                                     "max":  103.71,
+                                                                                     "avg":  96.06
+                                                                                 },
+                                                           "totalFailureCount":  0,
+                                                           "totalSuccessCount":  150
+                                                       },
+                                                       {
+                                                           "taskType":  "ship-reminder",
+                                                           "limit":  100,
+                                                           "rounds":  [
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L100-R1",
+                                                                              "round":  1,
+                                                                              "limit":  100,
+                                                                              "elapsedMs":  1224.45,
+                                                                              "apiSuccess":  100,
+                                                                              "batchSize":  100,
+                                                                              "successCount":  100,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  81.67,
+                                                                              "before":  {
+                                                                                             "total":  100,
+                                                                                             "pending":  100,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  100,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  100
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  100,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  100,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L100-R2",
+                                                                              "round":  2,
+                                                                              "limit":  100,
+                                                                              "elapsedMs":  1001.45,
+                                                                              "apiSuccess":  100,
+                                                                              "batchSize":  100,
+                                                                              "successCount":  100,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  99.86,
+                                                                              "before":  {
+                                                                                             "total":  100,
+                                                                                             "pending":  100,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  100,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  100
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  100,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  100,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          },
+                                                                          {
+                                                                              "prefix":  "DAY19-P4-S2-SR-SUCCESS-20260308152735-L100-R3",
+                                                                              "round":  3,
+                                                                              "limit":  100,
+                                                                              "elapsedMs":  1018.98,
+                                                                              "apiSuccess":  100,
+                                                                              "batchSize":  100,
+                                                                              "successCount":  100,
+                                                                              "failureCount":  0,
+                                                                              "throughputPerSec":  98.14,
+                                                                              "before":  {
+                                                                                             "total":  100,
+                                                                                             "pending":  100,
+                                                                                             "running":  0,
+                                                                                             "failed":  0,
+                                                                                             "success":  0,
+                                                                                             "cancelled":  0,
+                                                                                             "retrySum":  0,
+                                                                                             "due":  100,
+                                                                                             "successCount":  0,
+                                                                                             "failureCount":  100
+                                                                                         },
+                                                                              "after":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  0,
+                                                                                            "running":  0,
+                                                                                            "failed":  0,
+                                                                                            "success":  100,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  0,
+                                                                                            "successCount":  100,
+                                                                                            "failureCount":  0
+                                                                                        }
+                                                                          }
+                                                                      ],
+                                                           "elapsedSummary":  {
+                                                                                  "count":  3,
+                                                                                  "min":  1001.45,
+                                                                                  "p50":  1018.98,
+                                                                                  "p95":  1224.45,
+                                                                                  "max":  1224.45,
+                                                                                  "avg":  1081.63
+                                                                              },
+                                                           "throughputSummary":  {
+                                                                                     "count":  3,
+                                                                                     "min":  81.67,
+                                                                                     "p50":  98.14,
+                                                                                     "p95":  99.86,
+                                                                                     "max":  99.86,
+                                                                                     "avg":  93.22
+                                                                                 },
+                                                           "totalFailureCount":  0,
+                                                           "totalSuccessCount":  300
+                                                       }
+                                                   ],
+                                 "ship-timeout":  [
+                                                      {
+                                                          "taskType":  "ship-timeout",
+                                                          "limit":  10,
+                                                          "rounds":  [
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L10-R1",
+                                                                             "round":  1,
+                                                                             "limit":  10,
+                                                                             "elapsedMs":  461.6,
+                                                                             "apiSuccess":  10,
+                                                                             "batchSize":  10,
+                                                                             "successCount":  10,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  21.66,
+                                                                             "before":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  10,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  10,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  10
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  10,
+                                                                                           "pending":  0,
+                                                                                           "done":  10,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  10,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L10-R2",
+                                                                             "round":  2,
+                                                                             "limit":  10,
+                                                                             "elapsedMs":  402.4,
+                                                                             "apiSuccess":  10,
+                                                                             "batchSize":  10,
+                                                                             "successCount":  10,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  24.85,
+                                                                             "before":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  10,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  10,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  10
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  10,
+                                                                                           "pending":  0,
+                                                                                           "done":  10,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  10,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L10-R3",
+                                                                             "round":  3,
+                                                                             "limit":  10,
+                                                                             "elapsedMs":  414.09,
+                                                                             "apiSuccess":  10,
+                                                                             "batchSize":  10,
+                                                                             "successCount":  10,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  24.15,
+                                                                             "before":  {
+                                                                                            "total":  10,
+                                                                                            "pending":  10,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  10,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  10
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  10,
+                                                                                           "pending":  0,
+                                                                                           "done":  10,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  10,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         }
+                                                                     ],
+                                                          "elapsedSummary":  {
+                                                                                 "count":  3,
+                                                                                 "min":  402.4,
+                                                                                 "p50":  414.09,
+                                                                                 "p95":  461.6,
+                                                                                 "max":  461.6,
+                                                                                 "avg":  426.03
+                                                                             },
+                                                          "throughputSummary":  {
+                                                                                    "count":  3,
+                                                                                    "min":  21.66,
+                                                                                    "p50":  24.15,
+                                                                                    "p95":  24.85,
+                                                                                    "max":  24.85,
+                                                                                    "avg":  23.55
+                                                                                },
+                                                          "totalFailureCount":  0,
+                                                          "totalSuccessCount":  30
+                                                      },
+                                                      {
+                                                          "taskType":  "ship-timeout",
+                                                          "limit":  25,
+                                                          "rounds":  [
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L25-R1",
+                                                                             "round":  1,
+                                                                             "limit":  25,
+                                                                             "elapsedMs":  1390.61,
+                                                                             "apiSuccess":  25,
+                                                                             "batchSize":  25,
+                                                                             "successCount":  25,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  17.98,
+                                                                             "before":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  25,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  25,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  25
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  25,
+                                                                                           "pending":  0,
+                                                                                           "done":  25,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  25,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L25-R2",
+                                                                             "round":  2,
+                                                                             "limit":  25,
+                                                                             "elapsedMs":  1068.67,
+                                                                             "apiSuccess":  25,
+                                                                             "batchSize":  25,
+                                                                             "successCount":  25,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  23.39,
+                                                                             "before":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  25,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  25,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  25
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  25,
+                                                                                           "pending":  0,
+                                                                                           "done":  25,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  25,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L25-R3",
+                                                                             "round":  3,
+                                                                             "limit":  25,
+                                                                             "elapsedMs":  937.64,
+                                                                             "apiSuccess":  25,
+                                                                             "batchSize":  25,
+                                                                             "successCount":  25,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  26.66,
+                                                                             "before":  {
+                                                                                            "total":  25,
+                                                                                            "pending":  25,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  25,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  25
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  25,
+                                                                                           "pending":  0,
+                                                                                           "done":  25,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  25,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         }
+                                                                     ],
+                                                          "elapsedSummary":  {
+                                                                                 "count":  3,
+                                                                                 "min":  937.64,
+                                                                                 "p50":  1068.67,
+                                                                                 "p95":  1390.61,
+                                                                                 "max":  1390.61,
+                                                                                 "avg":  1132.31
+                                                                             },
+                                                          "throughputSummary":  {
+                                                                                    "count":  3,
+                                                                                    "min":  17.98,
+                                                                                    "p50":  23.39,
+                                                                                    "p95":  26.66,
+                                                                                    "max":  26.66,
+                                                                                    "avg":  22.68
+                                                                                },
+                                                          "totalFailureCount":  0,
+                                                          "totalSuccessCount":  75
+                                                      },
+                                                      {
+                                                          "taskType":  "ship-timeout",
+                                                          "limit":  50,
+                                                          "rounds":  [
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L50-R1",
+                                                                             "round":  1,
+                                                                             "limit":  50,
+                                                                             "elapsedMs":  2036.34,
+                                                                             "apiSuccess":  50,
+                                                                             "batchSize":  50,
+                                                                             "successCount":  50,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  24.55,
+                                                                             "before":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  50,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  50,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  50
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  50,
+                                                                                           "pending":  0,
+                                                                                           "done":  50,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  50,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L50-R2",
+                                                                             "round":  2,
+                                                                             "limit":  50,
+                                                                             "elapsedMs":  2084.55,
+                                                                             "apiSuccess":  50,
+                                                                             "batchSize":  50,
+                                                                             "successCount":  50,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  23.99,
+                                                                             "before":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  50,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  50,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  50
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  50,
+                                                                                           "pending":  0,
+                                                                                           "done":  50,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  50,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L50-R3",
+                                                                             "round":  3,
+                                                                             "limit":  50,
+                                                                             "elapsedMs":  2079.79,
+                                                                             "apiSuccess":  50,
+                                                                             "batchSize":  50,
+                                                                             "successCount":  50,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  24.04,
+                                                                             "before":  {
+                                                                                            "total":  50,
+                                                                                            "pending":  50,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  50,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  50
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  50,
+                                                                                           "pending":  0,
+                                                                                           "done":  50,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  50,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         }
+                                                                     ],
+                                                          "elapsedSummary":  {
+                                                                                 "count":  3,
+                                                                                 "min":  2036.34,
+                                                                                 "p50":  2079.79,
+                                                                                 "p95":  2084.55,
+                                                                                 "max":  2084.55,
+                                                                                 "avg":  2066.89
+                                                                             },
+                                                          "throughputSummary":  {
+                                                                                    "count":  3,
+                                                                                    "min":  23.99,
+                                                                                    "p50":  24.04,
+                                                                                    "p95":  24.55,
+                                                                                    "max":  24.55,
+                                                                                    "avg":  24.19
+                                                                                },
+                                                          "totalFailureCount":  0,
+                                                          "totalSuccessCount":  150
+                                                      },
+                                                      {
+                                                          "taskType":  "ship-timeout",
+                                                          "limit":  100,
+                                                          "rounds":  [
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L100-R1",
+                                                                             "round":  1,
+                                                                             "limit":  100,
+                                                                             "elapsedMs":  4069.58,
+                                                                             "apiSuccess":  100,
+                                                                             "batchSize":  100,
+                                                                             "successCount":  100,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  24.57,
+                                                                             "before":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  100,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  100,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  100
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  100,
+                                                                                           "pending":  0,
+                                                                                           "done":  100,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  100,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L100-R2",
+                                                                             "round":  2,
+                                                                             "limit":  100,
+                                                                             "elapsedMs":  3738.33,
+                                                                             "apiSuccess":  100,
+                                                                             "batchSize":  100,
+                                                                             "successCount":  100,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  26.75,
+                                                                             "before":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  100,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  100,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  100
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  100,
+                                                                                           "pending":  0,
+                                                                                           "done":  100,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  100,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         },
+                                                                         {
+                                                                             "prefix":  "DAY19-P4-S2-ST-SUCCESS-20260308152735-L100-R3",
+                                                                             "round":  3,
+                                                                             "limit":  100,
+                                                                             "elapsedMs":  3500.91,
+                                                                             "apiSuccess":  100,
+                                                                             "batchSize":  100,
+                                                                             "successCount":  100,
+                                                                             "failureCount":  0,
+                                                                             "throughputPerSec":  28.56,
+                                                                             "before":  {
+                                                                                            "total":  100,
+                                                                                            "pending":  100,
+                                                                                            "done":  0,
+                                                                                            "cancelled":  0,
+                                                                                            "retrySum":  0,
+                                                                                            "due":  100,
+                                                                                            "successCount":  0,
+                                                                                            "failureCount":  100
+                                                                                        },
+                                                                             "after":  {
+                                                                                           "total":  100,
+                                                                                           "pending":  0,
+                                                                                           "done":  100,
+                                                                                           "cancelled":  0,
+                                                                                           "retrySum":  0,
+                                                                                           "due":  0,
+                                                                                           "successCount":  100,
+                                                                                           "failureCount":  0
+                                                                                       }
+                                                                         }
+                                                                     ],
+                                                          "elapsedSummary":  {
+                                                                                 "count":  3,
+                                                                                 "min":  3500.91,
+                                                                                 "p50":  3738.33,
+                                                                                 "p95":  4069.58,
+                                                                                 "max":  4069.58,
+                                                                                 "avg":  3769.61
+                                                                             },
+                                                          "throughputSummary":  {
+                                                                                    "count":  3,
+                                                                                    "min":  24.57,
+                                                                                    "p50":  26.75,
+                                                                                    "p95":  28.56,
+                                                                                    "max":  28.56,
+                                                                                    "avg":  26.63
+                                                                                },
+                                                          "totalFailureCount":  0,
+                                                          "totalSuccessCount":  300
+                                                      }
+                                                  ],
+                                 "refund":  [
+                                                {
+                                                    "taskType":  "refund",
+                                                    "limit":  10,
+                                                    "rounds":  [
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L10-R1",
+                                                                       "round":  1,
+                                                                       "limit":  10,
+                                                                       "elapsedMs":  186.55,
+                                                                       "apiSuccess":  10,
+                                                                       "batchSize":  10,
+                                                                       "successCount":  10,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  53.6,
+                                                                       "before":  {
+                                                                                      "total":  10,
+                                                                                      "pending":  10,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  10,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  10
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  10,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  10,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  10,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L10-R2",
+                                                                       "round":  2,
+                                                                       "limit":  10,
+                                                                       "elapsedMs":  204.84,
+                                                                       "apiSuccess":  10,
+                                                                       "batchSize":  10,
+                                                                       "successCount":  10,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  48.82,
+                                                                       "before":  {
+                                                                                      "total":  10,
+                                                                                      "pending":  10,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  10,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  10
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  10,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  10,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  10,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L10-R3",
+                                                                       "round":  3,
+                                                                       "limit":  10,
+                                                                       "elapsedMs":  202.58,
+                                                                       "apiSuccess":  10,
+                                                                       "batchSize":  10,
+                                                                       "successCount":  10,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  49.36,
+                                                                       "before":  {
+                                                                                      "total":  10,
+                                                                                      "pending":  10,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  10,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  10
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  10,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  10,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  10,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   }
+                                                               ],
+                                                    "elapsedSummary":  {
+                                                                           "count":  3,
+                                                                           "min":  186.55,
+                                                                           "p50":  202.58,
+                                                                           "p95":  204.84,
+                                                                           "max":  204.84,
+                                                                           "avg":  197.99
+                                                                       },
+                                                    "throughputSummary":  {
+                                                                              "count":  3,
+                                                                              "min":  48.82,
+                                                                              "p50":  49.36,
+                                                                              "p95":  53.6,
+                                                                              "max":  53.6,
+                                                                              "avg":  50.59
+                                                                          },
+                                                    "totalFailureCount":  0,
+                                                    "totalSuccessCount":  30
+                                                },
+                                                {
+                                                    "taskType":  "refund",
+                                                    "limit":  25,
+                                                    "rounds":  [
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L25-R1",
+                                                                       "round":  1,
+                                                                       "limit":  25,
+                                                                       "elapsedMs":  434.06,
+                                                                       "apiSuccess":  25,
+                                                                       "batchSize":  25,
+                                                                       "successCount":  25,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  57.6,
+                                                                       "before":  {
+                                                                                      "total":  25,
+                                                                                      "pending":  25,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  25,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  25
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  25,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  25,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  25,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L25-R2",
+                                                                       "round":  2,
+                                                                       "limit":  25,
+                                                                       "elapsedMs":  432.22,
+                                                                       "apiSuccess":  25,
+                                                                       "batchSize":  25,
+                                                                       "successCount":  25,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  57.84,
+                                                                       "before":  {
+                                                                                      "total":  25,
+                                                                                      "pending":  25,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  25,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  25
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  25,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  25,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  25,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L25-R3",
+                                                                       "round":  3,
+                                                                       "limit":  25,
+                                                                       "elapsedMs":  428.33,
+                                                                       "apiSuccess":  25,
+                                                                       "batchSize":  25,
+                                                                       "successCount":  25,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  58.37,
+                                                                       "before":  {
+                                                                                      "total":  25,
+                                                                                      "pending":  25,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  25,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  25
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  25,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  25,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  25,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   }
+                                                               ],
+                                                    "elapsedSummary":  {
+                                                                           "count":  3,
+                                                                           "min":  428.33,
+                                                                           "p50":  432.22,
+                                                                           "p95":  434.06,
+                                                                           "max":  434.06,
+                                                                           "avg":  431.54
+                                                                       },
+                                                    "throughputSummary":  {
+                                                                              "count":  3,
+                                                                              "min":  57.6,
+                                                                              "p50":  57.84,
+                                                                              "p95":  58.37,
+                                                                              "max":  58.37,
+                                                                              "avg":  57.94
+                                                                          },
+                                                    "totalFailureCount":  0,
+                                                    "totalSuccessCount":  75
+                                                },
+                                                {
+                                                    "taskType":  "refund",
+                                                    "limit":  50,
+                                                    "rounds":  [
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L50-R1",
+                                                                       "round":  1,
+                                                                       "limit":  50,
+                                                                       "elapsedMs":  901.26,
+                                                                       "apiSuccess":  50,
+                                                                       "batchSize":  50,
+                                                                       "successCount":  50,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  55.48,
+                                                                       "before":  {
+                                                                                      "total":  50,
+                                                                                      "pending":  50,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  50,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  50
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  50,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  50,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  50,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L50-R2",
+                                                                       "round":  2,
+                                                                       "limit":  50,
+                                                                       "elapsedMs":  808.41,
+                                                                       "apiSuccess":  50,
+                                                                       "batchSize":  50,
+                                                                       "successCount":  50,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  61.85,
+                                                                       "before":  {
+                                                                                      "total":  50,
+                                                                                      "pending":  50,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  50,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  50
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  50,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  50,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  50,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L50-R3",
+                                                                       "round":  3,
+                                                                       "limit":  50,
+                                                                       "elapsedMs":  873.45,
+                                                                       "apiSuccess":  50,
+                                                                       "batchSize":  50,
+                                                                       "successCount":  50,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  57.24,
+                                                                       "before":  {
+                                                                                      "total":  50,
+                                                                                      "pending":  50,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  50,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  50
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  50,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  50,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  50,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   }
+                                                               ],
+                                                    "elapsedSummary":  {
+                                                                           "count":  3,
+                                                                           "min":  808.41,
+                                                                           "p50":  873.45,
+                                                                           "p95":  901.26,
+                                                                           "max":  901.26,
+                                                                           "avg":  861.04
+                                                                       },
+                                                    "throughputSummary":  {
+                                                                              "count":  3,
+                                                                              "min":  55.48,
+                                                                              "p50":  57.24,
+                                                                              "p95":  61.85,
+                                                                              "max":  61.85,
+                                                                              "avg":  58.19
+                                                                          },
+                                                    "totalFailureCount":  0,
+                                                    "totalSuccessCount":  150
+                                                },
+                                                {
+                                                    "taskType":  "refund",
+                                                    "limit":  100,
+                                                    "rounds":  [
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L100-R1",
+                                                                       "round":  1,
+                                                                       "limit":  100,
+                                                                       "elapsedMs":  1681.48,
+                                                                       "apiSuccess":  100,
+                                                                       "batchSize":  100,
+                                                                       "successCount":  100,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  59.47,
+                                                                       "before":  {
+                                                                                      "total":  100,
+                                                                                      "pending":  100,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  100,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  100
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  100,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  100,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  100,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L100-R2",
+                                                                       "round":  2,
+                                                                       "limit":  100,
+                                                                       "elapsedMs":  1845.23,
+                                                                       "apiSuccess":  100,
+                                                                       "batchSize":  100,
+                                                                       "successCount":  100,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  54.19,
+                                                                       "before":  {
+                                                                                      "total":  100,
+                                                                                      "pending":  100,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  100,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  100
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  100,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  100,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  100,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   },
+                                                                   {
+                                                                       "prefix":  "DAY19-P4-S2-RF-SUCCESS-20260308152735-L100-R3",
+                                                                       "round":  3,
+                                                                       "limit":  100,
+                                                                       "elapsedMs":  1541.83,
+                                                                       "apiSuccess":  100,
+                                                                       "batchSize":  100,
+                                                                       "successCount":  100,
+                                                                       "failureCount":  0,
+                                                                       "throughputPerSec":  64.86,
+                                                                       "before":  {
+                                                                                      "total":  100,
+                                                                                      "pending":  100,
+                                                                                      "failed":  0,
+                                                                                      "success":  0,
+                                                                                      "retrySum":  0,
+                                                                                      "due":  100,
+                                                                                      "successCount":  0,
+                                                                                      "failureCount":  100
+                                                                                  },
+                                                                       "after":  {
+                                                                                     "total":  100,
+                                                                                     "pending":  0,
+                                                                                     "failed":  0,
+                                                                                     "success":  100,
+                                                                                     "retrySum":  0,
+                                                                                     "due":  0,
+                                                                                     "successCount":  100,
+                                                                                     "failureCount":  0
+                                                                                 }
+                                                                   }
+                                                               ],
+                                                    "elapsedSummary":  {
+                                                                           "count":  3,
+                                                                           "min":  1541.83,
+                                                                           "p50":  1681.48,
+                                                                           "p95":  1845.23,
+                                                                           "max":  1845.23,
+                                                                           "avg":  1689.51
+                                                                       },
+                                                    "throughputSummary":  {
+                                                                              "count":  3,
+                                                                              "min":  54.19,
+                                                                              "p50":  59.47,
+                                                                              "p95":  64.86,
+                                                                              "max":  64.86,
+                                                                              "avg":  59.51
+                                                                          },
+                                                    "totalFailureCount":  0,
+                                                    "totalSuccessCount":  300
+                                                }
+                                            ]
+                             },
+    "manualRecovery":  [
+                           {
+                               "taskType":  "ship-timeout",
+                               "prefix":  "DAY19-P4-S2-ST-MANUAL-RECOVER-20260308152735",
+                               "failRun":  {
+                                               "elapsedMs":  27.99,
+                                               "apiSuccess":  0
+                                           },
+                               "beforeFail":  {
+                                                  "taskId":  5072,
+                                                  "orderId":  902212,
+                                                  "taskStatus":  "PENDING",
+                                                  "retryCount":  0,
+                                                  "nextRetryTime":  null,
+                                                  "lastError":  null,
+                                                  "updateTime":  "\/Date(1772954910000)\/",
+                                                  "orderNo":  "DAY19-P4-S2-ST-MANUAL-RECOVER-20260308152735-001",
+                                                  "orderStatus":  "processing"
+                                              },
+                               "afterFail":  {
+                                                 "taskId":  5072,
+                                                 "orderId":  902212,
+                                                 "taskStatus":  "PENDING",
+                                                 "retryCount":  1,
+                                                 "nextRetryTime":  "\/Date(1772955031000)\/",
+                                                 "lastError":  "invalid_order_status",
+                                                 "updateTime":  "\/Date(1772954910000)\/",
+                                                 "orderNo":  "DAY19-P4-S2-ST-MANUAL-RECOVER-20260308152735-001",
+                                                 "orderStatus":  "processing"
+                                             },
+                               "scheduledDelaySeconds":  120.23,
+                               "compensate":  {
+                                                  "elapsedMs":  24.44,
+                                                  "updatedRows":  1,
+                                                  "success":  true
+                                              },
+                               "rerun":  {
+                                             "elapsedMs":  51.67,
+                                             "apiSuccess":  1
+                                         },
+                               "afterRecovery":  {
+                                                     "taskId":  5072,
+                                                     "orderId":  902212,
+                                                     "taskStatus":  "DONE",
+                                                     "retryCount":  1,
+                                                     "nextRetryTime":  null,
+                                                     "lastError":  null,
+                                                     "updateTime":  "\/Date(1772954910000)\/",
+                                                     "orderNo":  "DAY19-P4-S2-ST-MANUAL-RECOVER-20260308152735-001",
+                                                     "orderStatus":  "cancelled"
+                                                 },
+                               "recoveryElapsedMs":  155.52
+                           },
+                           {
+                               "taskType":  "refund",
+                               "prefix":  "DAY19-P4-S2-RF-MANUAL-RECOVER-20260308152735",
+                               "failRun":  {
+                                               "elapsedMs":  28.17,
+                                               "apiSuccess":  0
+                                           },
+                               "beforeFail":  {
+                                                  "taskId":  1358,
+                                                  "orderId":  902213,
+                                                  "taskStatus":  "PENDING",
+                                                  "retryCount":  0,
+                                                  "nextRetryTime":  null,
+                                                  "failReason":  null,
+                                                  "amount":  0.00,
+                                                  "updateTime":  "\/Date(1772954911000)\/",
+                                                  "orderNo":  "DAY19-P4-S2-RF-MANUAL-RECOVER-20260308152735-001",
+                                                  "orderStatus":  "cancelled"
+                                              },
+                               "afterFail":  {
+                                                 "taskId":  1358,
+                                                 "orderId":  902213,
+                                                 "taskStatus":  "FAILED",
+                                                 "retryCount":  1,
+                                                 "nextRetryTime":  "\/Date(1772955031000)\/",
+                                                 "failReason":  "mock_refund_error:invalid refund accounting input, orderId=902213, taskId=1358",
+                                                 "amount":  0.00,
+                                                 "updateTime":  "\/Date(1772954911000)\/",
+                                                 "orderNo":  "DAY19-P4-S2-RF-MANUAL-RECOVER-20260308152735-001",
+                                                 "orderStatus":  "cancelled"
+                                             },
+                               "scheduledDelaySeconds":  119.51,
+                               "compensate":  {
+                                                  "elapsedMs":  23.53,
+                                                  "updatedRows":  1,
+                                                  "success":  true
+                                              },
+                               "rerun":  {
+                                             "elapsedMs":  40.06,
+                                             "apiSuccess":  1
+                                         },
+                               "afterRecovery":  {
+                                                     "taskId":  1358,
+                                                     "orderId":  902213,
+                                                     "taskStatus":  "SUCCESS",
+                                                     "retryCount":  1,
+                                                     "nextRetryTime":  null,
+                                                     "failReason":  null,
+                                                     "amount":  99.00,
+                                                     "updateTime":  "\/Date(1772954911000)\/",
+                                                     "orderNo":  "DAY19-P4-S2-RF-MANUAL-RECOVER-20260308152735-001",
+                                                     "orderStatus":  "cancelled"
+                                                 },
+                               "recoveryElapsedMs":  147.42
+                           },
+                           {
+                               "taskType":  "ship-reminder",
+                               "prefix":  "DAY19-P4-S2-SR-MANUAL-RECOVER-20260308152735",
+                               "failRun":  {
+                                               "elapsedMs":  46.87,
+                                               "apiSuccess":  0
+                                           },
+                               "beforeFail":  {
+                                                  "taskId":  792,
+                                                  "orderId":  902214,
+                                                  "taskStatus":  "PENDING",
+                                                  "retryCount":  0,
+                                                  "remindTime":  "\/Date(1772954910000)\/",
+                                                  "runningAt":  null,
+                                                  "lastError":  null,
+                                                  "clientMsgId":  null,
+                                                  "updateTime":  "\/Date(1772954911000)\/",
+                                                  "orderNo":  "DAY19-P4-S2-SR-MANUAL-RECOVER-20260308152735-001",
+                                                  "orderStatus":  "processing"
+                                              },
+                               "afterFail":  {
+                                                 "taskId":  792,
+                                                 "orderId":  902214,
+                                                 "taskStatus":  "FAILED",
+                                                 "retryCount":  1,
+                                                 "remindTime":  "\/Date(1772955032000)\/",
+                                                 "runningAt":  null,
+                                                 "lastError":  "invalid_order_status",
+                                                 "clientMsgId":  null,
+                                                 "updateTime":  "\/Date(1772954912000)\/",
+                                                 "orderNo":  "DAY19-P4-S2-SR-MANUAL-RECOVER-20260308152735-001",
+                                                 "orderStatus":  "processing"
+                                             },
+                               "scheduledDelaySeconds":  119.85,
+                               "compensate":  {
+                                                  "elapsedMs":  31.26,
+                                                  "updatedRows":  1,
+                                                  "success":  true
+                                              },
+                               "rerun":  {
+                                             "elapsedMs":  50.53,
+                                             "apiSuccess":  1
+                                         },
+                               "afterRecovery":  {
+                                                     "taskId":  792,
+                                                     "orderId":  902214,
+                                                     "taskStatus":  "SUCCESS",
+                                                     "retryCount":  1,
+                                                     "remindTime":  "\/Date(1772954912000)\/",
+                                                     "runningAt":  "\/Date(1772954912000)\/",
+                                                     "lastError":  null,
+                                                     "clientMsgId":  "SHIP-REMIND-20260308-H1-902214",
+                                                     "updateTime":  "\/Date(1772954912000)\/",
+                                                     "orderNo":  "DAY19-P4-S2-SR-MANUAL-RECOVER-20260308152735-001",
+                                                     "orderStatus":  "paid"
+                                                 },
+                               "recoveryElapsedMs":  159.39
+                           }
+                       ],
+    "autoRecovery":  {
+                         "taskType":  "ship-reminder",
+                         "prefix":  "DAY19-P4-S2-SR-AUTO-RECOVER-20260308152735",
+                         "before":  {
+                                        "taskId":  793,
+                                        "orderId":  902215,
+                                        "taskStatus":  "RUNNING",
+                                        "retryCount":  0,
+                                        "remindTime":  "\/Date(1772954612000)\/",
+                                        "runningAt":  "\/Date(1772954312000)\/",
+                                        "lastError":  null,
+                                        "clientMsgId":  null,
+                                        "updateTime":  "\/Date(1772954912000)\/",
+                                        "orderNo":  "DAY19-P4-S2-SR-AUTO-RECOVER-20260308152735-001",
+                                        "orderStatus":  "paid"
+                                    },
+                         "recycleRun":  {
+                                            "elapsedMs":  30.82,
+                                            "apiSuccess":  0
+                                        },
+                         "afterRecycle":  {
+                                              "taskId":  793,
+                                              "orderId":  902215,
+                                              "taskStatus":  "FAILED",
+                                              "retryCount":  1,
+                                              "remindTime":  "\/Date(1772955033000)\/",
+                                              "runningAt":  null,
+                                              "lastError":  "running_timeout_recycle",
+                                              "clientMsgId":  null,
+                                              "updateTime":  "\/Date(1772954912000)\/",
+                                              "orderNo":  "DAY19-P4-S2-SR-AUTO-RECOVER-20260308152735-001",
+                                              "orderStatus":  "paid"
+                                          },
+                         "wait":  {
+                                      "reached":  true,
+                                      "waitedSeconds":  122.18,
+                                      "latestSample":  {
+                                                           "taskId":  793,
+                                                           "orderId":  902215,
+                                                           "taskStatus":  "FAILED",
+                                                           "retryCount":  1,
+                                                           "remindTime":  "\/Date(1772955033000)\/",
+                                                           "runningAt":  null,
+                                                           "lastError":  "running_timeout_recycle",
+                                                           "clientMsgId":  null,
+                                                           "updateTime":  "\/Date(1772954912000)\/",
+                                                           "orderNo":  "DAY19-P4-S2-SR-AUTO-RECOVER-20260308152735-001",
+                                                           "orderStatus":  "paid"
+                                                       },
+                                      "skipped":  false
+                                  },
+                         "rerun":  {
+                                       "elapsedMs":  67.36,
+                                       "apiSuccess":  1
+                                   },
+                         "afterRecovery":  {
+                                               "taskId":  793,
+                                               "orderId":  902215,
+                                               "taskStatus":  "SUCCESS",
+                                               "retryCount":  1,
+                                               "remindTime":  "\/Date(1772955033000)\/",
+                                               "runningAt":  "\/Date(1772955035000)\/",
+                                               "lastError":  null,
+                                               "clientMsgId":  "SHIP-REMIND-20260308-H1-902215",
+                                               "updateTime":  "\/Date(1772955035000)\/",
+                                               "orderNo":  "DAY19-P4-S2-SR-AUTO-RECOVER-20260308152735-001",
+                                               "orderStatus":  "paid"
+                                           },
+                         "recoveryElapsedMs":  122598.63
+                     },
+    "recommendations":  [
+                            {
+                                "taskType":  "ship-timeout",
+                                "capacity":  {
+                                                 "recommendedBatchSize":  100,
+                                                 "steadyCapacityPerMinute":  100,
+                                                 "runOnceAvgThroughput":  26.63,
+                                                 "reason":  "Prefer the highest observed average run-once throughput among zero-failure batches; at fixed-delay=60s this equals roughly the same steady-state tasks/minute per job."
+                                             },
+                                "retry":  {
+                                              "current":  "120s fixed retry delay",
+                                              "recommendation":  "Keep 120s",
+                                              "reason":  "Failure mode is usually invalid business precondition; manual trigger-now recovers in seconds, while automatic 120s avoids hot-looping invalid orders."
+                                          }
+                            },
+                            {
+                                "taskType":  "refund",
+                                "capacity":  {
+                                                 "recommendedBatchSize":  100,
+                                                 "steadyCapacityPerMinute":  100,
+                                                 "runOnceAvgThroughput":  59.51,
+                                                 "reason":  "Prefer the highest observed average run-once throughput among zero-failure batches; at fixed-delay=60s this equals roughly the same steady-state tasks/minute per job."
+                                             },
+                                "retry":  {
+                                              "current":  "120s fixed retry delay",
+                                              "recommendation":  "Keep 120s",
+                                              "reason":  "Failure mode is usually accounting/input anomaly; reset recovers quickly after data repair, so 120s remains a reasonable background retry interval."
+                                          }
+                            },
+                            {
+                                "taskType":  "ship-reminder",
+                                "capacity":  {
+                                                 "recommendedBatchSize":  50,
+                                                 "steadyCapacityPerMinute":  50,
+                                                 "runOnceAvgThroughput":  96.06,
+                                                 "reason":  "Prefer the highest observed average run-once throughput among zero-failure batches; at fixed-delay=60s this equals roughly the same steady-state tasks/minute per job."
+                                             },
+                                "retry":  {
+                                              "current":  "2m / 5m / 15m / 30m backoff, running-timeout 5m",
+                                              "recommendation":  "Keep 2m / 5m / 15m / 30m and 5m running-timeout",
+                                              "reason":  "Manual trigger-now bypasses the backoff when needed, and stale RUNNING recycle succeeded without duplicate success records in this run."
+                                          }
+                            }
+                        ]
+}
