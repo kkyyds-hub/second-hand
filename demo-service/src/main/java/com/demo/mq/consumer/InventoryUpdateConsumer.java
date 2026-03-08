@@ -3,6 +3,8 @@ package com.demo.mq.consumer;
 import com.demo.dto.mq.EventMessage;
 import com.demo.dto.mq.OrderCreatedPayload;
 import com.demo.entity.MqConsumeLog;
+import com.demo.entity.Order;
+import com.demo.enumeration.OrderStatus;
 import com.demo.mapper.MqConsumeLogMapper;
 import com.demo.mapper.OrderMapper;
 import com.rabbitmq.client.Channel;
@@ -24,6 +26,13 @@ import org.springframework.stereotype.Component;
  * 说明：
  * 当前订单创建时已同步改为 SOLD，这里作为“异步同步/兜底”。
  * 未来若改成纯异步库存更新，这个消费者就是主流程。
+ *
+ * P5-S1 修复背景：
+ * 1) 并发回归中发现，订单创建事件是异步消息，它可能晚于“发货超时关单并释放商品”这条链路执行；
+ * 2) 如果消费者仅凭 `productId` 无脑把商品从 `on_sale` 改回 `sold`，
+ *    就会把已经因为订单取消而恢复上架的商品再次污染成 `sold`；
+ * 3) 因此这里增加了“以当前订单真实状态为准”的保护：
+ *    订单若已取消，则 ACK 并跳过库存回写，避免历史消息覆盖当前业务真相。
  */
 @Slf4j
 @Component
@@ -91,7 +100,43 @@ public class InventoryUpdateConsumer {
                 return;
             }
 
-            // 3) 幂等更新：只在 on_sale 时改为 sold
+            if (payload.getOrderId() != null) {
+                // P5-S1 关键保护：
+                // ORDER_CREATED 只代表“这个订单曾经创建过”，并不代表“此刻商品依然应该保持 sold”。
+                // 如果当前订单已经被 ship-timeout / cancel 等链路关闭，那么最终业务真相是：
+                //   - 订单已失效
+                //   - 商品已经被释放回 on_sale
+                // 这时再消费旧消息去回写 sold，会制造真正的数据反转。
+                Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
+                if (order == null) {
+                    log.warn("库存更新跳过：orderId={} 不存在，eventId={}", payload.getOrderId(), message.getEventId());
+                    mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                    channel.basicAck(tag, false);
+                    return;
+                }
+                OrderStatus orderStatus = OrderStatus.fromDbValue(order.getStatus());
+                if (orderStatus == null) {
+                    log.warn("库存更新跳过：orderId={} 状态异常，status={}, eventId={}",
+                            payload.getOrderId(), order.getStatus(), message.getEventId());
+                    mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                    channel.basicAck(tag, false);
+                    return;
+                }
+                if (orderStatus == OrderStatus.CANCELLED) {
+                    // 这里选择“ACK + 标记 OK”而不是抛错重试，因为消息本身没有问题，
+                    // 问题只是它描述的是历史状态，而当前业务状态已经前进到了“订单取消”。
+                    // 对这种消息继续重试没有任何收益，只会反复制造噪音。
+                    log.info("库存更新跳过：orderId={} 已取消，productId={}, eventId={}",
+                            payload.getOrderId(), payload.getProductId(), message.getEventId());
+                    mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                    channel.basicAck(tag, false);
+                    return;
+                }
+            }
+
+            // 3) 幂等更新：只在 on_sale 时改为 sold。
+            //    即使没有取消态保护，这条 SQL 也天然具备“非 on_sale 不重复改写”的幂等能力；
+            //    再叠加上面的订单状态校验，就能同时兼顾“幂等”和“最终一致性”。
             int rows = orderMapper.markProductSoldIfOnSale(payload.getProductId());
 
             log.info("库存更新处理完成：productId={}, updatedRows={}",

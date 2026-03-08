@@ -30,6 +30,7 @@ import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -58,6 +59,23 @@ import java.util.Set;
  * OrderServiceImpl 业务组件。
  */
 public class OrderServiceImpl implements OrderService {
+
+    /**
+     * P5-S1：支付回调幂等统一返回文案。
+     *
+     * 设计背景：
+     * 1) 回归时发现同一订单在高并发重复回调下，代码不同分支会返回
+     *    “订单已支付，回调幂等成功!” 和 “订单已支付，回调幂等成功” 两种文案；
+     * 2) 虽然业务语义一致，但接口返回口径不稳定会放大调用方判断复杂度，
+     *    也会让日志检索与回归统计口径出现漂移；
+     * 3) 因此把所有“已被其他并发请求处理成功”的分支统一收敛到同一常量。
+     *
+     * 收益：
+     * - 前端/压测脚本/回归报告只需要识别一个固定文案；
+     * - 日志聚合与问题排查口径更稳定；
+     * - 更符合本次 P5-S1 对“冲突分流文案稳定”的 DoD 要求。
+     */
+    private static final String PAYMENT_CALLBACK_IDEMPOTENT_MESSAGE = "订单已支付，回调幂等成功";
 
     /**
      * Day18 P3-S2：订单分页允许的排序字段。
@@ -467,6 +485,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单不存在或无权操作该订单");
         }
 
+        detail = refreshOrderDetailAfterCasMissIfStillPending(orderId, currentUserId, detail);
         OrderStatus s = OrderStatus.fromDbValue(detail.getStatus());
         if (s == null) {
             throw new BusinessException("订单状态异常");
@@ -552,10 +571,25 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 处理对应业务流程。
+     * 处理支付平台“成功回调”。
+     *
+     * 并发背景：
+     * 1) 用户主动支付、支付平台补偿回调、支付平台重复通知，都会并发命中这条链路；
+     * 2) P5-S1 首轮回归中发现：当多个回调同时对同一订单执行 `pending -> paid` CAS 更新时，
+     *    只有一个线程会更新成功，其他线程进入 `rows == 0` 分支；
+     * 3) 原实现虽然会再次查询订单状态，但该方法运行在事务内，在 MySQL 默认的
+     *    `REPEATABLE_READ` 下，二次查询可能仍然读到旧快照里的 `pending`，
+     *    从而把“已经被其他线程支付成功”的场景误判成
+     *    “订单状态不允许支付：pending”。
+     *
+     * 本次修复：
+     * 1) 显式把该方法改为 `READ_COMMITTED`，确保 CAS 未命中后的再次查询能看到
+     *    其他并发事务已经提交的最新状态；
+     * 2) 配合后续的短轮询刷新，把“真正的并发成功”稳定收敛为幂等成功分支；
+     * 3) 统一幂等返回文案，避免接口输出漂移。
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public String handlePaymentCallback(com.demo.dto.payment.PaymentCallbackRequest request) {
         String auditId = AuditLogUtil.newAuditId();
         // 1) 占位验签（Day13 冻结：sign 非空 + timestamp 在 5 分钟内）
@@ -591,12 +625,12 @@ public class OrderServiceImpl implements OrderService {
             // 历史漏建修复：已支付也补建任务
             createShipTimeoutTaskIfAbsent(order.getId(), "paymentCallback:idempotent_paid");
             AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "IDEMPOTENT", "status=paid");
-            return "订单已支付，回调幂等成功!";
+            return PAYMENT_CALLBACK_IDEMPOTENT_MESSAGE;
         }
         if (s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
             logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "status=" + s.getDbValue());
             AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(order.getId()), "IDEMPOTENT", "status=" + s.getDbValue());
-            return "订单已支付，回调幂等成功";
+            return PAYMENT_CALLBACK_IDEMPOTENT_MESSAGE;
         }
 
         // 5) 若已取消，提示不可支付
@@ -648,16 +682,25 @@ public class OrderServiceImpl implements OrderService {
             return "支付回调处理成功";
         }
 
-        // 7) rows==0：可能并发/重复回调，再次查询做幂等判断
+        // 7) rows==0：说明当前线程没有抢到 `pending -> paid` 的那次成功更新。
+        //    这并不一定是失败，最大概率是别的并发线程已经先一步把订单改成 paid。
+        //    因此这里不能直接报错，而要重新读库做“幂等 / 非法状态”分流。
         Order latest = orderMapper.selectOrderByOrderNo(request.getOrderNo());
         if (latest == null) {
             throw new BusinessException("订单不存在（可能已被删除）");
         }
+
+        // 再次短轮询的目的不是“重试更新”，而是给并发提交一个很短的可见性窗口：
+        // 1) 某些极端时序下，即便使用 READ_COMMITTED，紧贴着 CAS 失败后的首次查询
+        //    仍可能赶在对方事务提交前执行；
+        // 2) 这里最多做几次 very-short polling，只为了把“刚刚成功但尚未可见”的 paid
+        //    状态收敛回来，避免把真实成功误报成失败。
+        latest = refreshOrderAfterCasMissIfStillPending(request.getOrderNo(), latest);
         OrderStatus latestStatus = OrderStatus.fromDbValue(latest.getStatus());
         if (latestStatus == OrderStatus.PAID || latestStatus == OrderStatus.SHIPPED || latestStatus == OrderStatus.COMPLETED) {
             logIdempotencyHit("paymentCallback", "orderNo:" + request.getOrderNo(), "latestStatus=" + latestStatus.getDbValue());
             AuditLogUtil.success(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(latest.getId()), "IDEMPOTENT", "latestStatus=" + latestStatus.getDbValue());
-            return "订单已支付，回调幂等成功";
+            return PAYMENT_CALLBACK_IDEMPOTENT_MESSAGE;
         }
 
         AuditLogUtil.failed(log, auditId, "PAYMENT_CALLBACK", "SYSTEM", request.getChannel(), "ORDER", String.valueOf(latest.getId()), "STATUS_NOT_ALLOW", "latestStatus=" + latest.getStatus());
@@ -799,6 +842,83 @@ public class OrderServiceImpl implements OrderService {
      */
     private void logIdempotencyHit(String action, String idemKey, String detail) {
         log.info("幂等命中：action={}, idemKey={}, detail={}", action, idemKey, detail);
+    }
+
+    /**
+     * `payOrder` 场景下的 CAS 未命中后短轮询刷新。
+     *
+     * 为什么存在：
+     * 1) 支付接口是“先 CAS 更新，失败后再查状态”的标准幂等写法；
+     * 2) 当多个请求几乎同时命中同一订单时，后到线程在 CAS 失败后可能立刻读到旧状态；
+     * 3) 这里补一个极短的观测窗口，只为了把“马上就会从 pending 变成 paid”的状态读出来，
+     *    让返回语义更稳定。
+     *
+     * 注意：
+     * - 它不是业务重试，不会重复写副作用；
+     * - 它只在仍然看到 `pending` 时才继续轮询；
+     * - 一旦读到非 `pending`，立即返回最新状态做分流。
+     */
+    private OrderDetail refreshOrderDetailAfterCasMissIfStillPending(Long orderId, Long currentUserId, OrderDetail detail) {
+        if (detail == null) {
+            return null;
+        }
+        if (!OrderStatus.PENDING.getDbValue().equalsIgnoreCase(detail.getStatus())) {
+            return detail;
+        }
+        OrderDetail latest = detail;
+        for (int i = 0; i < 3; i++) {
+            sleepQuietly(20L);
+            OrderDetail refreshed = orderMapper.getOrderDetail(orderId, currentUserId);
+            if (refreshed == null) {
+                return latest;
+            }
+            latest = refreshed;
+            if (!OrderStatus.PENDING.getDbValue().equalsIgnoreCase(refreshed.getStatus())) {
+                return refreshed;
+            }
+        }
+        return latest;
+    }
+
+    /**
+     * 支付回调场景下的 CAS 未命中后短轮询刷新。
+     *
+     * 这段逻辑和上面的 `refreshOrderDetailAfterCasMissIfStillPending` 目标一致，
+     * 但这里按 `orderNo` 查询基础订单对象，专门服务于第三方支付回调链路。
+     *
+     * P5-S1 首轮回归表明：
+     * - 单纯做一次二次查询仍可能在极端竞争下读到 `pending`；
+     * - 增加短轮询后，可以把“已成功支付但提交刚落库”的状态收敛回来；
+     * - 结合 `READ_COMMITTED` 使用时，最终把失败漂移压回稳定的幂等成功。
+     */
+    private Order refreshOrderAfterCasMissIfStillPending(String orderNo, Order latest) {
+        if (latest == null) {
+            return null;
+        }
+        if (!OrderStatus.PENDING.getDbValue().equalsIgnoreCase(latest.getStatus())) {
+            return latest;
+        }
+        Order current = latest;
+        for (int i = 0; i < 3; i++) {
+            sleepQuietly(20L);
+            Order refreshed = orderMapper.selectOrderByOrderNo(orderNo);
+            if (refreshed == null) {
+                return current;
+            }
+            current = refreshed;
+            if (!OrderStatus.PENDING.getDbValue().equalsIgnoreCase(refreshed.getStatus())) {
+                return refreshed;
+            }
+        }
+        return current;
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**

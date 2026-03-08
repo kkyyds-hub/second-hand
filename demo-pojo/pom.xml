@@ -23,6 +23,13 @@
             <version>3.5.5</version>
         </dependency>
 
+        <!-- 补齐 MyBatis 基础类型（如 TypeHandler），避免 @TableField 间接类型解析失败 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-core</artifactId>
+            <version>3.5.5</version>
+        </dependency>
+
 
         <!-- 可选：数据验证 -->
         <dependency>

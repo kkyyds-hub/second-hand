@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -447,6 +448,22 @@ public class UserServiceImpl implements UserService {
      * 实现接口定义的方法。
      */
     @Override
+    /**
+     * 管理端封禁用户。
+     *
+     * P5-S1 问题背景：
+     * 1) `UserServiceImpl` 类上已经声明了 `@Transactional`，默认会沿用数据库默认隔离级别；
+     * 2) 首轮并发回归时，50 个封禁请求同时命中同一用户，只有 1 个线程成功完成状态更新，
+     *    其余线程理论上应该全部识别为“已处于封禁状态”；
+     * 3) 但实际有一部分线程在 CAS 失败后再次查询时，仍然读到了事务快照中的旧状态，
+     *    被错误分流到 `CAS_CONFLICT`，返回“用户状态已变化，请刷新后重试”。
+     *
+     * 本次修复：
+     * - 在方法级覆盖为 `READ_COMMITTED`，保证 CAS 失败后的再次查询能观察到
+     *   并发线程已提交的 `banned` 状态；
+     * - 配合下方短轮询，最终把重复封禁稳定收敛为“幂等成功”。
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public String banUser(Long userId) {
         String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
@@ -462,7 +479,7 @@ public class UserServiceImpl implements UserService {
 
         int rows = userMapper.updateStatusByExpected(userId, user.getStatus(), "banned");
         if (rows == 0) {
-            User latest = userMapper.selectById(userId);
+            User latest = refreshUserAfterCasMissIfStillExpected(userId, user.getStatus());
             if (latest == null) {
                 AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
                 throw new BusinessException("用户不存在");
@@ -484,6 +501,16 @@ public class UserServiceImpl implements UserService {
      * 实现接口定义的方法。
      */
     @Override
+    /**
+     * 管理端解封用户。
+     *
+     * 修复思路与 `banUser` 完全对应：
+     * 1) 高并发下只允许 1 个线程真正完成 `banned -> active`；
+     * 2) 其他线程如果在 CAS 失败后读取到最新的 `active`，就应该被判定为幂等成功；
+     * 3) 方法级 `READ_COMMITTED` + 短轮询共同保证“最新状态可见”，
+     *    避免把同向并发误判为冲突。
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public String unbanUser(Long userId) {
         String auditId = AuditLogUtil.newAuditId();
         User user = userMapper.selectById(userId);
@@ -499,7 +526,7 @@ public class UserServiceImpl implements UserService {
 
         int rows = userMapper.updateStatusByExpected(userId, user.getStatus(), "active");
         if (rows == 0) {
-            User latest = userMapper.selectById(userId);
+            User latest = refreshUserAfterCasMissIfStillExpected(userId, user.getStatus());
             if (latest == null) {
                 AuditLogUtil.failed(log, auditId, "USER_UNBAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user disappeared during CAS");
                 throw new BusinessException("用户不存在");
@@ -557,6 +584,48 @@ public class UserServiceImpl implements UserService {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    /**
+     * 用户状态 CAS 失败后的短轮询刷新。
+     *
+     * 设计目的：
+     * 1) 如果当前线程更新失败，而数据库里很快就会出现目标状态，
+     *    那么该请求应被判定为“幂等命中”，而不是“冲突失败”；
+     * 2) 这里不是继续尝试写库，只是多读几次，等待并发线程提交结果变得可见；
+     * 3) 本次窗口调整为 12 次 * 50ms ≈ 600ms，覆盖回归时观测到的短暂提交可见性抖动。
+     *
+     * 返回语义：
+     * - 如果最新状态已经脱离 `expectedStatus`，调用方据此判断是否命中幂等；
+     * - 如果始终没有变化，则把最后一次观察结果返回给上层做冲突分流。
+     */
+    private User refreshUserAfterCasMissIfStillExpected(Long userId, String expectedStatus) {
+        User latest = userMapper.selectById(userId);
+        if (latest == null || expectedStatus == null) {
+            return latest;
+        }
+        for (int i = 0; i < 12; i++) {
+            if (!expectedStatus.equalsIgnoreCase(latest.getStatus())) {
+                return latest;
+            }
+            // 每次 sleep 的意义不是“等待很久”，而是给并发事务一个很短的提交和可见性窗口，
+            // 让后续查询更有机会读到已经完成的目标状态。
+            sleepQuietly(50L);
+            User refreshed = userMapper.selectById(userId);
+            if (refreshed == null) {
+                return latest;
+            }
+            latest = refreshed;
+        }
+        return latest;
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }
