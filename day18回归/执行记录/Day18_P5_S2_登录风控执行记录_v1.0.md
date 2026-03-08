@@ -8,7 +8,7 @@
 
 ## 1. 环境信息
 
-1. 服务地址：`http://localhost:8080`（历史复验） / `http://localhost:18080`（2026-03-04 补证）
+1. 服务地址：`http://localhost:8080`（历史复验） / `http://localhost:8080`（2026-03-04 补证）
 2. 数据库：`secondhand2`
 3. 执行人：`Codex`
 4. 执行时间：`2026-02-26 00:20:03 ~ 00:20:04` + `2026-03-04 11:52`
@@ -34,7 +34,7 @@
 | A 连续失败触发冻结 | 同账号错误密码 5 次 + 第 6 次登录 | 第 6 次返回“账号已被冻结” | 第 1~5 次返回“用户名或密码错误”；第 6 次与后续正确密码均返回“账号已被暂时冻结…”；SQL `users.id=2` 变更为 `frozen`；`AUTO_RISK` 记录数 `3 -> 4` | `[x]` |
 | B 管理员解冻 | `PUT /admin/user/{userId}/unban` | 首次成功，重复幂等 | 第一次返回“用户解封成功”；第二次返回“用户已处于正常状态”；SQL `users.id=2` 恢复为 `active` | `[x]` |
 | C 解冻后恢复登录 | 正确密码登录 | 返回 token | `POST /user/auth/login/password` 返回 `code=1`，成功签发 token | `[x]` |
-| D 审计字段核验 | 日志检索 `USER_LOGIN`/`LOGIN_RISK_FREEZE`/`USER_UNBAN` | 字段齐全、可串联 | 2026-03-04 运行 `day18-p5s2-audit-close-loop.ps1` 补证：`closed_loop_pass=true`，三类 action 均命中，字段完整（含 `auditId/action/actorType/actorId/targetType/targetId/result/ip/detail`）；`LOGIN_RISK_FREEZE` 样本含 `failCount=5,source=AUTO_RISK,banId` | `[x]` |
+| D 审计字段核验 | 日志检索 `USER_LOGIN`/`LOGIN_RISK_FREEZE`/`USER_UNBAN` | 字段齐全、可串联 | 2026-03-04 运行 `Day18_P5_S2_审计闭环校验.ps1` 补证：`closed_loop_pass=true`，三类 action 均命中，字段完整（含 `auditId/action/actorType/actorId/targetType/targetId/result/ip/detail`）；`LOGIN_RISK_FREEZE` 样本含 `failCount=5,source=AUTO_RISK,banId` | `[x]` |
 
 ---
 

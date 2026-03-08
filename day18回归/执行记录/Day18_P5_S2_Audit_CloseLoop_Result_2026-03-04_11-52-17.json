@@ -1,0 +1,200 @@
+﻿{
+    "meta":  {
+                 "runAt":  "2026-03-04 11:52:17",
+                 "baseUrl":  "http://localhost:18080",
+                 "logFile":  "_tmp_day18_app18080.out.log",
+                 "targetLoginId":  "13800000001",
+                 "targetUserId":  1,
+                 "note":  "credentials/tokens are redacted in this artifact"
+             },
+    "scenario":  {
+                     "probe_login":  {
+                                         "httpStatus":  200,
+                                         "code":  1,
+                                         "msg":  "success",
+                                         "data":  {
+                                                      "token":  "\u003credacted\u003e",
+                                                      "user":  {
+                                                                   "id":  1,
+                                                                   "username":  "buyer01",
+                                                                   "mobile":  "13800000001",
+                                                                   "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                   "nickname":  "æµè¯ä¹°å®¶01",
+                                                                   "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                   "email":  "buyer01@test.com",
+                                                                   "registerTime":  null,
+                                                                   "lastLoginIp":  null,
+                                                                   "creditScore":  14,
+                                                                   "productCount":  null,
+                                                                   "status":  "active",
+                                                                   "region":  null
+                                                               }
+                                                  },
+                                         "error":  null
+                                     },
+                     "pre_unban_first":  {
+                                             "httpStatus":  200,
+                                             "code":  1,
+                                             "msg":  "success",
+                                             "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                             "error":  null
+                                         },
+                     "pre_unban_repeat":  {
+                                              "httpStatus":  200,
+                                              "code":  1,
+                                              "msg":  "success",
+                                              "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                              "error":  null
+                                          },
+                     "ensure_active_login":  {
+                                                 "httpStatus":  200,
+                                                 "code":  1,
+                                                 "msg":  "success",
+                                                 "data":  {
+                                                              "token":  "\u003credacted\u003e",
+                                                              "user":  {
+                                                                           "id":  1,
+                                                                           "username":  "buyer01",
+                                                                           "mobile":  "13800000001",
+                                                                           "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                           "nickname":  "æµè¯ä¹°å®¶01",
+                                                                           "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                           "email":  "buyer01@test.com",
+                                                                           "registerTime":  null,
+                                                                           "lastLoginIp":  null,
+                                                                           "creditScore":  14,
+                                                                           "productCount":  null,
+                                                                           "status":  "active",
+                                                                           "region":  null
+                                                                       }
+                                                          },
+                                                 "error":  null
+                                             },
+                     "wrong_attempts_1_to_5":  [
+                                                   {
+                                                       "httpStatus":  200,
+                                                       "code":  0,
+                                                       "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                       "data":  null,
+                                                       "error":  null
+                                                   },
+                                                   {
+                                                       "httpStatus":  200,
+                                                       "code":  0,
+                                                       "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                       "data":  null,
+                                                       "error":  null
+                                                   },
+                                                   {
+                                                       "httpStatus":  200,
+                                                       "code":  0,
+                                                       "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                       "data":  null,
+                                                       "error":  null
+                                                   },
+                                                   {
+                                                       "httpStatus":  200,
+                                                       "code":  0,
+                                                       "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                       "data":  null,
+                                                       "error":  null
+                                                   },
+                                                   {
+                                                       "httpStatus":  200,
+                                                       "code":  0,
+                                                       "msg":  "ç¨æ·åæå¯ç éè¯¯",
+                                                       "data":  null,
+                                                       "error":  null
+                                                   }
+                                               ],
+                     "wrong_attempt_6":  {
+                                             "httpStatus":  200,
+                                             "code":  0,
+                                             "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                             "data":  null,
+                                             "error":  null
+                                         },
+                     "correct_attempt_while_frozen":  {
+                                                          "httpStatus":  200,
+                                                          "code":  0,
+                                                          "msg":  "è´¦å·å·²è¢«ææ¶å»ç»ï¼è¯·ç¨ååè¯æèç³»ç®¡çå",
+                                                          "data":  null,
+                                                          "error":  null
+                                                      },
+                     "unban_first":  {
+                                         "httpStatus":  200,
+                                         "code":  1,
+                                         "msg":  "success",
+                                         "data":  "ç¨æ·è§£å°æå",
+                                         "error":  null
+                                     },
+                     "unban_repeat":  {
+                                          "httpStatus":  200,
+                                          "code":  1,
+                                          "msg":  "success",
+                                          "data":  "ç¨æ·å·²å¤äºæ­£å¸¸ç¶æ",
+                                          "error":  null
+                                      },
+                     "final_login_after_unban":  {
+                                                     "httpStatus":  200,
+                                                     "code":  1,
+                                                     "msg":  "success",
+                                                     "data":  {
+                                                                  "token":  "\u003credacted\u003e",
+                                                                  "user":  {
+                                                                               "id":  1,
+                                                                               "username":  "buyer01",
+                                                                               "mobile":  "13800000001",
+                                                                               "avatar":  "https://img.example.com/avatar/buyer01.png",
+                                                                               "nickname":  "æµè¯ä¹°å®¶01",
+                                                                               "bio":  "ç¨äºä¸å/å°å/è®¢åæ¥è¯¢çæµè¯è´¦å·",
+                                                                               "email":  "buyer01@test.com",
+                                                                               "registerTime":  null,
+                                                                               "lastLoginIp":  null,
+                                                                               "creditScore":  0,
+                                                                               "productCount":  null,
+                                                                               "status":  "active",
+                                                                               "region":  null
+                                                                           }
+                                                              },
+                                                     "error":  null
+                                                 }
+                 },
+    "audit_extract":  {
+                          "startedAt":  "2026-03-04 11:52:17.109",
+                          "extractedAuditLineCount":  15,
+                          "samples":  {
+                                          "user_login":  [
+                                                             "2026-03-04 11:52:17.518  INFO 36080 --- [io-18080-exec-8] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=174832aa52ad4330ae01676c3c5f5307, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                                             "2026-03-04 11:52:17.639  INFO 36080 --- [io-18080-exec-6] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=4c97302eaed04011b5d55fed07573c51, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=user login success",
+                                                             "2026-03-04 11:52:17.721  WARN 36080 --- [io-18080-exec-7] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=75958153836748d4b10030c65f855e02, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                                             "2026-03-04 11:52:17.799  WARN 36080 --- [o-18080-exec-10] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=1f49ccc2bd4a40fa928944add6a70002, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                                             "2026-03-04 11:52:17.883  WARN 36080 --- [io-18080-exec-5] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=67b96af1ec8f4781b1cfbb783aa24db2, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                                             "2026-03-04 11:52:17.966  WARN 36080 --- [io-18080-exec-2] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=588e118c2a52449a9601225de9268e57, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                                             "2026-03-04 11:52:18.137  WARN 36080 --- [io-18080-exec-9] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=44cd7271b2174475ad63784fa4f01d97, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=PASSWORD_MISMATCH, detail=password mismatch",
+                                                             "2026-03-04 11:52:18.146  WARN 36080 --- [io-18080-exec-4] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=acd061ba21b94dd793d7bd385487b32e, action=USER_LOGIN, actorType=USER, actorId=1, targetType=ACCOUNT, targetId=1, result=FAILED, ip=0:0:0:0:0:0:0:1, error=ACCOUNT_FROZEN, detail=user frozen"
+                                                         ],
+                                          "login_risk_freeze":  [
+                                                                    "2026-03-04 11:52:18.137  INFO 36080 --- [io-18080-exec-9] c.d.service.serviceimpl.AuthServiceImpl  : AUDIT auditId=44cd7271b2174475ad63784fa4f01d97, action=LOGIN_RISK_FREEZE, actorType=SYSTEM, actorId=RISK_ENGINE, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=failCount=5,source=AUTO_RISK,banId=18"
+                                                                ],
+                                          "user_unban":  [
+                                                             "2026-03-04 11:52:17.538  INFO 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=9659088c99cf4d3c865c5f3260d569e5, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                                             "2026-03-04 11:52:17.560  INFO 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=82c6061700fc47de946b7c0aacc55688, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active",
+                                                             "2026-03-04 11:52:18.167  INFO 36080 --- [io-18080-exec-3] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=a072b00406fe4e9194b111ad3f18f6af, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=SUCCESS, ip=0:0:0:0:0:0:0:1, detail=status changed to active",
+                                                             "2026-03-04 11:52:18.181  INFO 36080 --- [io-18080-exec-1] c.d.service.serviceimpl.UserServiceImpl  : AUDIT auditId=49a3b889a61a4d00bbe0713c293564d7, action=USER_UNBAN, actorType=ADMIN, actorId=5, targetType=USER, targetId=1, result=IDEMPOTENT, ip=0:0:0:0:0:0:0:1, detail=already active"
+                                                         ]
+                                      },
+                          "fieldCheck":  {
+                                             "user_login_has_required_fields":  true,
+                                             "login_risk_freeze_has_required_fields":  true,
+                                             "user_unban_has_required_fields":  true
+                                         }
+                      },
+    "verdict":  {
+                    "has_user_login":  true,
+                    "has_login_risk_freeze":  true,
+                    "has_user_unban":  true,
+                    "all_required_fields_present":  true,
+                    "closed_loop_pass":  true
+                }
+}

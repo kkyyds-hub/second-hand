@@ -1,4 +1,4 @@
-# Day18 P1-S2 幂等闭环执行记录 v1.0
+﻿# Day18 P1-S2 幂等闭环执行记录 v1.0
 
 - 日期：2026-02-25
 - 范围：幂等策略静态复核 + 测试库唯一约束核验（`secondhand2`）。
@@ -62,7 +62,7 @@ rg -n "DuplicateKeyException|幂等命中：consumer=|eventId" `
 ### 2.4 2026-03-04 补充证据（运行态日志可检索）
 
 1. 新增证据文件：`day18回归/执行记录/Day18_CloseLoop_Dynamic_Result_2026-03-04_10-53-17.json`。  
-2. 幂等命中日志样本已补齐（`_tmp_day18_app18080.out.log`）：  
+2. 幂等命中日志样本已补齐（`_tmp_day18_app8080.out.log`）：  
    - `幂等命中：action=payOrder, idemKey=orderId:900065, detail=status=paid`  
    - `幂等命中：action=createShipTimeoutTask, idemKey=orderId:900065, detail=scene=payOrder:idempotent_paid`  
 3. 审计样本可对应同一业务链路：`ORDER_PAY result=SUCCESS/IDEMPOTENT` 均可检索。
