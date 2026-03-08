@@ -1,0 +1,1049 @@
+{
+  "info": {
+    "_postman_id": "c8d2807f-95f8-4a8f-b240-2d89ae23b9d8",
+    "name": "Day17 Regression (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "var url = pm.request.url.toString();",
+          "var tag = pm.environment.get('runTag');",
+          "if (!tag) { tag = Date.now().toString().slice(-8); pm.environment.set('runTag', tag); }",
+          "pm.environment.set('title_d', 'DAY17-D-' + tag);",
+          "pm.environment.set('title_e', 'DAY17-E-' + tag);",
+          "pm.environment.set('title_f', 'DAY17-F-' + tag);",
+          "pm.environment.set('shippingAddress_d', 'Day17收货地址D-' + tag);",
+          "pm.environment.set('shippingAddress_e', 'Day17收货地址E-' + tag);",
+          "if (url.includes('/admin/') && !url.includes('/admin/employee/login')) {",
+          "  var tAdmin = pm.environment.get('token_admin'); if (tAdmin) pm.request.headers.upsert({ key: 'token', value: tAdmin });",
+          "}",
+          "if (url.includes('/user/') && !url.includes('/user/auth/')) {",
+          "  var reqName = pm.info && pm.info.requestName ? pm.info.requestName : '';",
+          "  var useSeller = reqName.indexOf('[Seller]') === 0;",
+          "  var tBuyer = pm.environment.get('token_buyer');",
+          "  var tSeller = pm.environment.get('token_seller');",
+          "  var t = useSeller ? (tSeller || tBuyer) : tBuyer;",
+          "  if (t) pm.request.headers.upsert({ key: 'authentication', value: t });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth",
+      "item": [
+        {
+          "name": "Buyer Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{buyer_username}}\",\n  \"password\": \"{{buyer_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('buyer token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j.code === 1 && j.data && j.data.token) { pm.environment.set('token_buyer', j.data.token); if (j.data.user && j.data.user.id) pm.environment.set('buyerId', String(j.data.user.id)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/auth/login/password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{seller_username}}\",\n  \"password\": \"{{seller_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('seller token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j.code === 1 && j.data && j.data.token) { pm.environment.set('token_seller', j.data.token); if (j.data.user && j.data.user.id) pm.environment.set('sellerId', String(j.data.user.id)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/employee/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginId\": \"{{admin_loginId}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('admin token exists', function () { pm.expect(j.data && j.data.token).to.be.ok; });",
+                  "if (j.code === 1 && j.data && j.data.token) { pm.environment.set('token_admin', j.data.token); if (j.data.user && j.data.user.id) pm.environment.set('adminId', String(j.data.user.id)); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-Day17-Setup",
+      "item": [
+        {
+          "name": "[Seller] Create Product D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_d}}\",\n  \"description\": \"Day17 回归商品 D\",\n  \"price\": 188.00,\n  \"images\": [\"https://img.example.com/day17/d-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create D has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_d', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Create Product E",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_e}}\",\n  \"description\": \"Day17 回归商品 E\",\n  \"price\": 166.00,\n  \"images\": [\"https://img.example.com/day17/e-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create E has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_e', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Approve Product D",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/products/{{productId_d}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Create Product F (For Favorite)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{title_f}}\",\n  \"description\": \"Day17 回归商品 F，仅用于收藏回归\",\n  \"price\": 88.00,\n  \"images\": [\"https://img.example.com/day17/f-1.jpg\"],\n  \"category\": \"Day17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "pm.test('create F has productId', function () { pm.expect(j.data && j.data.productId).to.be.ok; });",
+                  "if (j.data && j.data.productId) pm.environment.set('productId_f', String(j.data.productId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Approve Product E",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/products/{{productId_e}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Approve Product F",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/products/{{productId_f}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Create Order D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId_d}},\n  \"shippingAddress\": \"{{shippingAddress_d}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "if (j.data) { if (j.data.orderId) pm.environment.set('orderId_d', String(j.data.orderId)); if (j.data.orderNo) pm.environment.set('orderNo_d', String(j.data.orderNo)); if (j.data.totalAmount != null) pm.environment.set('orderAmount_d', String(j.data.totalAmount)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Pay Order D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_d}}/pay"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Pay Order D Repeat Idempotent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_d}}/pay"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Create Order E",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId_e}},\n  \"shippingAddress\": \"{{shippingAddress_e}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "if (j.data) { if (j.data.orderId) pm.environment.set('orderId_e', String(j.data.orderId)); if (j.data.orderNo) pm.environment.set('orderNo_e', String(j.data.orderNo)); if (j.data.totalAmount != null) pm.environment.set('orderAmount_e', String(j.data.totalAmount)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Public] Payment Callback E First",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/payment/callback",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"mock\",\n  \"orderNo\": \"{{orderNo_e}}\",\n  \"tradeNo\": \"{{tradeNo_e_1}}\",\n  \"amount\": {{orderAmount_e}},\n  \"status\": \"SUCCESS\",\n  \"timestamp\": {{payTimestamp}},\n  \"sign\": \"day17-sign\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('payTimestamp', Math.floor(Date.now() / 1000));",
+                  "pm.environment.set('tradeNo_e_1', 'D17-E-1-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Public] Payment Callback E Repeat Idempotent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/payment/callback",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"mock\",\n  \"orderNo\": \"{{orderNo_e}}\",\n  \"tradeNo\": \"{{tradeNo_e_2}}\",\n  \"amount\": {{orderAmount_e}},\n  \"status\": \"SUCCESS\",\n  \"timestamp\": {{payTimestamp}},\n  \"sign\": \"day17-sign\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('payTimestamp', Math.floor(Date.now() / 1000));",
+                  "pm.environment.set('tradeNo_e_2', 'D17-E-2-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Seller] Ship Order D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_d}}/ship",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingCompany\": \"SF\",\n  \"trackingNo\": \"D17{{runTag}}\",\n  \"remark\": \"Day17 自动回归发货\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Confirm Receipt D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/orders/{{orderId_d}}/confirm-receipt"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-Day17-MP-CRUD",
+      "item": [
+        {
+          "name": "[Buyer] Favorite Product F",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/favorites/{{productId_f}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Favorites Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/favorites?page=1&pageSize=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });",
+                  "var p = j.data || {}; var records = p.records || p.list || [];",
+                  "pm.test('favorites records array', function () { pm.expect(Array.isArray(records)).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Create Review For Order D",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/reviews",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{orderId_d}},\n  \"rating\": 5,\n  \"content\": \"Day17 自动回归评价\",\n  \"isAnonymous\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] List My Reviews",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/reviews/mine?page=1&pageSize=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] List Product Reviews D",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/market/products/{{productId_d}}/reviews?page=1&pageSize=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-Day17-Pagination-And-Mixed",
+      "item": [
+        {
+          "name": "[Buyer] Addresses Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/addresses?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Credit Logs Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/credit/logs?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Credit Logs Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/credit/logs?userId={{buyerId}}&page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Product Violations Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/products/{{productId_d}}/violations?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Ship Timeout Tasks Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/ops/tasks/ship-timeout?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Refund Tasks Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/ops/tasks/refund?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Ship Reminder Tasks Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/ops/tasks/ship-reminder?page=1&pageSize=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-Day17-Idempotency-And-Async",
+      "item": [
+        {
+          "name": "[Buyer] Send Order Message First",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/messages/orders/{{orderId_d}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": {{sellerId}},\n  \"clientMsgId\": \"DAY17-MSG-{{runTag}}\",\n  \"content\": \"Day17 回归消息首发\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Buyer] Send Order Message Repeat Idempotent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/user/messages/orders/{{orderId_d}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": {{sellerId}},\n  \"clientMsgId\": \"DAY17-MSG-{{runTag}}\",\n  \"content\": \"Day17 回归消息重复\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Outbox Metrics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/ops/outbox/metrics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Outbox Publish Once",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/ops/outbox/publish-once?limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Run Ship Timeout Once",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/ops/tasks/ship-timeout/run-once?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Run Ship Timeout Once Repeat",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/ops/tasks/ship-timeout/run-once?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Run Refund Once",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/ops/tasks/refund/run-once?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Admin] Run Ship Reminder Once",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/ops/tasks/ship-reminder/run-once?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var j = pm.response.json();",
+                  "pm.test('code == 1', function () { pm.expect(j.code).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
