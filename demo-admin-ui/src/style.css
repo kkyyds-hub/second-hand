@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-800;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .font-numeric {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  
+  .card {
+    @apply bg-white border border-gray-200/80 rounded-sm shadow-sm;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-4 py-1.5 transition-colors text-sm flex items-center justify-center;
+  }
+  
+  .btn-default {
+    @apply bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium rounded px-4 py-1.5 transition-colors text-sm flex items-center justify-center;
+  }
+
+  .input-standard {
+    @apply border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all;
+  }
+}
