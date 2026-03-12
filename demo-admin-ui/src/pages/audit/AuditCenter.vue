@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { AlertTriangle, Loader2, Search, ShieldAlert, FileText, AlertOctagon, Info } from 'lucide-vue-next'
-import { getAuditOverview, type AuditStats, type AuditTicketItem } from '@/api/audit'
+import { getAuditOverview, submitAuditAction, type AuditStats, type AuditTicketItem } from '@/api/audit'
 
 /**
  * 纠纷与违规工单类型定义
  */
 const loading = ref(false)
 const isDetailModalOpen = ref(false)
+const isProcessModalOpen = ref(false)
 const currentTicket = ref<AuditTicketItem | null>(null)
+const processTargetTicket = ref<AuditTicketItem | null>(null)
 const summary = ref<AuditStats>({
   pendingDisputes: 0,
   urgentReports: 0,
@@ -28,6 +30,11 @@ const selectedRisk = ref('ALL')
  * 列表数据（带前端过滤）
  */
 const tickets = ref<AuditTicketItem[]>([])
+const processSubmitting = ref(false)
+const processDecision = ref<'approve' | 'reject'>('approve')
+const processReportAction = ref<'dismiss' | 'force_off_shelf'>('dismiss')
+const processRemark = ref('')
+const processError = ref('')
 
 /**
  * 查询真实总览数据。
@@ -88,10 +95,51 @@ const openDetail = (ticket: AuditTicketItem) => {
 }
 
 /**
- * 立即处理
+ * 打开处理弹窗
  */
-const handleProcess = (ticket: AuditTicketItem) => {
-  alert(`【立即处理】工单 ${ticket.id}\n该功能后续接入真实流程。`)
+const openProcessModal = (ticket: AuditTicketItem) => {
+  processTargetTicket.value = ticket
+  processDecision.value = 'approve'
+  processReportAction.value = 'dismiss'
+  processRemark.value = ''
+  processError.value = ''
+  isProcessModalOpen.value = true
+}
+
+const closeProcessModal = () => {
+  if (processSubmitting.value) return
+  isProcessModalOpen.value = false
+}
+
+/**
+ * 提交处理动作
+ */
+const handleProcess = async () => {
+  if (!processTargetTicket.value) return
+
+  try {
+    processSubmitting.value = true
+    processError.value = ''
+
+    const ticket = processTargetTicket.value
+
+    await submitAuditAction(ticket, {
+      approved: ticket.type === 'DISPUTE' ? processDecision.value === 'approve' : undefined,
+      action: ticket.type === 'REPORT' ? processReportAction.value : undefined,
+      remark: processRemark.value,
+    })
+
+    isProcessModalOpen.value = false
+    if (currentTicket.value?.id === ticket.id) {
+      isDetailModalOpen.value = false
+    }
+    await fetchData()
+  } catch (error: any) {
+    console.warn('Process ticket failed.', error)
+    processError.value = error?.message || '提交失败，请稍后重试'
+  } finally {
+    processSubmitting.value = false
+  }
 }
 
 /**
@@ -157,6 +205,31 @@ const getStatusBadgeClass = (status: string) => {
     case 'CLOSED': return 'bg-gray-50 text-gray-700 border-gray-200'
     default: return 'bg-gray-50 text-gray-700 border-gray-200'
   }
+}
+
+const canProcessTicket = (ticket: AuditTicketItem) => (
+  ticket.status !== 'CLOSED' && (ticket.type === 'DISPUTE' || ticket.type === 'REPORT')
+)
+
+const getProcessTitle = (ticket?: AuditTicketItem | null) => {
+  if (!ticket) return '处理工单'
+  if (ticket.type === 'DISPUTE') return '处理交易纠纷'
+  if (ticket.type === 'REPORT') return '处理违规举报'
+  return '处理工单'
+}
+
+const getProcessDescription = (ticket?: AuditTicketItem | null) => {
+  if (!ticket) return '提交处理结果后，页面列表将自动刷新。'
+  if (ticket.type === 'DISPUTE') return '平台裁决会写入售后处理结果，并同步更新工单状态。'
+  if (ticket.type === 'REPORT') return '举报处理会写入工单结果，必要时联动商品强制下架。'
+  return '提交处理结果后，页面列表将自动刷新。'
+}
+
+const getProcessConfirmText = (ticket?: AuditTicketItem | null) => {
+  if (!ticket) return '确认提交'
+  if (ticket.type === 'DISPUTE') return '确认提交裁决'
+  if (ticket.type === 'REPORT') return '确认提交处理'
+  return '确认提交'
 }
 </script>
 
@@ -311,7 +384,11 @@ const getStatusBadgeClass = (status: string) => {
                       <button @click="openDetail(ticket)" class="text-blue-600 hover:text-blue-800 font-medium text-xs">
                         查看详情
                       </button>
-                      <button v-if="ticket.status !== 'CLOSED'" @click="handleProcess(ticket)" class="text-orange-600 hover:text-orange-800 font-medium text-xs">
+                      <button
+                        v-if="canProcessTicket(ticket)"
+                        @click="openProcessModal(ticket)"
+                        class="text-orange-600 hover:text-orange-800 font-medium text-xs"
+                      >
                         立即处理
                       </button>
                     </div>
@@ -427,8 +504,121 @@ const getStatusBadgeClass = (status: string) => {
 
           <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50/50 mt-auto">
             <button @click="isDetailModalOpen = false" class="btn-default">关闭</button>
-            <button v-if="currentTicket?.status !== 'CLOSED'" @click="handleProcess(currentTicket!)" class="btn-primary">
+            <button v-if="currentTicket && canProcessTicket(currentTicket)" @click="openProcessModal(currentTicket)" class="btn-primary">
               立即处理
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="isProcessModalOpen" class="fixed inset-0 bg-gray-900/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-md shadow-xl w-full max-w-lg border border-gray-200 overflow-hidden flex flex-col" @click.stop>
+          <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+            <h2 class="text-base font-bold text-gray-800">{{ getProcessTitle(processTargetTicket) }}</h2>
+            <button @click="closeProcessModal" class="text-gray-400 hover:text-gray-600" :disabled="processSubmitting">
+              <span class="text-xl leading-none">&times;</span>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-5" v-if="processTargetTicket">
+            <div class="bg-gray-50 p-3 rounded-sm border border-gray-200 flex flex-col gap-1">
+              <span class="text-xs text-gray-500">当前工单</span>
+              <span class="text-sm font-medium text-gray-900">{{ processTargetTicket.title }}</span>
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <span class="font-numeric">{{ processTargetTicket.id }}</span>
+                <span>{{ processTargetTicket.target }}</span>
+              </div>
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-sm border border-blue-100">
+              <p class="text-sm text-blue-800 leading-relaxed">
+                {{ getProcessDescription(processTargetTicket) }}
+              </p>
+            </div>
+
+            <div v-if="processTargetTicket.type === 'DISPUTE'" class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700">平台裁决结果 <span class="text-red-500">*</span></label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  class="border rounded px-4 py-3 text-left transition-colors"
+                  :class="processDecision === 'approve'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:bg-blue-50/40'"
+                  @click="processDecision = 'approve'"
+                >
+                  <div class="text-sm font-semibold">支持售后申请</div>
+                  <div class="text-xs mt-1 text-current/80">同意退款或平台支持用户申诉请求</div>
+                </button>
+                <button
+                  type="button"
+                  class="border rounded px-4 py-3 text-left transition-colors"
+                  :class="processDecision === 'reject'
+                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-orange-200 hover:bg-orange-50/40'"
+                  @click="processDecision = 'reject'"
+                >
+                  <div class="text-sm font-semibold">驳回售后申请</div>
+                  <div class="text-xs mt-1 text-current/80">不支持当前诉求，维持现有售后结果</div>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="processTargetTicket.type === 'REPORT'" class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700">举报处理动作 <span class="text-red-500">*</span></label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  class="border rounded px-4 py-3 text-left transition-colors"
+                  :class="processReportAction === 'dismiss'
+                    ? 'border-gray-500 bg-gray-50 text-gray-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50/70'"
+                  @click="processReportAction = 'dismiss'"
+                >
+                  <div class="text-sm font-semibold">举报不成立</div>
+                  <div class="text-xs mt-1 text-current/80">关闭当前举报工单，不联动商品处置</div>
+                </button>
+                <button
+                  type="button"
+                  class="border rounded px-4 py-3 text-left transition-colors"
+                  :class="processReportAction === 'force_off_shelf'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-red-200 hover:bg-red-50/40'"
+                  @click="processReportAction = 'force_off_shelf'"
+                >
+                  <div class="text-sm font-semibold">强制下架商品</div>
+                  <div class="text-xs mt-1 text-current/80">举报成立，联动商品下架并记录处置结果</div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label for="audit_process_remark" class="block text-sm font-medium text-gray-700 mb-1.5">处理备注</label>
+              <textarea
+                id="audit_process_remark"
+                v-model="processRemark"
+                class="input-standard w-full min-h-[110px] resize-none py-2"
+                placeholder="请输入处理说明，便于后续运营复盘和审计追踪"
+                maxlength="200"
+                :disabled="processSubmitting"
+              ></textarea>
+              <div class="flex justify-between items-center mt-1">
+                <span v-if="processError" class="text-xs text-red-500 flex items-center gap-1">
+                  <AlertTriangle class="w-3 h-3" /> {{ processError }}
+                </span>
+                <span v-else class="text-xs text-gray-400"></span>
+                <span class="text-xs text-gray-400 font-numeric">{{ processRemark.length }}/200</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50/50 mt-auto">
+            <button @click="closeProcessModal" class="btn-default" :disabled="processSubmitting">取消</button>
+            <button @click="handleProcess" class="btn-primary flex items-center gap-2" :disabled="processSubmitting">
+              <Loader2 v-if="processSubmitting" class="w-4 h-4 animate-spin" />
+              {{ processSubmitting ? '提交中...' : getProcessConfirmText(processTargetTicket) }}
             </button>
           </div>
         </div>
