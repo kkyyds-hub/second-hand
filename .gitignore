@@ -36,3 +36,33 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Local IDE / workspace ###
+.idea/
+
+### Local debug / scratch outputs ###
+_Tmp*
+_tmp_*
+*.jfr
+*.class
+qc
+tmp_zap/
+
+### Local database dumps ###
+day13回归/*-dump.sql
+
+### Local regression scratch artifacts ###
+day15回归/tmp_day15_report.json
+day18回归/执行记录/_tmp_*.json
+day19鍥炲綊/
+
+### Day19 intermediate rerun artifacts ###
+day19回归/执行记录/Day19_P1_S1_Dynamic_Result_2026-03-04_*.json
+!day19回归/执行记录/Day19_P1_S1_Dynamic_Result_2026-03-04_17-12-40.json
+day19回归/执行记录/Day19_P1_S2_Dynamic_Result_2026-03-06_*.json
+!day19回归/执行记录/Day19_P1_S2_Dynamic_Result_2026-03-06_10-15-07.json
+day19回归/执行记录/Day19_P2_S1_动态结果_2026-03-04_*.json
+day19回归/执行记录/Day19_P4_S2_动态结果_2026-03-08_15-*.json
+!day19回归/执行记录/Day19_P4_S2_动态结果_2026-03-08_15-27-35.json
+day19回归/执行记录/Day19_P5_S2_压力测试结果_2026-03-08_17-*.json
+!day19回归/执行记录/Day19_P5_S2_压力测试结果_2026-03-08_17-59-31.json

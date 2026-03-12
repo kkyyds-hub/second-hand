@@ -73,6 +73,17 @@ demo:
     secret: ${demo.wechat.secret}  # 替换为实际值
   redis:
     enabled: false  # 若本地未启动Redis，可改为false以跳过Redis相关Bean创建
+  auth:
+    email:
+      provider: mock
+      register-code-required: false
+      activation-ttl-hours: 24
+      activation-base-url: http://localhost:${server.port}
+      mock:
+        enabled: true
+        store-preview: true
+        recent-limit: 20
+        log-activation-url: true
   cache:
     enabled: true
     product:
@@ -142,6 +153,16 @@ order:
     ship-reminder-enabled: true
     ship-timeout-cancel-enabled: true
     refund-success-enabled: true
+
+# Day20 - mock 支付演示配置
+# 说明：
+# 1) channel 用于对外标识“当前是 mock 支付通道”；
+# 2) sign 用于构造演示回调请求，实际仍由回调接口里的占位验签规则校验；
+# 3) 该配置不会把系统升级成真实支付，只是把演示入口收口到统一回调主链。
+payment:
+  mock:
+    channel: mock
+    sign: day20-mock-sign
 
 # P4-S4 Outbox 发布与监控参数
 outbox:

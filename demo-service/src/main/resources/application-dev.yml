@@ -41,6 +41,25 @@ demo:
     virtual-host: /
     prefetch: 20
 
+  auth:
+    sms:
+      provider: mock
+      code-ttl-minutes: 5
+      rate-limit-seconds: 60
+      mock:
+        enabled: true
+        log-code: true
+    email:
+      provider: mock
+      register-code-required: false
+      activation-ttl-hours: 24
+      activation-base-url: http://localhost:${server.port}
+      mock:
+        enabled: true
+        store-preview: true
+        recent-limit: 20
+        log-activation-url: true
+
   logistics:
     provider: mock
     mock:
@@ -52,6 +71,23 @@ demo:
     delivery-tracker:
       enabled: false
       api-key:
+
+# Day20 - 开发环境 mock 支付配置
+# 这里保留为固定签名即可，方便 Postman / 前端演示页复用。
+payment:
+  mock:
+    channel: mock
+    sign: day20-dev-mock-sign
+
+avatar-storage:
+  provider: local-file-storage
+  upload-config-ttl-seconds: 300
+  max-file-size-bytes: 2097152
+  public-url-prefix: /uploads
+  upload-sign-secret: day20-dev-avatar-sign
+  local:
+    root-dir: uploads
+    avatar-dir: avatars
 
 logging:
   level:
