@@ -12,7 +12,7 @@ public interface AuthService {
     /**
      * 发送短信验证码
      */
-    void sendSmsCode(SmsCodeRequest request);
+    String sendSmsCode(SmsCodeRequest request);
 
     /**
      * 使用手机号和验证码注册

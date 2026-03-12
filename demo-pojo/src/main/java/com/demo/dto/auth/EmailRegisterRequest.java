@@ -17,7 +17,6 @@ public class EmailRegisterRequest {
     /** 字段：email。 */
     private String email;
 
-    @NotBlank(message = "邮箱验证码不能为空")
     /** 字段：emailCode。 */
     private String emailCode;
 

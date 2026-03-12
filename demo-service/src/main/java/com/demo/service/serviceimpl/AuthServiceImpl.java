@@ -1,6 +1,8 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.audit.AuditLogUtil;
+import com.demo.config.EmailProperties;
+import com.demo.config.SmsProperties;
 import com.demo.constant.JwtClaimsConstant;
 import com.demo.dto.auth.*;
 import com.demo.dto.user.PasswordLoginRequest;
@@ -14,26 +16,27 @@ import com.demo.exception.BusinessException;
 import com.demo.mapper.UserBanMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.mapper.UserOauthBindMapper;
+import com.demo.mail.ActivationMail;
+import com.demo.mail.EmailSender;
+import com.demo.mail.EmailSenderFactory;
 import com.demo.properties.JwtProperties;
 import com.demo.security.InputSecurityGuard;
 import com.demo.service.AuthService;
 import com.demo.service.CreditService;
+import com.demo.sms.SmsSender;
+import com.demo.sms.SmsSenderFactory;
 import com.demo.utils.JwtUtil;
 import com.demo.vo.UserVO;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -67,12 +70,20 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private CreditService creditService;
 
+    @Autowired
+    private SmsProperties smsProperties;
+
+    @Autowired
+    private SmsSenderFactory smsSenderFactory;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    @Autowired
+    private EmailProperties emailProperties;
+
+    @Autowired
+    private EmailSenderFactory emailSenderFactory;
 
     @Autowired
     private JwtProperties jwtProperties;
@@ -89,21 +100,21 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    @Setter
-    @Value("${spring.mail.username:}")
-    private String mailFrom;
-
     /**
      * 发送短信验证码。
      */
     @Override
-    public void sendSmsCode(SmsCodeRequest request) {
-        String mobile = request.getMobile();
+    public String sendSmsCode(SmsCodeRequest request) {
+        String mobile = request.getMobile().trim();
         enforceSmsRateLimit(mobile);
         String code = generateCode();
-        stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + mobile, code, Duration.ofMinutes(5));
-        stringRedisTemplate.opsForValue().set(SMS_RATE_LIMIT_KEY_PREFIX + mobile, "1", Duration.ofMinutes(1));
-        log.info("向手机号 {} 发送验证码，有效期5分钟", maskMobile(mobile));
+        long ttlMinutes = resolveSmsCodeTtlMinutes();
+        stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + mobile, code, Duration.ofMinutes(ttlMinutes));
+        stringRedisTemplate.opsForValue().set(SMS_RATE_LIMIT_KEY_PREFIX + mobile, "1",
+                Duration.ofSeconds(resolveSmsRateLimitSeconds()));
+        SmsSender smsSender = smsSenderFactory.getSender();
+        smsSender.sendCode(mobile, code, ttlMinutes);
+        return smsSender.buildSuccessMessage(ttlMinutes);
     }
 
 
@@ -146,8 +157,9 @@ public class AuthServiceImpl implements AuthService {
         String rawPassword = request.getPassword();
         // Day18 P3-S2：与手机号注册保持同口径，避免昵称字段治理不一致。
         String nickname = InputSecurityGuard.normalizePlainText(request.getNickname(), "昵称", 20, true);
-        // 1. 校验邮箱验证码
-        validateEmailCode(email, emailCode);
+        if (shouldValidateRegisterEmailCode(emailCode)) {
+            validateEmailCode(email, emailCode);
+        }
         // 2. 校验邮箱是否已被注册
         User existed = userMapper.selectByEmail(email);
         if (existed != null) {
@@ -158,6 +170,7 @@ public class AuthServiceImpl implements AuthService {
         User user = buildBaseUser();
         user.setEmail(email);
         user.setNickname(nickname);
+        user.setStatus(UserStatus.INACTIVE.name().toLowerCase(Locale.ROOT));
         String encodedPassword = passwordEncoder.encode(rawPassword);
         user.setPassword(encodedPassword);
         userMapper.insertUser(user);
@@ -435,6 +448,41 @@ public class AuthServiceImpl implements AuthService {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1000000));
     }
 
+    private long resolveSmsCodeTtlMinutes() {
+        if (smsProperties == null || smsProperties.getCodeTtlMinutes() <= 0) {
+            return 5L;
+        }
+        return smsProperties.getCodeTtlMinutes();
+    }
+
+    private long resolveSmsRateLimitSeconds() {
+        if (smsProperties == null || smsProperties.getRateLimitSeconds() <= 0) {
+            return 60L;
+        }
+        return smsProperties.getRateLimitSeconds();
+    }
+
+    private boolean shouldValidateRegisterEmailCode(String emailCode) {
+        if (emailProperties != null && emailProperties.isRegisterCodeRequired()) {
+            return true;
+        }
+        return StringUtils.hasText(emailCode);
+    }
+
+    private long resolveEmailActivationTtlHours() {
+        if (emailProperties == null || emailProperties.getActivationTtlHours() <= 0) {
+            return 24L;
+        }
+        return emailProperties.getActivationTtlHours();
+    }
+
+    private String buildActivationUrl(String token) {
+        String baseUrl = emailProperties == null
+                ? "http://localhost:8080"
+                : emailProperties.normalizedActivationBaseUrl();
+        return baseUrl + "/user/auth/register/email/activate?token=" + token;
+    }
+
     private User buildBaseUser() {
         User user = new User();
         LocalDateTime now = LocalDateTime.now();
@@ -463,22 +511,27 @@ public class AuthServiceImpl implements AuthService {
         stringRedisTemplate.delete(EMAIL_CODE_KEY_PREFIX + email);
     }
     private void sendActivationMail(User user) {
-        if (mailSender == null || !StringUtils.hasText(mailFrom)) {
-            log.warn("未配置邮件发送服务，跳过激活邮件发送");
-            return;
-        }
         String token = UUID.randomUUID().toString().replace("-", "");
+        long ttlHours = resolveEmailActivationTtlHours();
+        String activationUrl = buildActivationUrl(token);
         stringRedisTemplate.opsForValue().set(EMAIL_ACTIVATION_KEY_PREFIX + token,
-                String.valueOf(user.getId()), Duration.ofHours(24));
+                String.valueOf(user.getId()), Duration.ofHours(ttlHours));
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFrom);
-        message.setTo(user.getEmail());
-        message.setSubject("账户激活通知");
-        message.setText("请在24小时内点击以下链接激活账号 " +
-                "https://example.com/activate?token=" + token);
-        mailSender.send(message);
-        log.info("发送激活邮件到:{}，有效期24小时", maskEmail(user.getEmail()));
+        ActivationMail activationMail = ActivationMail.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .subject("账户激活通知")
+                .content("请在" + ttlHours + "小时内点击以下链接激活账号：\n" + activationUrl)
+                .token(token)
+                .activationUrl(activationUrl)
+                .expireAt(LocalDateTime.now().plusHours(ttlHours))
+                .build();
+        EmailSender emailSender = emailSenderFactory.getSender();
+        emailSender.sendActivationMail(activationMail);
+        log.info("发送激活邮件到:{}，provider={}，有效期{}小时",
+                maskEmail(user.getEmail()),
+                emailSender.getName(),
+                ttlHours);
     }
     private String resolveExternalId(ThirdPartyLoginRequest request) {
         if (StringUtils.hasText(request.getExternalId())) {

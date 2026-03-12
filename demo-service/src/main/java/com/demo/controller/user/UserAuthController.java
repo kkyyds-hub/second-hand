@@ -12,10 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.validation.constraints.NotBlank;
 
 /**
  * 用户注册、登录入口
@@ -37,8 +41,7 @@ public class UserAuthController {
     @PostMapping("/sms/send")
     public Result<String> sendSmsCode(@Validated @RequestBody SmsCodeRequest request) {
         log.info("发送短信验证码: mobile={}", maskMobile(request.getMobile()));
-        authService.sendSmsCode(request);
-        return Result.success("验证码发送成功，5分钟内有效");
+        return Result.success(authService.sendSmsCode(request));
     }
 
     /**
@@ -61,6 +64,18 @@ public class UserAuthController {
                 maskEmail(request.getEmail()),
                 request.getNickname() == null ? 0 : request.getNickname().length());
         return Result.success(authService.registerByEmail(request));
+    }
+
+    /**
+     * 邮箱激活。
+     */
+    @GetMapping("/register/email/activate")
+    public Result<UserVO> activateEmailByToken(@RequestParam("token")
+                                               @NotBlank(message = "激活令牌不能为空") String token) {
+        log.info("邮箱激活(GET): tokenLen={}", token == null ? 0 : token.length());
+        EmailActivationRequest request = new EmailActivationRequest();
+        request.setToken(token);
+        return Result.success(authService.activateEmail(request));
     }
 
     /**
