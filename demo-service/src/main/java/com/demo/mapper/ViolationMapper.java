@@ -66,4 +66,11 @@ public interface ViolationMapper {
      */
     List<UserViolationDTO> getUserViolations(@Param("userId") Long userId);
 
+    /**
+     * 查询最近的违规线索记录，供管理端聚合页展示。
+     */
+    @Select("SELECT id, user_id AS userId, biz_id AS bizId, violation_type AS violationType, description, evidence, punish, credit, record_time AS recordTime, create_time AS createTime " +
+            "FROM user_violations ORDER BY record_time DESC, id DESC LIMIT #{limit}")
+    List<UserViolation> selectRecentViolations(@Param("limit") int limit);
+
 }

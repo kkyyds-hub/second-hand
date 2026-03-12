@@ -69,6 +69,11 @@ public interface AfterSaleMapper {
                                    @Param("limit") int limit);
 
     /**
+     * 查询管理端纠纷中心需要的最近售后工单。
+     */
+    List<AfterSale> selectRecentForAudit(@Param("limit") int limit);
+
+    /**
      * 查询售后凭证列表
      */
     List<AfterSaleEvidence> selectEvidencesByAfterSaleId(@Param("afterSaleId") Long afterSaleId);

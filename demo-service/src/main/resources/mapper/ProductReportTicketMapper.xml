@@ -54,6 +54,26 @@
         LIMIT 1
     </select>
 
+    <select id="selectRecent" resultType="com.demo.entity.ProductReportTicket">
+        SELECT
+            id,
+            ticket_no AS ticketNo,
+            product_id AS productId,
+            reporter_id AS reporterId,
+            report_type AS reportType,
+            description,
+            evidence_urls AS evidenceUrls,
+            status,
+            resolver_id AS resolverId,
+            resolve_action AS resolveAction,
+            resolve_remark AS resolveRemark,
+            create_time AS createTime,
+            update_time AS updateTime
+        FROM product_report_ticket
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
     <!-- SQL：resolveIfPending，仅处理 PENDING 工单。 -->
     <update id="resolveIfPending">
         UPDATE product_report_ticket
@@ -67,4 +87,3 @@
     </update>
 
 </mapper>
-
