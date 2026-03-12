@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { LayoutDashboard, Users, ShoppingBag, ShieldAlert, Settings, Bell, ChevronDown, Menu, Search, HelpCircle } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { LayoutDashboard, Users, ShoppingBag, ShieldAlert, Settings, Bell, ChevronDown, Menu, Search, HelpCircle, LogOut } from 'lucide-vue-next'
+import { clearAdminToken } from '@/utils/request'
 
 const route = useRoute()
+const router = useRouter()
 const isCollapsed = ref(false)
+const userMenuOpen = ref(false)
 
 const menu = [
   { name: '工作台', path: '/', icon: LayoutDashboard },
@@ -15,10 +18,21 @@ const menu = [
 ]
 
 const isActive = (path: string) => route.path === path
+
+const goLogoutPage = () => {
+  userMenuOpen.value = false
+  router.push('/logout')
+}
+
+const quickLogout = () => {
+  userMenuOpen.value = false
+  clearAdminToken()
+  router.replace('/login')
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex text-gray-800 font-sans selection:bg-blue-200 overflow-hidden">
+  <div class="min-h-screen bg-gray-50 flex text-gray-800 font-sans selection:bg-blue-200 overflow-hidden" @click="userMenuOpen = false">
     <!-- Sidebar (Standard Dark Enterprise Theme) -->
     <aside 
       class="bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 relative z-20 shrink-0 transition-all duration-300 ease-in-out shadow-lg"
@@ -100,10 +114,36 @@ const isActive = (path: string) => route.path === path
           </button>
           
           <!-- User Dropdown -->
-          <div class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-transparent hover:border-gray-200">
-            <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" class="w-7 h-7 rounded-full bg-gray-200" />
-            <span class="text-sm text-gray-700 font-medium">管理员</span>
-            <ChevronDown class="w-4 h-4 text-gray-500" />
+          <div class="relative" @click.stop>
+            <button
+              class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors border border-transparent hover:border-gray-200"
+              @click="userMenuOpen = !userMenuOpen"
+            >
+              <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" class="w-7 h-7 rounded-full bg-gray-200" />
+              <span class="text-sm text-gray-700 font-medium">管理员</span>
+              <ChevronDown class="w-4 h-4 text-gray-500" />
+            </button>
+
+            <transition name="fade">
+              <div
+                v-if="userMenuOpen"
+                class="absolute right-0 mt-2 w-44 rounded border border-gray-200 bg-white shadow-lg py-1 z-30"
+              >
+                <button
+                  class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  @click="goLogoutPage"
+                >
+                  退出登录页
+                </button>
+                <button
+                  class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  @click="quickLogout"
+                >
+                  <LogOut class="w-3.5 h-3.5" />
+                  立即退出
+                </button>
+              </div>
+            </transition>
           </div>
         </div>
       </header>

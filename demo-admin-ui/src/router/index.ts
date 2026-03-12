@@ -38,6 +38,11 @@ const router = createRouter({
           path: 'audit',
           name: 'AuditCenter',
           component: () => import('@/pages/audit/AuditCenter.vue')
+        },
+        {
+          path: 'logout',
+          name: 'LogoutPage',
+          component: () => import('@/pages/LogoutPage.vue')
         }
       ]
     }
