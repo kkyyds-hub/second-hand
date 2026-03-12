@@ -49,7 +49,7 @@ const LEGACY_TOKEN_KEYS = ['jwt_token', 'token']
  *
  * 这样做的目的是让联调过渡更平滑。
  */
-function readAdminToken() {
+export function readAdminToken() {
   // 先尝试读取当前规范使用的 key。
   const direct = localStorage.getItem(ADMIN_TOKEN_KEY)
 
@@ -213,6 +213,10 @@ service.interceptors.response.use(
          */
         console.error('Unauthorized (401): admin token missing or expired.')
         clearAdminToken()
+        // 如果当前不在登录页，直接拉回登录页，避免页面停留在“已进入但无权限”的假状态。
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
         break
       case 403:
         // 403 表示已登录，但当前账号没有权限。
