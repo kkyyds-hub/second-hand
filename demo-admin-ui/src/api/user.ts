@@ -210,6 +210,8 @@ export function createUser(data: CreateUserPayload) {
 
 /**
  * 限制用户（封禁）。
+ * @param userId 被封禁的用户 ID
+ * @param reason 封禁理由，必填，用于运营审计和用户申诉
  */
 export function restrictUser(userId: string, reason: string) {
   return request({

@@ -44,6 +44,15 @@ const newUser = ref({
 })
 
 /**
+ * 封禁理由弹窗状态：
+ */
+const isBanModalOpen = ref(false)
+const banTargetUser = ref<{ id: string; name: string } | null>(null)
+const banReason = ref('')
+const isBanning = ref(false)
+const banError = ref('')
+
+/**
  * 总页数与分页按钮。
  */
 const totalPages = computed(() => {
@@ -103,12 +112,32 @@ const goToPage = (page: number) => {
 /**
  * 封禁与解封后，保持当前筛选条件重新拉取。
  */
-const handleRestrict = async (userId: string) => {
+const openBanModal = (user: UserItem) => {
+  banTargetUser.value = { id: user.id, name: user.name }
+  banReason.value = ''
+  banError.value = ''
+  isBanModalOpen.value = true
+}
+
+const confirmBan = async () => {
+  if (!banTargetUser.value) return
+  const reason = banReason.value.trim()
+  if (!reason) {
+    banError.value = '封禁理由不能为空'
+    return
+  }
+
   try {
-    await restrictUser(userId, '运营手动限制')
+    isBanning.value = true
+    banError.value = ''
+    await restrictUser(banTargetUser.value.id, reason)
+    isBanModalOpen.value = false
     await fetchData()
-  } catch (e) {
+  } catch (e: any) {
     console.warn('Restrict user failed.', e)
+    banError.value = e.message || '封禁失败，请稍后重试'
+  } finally {
+    isBanning.value = false
   }
 }
 
@@ -313,7 +342,7 @@ const getRoleBadgeClass = (role: string) => {
 
               <td class="py-3 px-4 text-right">
                 <div class="flex items-center justify-end space-x-3">
-                  <button v-if="user.status !== '封禁'" @click="handleRestrict(user.id)" class="text-red-600 hover:text-red-800 font-medium text-xs">
+                  <button v-if="user.status !== '封禁'" @click="openBanModal(user)" class="text-red-600 hover:text-red-800 font-medium text-xs">
                     限制账号
                   </button>
                   <button v-else @click="handleUnrestrict(user.id)" class="text-gray-500 hover:text-gray-700 font-medium text-xs">
@@ -411,6 +440,52 @@ const getRoleBadgeClass = (role: string) => {
             <button @click="isModalOpen = false" class="btn-default">取消</button>
             <button @click="handleAddUser" class="btn-primary" :disabled="!newUser.name || !newUser.phone">
               确认并建档
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 封禁理由弹窗 -->
+    <Teleport to="body">
+      <div v-if="isBanModalOpen" class="fixed inset-0 bg-gray-900/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-md shadow-xl w-full max-w-md border border-gray-200 overflow-hidden flex flex-col" @click.stop>
+          <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+            <h2 class="text-base font-bold text-gray-800">限制账号</h2>
+            <button @click="isBanModalOpen = false" class="text-gray-400 hover:text-gray-600" :disabled="isBanning">
+              <span class="text-xl leading-none">&times;</span>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-5">
+            <div class="bg-gray-50 p-3 rounded-sm border border-gray-200 flex flex-col gap-1">
+              <span class="text-xs text-gray-500">当前操作用户</span>
+              <span class="text-sm font-medium text-gray-900">{{ banTargetUser?.name }} <span class="text-gray-500 font-numeric font-normal ml-1">(ID: {{ banTargetUser?.id }})</span></span>
+            </div>
+
+            <div>
+              <label for="ban_reason" class="block text-sm font-medium text-gray-700 mb-1.5">封禁理由 <span class="text-red-500">*</span></label>
+              <textarea 
+                id="ban_reason" 
+                v-model="banReason" 
+                class="input-standard w-full min-h-[100px] resize-none py-2" 
+                placeholder="请输入限制原因，如涉嫌违规交易、辱骂骚扰、恶意刷单等"
+                :disabled="isBanning"
+                maxlength="100"
+              ></textarea>
+              <div class="flex justify-between items-center mt-1">
+                <span v-if="banError" class="text-xs text-red-500 flex items-center gap-1"><AlertTriangle class="w-3 h-3" /> {{ banError }}</span>
+                <span v-else class="text-xs text-gray-400"></span>
+                <span class="text-xs text-gray-400 font-numeric">{{ banReason.length }}/100</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50/50 mt-auto">
+            <button @click="isBanModalOpen = false" class="btn-default" :disabled="isBanning">取消</button>
+            <button @click="confirmBan" class="btn-primary bg-red-600 hover:bg-red-700 border-red-700/50 flex items-center gap-2" :disabled="isBanning || !banReason.trim()">
+              <Loader2 v-if="isBanning" class="w-4 h-4 animate-spin" />
+              {{ isBanning ? '提交中...' : '确认限制' }}
             </button>
           </div>
         </div>
