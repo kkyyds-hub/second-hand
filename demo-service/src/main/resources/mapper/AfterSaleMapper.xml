@@ -82,6 +82,24 @@
         WHERE id = #{id}
     </update>
 
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(1)
+        FROM after_sales
+        WHERE status = #{status}
+    </select>
+
+    <select id="selectByStatus" resultType="com.demo.entity.AfterSale">
+        SELECT
+            id, order_id AS orderId, buyer_id AS buyerId, seller_id AS sellerId,
+            reason, status, seller_remark AS sellerRemark,
+            platform_remark AS platformRemark,
+            create_time AS createTime, update_time AS updateTime
+        FROM after_sales
+        WHERE status = #{status}
+        ORDER BY update_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
     <!-- 查询售后凭证列表 -->
     <select id="selectEvidencesByAfterSaleId" resultType="com.demo.entity.AfterSaleEvidence">
         SELECT

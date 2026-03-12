@@ -32,6 +32,8 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     private JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
     @Autowired
     private JwtTokenUserInterceptor jwtTokenUserInterceptor;
+    @Autowired
+    private AvatarStorageProperties avatarStorageProperties;
 
 /**
      * 注册自定义拦截器
@@ -109,10 +111,17 @@ protected void addInterceptors(InterceptorRegistry registry) {
      * 设置静态资源映射，主要是访问接口文档（html、js、css）
      * @param registry
      */
+    @Override
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
         log.info("开始设置静态资源映射...");
         registry.addResourceHandler("/doc.html").addResourceLocations("classpath:/META-INF/resources/");
         registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+        String publicPattern = avatarStorageProperties.normalizedPublicUrlPrefix() + "/**";
+        String resourceLocation = avatarStorageProperties.resolveLocalRootPath().toUri().toString();
+        if (!resourceLocation.endsWith("/")) {
+            resourceLocation = resourceLocation + "/";
+        }
+        registry.addResourceHandler(publicPattern).addResourceLocations(resourceLocation);
     }
 
     /**

@@ -9,8 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 /**
@@ -43,7 +44,26 @@ public class UserMeController {
     @PostMapping("/upload-config")
     public Result<AvatarUploadConfigVO> getAvatarUploadConfig(@Validated @RequestBody AvatarUploadConfigRequest request) {
         log.info("获取头像上传配置: fileName={}, contentType={}", request.getFileName(), request.getContentType());
-        return Result.success(userService.generateAvatarUploadConfig(request));
+        return Result.success(userService.generateAvatarUploadConfig(request, currentBaseUrl()));
+    }
+
+    /**
+     * 上传头像到本地文件存储。
+     */
+    @PutMapping("/avatar/upload")
+    public Result<String> uploadAvatar(@Validated AvatarUploadTicketRequest request,
+                                       HttpServletRequest httpServletRequest) {
+        log.info("上传头像: key={}, contentType={}, contentLength={}",
+                request.getKey(),
+                httpServletRequest.getContentType(),
+                httpServletRequest.getContentLengthLong());
+        return Result.success(userService.uploadAvatar(
+                request,
+                httpServletRequest.getContentType(),
+                httpServletRequest.getContentLengthLong(),
+                safeInputStream(httpServletRequest),
+                currentBaseUrl()
+        ));
     }
 
     /**
@@ -105,5 +125,17 @@ public class UserMeController {
                 request.getVerifyCode() != null && !request.getVerifyCode().isEmpty());
         userService.unbindEmail(request);
         return Result.success("解绑成功");
+    }
+
+    private String currentBaseUrl() {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+    }
+
+    private java.io.InputStream safeInputStream(HttpServletRequest request) {
+        try {
+            return request.getInputStream();
+        } catch (java.io.IOException ex) {
+            throw new IllegalStateException("read avatar upload stream failed", ex);
+        }
     }
 }

@@ -1,8 +1,11 @@
 package com.demo.service.serviceimpl;
 
+import com.demo.avatar.AvatarStorageProvider;
+import com.demo.avatar.AvatarStorageProviderFactory;
 import com.demo.audit.AuditLogUtil;
 import com.demo.constant.MessageConstant;
 import com.demo.context.BaseContext;
+import com.demo.dto.admin.AdminCreateUserRequest;
 import com.demo.dto.user.*;
 import com.demo.entity.User;
 import com.demo.exception.BusinessException;
@@ -23,13 +26,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -40,8 +41,12 @@ import java.util.stream.Collectors;
 @Transactional
 @Slf4j
 public class UserServiceImpl implements UserService {
+    /** 短信验证码缓存 key 前缀。 */
     private static final String SMS_CODE_KEY_PREFIX = "auth:sms:code:";
+    /** 邮箱验证码缓存 key 前缀。 */
     private static final String EMAIL_CODE_KEY_PREFIX = "auth:email:code:";
+    /** 管理员手动建档时的初始密码（建议用户首次登录后修改）。 */
+    private static final String ADMIN_CREATE_DEFAULT_PASSWORD = "123456";
 
     @Autowired
     private UserMapper userMapper;
@@ -51,6 +56,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AvatarStorageProviderFactory avatarStorageProviderFactory;
 
     /**
      * 分页查询用户列表。
@@ -107,38 +115,26 @@ public class UserServiceImpl implements UserService {
      * 生成头像上传配置。
      */
     @Override
-    public AvatarUploadConfigVO generateAvatarUploadConfig(AvatarUploadConfigRequest request) {
-        String normalizedFileName = request.getFileName().trim();
-        String lowerFileName = normalizedFileName.toLowerCase();
+    public AvatarUploadConfigVO generateAvatarUploadConfig(AvatarUploadConfigRequest request, String requestBaseUrl) {
+        AvatarStorageProvider provider = avatarStorageProviderFactory.getProvider();
+        return provider.generateUploadConfig(getCurrentUserIdOrThrow(), request, requestBaseUrl);
+    }
 
-        if (!lowerFileName.endsWith(".jpg") && !lowerFileName.endsWith(".jpeg") && !lowerFileName.endsWith(".png")) {
-            throw new BusinessException("文件名需以 .jpg/.jpeg/.png 结尾");
-        }
-
-        // 补充一层 contentType 与扩展名的匹配校验
-        boolean isPng = lowerFileName.endsWith(".png");
-        if (isPng && !"image/png".equalsIgnoreCase(request.getContentType())) {
-            throw new BusinessException("PNG 头像需使用 image/png 上传");
-        }
-        if (!isPng && !"image/jpeg".equalsIgnoreCase(request.getContentType())) {
-            throw new BusinessException("JPEG 头像需使用 image/jpeg 上传");
-        }
-
-        String suffix = lowerFileName.substring(lowerFileName.lastIndexOf('.'));
-        String objectKey = "avatars/" + UUID.randomUUID() + suffix;
-
-        // 这里使用示例 OSS 域名生成资源与上传地址；实际项目中请替换为真实存储配置
-        String resourceUrl = "https://oss.example.com/" + objectKey;
-        String signature = UUID.randomUUID().toString().replace("-", "");
-        OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(5);
-        String uploadUrl = resourceUrl + "?signature=" + signature + "&expires=" + expireAt.toEpochSecond();
-
-        return AvatarUploadConfigVO.builder()
-                .uploadUrl(uploadUrl)
-                .resourceUrl(resourceUrl)
-                .expiresIn(300)
-                .extraHeaders(Map.of("content-type", request.getContentType()))
-                .build();
+    @Override
+    public String uploadAvatar(AvatarUploadTicketRequest request,
+                               String contentType,
+                               long contentLength,
+                               InputStream inputStream,
+                               String requestBaseUrl) {
+        AvatarStorageProvider provider = avatarStorageProviderFactory.getProvider();
+        return provider.uploadAvatar(
+                getCurrentUserIdOrThrow(),
+                request,
+                contentType,
+                contentLength,
+                inputStream,
+                requestBaseUrl
+        );
     }
 
     /**
@@ -192,7 +188,8 @@ public class UserServiceImpl implements UserService {
 
 
     /**
-     * 更新相关业务状态。
+     * 绑定手机号。
+     * 会先校验验证码，再校验手机号是否被其他账号占用。
      */
     @Override
     public UserVO bindPhone(BindPhoneRequest request) {
@@ -219,7 +216,8 @@ public class UserServiceImpl implements UserService {
 
 
     /**
-     * 更新相关业务状态。
+     * 绑定邮箱。
+     * 会先校验验证码，再校验邮箱是否被其他账号占用。
      */
     @Override
     public UserVO bindEmail(BindEmailRequest request) {
@@ -243,7 +241,8 @@ public class UserServiceImpl implements UserService {
 
 
     /**
-     * 更新相关业务状态。
+     * 解绑手机号。
+     * 解绑前需要通过密码或验证码做二次验证。
      */
     @Override
     public void unbindPhone(UnbindContactRequest request) {
@@ -261,7 +260,8 @@ public class UserServiceImpl implements UserService {
 
 
     /**
-     * 更新相关业务状态。
+     * 解绑邮箱。
+     * 解绑前需要通过密码或验证码做二次验证。
      */
     @Override
     public void unbindEmail(UnbindContactRequest request) {
@@ -277,7 +277,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 实现接口定义的方法。
+     * 校验用户是否具备卖家身份。
      */
     @Override
     public void requireSeller(Long userId) {
@@ -288,6 +288,62 @@ public class UserServiceImpl implements UserService {
         if (isSeller == null || !isSeller.equals(1)) {
             throw new BusinessException("仅卖家可执行该操作");
         }
+    }
+
+    /**
+     * 管理员手动创建用户。
+     * 当前策略：建档后默认激活，并按角色设置卖家标识。
+     */
+    @Override
+    public UserVO createAdminUser(AdminCreateUserRequest request) {
+        String name = InputSecurityGuard.normalizePlainText(request.getName(), "昵称", 20, true);
+        String phone = request.getPhone() == null ? null : request.getPhone().trim();
+        String role = request.getRole() == null ? "" : request.getRole().trim();
+
+        User existed = userMapper.selectByMobile(phone);
+        if (existed != null) {
+            throw new BusinessException("手机号已被注册");
+        }
+
+        User user = new User();
+        LocalDateTime now = LocalDateTime.now();
+        user.setUsername(generateAdminUsername(phone));
+        user.setNickname(name);
+        user.setMobile(phone);
+        user.setPassword(passwordEncoder.encode(ADMIN_CREATE_DEFAULT_PASSWORD));
+        user.setCreditScore(100);
+        user.setCreditLevel("lv3");
+        user.setCreditUpdatedAt(now);
+        user.setStatus("active");
+        user.setIsSeller(isSellerRole(role) ? 1 : 0);
+
+        userMapper.insertUser(user);
+        log.info("管理员手动建档成功：id={}, phone={}, role={}, isSeller={}",
+                user.getId(), phone, role, user.getIsSeller());
+        return toUserVO(user);
+    }
+
+    /**
+     * 判断角色是否属于卖家类型。
+     */
+    private boolean isSellerRole(String role) {
+        if (StringUtils.isBlank(role)) {
+            return false;
+        }
+        return "SELLER_PERSONAL".equalsIgnoreCase(role)
+                || "SELLER_ENTERPRISE".equalsIgnoreCase(role)
+                || "个人卖家".equals(role)
+                || "企业商家".equals(role);
+    }
+
+    /**
+     * 生成管理员建档使用的唯一用户名。
+     */
+    private String generateAdminUsername(String phone) {
+        String suffix = (phone != null && phone.length() >= 4)
+                ? phone.substring(phone.length() - 4)
+                : String.valueOf(System.currentTimeMillis() % 10000);
+        return "admin_u_" + suffix + "_" + System.currentTimeMillis();
     }
 
 
@@ -316,6 +372,9 @@ public class UserServiceImpl implements UserService {
 
     private void avatarValidation(String avatar) {
         if (StringUtils.isBlank(avatar)) {
+            return;
+        }
+        if (avatarStorageProviderFactory.getProvider().supportsAvatarUrl(avatar)) {
             return;
         }
         String lower = avatar.toLowerCase();
@@ -445,10 +504,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 实现接口定义的方法。
-     */
-    @Override
-    /**
      * 管理端封禁用户。
      *
      * P5-S1 问题背景：
@@ -463,9 +518,11 @@ public class UserServiceImpl implements UserService {
      *   并发线程已提交的 `banned` 状态；
      * - 配合下方短轮询，最终把重复封禁稳定收敛为“幂等成功”。
      */
+    @Override
     @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
-    public String banUser(Long userId) {
+    public String banUser(Long userId, String reason) {
         String auditId = AuditLogUtil.newAuditId();
+        String normalizedReason = StringUtils.isBlank(reason) ? "未填写原因" : reason.trim();
         User user = userMapper.selectById(userId);
         if (user == null) {
             AuditLogUtil.failed(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "USER_NOT_FOUND", "user not found");
@@ -492,24 +549,25 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("用户状态已变化，请刷新后重试");
         }
 
-        log.info("用户封禁成功：userId={}", userId);
-        AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to banned");
+        log.info("用户封禁成功：userId={}, reason={}", userId, normalizedReason);
+        AuditLogUtil.success(log, auditId, "USER_BAN", "ADMIN", String.valueOf(BaseContext.getCurrentId()), "USER", String.valueOf(userId), "SUCCESS", "status changed to banned, reason=" + normalizedReason);
         return "用户封禁成功";
     }
 
     /**
-     * 实现接口定义的方法。
+     * 兼容旧接口签名的封禁方法。
+     * 历史调用方不传原因时，统一委托到带 `reason` 的新方法。
      */
     @Override
+    public String banUser(Long userId) {
+        return banUser(userId, null);
+    }
+
     /**
      * 管理端解封用户。
-     *
-     * 修复思路与 `banUser` 完全对应：
-     * 1) 高并发下只允许 1 个线程真正完成 `banned -> active`；
-     * 2) 其他线程如果在 CAS 失败后读取到最新的 `active`，就应该被判定为幂等成功；
-     * 3) 方法级 `READ_COMMITTED` + 短轮询共同保证“最新状态可见”，
-     *    避免把同向并发误判为冲突。
+     * 采用与封禁一致的 CAS + 短轮询策略，减少并发误判。
      */
+    @Override
     @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public String unbanUser(Long userId) {
         String auditId = AuditLogUtil.newAuditId();
@@ -545,7 +603,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 实现接口定义的方法。
+     * 导出用户 CSV。
      */
     @Override
     public String exportUsersCSV(String keyword, LocalDateTime startTime, LocalDateTime endTime) {
@@ -626,6 +684,14 @@ public class UserServiceImpl implements UserService {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private Long getCurrentUserIdOrThrow() {
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new BusinessException("用户未登录");
+        }
+        return currentUserId;
     }
 
 }

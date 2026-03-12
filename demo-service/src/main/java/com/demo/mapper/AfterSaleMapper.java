@@ -58,6 +58,17 @@ public interface AfterSaleMapper {
                                 @Param("platformRemark") String platformRemark);
 
     /**
+     * 按状态统计售后单数量。
+     */
+    long countByStatus(@Param("status") String status);
+
+    /**
+     * 按状态查询售后单列表（用于后台工作台展示）。
+     */
+    List<AfterSale> selectByStatus(@Param("status") String status,
+                                   @Param("limit") int limit);
+
+    /**
      * 查询售后凭证列表
      */
     List<AfterSaleEvidence> selectEvidencesByAfterSaleId(@Param("afterSaleId") Long afterSaleId);

@@ -1,36 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.UserMapper">
-    <!-- SQL：selectUsers，select 语句用于对应 Mapper 方法的数据访问。 -->
+
     <select id="selectUsers" resultType="com.demo.entity.User">
         SELECT * FROM users
-        WHERE 1=1
+        WHERE 1 = 1
+          AND is_deleted = 0
 
-        <!-- keyword参数对应DTO的keyword字段 -->
         <if test="keyword != null and keyword != ''">
             AND (username LIKE CONCAT('%', #{keyword}, '%')
             OR mobile LIKE CONCAT('%', #{keyword}, '%')
             OR email LIKE CONCAT('%', #{keyword}, '%'))
         </if>
 
-        <!-- startTime对应DTO的startTime字段 -->
+        <if test="status != null and status != '' and status != 'ALL' and status != '全部'">
+            <choose>
+                <when test="status == '正常'">
+                    AND status = 'active'
+                </when>
+                <when test="status == '预警'">
+                    AND status = 'inactive'
+                </when>
+                <when test="status == '限流'">
+                    AND status = 'frozen'
+                </when>
+                <when test="status == '封禁'">
+                    AND status = 'banned'
+                </when>
+                <otherwise>
+                    AND status = #{status}
+                </otherwise>
+            </choose>
+        </if>
+
+        <if test="role != null and role != '' and role != 'ALL' and role != '全部'">
+            <choose>
+                <when test="role == 'BUYER_NORMAL' or role == 'BUYER_VERIFIED' or role == '普通买家' or role == '认证买家'">
+                    AND (is_seller = 0 OR is_seller IS NULL)
+                </when>
+                <when test="role == 'SELLER_PERSONAL' or role == 'SELLER_ENTERPRISE' or role == '个人卖家' or role == '企业商家'">
+                    AND is_seller = 1
+                </when>
+            </choose>
+        </if>
+
         <if test="startTime != null">
             AND create_time >= #{startTime}
         </if>
 
-        <!-- updateTime对应DTO的endTime字段 -->
         <if test="endTime != null">
             AND update_time &lt;= #{endTime}
         </if>
 
         ORDER BY create_time DESC
     </select>
-    <!-- SQL：selectById，select 语句用于对应 Mapper 方法的数据访问。 -->
+
     <select id="selectById" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE id = #{userId} AND is_deleted = 0 LIMIT 1
     </select>
 
-    <!-- SQL：selectByIds，批量查询用户（仅未删除）。 -->
     <select id="selectByIds" resultType="com.demo.entity.User">
         SELECT * FROM users
         WHERE is_deleted = 0
@@ -40,22 +68,18 @@
         </foreach>
     </select>
 
-    <!-- SQL：selectByMobile，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="selectByMobile" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE mobile = #{mobile} LIMIT 1
     </select>
 
-    <!-- SQL：selectByEmail，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="selectByEmail" resultType="com.demo.entity.User">
         SELECT * FROM users WHERE email = #{email} LIMIT 1
     </select>
 
-    <!-- SQL：selectIsSellerById，select 语句用于对应 Mapper 方法的数据访问。 -->
     <select id="selectIsSellerById" resultType="java.lang.Integer">
         SELECT is_seller FROM users WHERE id = #{userId}
     </select>
 
-    <!-- SQL：updateStatus，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateStatus">
         UPDATE users
         SET status = #{status},
@@ -63,7 +87,6 @@
         WHERE id = #{userId}
     </update>
 
-    <!-- SQL：updateStatusByExpected，CAS 更新用户状态（id + expectedStatus）。 -->
     <update id="updateStatusByExpected">
         UPDATE users
         SET status = #{targetStatus},
@@ -71,7 +94,7 @@
         WHERE id = #{userId}
           AND status = #{expectedStatus}
     </update>
-    <!-- SQL：updateProfile，update 语句用于对应 Mapper 方法的数据访问。 -->
+
     <update id="updateProfile" parameterType="com.demo.entity.User">
         UPDATE users
         <set>
@@ -82,21 +105,21 @@
         </set>
         WHERE id = #{id}
     </update>
-    <!-- SQL：updatePassword，update 语句用于对应 Mapper 方法的数据访问。 -->
+
     <update id="updatePassword">
         UPDATE users
         SET password = #{password},
             update_time = NOW()
         WHERE id = #{userId}
     </update>
-    <!-- SQL：updateMobile，update 语句用于对应 Mapper 方法的数据访问。 -->
+
     <update id="updateMobile">
         UPDATE users
         SET mobile = #{mobile},
             update_time = NOW()
         WHERE id = #{userId}
     </update>
-    <!-- SQL：updateEmail，update 语句用于对应 Mapper 方法的数据访问。 -->
+
     <update id="updateEmail">
         UPDATE users
         SET email = #{email},
@@ -104,7 +127,6 @@
         WHERE id = #{userId}
     </update>
 
-    <!-- SQL：updateCredit，update 语句用于对应 Mapper 方法的数据访问。 -->
     <update id="updateCredit">
         UPDATE users
         SET credit_score = #{creditScore},
@@ -114,20 +136,17 @@
         WHERE id = #{userId}
     </update>
 
-
-    <!-- SQL：insertUser，insert 语句用于对应 Mapper 方法的数据访问。 -->
     <insert id="insertUser" parameterType="com.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users
         (username, nickname, password, mobile, email, avatar, bio,
          credit_score, credit_level, credit_updated_at,
-         status, create_time, update_time)
+         status, is_seller, create_time, update_time)
         VALUES
             (#{username}, #{nickname}, #{password}, #{mobile}, #{email}, #{avatar}, #{bio},
              #{creditScore}, #{creditLevel}, #{creditUpdatedAt},
-             #{status}, NOW(), NOW())
+             #{status}, IFNULL(#{isSeller}, 0), NOW(), NOW())
     </insert>
 
-    <!-- Day13 Step7 - 导出用户 -->
     <select id="exportAllUsers" resultType="com.demo.entity.User">
         SELECT * FROM users
         WHERE is_deleted = 0
