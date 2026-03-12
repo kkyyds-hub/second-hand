@@ -15,6 +15,7 @@ import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.OrderLogisticsVO;
 import com.demo.vo.order.SellerOrderSummary;
+import com.demo.vo.payment.MockPaymentSimulationVO;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +126,11 @@ public class OrdersController {
 
     /**
      * 买家支付订单。
+     *
+     * Day20 口径调整：
+     * - 该接口不再直接改订单状态；
+     * - 默认走一次 `SUCCESS` 的 mock 支付回调；
+     * - 这样普通“支付”按钮和下面的“模拟回调”演示入口共用同一条回调主链。
      */
     @PostMapping("/{orderId}/pay")
     public Result<String> pay(@PathVariable Long orderId) {
@@ -132,6 +138,23 @@ public class OrdersController {
         Long currentUserId = BaseContext.getCurrentId();
         String msg = orderService.payOrder(orderId, currentUserId);
         return Result.success(msg);
+    }
+
+    /**
+     * 买家模拟支付回调。
+     *
+     * 适合前端演示页或 Swagger 手工联调：
+     * 1) `SUCCESS`：正常支付成功；
+     * 2) `FAIL`：模拟失败通知；
+     * 3) `REPEAT`：连续两次成功通知，观察第二次幂等命中。
+     */
+    @PostMapping("/{orderId}/pay/mock")
+    public Result<MockPaymentSimulationVO> simulatePay(@PathVariable Long orderId,
+                                                       @RequestParam(value = "scenario", defaultValue = "SUCCESS") String scenario) {
+        log.info("买家模拟支付回调: orderId={}, scenario={}", orderId, scenario);
+        Long currentUserId = BaseContext.getCurrentId();
+        MockPaymentSimulationVO result = orderService.simulateMockPayment(orderId, currentUserId, scenario);
+        return Result.success(result);
     }
 
     /**

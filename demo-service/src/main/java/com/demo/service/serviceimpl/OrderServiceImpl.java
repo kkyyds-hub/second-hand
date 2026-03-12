@@ -2,6 +2,7 @@ package com.demo.service.serviceimpl;
 
 import com.demo.audit.AuditLogUtil;
 import com.demo.dto.base.PageQueryDTO;
+import com.demo.dto.payment.PaymentCallbackRequest;
 import com.demo.dto.user.CancelOrderRequest;
 import com.demo.dto.user.CreateOrderRequest;
 import com.demo.dto.user.CreateOrderResponse;
@@ -25,10 +26,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
+import com.demo.vo.payment.MockPaymentSimulationVO;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,11 +120,45 @@ public class OrderServiceImpl implements OrderService {
     private OrderShipTimeoutTaskMapper orderShipTimeoutTaskMapper;
 
     /**
+     * 当前类的 Spring 代理。
+     *
+     * 使用原因：
+     * 1) `simulateMockPayment` 需要在类内部调用 `handlePaymentCallback`；
+     * 2) 如果直接 `this.handlePaymentCallback(...)`，会绕过 Spring AOP，
+     *    导致 `@Transactional(isolation = READ_COMMITTED)` 不生效；
+     * 3) 因此这里通过代理回调自己，保证事务与隔离级别仍按支付回调原口径执行。
+     */
+    @Autowired
+    @Lazy
+    private OrderService orderServiceProxy;
+
+    /**
      * 发货超时时长（小时）
      * 默认 48，可通过配置覆盖。
      */
     @Value("${order.ship-timeout.hours:48}")
     private int shipTimeoutHours;
+
+    /**
+     * mock 支付通道名。
+     *
+     * 主要用于：
+     * 1) 构造回调请求体；
+     * 2) 日志与审计里明确标记当前是演示支付链路；
+     * 3) 后续若接真实 provider，可与真实渠道名并存。
+     */
+    @Value("${payment.mock.channel:mock}")
+    private String mockPaymentChannel;
+
+    /**
+     * mock 支付演示签名。
+     *
+     * 当前仍属于“模拟验签”：
+     * - 不接真实平台证书/公钥；
+     * - 只用于满足回调接口的占位签名校验条件。
+     */
+    @Value("${payment.mock.sign:mock-sign}")
+    private String mockPaymentSign;
 
 
     /**
@@ -464,56 +501,224 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 更新相关业务状态。
+     * 买家支付入口。
+     *
+     * Day20 调整口径：
+     * 1) 不再由 `/user/orders/{id}/pay` 直接执行 `pending -> paid` 条件更新；
+     * 2) 改为统一走“mock 支付回调”编排，让用户主动支付与系统回调共用同一条主链；
+     * 3) 这样演示时可以把重点稳定收敛到：
+     *    - 回调幂等
+     *    - 重复通知
+     *    - 状态推进
+     *    - 异常补偿
+     *
+     * 设计收益：
+     * 1) `/pay` 与 `/payment/callback` 不再出现两套推进逻辑；
+     * 2) 支付成功后 Outbox / MQ / 任务补偿的副作用统一由回调链路负责；
+     * 3) 后续若要接真实支付，只需要把“触发 mock 回调”替换成“拉起真实 provider + 等待回调”。
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public String payOrder(Long orderId, Long currentUserId) {
         String auditId = AuditLogUtil.newAuditId();
-        // 1) 先尝试条件更新：pending -> paid
-        int rows = orderMapper.updateForPay(orderId, currentUserId);
-        if (rows == 1) {
-            //支付成功后创建“48小时违法或超时任务”（幂等）
-            createShipTimeoutTaskIfAbsent(orderId,"payorder:update_success");
-            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "SUCCESS", "pending->paid");
-            return "支付成功";
+        try {
+            MockPaymentSimulationVO simulation = simulateMockPayment(orderId, currentUserId, MockPaymentScenario.SUCCESS.name());
+            String finalResult = simulation.getFinalResult();
+            String auditResult = isMockPaymentIdempotent(finalResult) ? "IDEMPOTENT" : "SUCCESS";
+            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER",
+                    String.valueOf(orderId), auditResult, "mode=mock-callback,result=" + finalResult);
+            return finalResult;
+        } catch (BusinessException ex) {
+            AuditLogUtil.failed(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER",
+                    String.valueOf(orderId), "MOCK_CALLBACK_FAILED", ex.getMessage());
+            throw ex;
+        }
+    }
+
+    /**
+     * 模拟支付回调演示入口。
+     *
+     * 支持场景：
+     * 1) `SUCCESS`：模拟一次支付成功回调；
+     * 2) `FAIL`：模拟一次失败回调（当前回调主链会识别为“非成功状态，不推进订单”）；
+     * 3) `REPEAT`：连续发送两次成功回调，第二次预期命中幂等分支。
+     *
+     * 说明：
+     * 1) 该方法是“用户侧演示入口”，因此会校验当前登录用户必须是买家；
+     * 2) 它本身不承担事务边界，而是显式通过代理调用 `handlePaymentCallback`，
+     *    保持支付回调原本的事务与隔离级别语义；
+     * 3) 返回结构里会带上回调前后状态、每次回调的 tradeNo 与结果，便于前端做演示面板。
+     */
+    @Override
+    public MockPaymentSimulationVO simulateMockPayment(Long orderId, Long currentUserId, String scenario) {
+        MockPaymentScenario mockScenario = MockPaymentScenario.fromRaw(scenario);
+        OrderDetail detail = loadBuyerOwnedOrder(orderId, currentUserId);
+        Order beforeOrder = orderMapper.selectOrderByOrderNo(detail.getOrderNo());
+        if (beforeOrder == null) {
+            throw new BusinessException("订单不存在：" + detail.getOrderNo());
         }
 
-        // 2) rows==0：再查当前状态做幂等/非法分流
+        MockPaymentSimulationVO result = new MockPaymentSimulationVO();
+        result.setOrderId(detail.getOrderId());
+        result.setOrderNo(detail.getOrderNo());
+        result.setScenario(mockScenario.name());
+        result.setChannel(mockPaymentChannel);
+        result.setBeforeStatus(beforeOrder.getStatus());
+
+        String tradeNo = buildMockTradeNo(detail.getOrderId(), mockScenario);
+        long timestamp = System.currentTimeMillis() / 1000;
+
+        switch (mockScenario) {
+            case SUCCESS:
+                applyMockCallback(result, detail, "SUCCESS", tradeNo, timestamp, true);
+                break;
+            case FAIL:
+                applyMockCallback(result, detail, "FAIL", tradeNo, timestamp, true);
+                break;
+            case REPEAT:
+                applyMockCallback(result, detail, "SUCCESS", tradeNo, timestamp, true);
+                applyMockCallback(result, detail, "SUCCESS", tradeNo, timestamp, false);
+                break;
+            default:
+                throw new BusinessException("mock 支付场景不支持：" + scenario);
+        }
+
+        Order afterOrder = orderMapper.selectOrderByOrderNo(detail.getOrderNo());
+        result.setAfterStatus(afterOrder == null ? result.getBeforeStatus() : afterOrder.getStatus());
+        result.setCallbackCount(result.getSecondResult() == null ? 1 : 2);
+        result.setFinalResult(result.getSecondResult() != null ? result.getSecondResult() : result.getFirstResult());
+        return result;
+    }
+
+    /**
+     * 加载“当前用户可操作”的买家订单。
+     *
+     * 这里复用 `getOrderDetail` 而不是直接查基础表字段，原因有两点：
+     * 1) 该查询已经稳定沉淀了 `orderNo / totalAmount / buyerId / status` 等演示所需字段；
+     * 2) 查询天然带归属校验，可以减少额外 SQL。
+     *
+     * 但要注意：
+     * - `getOrderDetail` 允许买家和卖家都看到订单；
+     * - 模拟支付属于买家动作，所以这里还要再补一层“必须是买家本人”的约束。
+     */
+    private OrderDetail loadBuyerOwnedOrder(Long orderId, Long currentUserId) {
         OrderDetail detail = orderMapper.getOrderDetail(orderId, currentUserId);
         if (detail == null) {
             throw new BusinessException("订单不存在或无权操作该订单");
         }
-
-        detail = refreshOrderDetailAfterCasMissIfStillPending(orderId, currentUserId, detail);
-        OrderStatus s = OrderStatus.fromDbValue(detail.getStatus());
-        if (s == null) {
-            throw new BusinessException("订单状态异常");
+        if (!Objects.equals(detail.getBuyerId(), currentUserId)) {
+            throw new BusinessException("只有买家本人可以触发模拟支付");
         }
-
-         // 幂等：已支付 -> 仍补建超时任务（修复历史漏建场景）
-        if (s == OrderStatus.PAID) {
-            logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
-            createShipTimeoutTaskIfAbsent(orderId, "payOrder:idempotent_paid");
-            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "IDEMPOTENT", "status=paid");
-            return "订单已支付，无需重复操作";
+        if (detail.getOrderNo() == null || detail.getOrderNo().trim().isEmpty()) {
+            throw new BusinessException("订单号缺失，无法模拟支付回调");
+        }
+        if (detail.getTotalAmount() == null) {
+            throw new BusinessException("订单金额缺失，无法模拟支付回调");
+        }
+        return detail;
     }
 
-        // 幂等：已支付/已进入后续状态 -> 直接返回成功提示（不要抛异常）
-        if ( s == OrderStatus.SHIPPED || s == OrderStatus.COMPLETED) {
-            logIdempotencyHit("payOrder", "orderId:" + orderId, "status=" + s.getDbValue());
-            AuditLogUtil.success(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "IDEMPOTENT", "status=" + s.getDbValue());
-            return "订单已支付，无需重复操作";
+    /**
+     * 执行一次 mock 回调。
+     *
+     * 说明：
+     * 1) 第一轮和第二轮回调写入不同字段，前端可以直接展示“首次通知 / 重复通知”；
+     * 2) 这里显式走 `orderServiceProxy.handlePaymentCallback(...)`，确保命中 Spring 事务代理；
+     * 3) 对于 `REPEAT` 场景，第一轮和第二轮会复用同一个 tradeNo / timestamp，
+     *    更贴近“第三方重复投递同一回调”的真实语义。
+     */
+    private void applyMockCallback(MockPaymentSimulationVO result,
+                                   OrderDetail detail,
+                                   String callbackStatus,
+                                   String tradeNo,
+                                   long timestamp,
+                                   boolean firstRound) {
+        PaymentCallbackRequest request = buildMockCallbackRequest(detail, callbackStatus, tradeNo, timestamp);
+        String callbackResult = orderServiceProxy.handlePaymentCallback(request);
+        if (firstRound) {
+            result.setFirstStatus(callbackStatus);
+            result.setFirstTradeNo(tradeNo);
+            result.setFirstResult(callbackResult);
+            return;
         }
+        result.setSecondStatus(callbackStatus);
+        result.setSecondTradeNo(tradeNo);
+        result.setSecondResult(callbackResult);
+    }
 
-        if (s == OrderStatus.CANCELLED) {
-            AuditLogUtil.failed(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "ORDER_CANCELLED", "cannot pay cancelled order");
-            throw new BusinessException("订单已取消，无法支付");
+    /**
+     * 构造 mock 支付回调请求。
+     *
+     * 当前签名策略刻意保持简单：
+     * 1) `channel` 固定走配置化的 `mock`；
+     * 2) `sign` 使用配置中的固定演示签名；
+     * 3) 真正的验签逻辑仍由 `handlePaymentCallback` 里的占位规则兜底。
+     *
+     * 这样既能保留“simulate callback signature”的演示口径，
+     * 也不会把当前项目拉进真实支付验签的高成本实现里。
+     */
+    private PaymentCallbackRequest buildMockCallbackRequest(OrderDetail detail,
+                                                            String callbackStatus,
+                                                            String tradeNo,
+                                                            long timestamp) {
+        PaymentCallbackRequest request = new PaymentCallbackRequest();
+        request.setChannel(mockPaymentChannel);
+        request.setOrderNo(detail.getOrderNo());
+        request.setTradeNo(tradeNo);
+        request.setAmount(detail.getTotalAmount());
+        request.setStatus(callbackStatus);
+        request.setTimestamp(timestamp);
+        request.setSign(mockPaymentSign);
+        return request;
+    }
+
+    /**
+     * 生成 mock 交易流水号。
+     *
+     * 命名口径里保留：
+     * - `MOCKPAY` 前缀：日志检索时能快速过滤演示链路；
+     * - `场景名`：回归记录里可以直接看到 SUCCESS / FAIL / REPEAT；
+     * - `orderId + 时间戳`：同一订单多次演示时也能区分不同批次。
+     */
+    private String buildMockTradeNo(Long orderId, MockPaymentScenario scenario) {
+        return "MOCKPAY-" + scenario.name() + "-" + orderId + "-" + System.currentTimeMillis();
+    }
+
+    /**
+     * 判断 mock 支付最终结果是否属于幂等成功。
+     *
+     * 当前统一识别口径只有一条：
+     * - `订单已支付，回调幂等成功`
+     *
+     * 这样做的目的是让 `/user/orders/{id}/pay` 的审计结果与 `/payment/callback`
+     * 的幂等文案保持一致，避免同一条业务语义被记录成两套统计口径。
+     */
+    private boolean isMockPaymentIdempotent(String result) {
+        return Objects.equals(PAYMENT_CALLBACK_IDEMPOTENT_MESSAGE, result);
+    }
+
+    /**
+     * mock 支付演示场景枚举。
+     *
+     * 当前只保留最适合演示的三档场景：
+     * 1) `SUCCESS`：正常支付成功；
+     * 2) `FAIL`：失败或非成功状态回调；
+     * 3) `REPEAT`：同一成功回调重复投递。
+     */
+    private enum MockPaymentScenario {
+        SUCCESS,
+        FAIL,
+        REPEAT;
+
+        private static MockPaymentScenario fromRaw(String raw) {
+            if (raw == null || raw.trim().isEmpty()) {
+                return SUCCESS;
+            }
+            try {
+                return MockPaymentScenario.valueOf(raw.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new BusinessException("mock 支付场景不支持：" + raw);
+            }
         }
-
-        // 理论上 pending 时 rows 应该=1，走到这里多半是并发/脏数据/where条件不一致
-        AuditLogUtil.failed(log, auditId, "ORDER_PAY", "USER", String.valueOf(currentUserId), "ORDER", String.valueOf(orderId), "STATUS_NOT_ALLOW", "status=" + detail.getStatus());
-        throw new BusinessException("支付失败，订单状态不允许支付：" + detail.getStatus());
     }
 
     /**
@@ -590,7 +795,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
-    public String handlePaymentCallback(com.demo.dto.payment.PaymentCallbackRequest request) {
+    public String handlePaymentCallback(PaymentCallbackRequest request) {
         String auditId = AuditLogUtil.newAuditId();
         // 1) 占位验签（Day13 冻结：sign 非空 + timestamp 在 5 分钟内）
         if (request.getSign() == null || request.getSign().trim().isEmpty()) {

@@ -10,6 +10,7 @@ import com.demo.result.PageResult;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
+import com.demo.vo.payment.MockPaymentSimulationVO;
 import com.github.pagehelper.PageInfo;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,16 @@ public interface OrderService {
     CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId);
 
     String payOrder(Long orderId, Long currentUserId);
+
+    /**
+     * Day20 - 模拟支付回调演示入口。
+     *
+     * @param orderId 订单 ID
+     * @param currentUserId 当前登录用户 ID（必须是买家）
+     * @param scenario 演示场景：SUCCESS / FAIL / REPEAT
+     * @return 回调演示结果（含前后状态、每次回调结果）
+     */
+    MockPaymentSimulationVO simulateMockPayment(Long orderId, Long currentUserId, String scenario);
 
     String cancelOrder(Long orderId, CancelOrderRequest request, Long currentUserId);
 
