@@ -1,4 +1,6 @@
 import request from '../utils/request'
+import { isMockEnabled } from '@/mock/config'
+import { mockCreateUser, mockExportUsers, mockGetUserList, mockRestrictUser, mockUnrestrictUser } from '@/mock/user'
 
 /**
  * 列表行：这是页面真正要消费的前端展示模型。
@@ -168,6 +170,16 @@ function normalizeUser(user: UserVo): UserItem {
  * 获取用户分页列表。
  */
 export async function getUserList(params: UserListParams): Promise<UserListResponse> {
+  if (isMockEnabled()) {
+    return mockGetUserList({
+      page: params.page,
+      pageSize: params.pageSize,
+      keyword: params.searchQuery,
+      role: toBackendRole(params.role),
+      status: toBackendStatus(params.status),
+    })
+  }
+
   const res = (await request({
     url: '/admin/user',
     method: 'get',
@@ -201,6 +213,10 @@ export interface CreateUserPayload {
  * 管理员手动建档。
  */
 export function createUser(data: CreateUserPayload) {
+  if (isMockEnabled()) {
+    return mockCreateUser(data)
+  }
+
   return request({
     url: '/admin/user',
     method: 'post',
@@ -214,6 +230,10 @@ export function createUser(data: CreateUserPayload) {
  * @param reason 封禁理由，必填，用于运营审计和用户申诉
  */
 export function restrictUser(userId: string, reason: string) {
+  if (isMockEnabled()) {
+    return mockRestrictUser(userId)
+  }
+
   return request({
     url: `/admin/user/${userId}/ban`,
     method: 'put',
@@ -225,6 +245,10 @@ export function restrictUser(userId: string, reason: string) {
  * 解除限制（解封）。
  */
 export function unrestrictUser(userId: string) {
+  if (isMockEnabled()) {
+    return mockUnrestrictUser(userId)
+  }
+
   return request({
     url: `/admin/user/${userId}/unban`,
     method: 'put',
@@ -235,6 +259,10 @@ export function unrestrictUser(userId: string) {
  * 导出用户 CSV。
  */
 export function exportUsers(keyword?: string, startTime?: string, endTime?: string) {
+  if (isMockEnabled()) {
+    return mockExportUsers(keyword)
+  }
+
   return request({
     url: '/admin/user/export',
     method: 'get',

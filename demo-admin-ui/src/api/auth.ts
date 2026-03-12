@@ -1,4 +1,6 @@
 import request from '@/utils/request'
+import { isMockEnabled } from '@/mock/config'
+import { mockLogin } from '@/mock/auth'
 
 /**
  * 登录请求参数
@@ -26,6 +28,10 @@ export interface LoginResult {
  * @returns 返回包含 token 和用户信息的 Promise
  */
 export function login(data: LoginParams) {
+  if (isMockEnabled()) {
+    return mockLogin(data)
+  }
+
   // 注意：这里的泛型 LoginResult 会被 request.ts 里的拦截器拆包，
   // 最终业务代码拿到的直接是 data 里的内容，而不是 { code, msg, data }
   return request.post<any, LoginResult>('/admin/employee/login', data)

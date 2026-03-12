@@ -1,4 +1,6 @@
 import request from '../utils/request'
+import { isMockEnabled } from '@/mock/config'
+import { mockFetchDashboardData } from '@/mock/dashboard'
 
 /**
  * Dashboard 页面顶部指标卡的数据结构。
@@ -67,6 +69,10 @@ export interface DashboardData {
  * 而是改成直接请求后端聚合好的总览接口。
  */
 export function fetchDashboardData(date?: string): Promise<DashboardData> {
+  if (isMockEnabled()) {
+    return mockFetchDashboardData()
+  }
+
   return request({
     url: '/admin/dashboard/overview',
     method: 'get',
