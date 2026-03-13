@@ -34,4 +34,6 @@ public class UserVO {
     private String status;
     /** 地区。 */
     private String region;
+    /** 是否卖家（1=是，0/NULL=否）。 */
+    private Integer isSeller;
 }

@@ -65,7 +65,8 @@ public class AdminAuditServiceImpl implements AdminAuditService {
 
         AdminAuditOverviewVO overview = new AdminAuditOverviewVO();
         overview.setTickets(filteredTickets);
-        overview.setStats(buildStats(filteredTickets));
+        // 顶部统计卡使用全量聚合数据，不跟随列表筛选条件变化。
+        overview.setStats(buildStats(allTickets));
         return overview;
     }
 

@@ -13,6 +13,7 @@ public class ProductDTO {
 
     /** 商品 ID。 */
     private Long productId;
+    private Long ownerId;
     /** 商品名称。 */
     private String productName;
     /** 商品分类。 */

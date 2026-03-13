@@ -4,7 +4,9 @@ import com.demo.dto.Violation.ViolationStatisticsResponseDTO;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.AfterSale;
 import com.demo.entity.User;
+import com.demo.enumeration.ProductStatus;
 import com.demo.mapper.AfterSaleMapper;
+import com.demo.mapper.ProductMapper;
 import com.demo.mapper.UserMapper;
 import com.demo.result.PageResult;
 import com.demo.service.AdminDashboardService;
@@ -23,165 +25,131 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 管理后台首页聚合服务实现。
- *
- * 说明：
- * 1. 当前项目里已有统计、商品审核、违规治理、售后等独立接口；
- * 2. 这里不是重复造轮子，而是把这些已有能力重新拼成“首页工作台数据包”；
- * 3. 这样前端首页以后只需要请求一次，就能拿到核心指标、审核队列、纠纷队列、风控提醒。
- */
 @Service
 @Slf4j
 public class AdminDashboardServiceImpl implements AdminDashboardService {
 
-    /**
-     * 统计服务：提供 GMV、订单量、商品发布量等统计能力。
-     */
     @Autowired
     private StatisticsService statisticsService;
 
-    /**
-     * 商品服务：提供待审核商品分页列表。
-     */
     @Autowired
     private ProductService productService;
 
-    /**
-     * 违规服务：提供违规类型统计。
-     */
     @Autowired
     private ViolationService violationService;
 
-    /**
-     * 售后 Mapper：当前用于补充首页纠纷队列与纠纷数量。
-     */
     @Autowired
     private AfterSaleMapper afterSaleMapper;
 
-    /**
-     * 用户 Mapper：用于把买家/卖家 ID 转成更可读的用户名称。
-     */
+    @Autowired
+    private ProductMapper productMapper;
+
     @Autowired
     private UserMapper userMapper;
 
-    /**
-     * Dashboard 首页总览查询。
-     *
-     * @param date 统计日期
-     * @return 首页聚合数据
-     */
     @Override
     public AdminDashboardOverviewVO getOverview(LocalDate date) {
-        // 统一兜底，避免外部传 null 时首页直接报错。
         LocalDate targetDate = date != null ? date : LocalDate.now();
 
-        // 查询订单量与 GMV。
         Map<String, Object> orderStats = statisticsService.countOrderAndGMV(targetDate);
-
-        // 查询商品发布量。
         Map<String, Object> productPublishStats = statisticsService.countProductPublish(targetDate);
-
-        // 查询待审核商品分页列表：首页只展示前 4 条即可。
         PageResult<ProductDTO> pendingPage = productService.getPendingApprovalProducts(1, 4, null, null, null);
-
-        // 查询违规统计，用于首页风控预警。
         ViolationStatisticsResponseDTO violationStatistics = violationService.getViolationStatistics();
-
-        // 查询处于 DISPUTED 状态的售后单，用作首页纠纷处理队列。
         long disputedTotal = afterSaleMapper.countByStatus("DISPUTED");
         List<AfterSale> disputedList = afterSaleMapper.selectByStatus("DISPUTED", 3);
 
-        // 创建最终返回对象。
         AdminDashboardOverviewVO overview = new AdminDashboardOverviewVO();
+        overview.setCoreMetrics(buildCoreMetrics(
+                targetDate,
+                orderStats,
+                productPublishStats,
+                pendingPage,
+                violationStatistics,
+                disputedTotal
+        ));
 
-        // 组装顶部核心指标。
-        overview.setCoreMetrics(buildCoreMetrics(orderStats, productPublishStats, pendingPage, violationStatistics, disputedTotal));
-
-        // 组装待审核商品队列。
-        overview.setReviewQueue(buildReviewQueue(pendingPage != null ? pendingPage.getRecords() : Collections.emptyList()));
-
-        // 组装纠纷处理队列。
+        List<ProductDTO> pendingProducts = pendingPage == null || pendingPage.getRecords() == null
+                ? Collections.emptyList()
+                : pendingPage.getRecords();
+        overview.setReviewQueue(buildReviewQueue(pendingProducts));
         overview.setDisputeQueue(buildDisputeQueue(disputedList));
-
-        // 组装风控预警列表。
         overview.setRiskAlerts(buildRiskAlerts(violationStatistics));
-
         return overview;
     }
 
-    /**
-     * 组装首页指标卡。
-     */
-    private List<AdminDashboardOverviewVO.MetricItem> buildCoreMetrics(Map<String, Object> orderStats,
+    private List<AdminDashboardOverviewVO.MetricItem> buildCoreMetrics(LocalDate targetDate,
+                                                                       Map<String, Object> orderStats,
                                                                        Map<String, Object> productPublishStats,
                                                                        PageResult<ProductDTO> pendingPage,
                                                                        ViolationStatisticsResponseDTO violationStatistics,
                                                                        long disputedTotal) {
-        // 读取订单数量。
         long orderCount = asLong(orderStats == null ? null : orderStats.get("orderCount"));
-
-        // 读取 GMV。
         BigDecimal gmv = asBigDecimal(orderStats == null ? null : orderStats.get("gmv"));
-
-        // 读取商品发布量。
         long publishTotal = asLong(productPublishStats == null ? null : productPublishStats.get("total"));
-
-        // 待审核商品总数来自分页 total。
         long pendingTotal = pendingPage == null || pendingPage.getTotal() == null ? 0L : pendingPage.getTotal();
-
-        // 违规统计总量，用于补充“争议与举报”指标。
         long violationTotal = sumViolationCount(violationStatistics);
 
+        LocalDate previousDate = targetDate.minusDays(1);
+        Map<String, Object> previousOrderStats = statisticsService.countOrderAndGMV(previousDate);
+        long previousOrderCount = asLong(previousOrderStats == null ? null : previousOrderStats.get("orderCount"));
+        BigDecimal previousGmv = asBigDecimal(previousOrderStats == null ? null : previousOrderStats.get("gmv"));
+
+        long pendingTodayNew = productMapper.countByStatusAndDate(ProductStatus.UNDER_REVIEW.getDbValue(), targetDate);
+        long pendingYesterdayNew = productMapper.countByStatusAndDate(ProductStatus.UNDER_REVIEW.getDbValue(), previousDate);
+        long disputedTodayNew = afterSaleMapper.countByStatusAndDate("DISPUTED", targetDate);
+        long disputedYesterdayNew = afterSaleMapper.countByStatusAndDate("DISPUTED", previousDate);
+
         AdminDashboardOverviewVO.MetricItem gmvMetric = new AdminDashboardOverviewVO.MetricItem();
-        gmvMetric.setTitle("今日成交额 (GMV)");
+        gmvMetric.setTitle("今日成交额(GMV)");
         gmvMetric.setValue(formatCurrency(gmv));
-        gmvMetric.setTrend("--");
-        gmvMetric.setIsUp(Boolean.TRUE);
+        gmvMetric.setTrend(formatTrendPercent(gmv, previousGmv));
+        gmvMetric.setIsUp(gmv.compareTo(previousGmv) >= 0);
         gmvMetric.setSubtext("今日成交订单 " + orderCount + " 单");
 
         AdminDashboardOverviewVO.MetricItem orderMetric = new AdminDashboardOverviewVO.MetricItem();
         orderMetric.setTitle("新增付款订单");
         orderMetric.setValue(String.valueOf(orderCount));
-        orderMetric.setTrend("--");
-        orderMetric.setIsUp(Boolean.TRUE);
-        orderMetric.setSubtext("统计日期 " + LocalDate.now());
+        orderMetric.setTrend(formatTrendPercent(orderCount, previousOrderCount));
+        orderMetric.setIsUp(orderCount >= previousOrderCount);
+        orderMetric.setSubtext("昨日同期 " + previousOrderCount + " 单");
 
         AdminDashboardOverviewVO.MetricItem reviewMetric = new AdminDashboardOverviewVO.MetricItem();
         reviewMetric.setTitle("待审异常商品");
         reviewMetric.setValue(String.valueOf(pendingTotal));
-        reviewMetric.setTrend("--");
-        reviewMetric.setIsUp(Boolean.FALSE);
-        reviewMetric.setSubtext("当前待审商品 " + (pendingPage == null || pendingPage.getRecords() == null ? 0 : pendingPage.getRecords().size()) + " 条");
+        reviewMetric.setTrend(formatTrendPercent(pendingTodayNew, pendingYesterdayNew));
+        reviewMetric.setIsUp(pendingTodayNew <= pendingYesterdayNew);
+        reviewMetric.setSubtext("今日新增待审 " + pendingTodayNew + " 条，商品发布 " + publishTotal + " 条");
 
         AdminDashboardOverviewVO.MetricItem disputeMetric = new AdminDashboardOverviewVO.MetricItem();
         disputeMetric.setTitle("售后争议 & 举报");
-        disputeMetric.setValue(String.valueOf(disputedTotal + violationTotal));
-        disputeMetric.setTrend("--");
-        disputeMetric.setIsUp(Boolean.FALSE);
-        disputeMetric.setSubtext("商品发布量 " + publishTotal + " 条");
+        disputeMetric.setValue(String.valueOf(disputedTotal));
+        disputeMetric.setTrend(formatTrendPercent(disputedTodayNew, disputedYesterdayNew));
+        disputeMetric.setIsUp(disputedTodayNew <= disputedYesterdayNew);
+        disputeMetric.setSubtext("待处理纠纷 " + disputedTotal + " 单，违规累计 " + violationTotal + " 次");
 
         return List.of(gmvMetric, orderMetric, reviewMetric, disputeMetric);
     }
 
-    /**
-     * 组装待审核商品队列。
-     */
     private List<AdminDashboardOverviewVO.ReviewQueueItem> buildReviewQueue(List<ProductDTO> products) {
         if (products == null || products.isEmpty()) {
             return Collections.emptyList();
         }
 
+        Map<Long, String> ownerNameMap = buildOwnerDisplayNameMap(products);
         return products.stream().map(product -> {
             AdminDashboardOverviewVO.ReviewQueueItem item = new AdminDashboardOverviewVO.ReviewQueueItem();
             item.setId("审核-" + product.getProductId());
-            item.setItem(product.getProductName());
-            // 现有 ProductDTO 还没有卖家昵称，这里先给一个说明性占位，后续若 DTO 补字段可再替换。
-            item.setUser("待补充卖家信息");
-            item.setType(product.getCategory() == null ? "待分类" : product.getCategory());
+            item.setItem(product.getProductName() == null || product.getProductName().isBlank()
+                    ? "未命名商品"
+                    : product.getProductName());
+            item.setUser(resolveOwnerName(product.getOwnerId(), ownerNameMap));
+            item.setType(product.getCategory() == null || product.getCategory().isBlank()
+                    ? "未分类"
+                    : product.getCategory());
             item.setPrice(formatCurrency(product.getPrice()));
             item.setTime(formatRelativeTime(product.getSubmitTime()));
             item.setRisk(inferProductRisk(product));
@@ -189,9 +157,26 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         }).toList();
     }
 
-    /**
-     * 组装纠纷处理队列。
-     */
+    private Map<Long, String> buildOwnerDisplayNameMap(List<ProductDTO> products) {
+        Map<Long, String> result = new HashMap<>();
+        for (ProductDTO product : products) {
+            if (product == null || product.getOwnerId() == null || result.containsKey(product.getOwnerId())) {
+                continue;
+            }
+            User owner = userMapper.selectById(product.getOwnerId());
+            result.put(product.getOwnerId(), resolveUserDisplayName(owner, product.getOwnerId()));
+        }
+        return result;
+    }
+
+    private String resolveOwnerName(Long ownerId, Map<Long, String> ownerNameMap) {
+        if (ownerId == null) {
+            return "未知卖家";
+        }
+        String name = ownerNameMap.get(ownerId);
+        return (name == null || name.isBlank()) ? ("用户#" + ownerId) : name;
+    }
+
     private List<AdminDashboardOverviewVO.DisputeQueueItem> buildDisputeQueue(List<AfterSale> afterSales) {
         if (afterSales == null || afterSales.isEmpty()) {
             return Collections.emptyList();
@@ -200,17 +185,18 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return afterSales.stream().map(afterSale -> {
             AdminDashboardOverviewVO.DisputeQueueItem item = new AdminDashboardOverviewVO.DisputeQueueItem();
             item.setId("纠纷-" + afterSale.getId());
-            item.setReason(afterSale.getReason() == null ? "售后纠纷待平台处理" : afterSale.getReason());
-            item.setTarget("订单 #" + afterSale.getOrderId());
+            item.setReason(afterSale.getReason() == null || afterSale.getReason().isBlank()
+                    ? "售后纠纷待处理"
+                    : afterSale.getReason());
+            item.setTarget(afterSale.getOrderId() == null
+                    ? "订单未知"
+                    : "订单 #" + afterSale.getOrderId());
             item.setUser(buildDisputeUserLabel(afterSale));
             item.setLevel(inferDisputeLevel(afterSale));
             return item;
         }).toList();
     }
 
-    /**
-     * 组装风控预警列表。
-     */
     private List<AdminDashboardOverviewVO.RiskAlertItem> buildRiskAlerts(ViolationStatisticsResponseDTO violationStatistics) {
         if (violationStatistics == null || violationStatistics.getViolationTypeDistribution() == null) {
             return Collections.emptyList();
@@ -220,21 +206,23 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .stream()
                 .limit(3)
                 .map(distribution -> {
+                    String violationType = (distribution.getViolationType() == null || distribution.getViolationType().isBlank())
+                            ? "unknown"
+                            : distribution.getViolationType();
+                    String typeDesc = (distribution.getViolationTypeDesc() == null || distribution.getViolationTypeDesc().isBlank())
+                            ? violationType
+                            : distribution.getViolationTypeDesc();
+
                     AdminDashboardOverviewVO.RiskAlertItem item = new AdminDashboardOverviewVO.RiskAlertItem();
-                    item.setId("风控-" + distribution.getViolationType());
-                    item.setType(distribution.getViolationTypeDesc() != null
-                            ? distribution.getViolationTypeDesc()
-                            : distribution.getViolationType());
-                    item.setTarget("违规类型: " + distribution.getViolationType());
+                    item.setId("违规-" + violationType);
+                    item.setType(typeDesc);
+                    item.setTarget("违规类型: " + violationType);
                     item.setCount(distribution.getCount() + " 次");
                     return item;
                 })
                 .toList();
     }
 
-    /**
-     * 根据商品信息粗略推断风险等级。
-     */
     private String inferProductRisk(ProductDTO product) {
         if (product == null) {
             return "正常";
@@ -250,21 +238,17 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return "正常";
     }
 
-    /**
-     * 构造纠纷展示文案。
-     */
     private String buildDisputeUserLabel(AfterSale afterSale) {
+        if (afterSale == null) {
+            return "买家 未知用户 vs 卖家 未知用户";
+        }
         User buyer = afterSale.getBuyerId() == null ? null : userMapper.selectById(afterSale.getBuyerId());
         User seller = afterSale.getSellerId() == null ? null : userMapper.selectById(afterSale.getSellerId());
-
         String buyerName = resolveUserDisplayName(buyer, afterSale.getBuyerId());
         String sellerName = resolveUserDisplayName(seller, afterSale.getSellerId());
         return "买家 " + buyerName + " vs 卖家 " + sellerName;
     }
 
-    /**
-     * 根据售后单停留时长给一个简单优先级。
-     */
     private String inferDisputeLevel(AfterSale afterSale) {
         if (afterSale == null || afterSale.getUpdateTime() == null) {
             return "中风险";
@@ -280,25 +264,19 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return "待处理";
     }
 
-    /**
-     * 生成更适合展示的用户名。
-     */
     private String resolveUserDisplayName(User user, Long userId) {
         if (user == null) {
             return userId == null ? "未知用户" : "用户#" + userId;
         }
-        if (user.getNickname() != null && !user.getNickname().trim().isEmpty()) {
+        if (user.getNickname() != null && !user.getNickname().isBlank()) {
             return user.getNickname().trim();
         }
-        if (user.getUsername() != null && !user.getUsername().trim().isEmpty()) {
+        if (user.getUsername() != null && !user.getUsername().isBlank()) {
             return user.getUsername().trim();
         }
         return userId == null ? "未知用户" : "用户#" + userId;
     }
 
-    /**
-     * 汇总违规统计总数。
-     */
     private long sumViolationCount(ViolationStatisticsResponseDTO violationStatistics) {
         if (violationStatistics == null || violationStatistics.getViolationTypeDistribution() == null) {
             return 0L;
@@ -310,9 +288,28 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .sum();
     }
 
-    /**
-     * 安全读取 long 值。
-     */
+    private String formatTrendPercent(long current, long previous) {
+        return formatTrendPercent(BigDecimal.valueOf(current), BigDecimal.valueOf(previous));
+    }
+
+    private String formatTrendPercent(BigDecimal current, BigDecimal previous) {
+        BigDecimal safeCurrent = current == null ? BigDecimal.ZERO : current;
+        BigDecimal safePrevious = previous == null ? BigDecimal.ZERO : previous;
+
+        if (safePrevious.compareTo(BigDecimal.ZERO) == 0) {
+            if (safeCurrent.compareTo(BigDecimal.ZERO) == 0) {
+                return "0.0%";
+            }
+            return safeCurrent.compareTo(BigDecimal.ZERO) > 0 ? "+100.0%" : "-100.0%";
+        }
+
+        BigDecimal delta = safeCurrent.subtract(safePrevious);
+        BigDecimal percent = delta.multiply(BigDecimal.valueOf(100))
+                .divide(safePrevious.abs(), 1, RoundingMode.HALF_UP);
+        String sign = percent.compareTo(BigDecimal.ZERO) > 0 ? "+" : "";
+        return sign + percent.toPlainString() + "%";
+    }
+
     private long asLong(Object value) {
         if (value == null) {
             return 0L;
@@ -323,14 +320,11 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         try {
             return Long.parseLong(String.valueOf(value));
         } catch (Exception ex) {
-            log.warn("Dashboard 聚合转换 long 失败: value={}", value);
+            log.warn("Dashboard cast to long failed, value={}", value);
             return 0L;
         }
     }
 
-    /**
-     * 安全读取 BigDecimal 值。
-     */
     private BigDecimal asBigDecimal(Object value) {
         if (value == null) {
             return BigDecimal.ZERO;
@@ -341,32 +335,34 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         try {
             return new BigDecimal(String.valueOf(value));
         } catch (Exception ex) {
-            log.warn("Dashboard 聚合转换 BigDecimal 失败: value={}", value);
+            log.warn("Dashboard cast to BigDecimal failed, value={}", value);
             return BigDecimal.ZERO;
         }
     }
 
-    /**
-     * 金额格式化，直接按首页展示风格返回字符串。
-     */
     private String formatCurrency(BigDecimal amount) {
         BigDecimal safeAmount = amount == null ? BigDecimal.ZERO : amount;
-        if (safeAmount.compareTo(new BigDecimal("10000")) >= 0) {
-            return "￥ " + safeAmount.divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP) + "万";
+        if (safeAmount.abs().compareTo(new BigDecimal("10000")) >= 0) {
+            BigDecimal wan = safeAmount.divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP);
+            return "¥" + wan.stripTrailingZeros().toPlainString() + "万";
         }
-        return "￥ " + safeAmount.stripTrailingZeros().toPlainString();
+        return "¥" + safeAmount.stripTrailingZeros().toPlainString();
     }
 
-    /**
-     * 时间转成“几分钟前 / 几小时前”这种更适合工作台阅读的格式。
-     */
     private String formatRelativeTime(LocalDateTime time) {
         if (time == null) {
             return "刚刚";
         }
 
         Duration duration = Duration.between(time, LocalDateTime.now());
-        long minutes = Math.max(1, duration.toMinutes());
+        if (duration.isNegative()) {
+            return "刚刚";
+        }
+
+        long minutes = duration.toMinutes();
+        if (minutes < 1) {
+            return "刚刚";
+        }
         if (minutes < 60) {
             return minutes + "分钟前";
         }

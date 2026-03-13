@@ -134,5 +134,8 @@ public interface ProductMapper {
      */
     List<ProductPublishCountDTO> countProductPublishByDate(@Param("date") java.time.LocalDate date);
 
+    long countByStatusAndDate(@Param("status") String status,
+                              @Param("date") java.time.LocalDate date);
+
 }
 

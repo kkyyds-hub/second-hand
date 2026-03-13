@@ -1543,6 +1543,7 @@ public class ProductServiceImpl implements ProductService {
     private ProductDTO toProductDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setProductId(product.getId());
+        dto.setOwnerId(product.getOwnerId());
         dto.setProductName(product.getTitle());
         dto.setCategory(product.getCategory());
         dto.setStatus(product.getStatus());

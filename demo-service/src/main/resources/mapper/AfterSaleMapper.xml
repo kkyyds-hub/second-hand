@@ -88,6 +88,13 @@
         WHERE status = #{status}
     </select>
 
+    <select id="countByStatusAndDate" resultType="long">
+        SELECT COUNT(1)
+        FROM after_sales
+        WHERE status = #{status}
+          AND DATE(create_time) = #{date}
+    </select>
+
     <select id="selectByStatus" resultType="com.demo.entity.AfterSale">
         SELECT
             id, order_id AS orderId, buyer_id AS buyerId, seller_id AS sellerId,

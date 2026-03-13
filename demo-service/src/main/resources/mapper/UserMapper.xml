@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.demo.mapper.UserMapper">
 
@@ -13,33 +13,22 @@
             OR email LIKE CONCAT('%', #{keyword}, '%'))
         </if>
 
-        <if test="status != null and status != '' and status != 'ALL' and status != '全部'">
-            <choose>
-                <when test="status == '正常'">
-                    AND status = 'active'
-                </when>
-                <when test="status == '预警'">
-                    AND status = 'inactive'
-                </when>
-                <when test="status == '限流'">
-                    AND status = 'frozen'
-                </when>
-                <when test="status == '封禁'">
-                    AND status = 'banned'
-                </when>
-                <otherwise>
-                    AND status = #{status}
-                </otherwise>
-            </choose>
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND status = #{status}
         </if>
 
-        <if test="role != null and role != '' and role != 'ALL' and role != '全部'">
+        <if test="role != null and role != '' and role != 'ALL'">
             <choose>
-                <when test="role == 'BUYER_NORMAL' or role == 'BUYER_VERIFIED' or role == '普通买家' or role == '认证买家'">
+                <when test="role == 'BUYER' or role == 'BUYER_NORMAL' or role == 'BUYER_VERIFIED'">
                     AND (is_seller = 0 OR is_seller IS NULL)
+                    AND LOWER(username) NOT LIKE 'admin%'
                 </when>
-                <when test="role == 'SELLER_PERSONAL' or role == 'SELLER_ENTERPRISE' or role == '个人卖家' or role == '企业商家'">
+                <when test="role == 'SELLER' or role == 'SELLER_PERSONAL' or role == 'SELLER_ENTERPRISE'">
                     AND is_seller = 1
+                    AND LOWER(username) NOT LIKE 'admin%'
+                </when>
+                <when test="role == 'PLATFORM_OPS'">
+                    AND LOWER(username) LIKE 'admin%'
                 </when>
             </choose>
         </if>
@@ -165,3 +154,4 @@
     </select>
 
 </mapper>
+

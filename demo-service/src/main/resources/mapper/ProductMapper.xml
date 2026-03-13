@@ -307,4 +307,12 @@
         GROUP BY category
     </select>
 
+    <select id="countByStatusAndDate" resultType="long">
+        SELECT COUNT(1)
+        FROM products
+        WHERE status = #{status}
+          AND DATE(create_time) = #{date}
+          AND is_deleted = 0
+    </select>
+
 </mapper>
