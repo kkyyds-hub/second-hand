@@ -35,6 +35,11 @@ const router = createRouter({
           component: () => import('@/pages/settings/SystemSettings.vue')
         },
         {
+          path: 'ops-center',
+          name: 'OpsCenter',
+          component: () => import('@/pages/ops/OpsCenter.vue')
+        },
+        {
           path: 'audit',
           name: 'AuditCenter',
           component: () => import('@/pages/audit/AuditCenter.vue')

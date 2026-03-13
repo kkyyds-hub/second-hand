@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:mock": "vite --mode mock",
-    "dev:real": "vite --mode real",
+    "dev": "vite --mode real --host 0.0.0.0",
+    "dev:real": "vite --mode real --host 0.0.0.0",
     "build": "vue-tsc -b && vite build",
     "build:real": "vue-tsc -b && vite build --mode real",
     "preview": "vite preview"

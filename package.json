@@ -4,8 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:admin": "npm --prefix demo-admin-ui run dev",
+    "dev:admin:real": "npm --prefix demo-admin-ui run dev:real",
+    "start:backend": "mvn -pl demo-service -am spring-boot:run",
+    "start:backend:module": "mvn -f demo-service/pom.xml spring-boot:run",
+    "start:stack": "powershell -ExecutionPolicy Bypass -File scripts/start-stack.ps1",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "secret:scan": "powershell -ExecutionPolicy Bypass -File .tools/密钥泄漏扫描.ps1"
+    "secret:scan": "powershell -ExecutionPolicy Bypass -File .tools/secret-scan.ps1"
   },
   "repository": {
     "type": "git",
