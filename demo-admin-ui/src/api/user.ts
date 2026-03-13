@@ -64,6 +64,7 @@ interface UserVo {
   productCount?: number
   status?: string
   region?: string
+  isSeller?: number
 }
 
 /**
@@ -74,10 +75,10 @@ function normalizeRole(user: UserVo) {
   if (user.username?.toLowerCase().startsWith('admin')) {
     return '平台运营'
   }
-  if ((user.productCount ?? 0) > 20) {
+  if (user.isSeller === 1 && (user.productCount ?? 0) > 20) {
     return '企业商家'
   }
-  if ((user.productCount ?? 0) > 0) {
+  if (user.isSeller === 1) {
     return '个人卖家'
   }
   return '普通买家'
@@ -126,6 +127,12 @@ function toBackendStatus(status?: string) {
 function toBackendRole(role?: string) {
   if (!role || role === 'ALL' || role === '全部') return undefined
   switch (role) {
+    case 'BUYER':
+      return 'BUYER'
+    case 'SELLER':
+      return 'SELLER'
+    case 'PLATFORM_OPS':
+      return 'PLATFORM_OPS'
     case '普通买家':
       return 'BUYER_NORMAL'
     case '认证买家':
