@@ -1,6 +1,11 @@
 import type { CreateUserPayload, UserItem, UserListResponse } from '@/api/user'
 import { cloneData, mockDelay, readLocalJson, writeLocalJson } from './config'
 
+/**
+ * 用户管理 mock：
+ * - 首次读取时用 seed 初始化
+ * - 后续所有增删改都写回本地存储，便于你反复点击后仍能保留现场
+ */
 const USER_STORAGE_KEY = 'demo_admin_mock_users_v1'
 
 type RoleCode = 'BUYER_NORMAL' | 'BUYER_VERIFIED' | 'SELLER_PERSONAL' | 'SELLER_ENTERPRISE'
@@ -28,6 +33,7 @@ export interface MockUserListParams {
   status?: string
 }
 
+// 这批 seed 尽量覆盖普通买家、卖家、企业商家、异常账号等常见 review 场景。
 const userSeed: MockUserRecord[] = [
   {
     id: '10001',
@@ -149,6 +155,7 @@ export async function mockGetUserList(params: MockUserListParams): Promise<UserL
   const role = params.role
   const status = params.status
 
+  // mock 查询尽量贴近真实接口语义：role/status 直接按 API 层映射后的值过滤。
   const filtered = loadUsers().filter((item) => {
     if (role && item.roleCode !== role) return false
     if (status && item.statusCode !== status) return false
@@ -188,10 +195,12 @@ export async function mockCreateUser(payload: CreateUserPayload): Promise<void> 
     registerDate: now.toISOString().slice(0, 10),
     lastActive: '近期活跃',
   }
+  // 新建用户插到头部，模拟“后台刚建档就能立刻看到”的体验。
   list.unshift(newItem)
   saveUsers(list)
 }
 
+// mock 限制/解除限制只切换状态码，不额外模拟复杂审核流。
 export async function mockRestrictUser(userId: string): Promise<void> {
   await mockDelay(220)
   const list = loadUsers()
@@ -214,6 +223,9 @@ export async function mockUnrestrictUser(userId: string): Promise<void> {
   saveUsers(list)
 }
 
+/**
+ * mock 导出返回 CSV 文本内容，方便页面在不连真后端时也能走完整导出链路。
+ */
 export async function mockExportUsers(keyword?: string): Promise<string> {
   await mockDelay(240)
   const lowKeyword = (keyword || '').trim().toLowerCase()

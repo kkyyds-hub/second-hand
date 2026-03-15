@@ -1,4 +1,4 @@
-demo:
+﻿demo:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     host: localhost
@@ -28,16 +28,16 @@ demo:
         ttl-seconds: 45
         lock-seconds: 3
 
-  # MongoDB（站内消息）无认证直连
+  # MongoDB锛堢珯鍐呮秷鎭級鏃犺璇佺洿杩?
   mongodb:
     uri: mongodb://localhost:27017/demo
 
-  # Day14 RabbitMQ（开发机默认本地容器/本机服务）
+  # Day14 RabbitMQ锛堝紑鍙戞満榛樿鏈湴瀹瑰櫒/鏈満鏈嶅姟锛?
   rabbitmq:
     host: localhost
     port: 5672
-    username: guest
-    password: guest
+    username: root
+    password: 1234
     virtual-host: /
     prefetch: 20
 
@@ -72,8 +72,8 @@ demo:
       enabled: false
       api-key:
 
-# Day20 - 开发环境 mock 支付配置
-# 这里保留为固定签名即可，方便 Postman / 前端演示页复用。
+# Day20 - 寮€鍙戠幆澧?mock 鏀粯閰嶇疆
+# 杩欓噷淇濈暀涓哄浐瀹氱鍚嶅嵆鍙紝鏂逛究 Postman / 鍓嶇婕旂ず椤靛鐢ㄣ€?
 payment:
   mock:
     channel: mock
@@ -92,3 +92,4 @@ avatar-storage:
 logging:
   level:
     com.demo.mapper: debug
+

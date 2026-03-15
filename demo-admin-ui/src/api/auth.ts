@@ -28,6 +28,7 @@ export interface LoginResult {
  * @returns 返回包含 token 和用户信息的 Promise
  */
 export function login(data: LoginParams) {
+  // 开发期后端未就绪时，直接复用 mock 返回结构，保证登录页能单独联调。
   if (isMockEnabled()) {
     return mockLogin(data)
   }

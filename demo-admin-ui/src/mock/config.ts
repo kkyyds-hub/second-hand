@@ -4,6 +4,9 @@
  */
 const mockFlag = String(import.meta.env.VITE_USE_MOCK ?? '').toLowerCase()
 
+/**
+ * 用函数而不是裸布尔值，调用方读起来更像“判断当前是否启用 mock”。
+ */
 export const isMockEnabled = () => mockFlag === 'true'
 
 /**
@@ -30,10 +33,12 @@ export function readLocalJson<T>(key: string, fallback: T): T {
     if (!raw) return fallback
     return JSON.parse(raw) as T
   } catch {
+    // 本地缓存损坏时直接回退，避免 mock 页面因为脏数据整体崩掉。
     return fallback
   }
 }
 
 export function writeLocalJson<T>(key: string, value: T) {
+  // 统一序列化为 JSON 字符串，和 readLocalJson 的读取方式保持对称。
   localStorage.setItem(key, JSON.stringify(value))
 }

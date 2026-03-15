@@ -7,15 +7,24 @@ import { clearAdminToken } from '@/utils/request'
 const router = useRouter()
 const submitting = ref(false)
 
+/**
+ * 取消退出时直接回到首页，避免误操作打断当前 review 动线。
+ */
 const goBack = () => {
   router.push('/')
 }
 
+/**
+ * 退出流程保持为“进入 loading -> 清 token -> 跳登录页”的顺序，
+ * 这样状态切换更清晰，也能防止连续点击导致重复提交。
+ */
 const confirmLogout = async () => {
   try {
     submitting.value = true
+    // 人为补一个极短过渡，让按钮 loading 状态能被用户感知到。
     await new Promise((resolve) => window.setTimeout(resolve, 280))
     clearAdminToken()
+    // 用 replace 避免浏览器返回后又回到已经失效的后台页面。
     router.replace('/login')
   } finally {
     submitting.value = false
@@ -42,26 +51,34 @@ const confirmLogout = async () => {
       </div>
 
       <div class="p-6 space-y-4">
-        <div class="bg-amber-50 border border-amber-200 rounded p-3 flex items-start gap-2">
-          <ShieldAlert class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-          <p class="text-sm text-amber-800 leading-relaxed">
-            如果你正在联调多个账号，建议先退出当前账号，再用其他账号重新登录，避免权限状态混淆。
-          </p>
+        <!-- 这里强调公共设备风险，属于退出页最核心的安全提示。 -->
+        <div class="state-banner state-banner-warning">
+          <div class="state-banner-main">
+            <span class="state-banner-icon border-orange-200">
+              <ShieldAlert class="w-4 h-4 text-amber-600" />
+            </span>
+            <div>
+              <p class="state-banner-title">退出前请确认设备环境</p>
+              <p class="state-banner-text text-amber-800/90">若当前为公共设备，退出后建议关闭浏览器或清理浏览记录，避免账号信息残留。</p>
+            </div>
+          </div>
         </div>
 
-        <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-600">
-          当前操作：<span class="font-medium text-gray-800">清理 token 并跳转登录页</span>
+        <div class="rounded-xl border border-gray-200 bg-gray-50/70 p-4 text-sm text-gray-600">
+          <p class="text-[12px] text-gray-500">退出后效果</p>
+          <p class="mt-1 font-medium text-gray-800">结束当前登录状态，并返回登录页重新验证身份。</p>
         </div>
       </div>
 
       <div class="px-6 py-4 border-t border-gray-200 bg-gray-50/60 flex justify-end gap-3">
         <button class="btn-default" @click="goBack" :disabled="submitting">取消</button>
+        <!-- 提交按钮与 loading 态绑定，防止退出请求期间再次触发。 -->
         <button
-          class="btn-primary bg-red-600 hover:bg-red-700 border-red-700/50 flex items-center gap-2 disabled:opacity-70"
+          class="btn-danger btn-loading"
           @click="confirmLogout"
           :disabled="submitting"
         >
-          <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
+          <Loader2 v-if="submitting" class="btn-loading-icon" />
           {{ submitting ? '退出中...' : '确认退出登录' }}
         </button>
       </div>

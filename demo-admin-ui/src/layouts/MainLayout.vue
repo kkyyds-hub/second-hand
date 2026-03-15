@@ -9,6 +9,11 @@ const router = useRouter()
 const isCollapsed = ref(false)
 const userMenuOpen = ref(false)
 
+/**
+ * 侧边导航尽量配置化，后续 review 菜单结构时优先看这里：
+ * - 文案、路由、图标一一对应
+ * - 新增菜单通常只需要补配置，不必改模板结构
+ */
 const menuGroups = [
   {
     label: '总览',
@@ -38,8 +43,14 @@ const menuGroups = [
   }
 ]
 
+// 当前项目按 path 精确高亮菜单，避免模板层再维护额外的选中态。
 const isActive = (path: string) => route.path === path
 
+/**
+ * 顶部退出入口拆成两个动作：
+ * - goLogoutPage: 先进入退出确认页
+ * - quickLogout: 直接清 token 并回登录页
+ */
 const goLogoutPage = () => {
   userMenuOpen.value = false
   router.push('/logout')

@@ -9,6 +9,7 @@ import { mockDelay } from './config'
 export async function mockLogin(data: LoginParams): Promise<LoginResult> {
   await mockDelay()
 
+  // mock 也做一层基础清洗/校验，尽量保持与真实接口一致的交互预期。
   const loginId = data.loginId?.trim()
   const password = data.password?.trim()
 
@@ -21,6 +22,7 @@ export async function mockLogin(data: LoginParams): Promise<LoginResult> {
   }
 
   return {
+    // token 只用于驱动前端登录态，不承载真实签名含义。
     token: `mock_admin_token_${Date.now()}`,
     user: {
       id: 1,

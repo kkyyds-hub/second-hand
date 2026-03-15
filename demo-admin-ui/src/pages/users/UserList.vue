@@ -39,6 +39,7 @@ const totalCount = ref(0)
  * - fetchTimer 用于搜索防抖，减少请求抖动。
  */
 const loading = ref(false)
+const listError = ref('')
 let fetchTimer: ReturnType<typeof setTimeout> | undefined
 
 /**
@@ -90,6 +91,26 @@ const pageNumbers = computed(() => {
 })
 
 /**
+ * 页面层统一错误文案提取：
+ * - 不改接口层协议，只负责把页面最终展示的错误口径收口到一处。
+ * - 后续 Day08 若继续推进其他页面，可沿用这类 helper。
+ */
+const resolvePageErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = error.message
+    if (typeof message === 'string' && message.trim()) {
+      return message.trim()
+    }
+  }
+
+  return fallback
+}
+
+const showListErrorBanner = computed(() => !!listError.value && users.value.length > 0)
+const showListErrorEmptyState = computed(() => !!listError.value && !loading.value && users.value.length === 0)
+const showListEmptyState = computed(() => !listError.value && !loading.value && users.value.length === 0)
+
+/**
  * 核心查询：
  * 1) 使用后端分页参数；
  * 2) role/status/search 都走后端过滤；
@@ -98,6 +119,7 @@ const pageNumbers = computed(() => {
 const fetchData = async () => {
   try {
     loading.value = true
+    listError.value = ''
     const res = await getUserList({
       page: currentPage.value,
       pageSize: pageSize.value,
@@ -111,6 +133,7 @@ const fetchData = async () => {
     currentPage.value = res.page || currentPage.value
   } catch (error) {
     console.warn('User API request failed.', error)
+    listError.value = resolvePageErrorMessage(error, '用户列表加载失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -152,7 +175,7 @@ const confirmBan = async () => {
     await fetchData()
   } catch (e: any) {
     console.warn('Restrict user failed.', e)
-    banError.value = e.message || '封禁失败，请稍后重试'
+    banError.value = resolvePageErrorMessage(e, '封禁失败，请稍后重试')
   } finally {
     isBanning.value = false
   }
@@ -167,6 +190,13 @@ const handleUnrestrict = async (userId: string) => {
   }
 }
 
+/**
+ * 详情弹窗不重复请求列表已有字段，只补充三块“列表里看不到”的信息：
+ * - 当前信用分
+ * - 最近信用变更日志
+ * - 最近违规记录
+ * review 明细问题时，优先确认这三路接口是否同时返回。
+ */
 const openDetailModal = async (user: UserItem) => {
   isDetailModalOpen.value = true
   detailUser.value = user
@@ -186,22 +216,27 @@ const openDetailModal = async (user: UserItem) => {
     userCreditLogs.value = creditLogs.list || []
     userViolations.value = violations.list || []
   } catch (error: any) {
-    detailError.value = error?.message || '详情拉取失败'
+    detailError.value = resolvePageErrorMessage(error, '详情拉取失败，请稍后重试')
   } finally {
     detailLoading.value = false
   }
 }
 
+/**
+ * 重算信用分后需要立刻回刷最新日志：
+ * 计算接口只返回最新分值，不会顺手把日志列表一起带回来。
+ */
 const handleRecalcCredit = async () => {
   if (!detailUser.value) return
   try {
     recalcLoading.value = true
+    detailError.value = ''
     const latest = await recalcUserCredit(detailUser.value.id)
     userCredit.value = latest
     const creditLogs = await fetchUserCreditLogs(detailUser.value.id, 1, 5)
     userCreditLogs.value = creditLogs.list || []
   } catch (error: any) {
-    detailError.value = error?.message || '信用重算失败'
+    detailError.value = resolvePageErrorMessage(error, '信用重算失败，请稍后重试')
   } finally {
     recalcLoading.value = false
   }
@@ -321,10 +356,10 @@ const getRoleBadgeClass = (role: string) => {
     </div>
 
     <!-- Filter Bar (Level 2: 高频管理工具栏) -->
-    <div class="bg-white border border-gray-200/80 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-      <div class="flex flex-wrap gap-3 items-center w-full lg:w-auto">
-        <div class="relative w-full sm:w-72">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <div class="filter-bar">
+      <div class="filter-bar-group">
+        <div class="filter-search">
+          <Search class="filter-search-icon" />
           <input
             v-model="searchQuery"
             type="text"
@@ -333,7 +368,7 @@ const getRoleBadgeClass = (role: string) => {
           />
         </div>
 
-        <div class="h-6 w-px bg-gray-200 hidden sm:block mx-1"></div>
+        <div class="filter-divider"></div>
 
         <select v-model="selectedRole" class="input-standard min-w-[140px] py-2 text-[13px] bg-gray-50/50 focus:bg-white">
           <option value="ALL">全部业务角色</option>
@@ -351,13 +386,15 @@ const getRoleBadgeClass = (role: string) => {
         </select>
       </div>
 
-      <div class="flex space-x-3 shrink-0">
-        <button class="btn-default gap-1.5 text-red-600 bg-red-50/50 hover:bg-red-50 border-red-100 border transition-colors hidden sm:flex py-2 px-3 text-[13px]">
-          <AlertTriangle class="w-3.5 h-3.5" /> 仅看预警
-        </button>
-        <button class="btn-default gap-1.5 text-gray-600 py-2 px-3 text-[13px] bg-gray-50/50 hover:bg-gray-100">
-          <Filter class="w-3.5 h-3.5" /> 更多筛选
-        </button>
+      <div class="filter-actions">
+        <span class="status-chip status-chip-warning hidden sm:inline-flex">
+          <AlertTriangle class="h-3.5 w-3.5" />
+          重点关注 14 个预警账号
+        </span>
+        <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2 text-[12px] text-gray-500">
+          <Filter class="h-3.5 w-3.5 text-gray-400" />
+          <span>支持按角色、状态与关键字组合筛选</span>
+        </div>
       </div>
     </div>
 
@@ -366,6 +403,25 @@ const getRoleBadgeClass = (role: string) => {
       <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
         <div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-[13px] font-medium text-gray-600 shadow-sm">
           <Loader2 class="w-4 h-4 animate-spin text-blue-600" /> 数据加载中...
+        </div>
+      </div>
+
+      <div v-if="showListErrorBanner" class="border-b border-red-100 bg-red-50/40 px-5 py-4">
+        <div class="state-banner state-banner-danger shadow-none">
+          <div class="state-banner-body">
+            <div class="state-banner-main">
+              <span class="state-banner-icon border-red-200">
+                <AlertTriangle class="h-4 w-4 text-red-500" />
+              </span>
+              <div>
+                <p class="state-banner-title">用户列表刷新失败</p>
+                <p class="state-banner-text text-red-700/90">{{ listError }}</p>
+              </div>
+            </div>
+            <button class="btn-default shrink-0 text-[12px] px-3 py-1.5" :disabled="loading" @click="fetchData">
+              重新加载
+            </button>
+          </div>
         </div>
       </div>
 
@@ -449,7 +505,18 @@ const getRoleBadgeClass = (role: string) => {
               </td>
             </tr>
 
-            <tr v-if="users.length === 0 && !loading">
+            <tr v-if="showListErrorEmptyState">
+              <td colspan="8" class="px-5 py-12">
+                <div class="empty-state empty-state-danger py-8">
+                  <AlertTriangle class="empty-state-icon text-red-400" />
+                  <p class="empty-state-title">用户列表暂未加载成功</p>
+                  <p class="empty-state-text">{{ listError }}</p>
+                  <button class="btn-default mt-4" :disabled="loading" @click="fetchData">重新加载</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr v-else-if="showListEmptyState">
               <td colspan="8" class="py-16 text-center">
                 <div class="flex flex-col items-center justify-center text-gray-400">
                   <Search class="w-8 h-8 mb-3 text-gray-300" />
@@ -502,90 +569,138 @@ const getRoleBadgeClass = (role: string) => {
     </div>
 
     <Teleport to="body">
-      <div v-if="isDetailModalOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl border border-gray-200/80 overflow-hidden flex flex-col max-h-[85vh]" @click.stop>
-          <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-            <h2 class="text-[16px] font-bold text-gray-900">
-              用户详情联调
-              <span v-if="detailUser" class="ml-2 text-gray-500 font-normal text-[13px]">ID: {{ detailUser.id }}</span>
-            </h2>
-            <button @click="isDetailModalOpen = false" class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-200">
+      <div v-if="isDetailModalOpen" class="modal-backdrop" @click="isDetailModalOpen = false">
+        <div class="modal-panel max-w-3xl flex max-h-[85vh] flex-col" @click.stop>
+          <div class="modal-header bg-gray-50/50">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="modal-title">用户详情</h2>
+                <span v-if="detailUser" class="status-chip status-chip-muted font-numeric">ID: {{ detailUser.id }}</span>
+              </div>
+              <p class="form-helper">查看账号信用、近期违规记录与风险处置情况。</p>
+            </div>
+            <button @click="isDetailModalOpen = false" class="modal-close">
               <span class="text-xl leading-none">&times;</span>
             </button>
           </div>
 
-          <div class="p-6 space-y-5 overflow-y-auto">
-            <div v-if="detailLoading" class="flex items-center gap-2 text-[13px] text-gray-500">
-              <Loader2 class="w-4 h-4 animate-spin" /> 正在拉取信用与违规数据...
+          <div class="modal-body overflow-y-auto custom-scrollbar">
+            <div v-if="detailLoading" class="state-banner state-banner-info">
+              <div class="state-banner-main">
+                <span class="state-banner-icon border-blue-200">
+                  <Loader2 class="h-4.5 w-4.5 animate-spin text-blue-500" />
+                </span>
+                <div>
+                  <p class="state-banner-title">正在加载用户详情</p>
+                  <p class="state-banner-text text-blue-700/90">正在整理该账号的信用分与近期违规记录，请稍候。</p>
+                </div>
+              </div>
             </div>
 
-            <div v-else>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div v-else class="space-y-5">
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
                   <p class="text-[12px] text-gray-500">信用分</p>
-                  <p class="text-[22px] font-semibold text-gray-900 font-numeric mt-1">{{ userCredit?.creditScore ?? '--' }}</p>
+                  <p class="mt-1 font-numeric text-[22px] font-semibold text-gray-900">{{ userCredit?.creditScore ?? '--' }}</p>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
                   <p class="text-[12px] text-gray-500">信用等级</p>
-                  <p class="text-[18px] font-semibold text-gray-900 mt-1">{{ userCredit?.creditLevel ?? '--' }}</p>
+                  <p class="mt-1 text-[18px] font-semibold text-gray-900">{{ userCredit?.creditLevel ?? '--' }}</p>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
-                  <p class="text-[12px] text-gray-500">违规记录(近5条)</p>
-                  <p class="text-[18px] font-semibold text-gray-900 font-numeric mt-1">{{ userViolations.length }}</p>
+                  <p class="text-[12px] text-gray-500">近 5 条违规记录</p>
+                  <p class="mt-1 font-numeric text-[18px] font-semibold text-gray-900">{{ userViolations.length }}</p>
                 </div>
               </div>
 
-              <div class="mt-3">
-                <button @click="handleRecalcCredit" class="btn-default gap-2 text-[12px] py-1.5 px-3" :disabled="recalcLoading || !detailUser">
-                  <RefreshCw v-if="recalcLoading" class="w-3.5 h-3.5 animate-spin" />
-                  <RefreshCw v-else class="w-3.5 h-3.5" />
-                  触发信用重算
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                <div>
+                  <p class="text-[13px] font-medium text-gray-900">更新信用结果</p>
+                  <p class="mt-1 text-[12px] text-gray-500">当账号刚完成处罚或申诉处理后，可手动刷新最新信用分。</p>
+                </div>
+                <button @click="handleRecalcCredit" class="btn-default btn-loading px-3 py-2 text-[12px]" :disabled="recalcLoading || !detailUser">
+                  <RefreshCw v-if="recalcLoading" class="h-3.5 w-3.5 animate-spin" />
+                  <RefreshCw v-else class="h-3.5 w-3.5" />
+                  {{ recalcLoading ? '更新中...' : '更新信用分' }}
                 </button>
               </div>
 
-              <div class="mt-5">
-                <h3 class="text-[14px] font-semibold text-gray-900 mb-2">信用流水（/admin/credit/logs）</h3>
-                <div class="rounded-lg border border-gray-200 overflow-hidden">
-                  <table class="w-full text-left text-[12px]">
-                    <thead class="bg-gray-50 text-gray-500">
-                      <tr>
-                        <th class="px-3 py-2">时间</th>
-                        <th class="px-3 py-2">类型</th>
-                        <th class="px-3 py-2">变动</th>
-                        <th class="px-3 py-2">分数</th>
+              <div class="space-y-3">
+                <div class="section-title-row">
+                  <h3 class="section-title">信用流水</h3>
+                </div>
+                <div class="table-shell rounded-xl shadow-none">
+                  <table class="table-base text-[12px]">
+                    <thead>
+                      <tr class="table-head-row">
+                        <th class="table-head-cell">时间</th>
+                        <th class="table-head-cell">类型</th>
+                        <th class="table-head-cell">变动</th>
+                        <th class="table-head-cell">分数</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <tr v-for="log in userCreditLogs" :key="log.id" class="border-t border-gray-100">
-                        <td class="px-3 py-2 text-gray-600">{{ log.createTime || '--' }}</td>
-                        <td class="px-3 py-2 text-gray-700">{{ log.reasonType || '--' }}</td>
-                        <td class="px-3 py-2 font-numeric" :class="(log.delta || 0) >= 0 ? 'text-green-700' : 'text-red-700'">{{ log.delta }}</td>
-                        <td class="px-3 py-2 text-gray-700 font-numeric">{{ log.scoreBefore }} -> {{ log.scoreAfter }}</td>
+                    <tbody class="table-body">
+                      <tr v-for="log in userCreditLogs" :key="log.id" class="table-row">
+                        <td class="table-cell text-gray-600">{{ log.createTime || '--' }}</td>
+                        <td class="table-cell text-gray-700">{{ log.reasonType || '--' }}</td>
+                        <td class="table-cell font-numeric" :class="(log.delta || 0) >= 0 ? 'text-green-700' : 'text-red-700'">{{ log.delta }}</td>
+                        <td class="table-cell font-numeric text-gray-700">{{ log.scoreBefore }} -> {{ log.scoreAfter }}</td>
                       </tr>
                       <tr v-if="userCreditLogs.length === 0">
-                        <td colspan="4" class="px-3 py-4 text-center text-gray-400">暂无信用流水</td>
+                        <td colspan="4" class="px-5 py-8">
+                          <div class="empty-state empty-state-neutral py-6">
+                            <Search class="empty-state-icon" />
+                            <p class="empty-state-title">当前没有信用流水</p>
+                            <p class="empty-state-text">如有信用调整、申诉处理或处罚记录，会在这里展示。</p>
+                          </div>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              <div class="mt-5">
-                <h3 class="text-[14px] font-semibold text-gray-900 mb-2">违规记录（/admin/users?userId=...）</h3>
-                <div class="rounded-lg border border-gray-200 p-3 text-[12px] space-y-2">
-                  <div v-for="v in userViolations" :key="v.id" class="border border-gray-100 rounded-md px-3 py-2 bg-gray-50/40">
-                    <div class="flex justify-between gap-3">
-                      <span class="font-medium text-gray-800">{{ v.violationTypeDesc || v.violationType }}</span>
-                      <span class="text-gray-500 font-numeric">{{ v.recordTime || '--' }}</span>
+              <div class="space-y-3">
+                <div class="section-title-row">
+                  <h3 class="section-title">近期违规记录</h3>
+                </div>
+                <div class="rounded-xl border border-gray-200 p-3 text-[12px]">
+                  <div v-if="userViolations.length > 0" class="space-y-2">
+                    <div v-for="v in userViolations" :key="v.id" class="rounded-lg border border-gray-100 bg-gray-50/40 px-3 py-2">
+                      <div class="flex justify-between gap-3">
+                        <span class="font-medium text-gray-800">{{ v.violationTypeDesc || v.violationType }}</span>
+                        <span class="font-numeric text-gray-500">{{ v.recordTime || '--' }}</span>
+                      </div>
+                      <p class="mt-1 text-gray-500">{{ v.description || '无描述' }}</p>
                     </div>
-                    <p class="text-gray-500 mt-1">{{ v.description || '无描述' }}</p>
                   </div>
-                  <p v-if="userViolations.length === 0" class="text-gray-400 text-center py-2">暂无违规记录</p>
+                  <div v-else class="empty-state empty-state-neutral py-6">
+                    <AlertTriangle class="empty-state-icon" />
+                    <p class="empty-state-title">当前没有违规记录</p>
+                    <p class="empty-state-text">当前账号近期未出现违规记录，可继续结合信用分进行判断。</p>
+                  </div>
                 </div>
               </div>
 
-              <p v-if="detailError" class="text-[12px] text-red-600 mt-4">{{ detailError }}</p>
+              <div v-if="detailError" class="state-banner state-banner-danger shadow-none">
+                <div class="state-banner-body">
+                  <div class="state-banner-main">
+                    <span class="state-banner-icon border-red-200">
+                      <AlertTriangle class="h-4 w-4 text-red-500" />
+                    </span>
+                    <div>
+                      <p class="state-banner-title">用户详情加载失败</p>
+                      <p class="state-banner-text text-red-700/90">{{ detailError }}</p>
+                    </div>
+                  </div>
+                  <span class="status-chip status-chip-danger shrink-0">请稍后重试</span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="modal-footer mt-auto">
+            <button @click="isDetailModalOpen = false" class="btn-default">关闭</button>
           </div>
         </div>
       </div>
@@ -593,28 +708,31 @@ const getRoleBadgeClass = (role: string) => {
 
     <!-- 人工建档弹窗 -->
     <Teleport to="body">
-      <div v-if="isModalOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md border border-gray-200/80 overflow-hidden flex flex-col" @click.stop>
-          <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-            <h2 class="text-[16px] font-bold text-gray-900">人工建立用户档案</h2>
-            <button @click="isModalOpen = false" class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-200">
+      <div v-if="isModalOpen" class="modal-backdrop">
+        <div class="modal-panel max-w-md flex flex-col" @click.stop>
+          <div class="modal-header bg-gray-50/50">
+            <div>
+              <h2 class="modal-title">新建用户档案</h2>
+              <p class="form-helper">完善基础账号信息后，档案会同步显示在当前列表。</p>
+            </div>
+            <button @click="isModalOpen = false" class="modal-close">
               <span class="text-xl leading-none">&times;</span>
             </button>
           </div>
 
-          <div class="p-6 space-y-5">
+          <div class="modal-body">
             <div>
-              <label for="new_user_name" class="block text-[13px] font-medium text-gray-700 mb-2">平台昵称 <span class="text-red-500">*</span></label>
+              <label for="new_user_name" class="form-label">平台昵称 <span class="text-red-500">*</span></label>
               <input id="new_user_name" v-model="newUser.name" type="text" class="input-standard w-full py-2" placeholder="输入用户展示昵称" />
             </div>
 
             <div>
-              <label for="new_user_phone" class="block text-[13px] font-medium text-gray-700 mb-2">手机号码 <span class="text-red-500">*</span></label>
+              <label for="new_user_phone" class="form-label">手机号码 <span class="text-red-500">*</span></label>
               <input id="new_user_phone" v-model="newUser.phone" type="tel" class="input-standard w-full font-numeric py-2" placeholder="11位手机号" />
             </div>
 
             <div>
-              <label for="new_user_role" class="block text-[13px] font-medium text-gray-700 mb-2">初始角色 <span class="text-red-500">*</span></label>
+              <label for="new_user_role" class="form-label">初始角色 <span class="text-red-500">*</span></label>
               <select id="new_user_role" v-model="newUser.role" class="input-standard w-full bg-white py-2">
                 <option value="BUYER_NORMAL">普通买家</option>
                 <option value="BUYER_VERIFIED">认证买家</option>
@@ -623,15 +741,20 @@ const getRoleBadgeClass = (role: string) => {
               </select>
             </div>
 
-            <div class="bg-blue-50/50 p-3.5 rounded-lg border border-blue-100 flex items-start gap-2.5 mt-2">
-              <CheckCircle class="w-4.5 h-4.5 text-blue-500 shrink-0 mt-0.5" />
-              <p class="text-[13px] text-blue-800/80 leading-relaxed">
-                建档成功后会写入后端真实数据，列表将自动刷新。
-              </p>
+            <div class="state-banner state-banner-info">
+              <div class="state-banner-main">
+                <span class="state-banner-icon border-blue-200">
+                  <CheckCircle class="w-4.5 h-4.5 text-blue-500" />
+                </span>
+                <div>
+                  <p class="state-banner-title">建档完成后同步展示</p>
+                  <p class="state-banner-text text-blue-700/90">新建账号会立即显示在当前列表中，便于继续完成后续管理。</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="px-6 py-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50/80 mt-auto">
+          <div class="modal-footer mt-auto">
             <button @click="isModalOpen = false" class="btn-default px-4 py-2">取消</button>
             <button @click="handleAddUser" class="btn-primary px-4 py-2" :disabled="!newUser.name || !newUser.phone">
               确认并建档
@@ -643,46 +766,60 @@ const getRoleBadgeClass = (role: string) => {
 
     <!-- 封禁理由弹窗 -->
     <Teleport to="body">
-      <div v-if="isBanModalOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md border border-gray-200/80 overflow-hidden flex flex-col" @click.stop>
-          <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-red-50/30">
-            <h2 class="text-[16px] font-bold text-gray-900 flex items-center gap-2">
-              <AlertTriangle class="w-4.5 h-4.5 text-red-500" />
-              限制账号
-            </h2>
-            <button @click="isBanModalOpen = false" class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-200" :disabled="isBanning">
+      <div v-if="isBanModalOpen" class="modal-backdrop">
+        <div class="modal-panel max-w-md flex flex-col" @click.stop>
+          <div class="modal-header bg-red-50/30">
+            <div>
+              <h2 class="modal-title flex items-center gap-2">
+                <AlertTriangle class="w-4.5 h-4.5 text-red-500" />
+                限制账号
+              </h2>
+              <p class="form-helper">请填写限制原因，提交后该账号将进入限制状态。</p>
+            </div>
+            <button @click="isBanModalOpen = false" class="modal-close" :disabled="isBanning">
               <span class="text-xl leading-none">&times;</span>
             </button>
           </div>
 
-          <div class="p-6 space-y-5">
+          <div class="modal-body">
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col gap-1.5">
               <span class="text-[12px] text-gray-500 font-medium">当前操作用户</span>
               <span class="text-[14px] font-bold text-gray-900">{{ banTargetUser?.name }} <span class="text-gray-500 font-numeric font-normal ml-1">(ID: {{ banTargetUser?.id }})</span></span>
             </div>
 
             <div>
-              <label for="ban_reason" class="block text-[13px] font-medium text-gray-700 mb-2">封禁理由 <span class="text-red-500">*</span></label>
-              <textarea 
-                id="ban_reason" 
-                v-model="banReason" 
-                class="input-standard w-full min-h-[120px] resize-none py-2.5" 
-                placeholder="请输入限制原因，如涉嫌违规交易、辱骂骚扰、恶意刷单等"
+              <label for="ban_reason" class="form-label">限制原因 <span class="text-red-500">*</span></label>
+              <textarea
+                id="ban_reason"
+                v-model="banReason"
+                class="input-standard w-full min-h-[120px] resize-none py-2.5"
+                :class="banError ? '!border-red-300 !bg-red-50/40 focus:!border-red-400 focus:!ring-red-100' : ''"
+                placeholder="请输入限制原因，如异常交易、骚扰他人、恶意刷单等"
                 :disabled="isBanning"
                 maxlength="100"
               ></textarea>
-              <div class="flex justify-between items-center mt-2">
-                <span v-if="banError" class="text-[12px] text-red-500 flex items-center gap-1.5 font-medium"><AlertTriangle class="w-3.5 h-3.5" /> {{ banError }}</span>
-                <span v-else class="text-[12px] text-gray-400"></span>
+              <div class="mt-2 flex items-center justify-between gap-3">
+                <span class="text-[12px] text-gray-400">请填写可复核的限制原因，便于后续申诉追溯。</span>
                 <span class="text-[12px] text-gray-400 font-numeric">{{ banReason.length }}/100</span>
+              </div>
+              <div v-if="banError" class="state-banner state-banner-danger shadow-none mt-3">
+                <div class="state-banner-main">
+                  <span class="state-banner-icon border-red-200">
+                    <AlertTriangle class="h-4 w-4 text-red-500" />
+                  </span>
+                  <div>
+                    <p class="state-banner-title">限制原因未通过校验</p>
+                    <p class="state-banner-text text-red-700/90">{{ banError }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="px-6 py-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50/80 mt-auto">
+          <div class="modal-footer mt-auto">
             <button @click="isBanModalOpen = false" class="btn-default px-4 py-2" :disabled="isBanning">取消</button>
-            <button @click="confirmBan" class="btn-primary bg-red-600 hover:bg-red-700 border-red-700/50 flex items-center gap-2 px-4 py-2" :disabled="isBanning || !banReason.trim()">
-              <Loader2 v-if="isBanning" class="w-4 h-4 animate-spin" />
+            <button @click="confirmBan" class="btn-danger btn-loading px-4 py-2" :disabled="isBanning || !banReason.trim()">
+              <Loader2 v-if="isBanning" class="btn-loading-icon" />
               {{ isBanning ? '提交中...' : '确认限制' }}
             </button>
           </div>

@@ -1,8 +1,14 @@
 import type { ProductReviewItem, ProductReviewQuery, ProductReviewResponse } from '@/api/product'
 import { cloneData, mockDelay, readLocalJson, writeLocalJson } from './config'
 
+/**
+ * 商品审核 mock：
+ * - 通过本地存储保留审核状态变更
+ * - 让“通过 / 驳回”这类操作在 mock 模式下也能形成连续体验
+ */
 const PRODUCT_STORAGE_KEY = 'demo_admin_mock_product_review_v1'
 
+// seed 同时覆盖待审、已通过、已驳回和不同风险等级，方便 review 多种状态。
 const productSeed: ProductReviewItem[] = [
   {
     id: 'PRD-8902',
@@ -69,6 +75,7 @@ export async function mockGetProductReviewList(query: ProductReviewQuery): Promi
   const keyword = (query.keyword || '').trim().toLowerCase()
   const status = query.status
 
+  // 过滤规则刻意贴近真实页的搜索体验：状态精确匹配，关键字匹配 id / title / seller。
   const items = loadProducts().filter((item) => {
     if (status && item.status !== status) return false
     if (!keyword) return true
@@ -83,6 +90,7 @@ export async function mockGetProductReviewList(query: ProductReviewQuery): Promi
   }
 }
 
+// 通过 / 驳回在 mock 模式下只更新审核状态，便于页面验证按钮与列表刷新逻辑。
 export async function mockApproveProductReview(id: string): Promise<void> {
   await mockDelay(220)
   const list = loadProducts()

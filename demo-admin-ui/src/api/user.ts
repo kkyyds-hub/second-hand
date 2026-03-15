@@ -3,6 +3,11 @@ import { isMockEnabled } from '@/mock/config'
 import { mockCreateUser, mockExportUsers, mockGetUserList, mockRestrictUser, mockUnrestrictUser } from '@/mock/user'
 
 /**
+ * 用户管理 API 收口文件：
+ * - 页面统一消费 UserItem 这种前端展示模型
+ * - 后端字段差异、角色/状态映射都尽量留在这里处理
+ */
+/**
  * 列表行：这是页面真正要消费的前端展示模型。
  */
 export interface UserItem {
@@ -156,6 +161,7 @@ function formatDate(value?: string) {
 
 /**
  * 单条用户转换：后端 UserVO -> 页面 UserItem。
+ * 列表页依赖的中文状态、角色标签都在这里一次性归一，避免模板里再做判断。
  */
 function normalizeUser(user: UserVo): UserItem {
   return {
@@ -199,6 +205,7 @@ export async function getUserList(params: UserListParams): Promise<UserListRespo
     },
   })) as PageResult<UserVo>
 
+  // real mode 也统一走同一套前端模型，保证页面不感知后端字段细节。
   return {
     total: res.total ?? 0,
     items: (res.list || []).map(normalizeUser),
@@ -218,6 +225,7 @@ export interface CreateUserPayload {
 
 /**
  * 管理员手动建档。
+ * 这里保持和页面表单字段同构，避免页面层再做一次 payload 转换。
  */
 export function createUser(data: CreateUserPayload) {
   if (isMockEnabled()) {
@@ -264,6 +272,7 @@ export function unrestrictUser(userId: string) {
 
 /**
  * 导出用户 CSV。
+ * 当前直接返回文本内容；是否触发浏览器下载由页面或后续封装决定。
  */
 export function exportUsers(keyword?: string, startTime?: string, endTime?: string) {
   if (isMockEnabled()) {

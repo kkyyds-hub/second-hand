@@ -1,8 +1,14 @@
 import type { AuditOverviewParams, AuditOverviewResponse, AuditStats, AuditTicketItem } from '@/api/audit'
 import { cloneData, mockDelay, readLocalJson, writeLocalJson } from './config'
 
+/**
+ * 审核中心 mock：
+ * - 用本地存储保留工单状态推进
+ * - 让筛选、统计卡、处理动作都能在离线场景下连续验证
+ */
 const AUDIT_STORAGE_KEY = 'demo_admin_mock_audit_tickets_v1'
 
+// seed 覆盖纠纷 / 举报 / 风险线索三种工单，并带上不同风险与状态。
 const auditSeed: AuditTicketItem[] = [
   {
     id: 'AUD-10201',
@@ -52,6 +58,9 @@ function saveTickets(list: AuditTicketItem[]) {
   writeLocalJson(AUDIT_STORAGE_KEY, list)
 }
 
+/**
+ * 筛选逻辑和真实页保持一致：先按 type/status/risk 精确过滤，再做关键字匹配。
+ */
 function withFilter(list: AuditTicketItem[], params: AuditOverviewParams) {
   const keyword = (params.keyword || '').trim().toLowerCase()
 
@@ -71,6 +80,7 @@ function withFilter(list: AuditTicketItem[], params: AuditOverviewParams) {
 
 function calcStats(list: AuditTicketItem[]): AuditStats {
   const todayPrefix = new Date().toISOString().slice(0, 10)
+  // 顶部统计卡基于全部工单计算，而不是基于当前筛选结果计算。
   return {
     pendingDisputes: list.filter((it) => it.type === 'DISPUTE' && it.status !== 'CLOSED').length,
     urgentReports: list.filter((it) => it.type === 'REPORT' && it.riskLevel === 'HIGH' && it.status !== 'CLOSED').length,
@@ -104,5 +114,6 @@ export async function mockProcessAuditTicket(ticketId: string): Promise<void> {
     item.status = 'CLOSED'
   }
 
+  // mock 只模拟状态推进，足够验证页面上的“处理后刷新列表与角标”交互。
   saveTickets(list)
 }

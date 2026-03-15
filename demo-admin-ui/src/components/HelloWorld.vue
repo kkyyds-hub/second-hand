@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+/**
+ * 这是 Vite 脚手架默认示例组件，当前管理端业务页没有引用它。
+ * 后续若确认不再需要，可直接删除，不会影响现有业务流程。
+ */
 defineProps<{ msg: string }>()
 
 const count = ref(0)
