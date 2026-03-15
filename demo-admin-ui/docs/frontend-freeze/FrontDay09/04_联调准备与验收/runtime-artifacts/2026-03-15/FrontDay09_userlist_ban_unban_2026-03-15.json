@@ -1,0 +1,49 @@
+﻿{
+    "executedAt":  "2026-03-15T22:00:11+08:00",
+    "date":  "2026-03-15",
+    "chain":  "UserList 封禁/解封",
+    "verificationType":  "real-api-smoke-with-frontend-wiring-inspection",
+    "page":  "demo-admin-ui/src/pages/users/UserList.vue",
+    "apiModule":  "demo-admin-ui/src/api/user.ts",
+    "requestLayer":  "demo-admin-ui/src/utils/request.ts",
+    "backendController":  "demo-service/src/main/java/com/demo/controller/admin/UserController.java",
+    "adminLogin":  {
+                       "code":  1,
+                       "msg":  "success",
+                       "hasToken":  true
+                   },
+    "candidate":  {
+                      "userId":  6,
+                      "originalStatus":  "active"
+                  },
+    "actions":  [
+                    {
+                        "step":  "GET /admin/user",
+                        "code":  1,
+                        "total":  8
+                    },
+                    {
+                        "step":  "PUT /admin/user/{id}/ban",
+                        "code":  1,
+                        "data":  "ç¨æ·å°ç¦æå",
+                        "msg":  "success"
+                    },
+                    {
+                        "observedStatus":  "banned",
+                        "step":  "GET /admin/user after ban",
+                        "code":  1
+                    },
+                    {
+                        "step":  "PUT /admin/user/{id}/unban",
+                        "code":  1,
+                        "data":  "ç¨æ·è§£å°æå",
+                        "msg":  "success"
+                    },
+                    {
+                        "observedStatus":  "active",
+                        "step":  "GET /admin/user after unban",
+                        "code":  1
+                    }
+                ],
+    "verdict":  "pass"
+}

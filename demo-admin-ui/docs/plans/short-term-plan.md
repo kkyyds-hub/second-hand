@@ -1,3 +1,30 @@
+# 前端短期计划（索引入口）
+
+> 自 2026-03-14 起，本文件不再作为前端主计划文档维护。
+> 当前唯一主入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+
+## 1. 现在应该看哪里
+
+- 总入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+- 当前执行日：`demo-admin-ui/docs/frontend-freeze/FrontDay08/README.md`
+- 今日重点：API 模块治理与错误处理冻结
+
+## 2. 本文件现在的职责
+
+1. 作为旧短期计划的索引入口。
+2. 指向新的按天冻结体系。
+3. 保留历史原文归档，避免上下文丢失。
+
+## 3. 新旧映射
+
+- 原“短期目标” -> 迁移到各 `FrontDayNN/01_冻结文档/`
+- 原“建议执行顺序” -> 迁移到 `demo-admin-ui/docs/frontend-freeze/README.md`
+- 原“当前进展” -> 迁移到各 `FrontDayNN/05_进度回填/`
+
+---
+
+## 历史原文归档
+
 # 前端短期计划
 
 ## 当前进展

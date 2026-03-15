@@ -1,0 +1,371 @@
+{
+  "observedAt": "2026-03-15",
+  "baseUrl": "http://localhost:5173",
+  "results": [
+    {
+      "page": "Dashboard",
+      "route": "/",
+      "overall": "pass",
+      "live": {
+        "classification": "pass",
+        "route": "/",
+        "finalUrl": "http://localhost:5173/",
+        "requiredApis": [
+          {
+            "substring": "/api/admin/dashboard/overview",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/dashboard/overview?date=2026-03-15",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/statistics/dau",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/statistics/dau?date=2026-03-15",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/statistics/order-gmv",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/statistics/order-gmv?date=2026-03-15",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/statistics/product-publish",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/statistics/product-publish?date=2026-03-15",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/audit/overview?riskLevel=HIGH",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/audit/overview?riskLevel=HIGH",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "successChecks": {
+          "coreOverviewVisible": true,
+          "reviewQueueVisible": true,
+          "riskFocusVisible": true,
+          "bannerCount": 1
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\dashboard_live.png"
+      },
+      "fallback": {
+        "classification": "pass",
+        "route": "/",
+        "finalUrl": "http://localhost:5173/",
+        "expectedTexts": [
+          {
+            "text": "看板部分数据暂未同步",
+            "found": true
+          },
+          {
+            "text": "经营概览与工作队列",
+            "found": true
+          },
+          {
+            "text": "重新加载",
+            "found": true
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\dashboard_fallback.png"
+      }
+    },
+    {
+      "page": "UserList",
+      "route": "/users",
+      "overall": "pass",
+      "live": {
+        "classification": "pass",
+        "route": "/users",
+        "finalUrl": "http://localhost:5173/users",
+        "requiredApis": [
+          {
+            "substring": "/api/admin/user",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/user?page=1&pageSize=10",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "successChecks": {
+          "tableRows": 8,
+          "hasFilters": true,
+          "hasCreditSection": 0
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\user_list_live.png"
+      },
+      "fallback": {
+        "classification": "pass",
+        "route": "/users",
+        "finalUrl": "http://localhost:5173/users",
+        "expectedTexts": [
+          {
+            "text": "用户列表暂未加载成功",
+            "found": true
+          },
+          {
+            "text": "模拟用户列表失败",
+            "found": true
+          },
+          {
+            "text": "重新加载",
+            "found": true
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\user_list_fallback.png"
+      }
+    },
+    {
+      "page": "ProductReview",
+      "route": "/products",
+      "overall": "pass",
+      "live": {
+        "classification": "pass",
+        "route": "/products",
+        "finalUrl": "http://localhost:5173/products",
+        "requiredApis": [
+          {
+            "substring": "/api/admin/products/pending-approval",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/products/pending-approval?page=1&pageSize=100&status=under_review",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "successChecks": {
+          "queueVisible": true,
+          "tableRows": 4,
+          "reviewGuideVisible": false
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\product_review_live.png"
+      },
+      "fallback": {
+        "classification": "pass",
+        "route": "/products",
+        "finalUrl": "http://localhost:5173/products",
+        "expectedTexts": [
+          {
+            "text": "审核队列暂未加载成功",
+            "found": true
+          },
+          {
+            "text": "模拟审核列表失败",
+            "found": true
+          },
+          {
+            "text": "重新加载",
+            "found": true
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\product_review_fallback.png"
+      }
+    },
+    {
+      "page": "AuditCenter",
+      "route": "/audit",
+      "overall": "pass",
+      "live": {
+        "classification": "pass",
+        "route": "/audit",
+        "finalUrl": "http://localhost:5173/audit",
+        "requiredApis": [
+          {
+            "substring": "/api/admin/audit/overview",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/audit/overview",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "successChecks": {
+          "ticketQueueVisible": true,
+          "summaryVisible": true,
+          "tableRows": 120
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\audit_center_live.png"
+      },
+      "fallback": {
+        "classification": "pass",
+        "route": "/audit",
+        "finalUrl": "http://localhost:5173/audit",
+        "expectedTexts": [
+          {
+            "text": "工单队列暂未加载成功",
+            "found": true
+          },
+          {
+            "text": "模拟工单列表失败",
+            "found": true
+          },
+          {
+            "text": "重新加载",
+            "found": true
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\audit_center_fallback.png"
+      }
+    },
+    {
+      "page": "OpsCenter",
+      "route": "/ops-center",
+      "overall": "pass",
+      "live": {
+        "classification": "pass",
+        "route": "/ops-center",
+        "finalUrl": "http://localhost:5173/ops-center",
+        "requiredApis": [
+          {
+            "substring": "/api/admin/ops/outbox/metrics",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/ops/outbox/metrics",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/ops/tasks/ship-timeout",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/ops/tasks/ship-timeout?page=1&pageSize=1",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/ops/tasks/refund",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/ops/tasks/refund?page=1&pageSize=1",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/ops/tasks/ship-reminder",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/ops/tasks/ship-reminder?page=1&pageSize=1",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/orders",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/orders?page=1&pageSize=1",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          },
+          {
+            "substring": "/api/admin/users/user-violations/statistics",
+            "ok": true,
+            "matches": [
+              {
+                "url": "/api/admin/users/user-violations/statistics",
+                "status": 200,
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "successChecks": {
+          "runtimeVisible": true,
+          "actionsVisible": true,
+          "reminderVisible": true
+        },
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\ops_center_live.png"
+      },
+      "fallback": {
+        "classification": "pass",
+        "route": "/ops-center",
+        "finalUrl": "http://localhost:5173/ops-center",
+        "expectedTexts": [
+          {
+            "text": "部分运行概览暂未同步",
+            "found": true
+          },
+          {
+            "text": "Outbox 指标",
+            "found": true
+          },
+          {
+            "text": "运行概览",
+            "found": true
+          }
+        ],
+        "pageErrors": [],
+        "consoleErrors": [],
+        "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay08\\04_联调准备与验收\\runtime-artifacts\\2026-03-15\\ops_center_fallback.png"
+      }
+    }
+  ]
+}

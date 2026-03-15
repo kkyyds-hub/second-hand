@@ -1,3 +1,33 @@
+# 前端待办清单（索引入口）
+
+> 自 2026-03-14 起，本文件不再作为主待办清单维护。
+> 当前唯一主入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+
+## 1. 现在应该看哪里
+
+- 总入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+- 当天要做什么：各日 `01_冻结文档/FrontDayNN_Scope_Freeze_v1.0.md`
+- 已做了什么：各日 `05_进度回填/FrontDayNN_Progress_Backfill_v1.0.md`
+
+## 2. 本文件现在的职责
+
+1. 作为旧待办文档的索引入口。
+2. 帮助从旧任务描述跳转到新的按天冻结结构。
+3. 保留历史原文归档。
+
+## 3. 当前重点待办映射
+
+- 首页真实接口替换 -> `FrontDay05`
+- 运维中心与系统设置收口 -> `FrontDay06`
+- 交互规范统一 -> `FrontDay07`
+- API 模块治理 -> `FrontDay08`
+- 联调回归与问题清零 -> `FrontDay09`
+- 演示冻结与移交 -> `FrontDay10`
+
+---
+
+## 历史原文归档
+
 # 前端待办清单
 
 ## 页面建设

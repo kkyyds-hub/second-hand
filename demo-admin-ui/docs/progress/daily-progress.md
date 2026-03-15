@@ -1,3 +1,30 @@
+# 每日进度记录（索引入口）
+
+> 自 2026-03-14 起，本文件不再承担逐日主进度维护职责。
+> 当前唯一主入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+
+## 1. 现在应该看哪里
+
+- 总入口：`demo-admin-ui/docs/frontend-freeze/README.md`
+- 每日进度正式台账：各日 `05_进度回填/FrontDayNN_Progress_Backfill_v1.0.md`
+- 当前执行日：`demo-admin-ui/docs/frontend-freeze/FrontDay08/05_进度回填/FrontDay08_Progress_Backfill_v1.0.md`
+
+## 2. 本文件现在的职责
+
+1. 作为旧进度文档的索引入口。
+2. 告诉后续维护者进度应该回填到哪里。
+3. 保留历史原文归档。
+
+## 3. 之后如何记进度
+
+1. 先进入当前 `FrontDayNN`。
+2. 先更新该日的 `05_进度回填`。
+3. 如果当天完成，再更新根 README 的当前执行日。
+
+---
+
+## 历史原文归档
+
 # 每日进度记录
 
 > 用途说明：
