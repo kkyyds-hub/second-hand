@@ -6,8 +6,8 @@
 ## 1. 现在应该看哪里
 
 - 总入口：`demo-admin-ui/docs/frontend-freeze/README.md`
-- 当前执行日：`demo-admin-ui/docs/frontend-freeze/FrontDay08/README.md`
-- 今日重点：API 模块治理与错误处理冻结
+- 当前执行日：`demo-admin-ui/docs/frontend-freeze/FrontDay10/README.md`
+- 今日重点：演示版冻结与移交（基于 2026-03-16 已确认的 Day09 收口状态正式接棒）
 
 ## 2. 本文件现在的职责
 
