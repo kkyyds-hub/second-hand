@@ -325,21 +325,31 @@ export function fetchViolationStatistics() {
   return request.get<any, ViolationStatistics>('/admin/users/user-violations/statistics')
 }
 
-export function fetchShipTimeoutTasks(page = 1, pageSize = 10) {
+export interface OpsTaskListParams {
+  orderId?: number
+  status?: string
+}
+
+/**
+ * OpsCenter 的任务列表既被详情页消费，也被运行概览拿来做摘要。
+ * 因为后端列表 total 默认包含 SUCCESS / DONE / CANCELLED 等历史记录，
+ * 所以前端在做“待处理量”摘要时必须显式带上 status 过滤，避免把历史总量误判成当前积压。
+ */
+export function fetchShipTimeoutTasks(page = 1, pageSize = 10, params: OpsTaskListParams = {}) {
   return request.get<any, PageResult<any>>('/admin/ops/tasks/ship-timeout', {
-    params: { page, pageSize },
+    params: { page, pageSize, ...params },
   })
 }
 
-export function fetchRefundTasks(page = 1, pageSize = 10) {
+export function fetchRefundTasks(page = 1, pageSize = 10, params: OpsTaskListParams = {}) {
   return request.get<any, PageResult<any>>('/admin/ops/tasks/refund', {
-    params: { page, pageSize },
+    params: { page, pageSize, ...params },
   })
 }
 
-export function fetchShipReminderTasks(page = 1, pageSize = 10) {
+export function fetchShipReminderTasks(page = 1, pageSize = 10, params: OpsTaskListParams = {}) {
   return request.get<any, PageResult<any>>('/admin/ops/tasks/ship-reminder', {
-    params: { page, pageSize },
+    params: { page, pageSize, ...params },
   })
 }
 
@@ -430,6 +440,27 @@ const createEmptyOpsRuntimeSnapshot = (): OpsRuntimeSnapshot => ({
 
 const normalizePageTotal = (payload?: Partial<PageResult<any>> | null) => Number(payload?.total ?? 0)
 
+/**
+ * 运行概览卡片需要展示“当前仍需人工关注的任务量”，
+ * 不是任务表的历史总记录数。
+ *
+ * 因此这里按状态拆成多个查询后再汇总：
+ * - 发货超时：只看 PENDING
+ * - 退款 / 发货提醒：合并 PENDING + FAILED
+ *
+ * 这样能把 SUCCESS / DONE / CANCELLED 旧记录排除掉，避免页面把历史任务误标成“待处理”。
+ */
+const fetchTaskTotalByStatuses = async (
+  fetcher: (page?: number, pageSize?: number, params?: OpsTaskListParams) => Promise<PageResult<any>>,
+  statuses: string[],
+) => {
+  const results = await Promise.all(
+    statuses.map((status) => fetcher(1, 1, { status })),
+  )
+
+  return results.reduce((sum, payload) => sum + normalizePageTotal(payload), 0)
+}
+
 export const getOpsRuntimeFailedSources = (availability: OpsRuntimeAvailability) =>
   collectUnavailableSources(availability, OPS_RUNTIME_SOURCE_LABELS)
 
@@ -441,9 +472,9 @@ export async function fetchOpsRuntimeBundle(): Promise<OpsRuntimeBundle> {
   const [orders, outbox, shipTimeout, refund, shipReminder, violationStats] = await Promise.allSettled([
     fetchAdminOrders(1, 1),
     fetchOutboxMetrics(),
-    fetchShipTimeoutTasks(1, 1),
-    fetchRefundTasks(1, 1),
-    fetchShipReminderTasks(1, 1),
+    fetchTaskTotalByStatuses(fetchShipTimeoutTasks, ['PENDING']),
+    fetchTaskTotalByStatuses(fetchRefundTasks, ['PENDING', 'FAILED']),
+    fetchTaskTotalByStatuses(fetchShipReminderTasks, ['PENDING', 'FAILED']),
     fetchViolationStatistics(),
   ])
 
@@ -475,9 +506,9 @@ export async function fetchOpsRuntimeBundle(): Promise<OpsRuntimeBundle> {
       outboxNew: outbox.status === 'fulfilled' ? Number(outbox.value?.new ?? 0) : 0,
       outboxFail: outbox.status === 'fulfilled' ? Number(outbox.value?.fail ?? 0) : 0,
       outboxSent: outbox.status === 'fulfilled' ? Number(outbox.value?.sent ?? 0) : 0,
-      shipTimeoutTotal: shipTimeout.status === 'fulfilled' ? normalizePageTotal(shipTimeout.value) : 0,
-      refundTotal: refund.status === 'fulfilled' ? normalizePageTotal(refund.value) : 0,
-      shipReminderTotal: shipReminder.status === 'fulfilled' ? normalizePageTotal(shipReminder.value) : 0,
+      shipTimeoutTotal: shipTimeout.status === 'fulfilled' ? Number(shipTimeout.value ?? 0) : 0,
+      refundTotal: refund.status === 'fulfilled' ? Number(refund.value ?? 0) : 0,
+      shipReminderTotal: shipReminder.status === 'fulfilled' ? Number(shipReminder.value ?? 0) : 0,
       topViolationType: firstViolation?.violationTypeDesc || firstViolation?.violationType || '--',
       topViolationCount: Number(firstViolation?.count ?? 0),
     },

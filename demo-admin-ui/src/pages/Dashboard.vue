@@ -42,10 +42,10 @@ const defaultCoreMetrics: [CoreMetric, CoreMetric, CoreMetric, CoreMetric] = [
 const coreMetrics = ref<CoreMetric[]>([...defaultCoreMetrics])
 
 const reviewQueue = ref<ReviewItem[]>([
-  { id: '审核-8902', item: 'Apple iPhone 15 Pro Max 256GB 钛金属', user: '数码回收_老王', type: '高价值', price: '¥6,950', time: '10分钟前', risk: '正常' },
-  { id: '审核-8903', item: '全新未拆封 劳力士绿水鬼', user: 'WatchMaster', type: '品牌防伪', price: '¥125,000', time: '15分钟前', risk: '高风险' },
-  { id: '审核-8904', item: 'Nike Air Force 1 联名款 42码', user: 'Sneaker搬砖人', type: '图片异常', price: '¥8,500', time: '22分钟前', risk: '中风险' },
-  { id: '审核-8905', item: 'Sony A7M4 微单套机 95新', user: '光影流年', type: '常规审核', price: '¥13,200', time: '1小时前', risk: '正常' },
+  { id: '审核-8902', item: 'Apple iPhone 15 Pro Max 256GB 钛金属', sellerName: '数码回收_老王', type: '高价值', price: '¥6,950', time: '10分钟前', risk: '正常' },
+  { id: '审核-8903', item: '全新未拆封 劳力士绿水鬼', sellerName: 'WatchMaster', type: '品牌防伪', price: '¥125,000', time: '15分钟前', risk: '高风险' },
+  { id: '审核-8904', item: 'Nike Air Force 1 联名款 42码', sellerName: 'Sneaker搬砖人', type: '图片异常', price: '¥8,500', time: '22分钟前', risk: '中风险' },
+  { id: '审核-8905', item: 'Sony A7M4 微单套机 95新', sellerName: '光影流年', type: '常规审核', price: '¥13,200', time: '1小时前', risk: '正常' },
 ])
 
 const disputeQueue = ref<DisputeItem[]>([
@@ -637,7 +637,7 @@ onMounted(() => {
                     <div class="max-w-[220px] truncate font-medium text-gray-900" :title="item.item">{{ item.item }}</div>
                     <div class="mt-1.5 flex items-center gap-2 text-[12px] text-gray-500">
                       <span class="status-chip status-chip-muted">卖家</span>
-                      <span class="cursor-pointer hover:text-gray-800">{{ item.user }}</span>
+                      <span class="cursor-pointer hover:text-gray-800">{{ item.sellerName }}</span>
                     </div>
                   </td>
                   <td class="table-cell font-medium text-gray-900 font-numeric">{{ item.price }}</td>

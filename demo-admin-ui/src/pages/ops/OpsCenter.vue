@@ -86,6 +86,13 @@ const runtimeUnavailableSources = computed(() => getOpsRuntimeFailedSources(runt
 
 const hasAnyRuntimeSuccess = computed(() => Object.values(runtimeAvailability.value).some(Boolean))
 
+/**
+ * 这里汇总的是“当前仍需人工关注的任务量”：
+ * - Outbox 统计 NEW + FAIL
+ * - 任务卡片统计未完成 / 待重试状态
+ *
+ * 它不再等于后端任务表历史总量，避免 SUCCESS / DONE / CANCELLED 旧记录把页面误导成“还有很多待处理”。
+ */
 const pendingWorkTotal = computed(
   () =>
     runtimeSnapshot.value.outboxNew +
@@ -290,15 +297,15 @@ const opsActionCards = computed(() => [
     key: 'ship-timeout' as const,
     title: '超时发货处理',
     subtitle: '发货超时任务',
-    description: '补跑发货超时扫描，优先处理积压时效单。',
-    pendingLabel: '待处理订单',
+    description: '补跑发货超时扫描，实际只会处理当前到期且可执行的任务。',
+    pendingLabel: '未完成任务',
     pendingValue: runtimeSnapshot.value.shipTimeoutTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.shipTimeoutTotal, 'shipTimeoutTasks'),
     metaText: !isRuntimeSourceAvailable('shipTimeoutTasks')
       ? '运行概览待刷新，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.shipTimeoutTotal > 0
-        ? '建议在低峰期安排清理'
-        : '当前暂无超时订单积压',
+        ? '当前仍有未完成超时任务；run-once 仅会处理本轮到期批次'
+        : '当前暂无未完成超时任务',
     accentClass: 'border-orange-200 bg-orange-50/80 text-orange-700',
     statusLabel: !isRuntimeSourceAvailable('shipTimeoutTasks')
       ? '待刷新'
@@ -324,14 +331,14 @@ const opsActionCards = computed(() => [
     key: 'refund' as const,
     title: '退款任务处理',
     subtitle: '退款任务',
-    description: '触发退款侧任务批次，适合回归退款链路处理。',
-    pendingLabel: '待处理工单',
+    description: '触发退款侧任务批次，仅处理当前可执行或失败待重试的退款任务。',
+    pendingLabel: '待重试任务',
     pendingValue: runtimeSnapshot.value.refundTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.refundTotal, 'refundTasks'),
     metaText: !isRuntimeSourceAvailable('refundTasks')
       ? '运行概览待刷新，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.refundTotal > 0
-        ? '建议优先跟进售后积压'
+        ? '当前仍有可执行 / 失败待重试退款任务'
         : '当前退款队列空闲',
     accentClass: 'border-red-200 bg-red-50/80 text-red-700',
     statusLabel: !isRuntimeSourceAvailable('refundTasks')
@@ -356,14 +363,14 @@ const opsActionCards = computed(() => [
     key: 'ship-reminder' as const,
     title: '提醒队列补跑',
     subtitle: '发货提醒任务',
-    description: '补跑提醒任务，检查即将超时订单的通知触达。',
-    pendingLabel: '待提醒订单',
+    description: '补跑提醒任务，仅处理已到期且未完成的提醒任务。',
+    pendingLabel: '待补跑任务',
     pendingValue: runtimeSnapshot.value.shipReminderTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.shipReminderTotal, 'shipReminderTasks'),
     metaText: !isRuntimeSourceAvailable('shipReminderTasks')
       ? '运行概览待刷新，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.shipReminderTotal > 0
-        ? '可继续推进发货提醒触达'
+        ? '当前仍有未完成提醒任务；run-once 仅会处理本轮到期批次'
         : '当前提醒队列空闲',
     accentClass: 'border-emerald-200 bg-emerald-50/80 text-emerald-700',
     statusLabel: !isRuntimeSourceAvailable('shipReminderTasks')

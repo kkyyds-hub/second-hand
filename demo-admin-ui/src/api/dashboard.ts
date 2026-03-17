@@ -20,11 +20,15 @@ export interface CoreMetric {
 export interface ReviewItem {
   id: string
   item: string
-  user: string
+  sellerName: string
   type: string
   price: string
   time: string
   risk: string
+}
+
+interface ReviewItemPayload extends Partial<ReviewItem> {
+  user?: string
 }
 
 /**
@@ -62,6 +66,10 @@ export interface DashboardData {
   disputeQueue: DisputeItem[]
   riskAlerts: RiskAlert[]
   disputeQueueSource?: 'overview' | 'audit-overview'
+}
+
+interface DashboardDataPayload extends Omit<DashboardData, 'reviewQueue'> {
+  reviewQueue?: ReviewItemPayload[]
 }
 
 const buildAuditTicketMeta = (ticket: AuditTicketItem) => {
@@ -108,6 +116,29 @@ const buildFallbackDisputeQueue = (tickets?: AuditTicketItem[]) => {
     .map(mapAuditTicketToDisputeItem)
 }
 
+const normalizeReviewQueue = (reviewQueue?: ReviewItemPayload[]): ReviewItem[] => {
+  if (!Array.isArray(reviewQueue)) {
+    return []
+  }
+
+  return reviewQueue.map((item, index) => ({
+    id: item.id?.trim() || `审核队列-${index + 1}`,
+    item: item.item?.trim() || '未命名商品',
+    // 2026-03-16 起后端 reviewQueue 专门拆出了 sellerName 字段。
+    // 这里继续兼容旧 user 字段，避免前后端部署窗口不一致时首页卖家列突然变空。
+    sellerName: item.sellerName?.trim() || item.user?.trim() || '未知卖家',
+    type: item.type?.trim() || '未分类',
+    price: item.price?.trim() || '¥0',
+    time: item.time?.trim() || '刚刚',
+    risk: item.risk?.trim() || '正常',
+  }))
+}
+
+const normalizeDashboardData = (overview: DashboardDataPayload): DashboardData => ({
+  ...overview,
+  reviewQueue: normalizeReviewQueue(overview.reviewQueue),
+})
+
 /**
  * 查询首页总览数据。
  *
@@ -116,14 +147,14 @@ const buildFallbackDisputeQueue = (tickets?: AuditTicketItem[]) => {
  */
 export async function fetchDashboardData(date?: string): Promise<DashboardData> {
   if (isMockEnabled()) {
-    return mockFetchDashboardData()
+    return normalizeDashboardData(await mockFetchDashboardData())
   }
 
-  const overview = await (request({
+  const overview = normalizeDashboardData(await (request({
     url: '/admin/dashboard/overview',
     method: 'get',
     params: date ? { date } : undefined,
-  }) as Promise<DashboardData>)
+  }) as Promise<DashboardDataPayload>))
 
   if (Array.isArray(overview?.disputeQueue) && overview.disputeQueue.length > 0) {
     return {
