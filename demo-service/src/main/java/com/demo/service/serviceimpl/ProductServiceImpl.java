@@ -1543,7 +1543,9 @@ public class ProductServiceImpl implements ProductService {
     private ProductDTO toProductDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setProductId(product.getId());
-        dto.setOwnerId(product.getOwnerId());
+        // ProductReview 管理端列表当前只依赖 productId / productName / category / status / submitTime。
+        // 这里不再写入 ownerId，是为了兼容当前运行时 ProductDTO 未暴露 setOwnerId() 的实际字节码，
+        // 避免联调时在 pending-approval 列表阶段因为 DTO 版本差异直接触发 NoSuchMethodError。
         dto.setProductName(product.getTitle());
         dto.setCategory(product.getCategory());
         dto.setStatus(product.getStatus());

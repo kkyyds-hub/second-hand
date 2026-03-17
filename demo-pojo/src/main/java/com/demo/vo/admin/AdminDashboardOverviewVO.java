@@ -22,7 +22,7 @@ public class AdminDashboardOverviewVO {
     /**
      * 待审核商品队列。
      */
-    private List<ReviewQueueItem> reviewQueue = new ArrayList<>();
+    private List<AdminDashboardReviewQueueItemVO> reviewQueue = new ArrayList<>();
 
     /**
      * 平台介入纠纷队列。
@@ -41,17 +41,6 @@ public class AdminDashboardOverviewVO {
         private String trend;
         private Boolean isUp;
         private String subtext;
-    }
-
-    @Data
-    public static class ReviewQueueItem {
-        private String id;
-        private String item;
-        private String user;
-        private String type;
-        private String price;
-        private String time;
-        private String risk;
     }
 
     @Data

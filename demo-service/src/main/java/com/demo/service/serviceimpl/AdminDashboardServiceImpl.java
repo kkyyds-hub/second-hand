@@ -3,8 +3,10 @@ package com.demo.service.serviceimpl;
 import com.demo.dto.Violation.ViolationStatisticsResponseDTO;
 import com.demo.dto.user.ProductDTO;
 import com.demo.entity.AfterSale;
+import com.demo.entity.Product;
 import com.demo.entity.User;
 import com.demo.enumeration.ProductStatus;
+import com.github.pagehelper.PageHelper;
 import com.demo.mapper.AfterSaleMapper;
 import com.demo.mapper.ProductMapper;
 import com.demo.mapper.UserMapper;
@@ -14,6 +16,7 @@ import com.demo.service.ProductService;
 import com.demo.service.StatisticsService;
 import com.demo.service.ViolationService;
 import com.demo.vo.admin.AdminDashboardOverviewVO;
+import com.demo.vo.admin.AdminDashboardReviewQueueItemVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,9 +74,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 disputedTotal
         ));
 
-        List<ProductDTO> pendingProducts = pendingPage == null || pendingPage.getRecords() == null
-                ? Collections.emptyList()
-                : pendingPage.getRecords();
+        List<Product> pendingProducts = loadDashboardPendingProducts(4);
         overview.setReviewQueue(buildReviewQueue(pendingProducts));
         overview.setDisputeQueue(buildDisputeQueue(disputedList));
         overview.setRiskAlerts(buildRiskAlerts(violationStatistics));
@@ -134,47 +134,47 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return List.of(gmvMetric, orderMetric, reviewMetric, disputeMetric);
     }
 
-    private List<AdminDashboardOverviewVO.ReviewQueueItem> buildReviewQueue(List<ProductDTO> products) {
+    /**
+     * Dashboard 审核队列单独直连 Product 实体查询。
+     *
+     * 2026-03-16 这里不再复用 ProductReview 的 ProductDTO：
+     * - ProductDTO 需要兼容 ProductReview 历史运行时字节码差异；
+     * - Dashboard 只读概览更关注“卖家展示名 + 商品摘要”的稳定输出；
+     * - 因此前端首页的 reviewQueue 改走专用 VO，避免一个 DTO 兼容问题把两条链路同时拖挂。
+     */
+    private List<AdminDashboardReviewQueueItemVO> buildReviewQueue(List<Product> products) {
         if (products == null || products.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Map<Long, String> ownerNameMap = buildOwnerDisplayNameMap(products);
         return products.stream().map(product -> {
-            AdminDashboardOverviewVO.ReviewQueueItem item = new AdminDashboardOverviewVO.ReviewQueueItem();
-            item.setId("审核-" + product.getProductId());
-            item.setItem(product.getProductName() == null || product.getProductName().isBlank()
+            AdminDashboardReviewQueueItemVO item = new AdminDashboardReviewQueueItemVO();
+            item.setId("审核-" + product.getId());
+            item.setItem(product.getTitle() == null || product.getTitle().isBlank()
                     ? "未命名商品"
-                    : product.getProductName());
-            item.setUser(resolveOwnerName(product.getOwnerId(), ownerNameMap));
+                    : product.getTitle());
+            item.setSellerName(resolveProductSellerName(product));
             item.setType(product.getCategory() == null || product.getCategory().isBlank()
                     ? "未分类"
                     : product.getCategory());
             item.setPrice(formatCurrency(product.getPrice()));
-            item.setTime(formatRelativeTime(product.getSubmitTime()));
+            item.setTime(formatRelativeTime(product.getCreateTime()));
             item.setRisk(inferProductRisk(product));
             return item;
         }).toList();
     }
 
-    private Map<Long, String> buildOwnerDisplayNameMap(List<ProductDTO> products) {
-        Map<Long, String> result = new HashMap<>();
-        for (ProductDTO product : products) {
-            if (product == null || product.getOwnerId() == null || result.containsKey(product.getOwnerId())) {
-                continue;
-            }
-            User owner = userMapper.selectById(product.getOwnerId());
-            result.put(product.getOwnerId(), resolveUserDisplayName(owner, product.getOwnerId()));
-        }
-        return result;
-    }
-
-    private String resolveOwnerName(Long ownerId, Map<Long, String> ownerNameMap) {
-        if (ownerId == null) {
-            return "未知卖家";
-        }
-        String name = ownerNameMap.get(ownerId);
-        return (name == null || name.isBlank()) ? ("用户#" + ownerId) : name;
+    /**
+     * 首页 reviewQueue 只取最近 4 条待审核商品。
+     *
+     * 这里显式分页，而不是把全部待审核商品拉回内存后再截断，
+     * 避免 Dashboard 每次打开都把 ProductReview 列表查询成本放大。
+     */
+    private List<Product> loadDashboardPendingProducts(int limit) {
+        int safeLimit = limit <= 0 ? 4 : limit;
+        PageHelper.startPage(1, safeLimit, false);
+        List<Product> products = productMapper.getPendingApprovalProducts(null, null, null);
+        return products == null ? Collections.emptyList() : products;
     }
 
     private List<AdminDashboardOverviewVO.DisputeQueueItem> buildDisputeQueue(List<AfterSale> afterSales) {
@@ -223,7 +223,22 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .toList();
     }
 
-    private String inferProductRisk(ProductDTO product) {
+    /**
+     * Dashboard 审核队列展示“卖家”列时，优先回填真实昵称 / 用户名。
+     *
+     * 如果 ownerId 缺失或用户记录已不存在，仍然回退到稳定文案，
+     * 这样首页不会因为脏数据而出现空白列或直接报错。
+     */
+    private String resolveProductSellerName(Product product) {
+        if (product == null || product.getOwnerId() == null) {
+            return "未知卖家";
+        }
+
+        User owner = userMapper.selectById(product.getOwnerId());
+        return resolveUserDisplayName(owner, product.getOwnerId());
+    }
+
+    private String inferProductRisk(Product product) {
         if (product == null) {
             return "正常";
         }

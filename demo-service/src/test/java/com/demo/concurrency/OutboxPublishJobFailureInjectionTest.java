@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -53,10 +54,10 @@ class OutboxPublishJobFailureInjectionTest {
         MessageOutbox failMsg = buildOutbox(1001L, "evt-fail", "rk.fail");
         MessageOutbox okMsg = buildOutbox(1002L, "evt-ok", "rk.ok");
 
-        when(messageOutboxMapper.listPending(2)).thenReturn(List.of(failMsg, okMsg));
+        when(messageOutboxMapper.listPending(eq(2), anyList())).thenReturn(List.of(failMsg, okMsg));
         doThrow(new RuntimeException("mq-down"))
                 .when(rabbitTemplate)
-                .convertAndSend(eq("order.events.exchange"), eq("rk.fail"), any());
+                .convertAndSend(eq("order.events.exchange"), eq("rk.fail"), any(Object.class));
 
         Map<String, Object> result = outboxPublishJob.publishOutboxMessagesOnce(2);
 
@@ -83,7 +84,7 @@ class OutboxPublishJobFailureInjectionTest {
     @Test
     void shouldThrowWhenBatchFlushFailsToPreserveRetrySemantics() {
         MessageOutbox okMsg = buildOutbox(2001L, "evt-db-fail", "rk.ok");
-        when(messageOutboxMapper.listPending(1)).thenReturn(List.of(okMsg));
+        when(messageOutboxMapper.listPending(eq(1), anyList())).thenReturn(List.of(okMsg));
         doThrow(new RuntimeException("db-write-failed"))
                 .when(outboxBatchStatusService)
                 .flushPublishResult(any(), any(), any(LocalDateTime.class));
@@ -94,7 +95,7 @@ class OutboxPublishJobFailureInjectionTest {
         );
 
         Assertions.assertTrue(ex.getMessage().contains("db-write-failed"));
-        verify(rabbitTemplate).convertAndSend(eq("order.events.exchange"), eq("rk.ok"), any());
+        verify(rabbitTemplate).convertAndSend(eq("order.events.exchange"), eq("rk.ok"), any(Object.class));
     }
 
     private MessageOutbox buildOutbox(Long id, String eventId, String routingKey) {
