@@ -77,8 +77,12 @@ npm run dev:real
   - 违规统计 Top1：`ship_timeout`，`count=1795`
 - `GET /admin/users/user-violations/statistics` 当前可能返回 `violationTypeDesc=null`，前端会回退到 `violationType` 展示。
 - `OpsCenter.vue` 通过 `fetchOpsRuntimeBundle()` 聚合多个 GET；任一接口失败时，只降级对应卡片，不让整页崩掉。
-- 本轮**未执行** `POST /admin/ops/outbox/publish-once`、`POST /admin/ops/tasks/*/run-once`。
-- `2026-03-15` 在当前管理员重新登录后的真实页面走查中，前端加载 OpsCenter 时上述 6 个 GET 也都返回 HTTP `200`；页面实际展示 `订单总量=68 / Outbox 已发送=84 / 发货超时=29 / 退款任务=29 / 发货提醒=54 / Top1=ship_timeout(1795)`。
+- `2026-03-16` 已补前端摘要口径修正：运行概览改按状态过滤汇总 `ship-timeout(PENDING)`、`refund(PENDING+FAILED)`、`ship-reminder(PENDING+FAILED)`，避免把历史 `SUCCESS / DONE / CANCELLED` 记录误判成待处理。
+- `2026-03-16` 在当前管理员真实页面联调中，前端加载 OpsCenter 后页面实际展示 `订单总量=70 / Outbox 待发送=0 / Outbox 失败=7 / 发货超时未完成=3 / 退款待重试=0 / 发货提醒待补跑=0 / Top1=ship_timeout(1795)`。
+- `2026-03-16` 已执行真实写动作：
+  - `POST /admin/ops/outbox/publish-once?limit=50`：返回 `pulled=0 / sent=0 / failed=0`
+  - `POST /admin/ops/tasks/refund/run-once?limit=50`：返回 `success=0 / batchSize=50`
+- 对应页面证据已落到 FrontDay09：`FrontDay09_opscenter_write_actions_2026-03-16.json`、`FrontDay09_opscenter_write_actions_live_2026-03-16.png`。
 
 ---
 
@@ -124,15 +128,17 @@ npm run dev:real
 - `PUT /admin/products/reports/{ticketNo}/resolve`
 
 说明：
-- 当前真实后端已提供总览查询；
+- 当前真实后端已提供总览查询与两类写动作接口；
 - 页面列表/筛选/详情可直接联调；
 - 页面已补真实处理弹窗：
   - 交易纠纷：支持售后 / 驳回售后
   - 违规举报：举报不成立 / 强制下架商品
 - 风控线索当前仍以“查询联调”为主，未接统一写入动作。
 - `2026-03-15` 在当前管理员重新登录后的真实页面走查中，`GET /admin/audit/overview` 返回 HTTP `200 / code=1`，当前 `stats=pendingDisputes 0 / urgentReports 2 / platformIntervention 0 / todayNewClues 0`，`tickets=120`；页面可正常渲染筛选区与工单列表。
-- 本轮 Day07 页面走查只覆盖查询态与详情态，未执行 `PUT /admin/after-sales/{afterSaleId}/arbitrate`、`PUT /admin/products/reports/{ticketNo}/resolve`。
-
+- `2026-03-16` 已补齐两条真实写动作证据：
+  - `PUT /admin/products/reports/RPT-20260316-235856/resolve`：页面执行“举报不成立”后，工单状态从 `PENDING` 变为 `CLOSED / RESOLVED_INVALID`；
+  - `PUT /admin/after-sales/3/arbitrate`：页面执行“支持售后申请”后，售后纠纷状态从 `DISPUTED` 变为 `CLOSED`。
+- 对应页面证据已落到 FrontDay09：`FrontDay09_auditcenter_report_dismiss_2026-03-16.json`、`FrontDay09_auditcenter_dispute_arbitrate_2026-03-16.json`。
 ---
 
 ## 当前真实联调时的已知限制
@@ -156,9 +162,9 @@ npm run dev:real
 如果后端某条举报工单没有生成 `ticketNo`，而是退回了类似 `RPT-数字ID` 的兜底值，
 则该条工单的“立即处理”接口可能无法命中真实工单编号。
 
-### 3. OpsCenter 写动作仍未做真实验证
-本次 FrontDay06 只补了 GET 查询证据；
-`publish-once` 与 `run-once` 仍需要后续在低风险窗口单独验证。
+### 3. OpsCenter 写动作已完成最小真实验证
+`2026-03-16` 已完成 `publish-once + refund run-once` 的真实页面联调；
+当前若还要继续补强 OpsCenter，只剩“RabbitMQ 启动后验证真实消息投递”这类环境增强项，不再属于 Day09 主页面动作链路阻塞。
 
 ---
 

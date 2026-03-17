@@ -1,0 +1,67 @@
+{
+  "executedAt": "2026-03-16T04:46:22.084Z",
+  "date": "2026-03-16",
+  "chain": "AuditCenter 举报处理（dismiss）",
+  "verificationType": "real-page-joint-debug",
+  "page": "demo-admin-ui/src/pages/audit/AuditCenter.vue",
+  "apiModule": "demo-admin-ui/src/api/audit.ts",
+  "requestLayer": "demo-admin-ui/src/utils/request.ts",
+  "backendControllers": [
+    "demo-service/src/main/java/com/demo/controller/admin/AdminAuditController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/ProductController.java"
+  ],
+  "seedAction": {
+    "reporterId": 1,
+    "productId": 920127,
+    "productTitle": "DAY19-P5-S2-20260308175931-CALLBACK",
+    "ticketNo": "RPT-20260316-235856",
+    "reportType": "misleading_desc",
+    "createStatus": 200,
+    "createCode": 1,
+    "createMsg": "success"
+  },
+  "adminLogin": {
+    "code": 1,
+    "msg": "success",
+    "adminId": 5,
+    "hasToken": true
+  },
+  "before": {
+    "id": "RPT-20260316-235856",
+    "type": "REPORT",
+    "title": "商品举报：misleading_desc",
+    "target": "商品 #920127",
+    "riskLevel": "MEDIUM",
+    "status": "PENDING",
+    "createTime": "2026-03-16 12:46",
+    "description": "FrontDay09-2026-03-16-1773636375675 AuditCenter report dismiss smoke",
+    "sourceId": 12,
+    "sourceStatus": "PENDING"
+  },
+  "pageResolveResponse": {
+    "url": "http://localhost:5173/api/admin/products/reports/RPT-20260316-235856/resolve",
+    "status": 200,
+    "payload": {
+      "code": 1,
+      "msg": "success",
+      "data": "工单处理成功"
+    }
+  },
+  "after": {
+    "id": "RPT-20260316-235856",
+    "type": "REPORT",
+    "title": "商品举报：misleading_desc",
+    "target": "商品 #920127",
+    "riskLevel": "LOW",
+    "status": "CLOSED",
+    "createTime": "2026-03-16 12:46",
+    "description": "FrontDay09-2026-03-16-1773636375675 AuditCenter report dismiss smoke",
+    "sourceId": 12,
+    "sourceStatus": "RESOLVED_INVALID"
+  },
+  "domObservation": {
+    "closedRowText": "商品举报：misleading_desc\n\nFrontDay09-2026-03-16-1773636375675 AuditCenter report dismiss smoke\n\n编号 RPT-20260316-235856\n\t违规举报\t\n\n商品 #920127\n\n当前关联主体\n\n\t低风险\t已关闭\t\n\n2026-03-16 12:46\n\n进入当前队列时间\n\n\t\n查看详情\n已完成"
+  },
+  "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay09\\04_联调准备与验收\\runtime-artifacts\\2026-03-16\\FrontDay09_auditcenter_report_dismiss_live_2026-03-16.png",
+  "verdict": "pass"
+}

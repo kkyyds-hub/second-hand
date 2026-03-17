@@ -1,0 +1,142 @@
+{
+  "executedAt": "2026-03-16T05:18:16.836Z",
+  "date": "2026-03-16",
+  "chain": "AuditCenter 仲裁（approve）",
+  "verificationType": "real-page-joint-debug",
+  "page": "demo-admin-ui/src/pages/audit/AuditCenter.vue",
+  "apiModule": "demo-admin-ui/src/api/audit.ts",
+  "requestLayer": "demo-admin-ui/src/utils/request.ts",
+  "backendControllers": [
+    "demo-service/src/main/java/com/demo/controller/user/AfterSaleController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/AdminAfterSaleController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/AdminAuditController.java"
+  ],
+  "seedContext": {
+    "buyerId": 1,
+    "sellerId": 2,
+    "productId": 920117,
+    "productTitle": "DAY19-P5-S1-MANUAL-TASK",
+    "orderId": 907599,
+    "orderNo": "2026031613180916735",
+    "trackingNo": "FD09ARB1773638290054",
+    "afterSaleId": 3,
+    "ticketId": "AS-3",
+    "createOrder": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "orderId": 907599,
+          "orderNo": "2026031613180916735",
+          "status": "pending",
+          "totalAmount": 104,
+          "createTime": "2026-03-16 13:18"
+        }
+      }
+    },
+    "payOrder": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": "支付回调处理成功"
+      }
+    },
+    "shipOrder": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": "发货成功"
+      }
+    },
+    "confirmReceipt": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": "确认收货成功"
+      }
+    },
+    "createAfterSaleAttempts": [
+      {
+        "attempt": 1,
+        "status": 200,
+        "json": {
+          "code": 1,
+          "msg": "success",
+          "data": 3
+        }
+      }
+    ],
+    "createAfterSale": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": 3
+      }
+    },
+    "sellerDecision": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": "已拒绝退货退款"
+      }
+    },
+    "submitDispute": {
+      "status": 200,
+      "json": {
+        "code": 1,
+        "msg": "success",
+        "data": "纠纷已提交，等待平台介入"
+      }
+    }
+  },
+  "adminLogin": {
+    "code": 1,
+    "msg": "success",
+    "adminId": 5,
+    "hasToken": true
+  },
+  "before": {
+    "id": "AS-3",
+    "type": "DISPUTE",
+    "title": "售后纠纷：FrontDay09-2026-03-16-1773638289956 售后申请用于 AuditCenter 仲裁联调",
+    "target": "订单 #907599",
+    "riskLevel": "HIGH",
+    "status": "PENDING",
+    "createTime": "2026-03-16 13:18",
+    "description": "FrontDay09-2026-03-16-1773638289956 seller reject for dispute seed",
+    "sourceId": 3,
+    "sourceStatus": "DISPUTED"
+  },
+  "pageArbitrateResponse": {
+    "url": "http://localhost:5173/api/admin/after-sales/3/arbitrate",
+    "status": 200,
+    "payload": {
+      "code": 1,
+      "msg": "success",
+      "data": "裁决通过，支持退货退款"
+    }
+  },
+  "after": {
+    "id": "AS-3",
+    "type": "DISPUTE",
+    "title": "售后纠纷：FrontDay09-2026-03-16-1773638289956 售后申请用于 AuditCenter 仲裁联调",
+    "target": "订单 #907599",
+    "riskLevel": "LOW",
+    "status": "CLOSED",
+    "createTime": "2026-03-16 13:18",
+    "description": "APPROVED: FrontDay09-2026-03-16-1773638289956 admin arbitrate approve via AuditCenter page",
+    "sourceId": 3,
+    "sourceStatus": "CLOSED"
+  },
+  "domObservation": {
+    "closedRowText": "售后纠纷：FrontDay09-2026-03-16-1773638289956 售后申请用于 AuditCenter 仲裁联调\n\nAPPROVED: FrontDay09-2026-03-16-1773638289956 admin arbitrate approve via AuditCenter page\n\n编号 AS-3\n\t交易纠纷\t\n\n订单 #907599\n\n当前关联主体\n\n\t低风险\t已关闭\t\n\n2026-03-16 13:18\n\n进入当前队列时间\n\n\t\n查看详情\n已完成"
+  },
+  "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay09\\04_联调准备与验收\\runtime-artifacts\\2026-03-16\\FrontDay09_auditcenter_dispute_arbitrate_live_2026-03-16.png",
+  "verdict": "pass"
+}

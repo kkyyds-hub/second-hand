@@ -1,0 +1,69 @@
+﻿{
+    "executedAt":  "2026-03-16T09:51:49+08:00",
+    "date":  "2026-03-16",
+    "chain":  "ProductReview 审核通过/驳回",
+    "verificationType":  "real-api-smoke-with-frontend-wiring-inspection",
+    "page":  "demo-admin-ui/src/pages/products/ProductReview.vue",
+    "apiModule":  "demo-admin-ui/src/api/product.ts",
+    "requestLayer":  "demo-admin-ui/src/utils/request.ts",
+    "backendController":  "demo-service/src/main/java/com/demo/controller/admin/ProductController.java",
+    "backendFixes":  [
+                         "demo-service/src/main/java/com/demo/service/serviceimpl/ProductServiceImpl.java",
+                         "demo-service/src/main/java/com/demo/service/serviceimpl/AdminDashboardServiceImpl.java"
+                     ],
+    "adminLogin":  {
+                       "adminId":  5,
+                       "code":  1,
+                       "msg":  "success"
+                   },
+    "targets":  {
+                    "reject":  {
+                                   "beforeStatus":  "under_review",
+                                   "productName":  "DAY18-LV2-D18CLOSE0304175712-2",
+                                   "productId":  920048,
+                                   "reason":  "FrontDay09 2026-03-16 product-review-reject-smoke"
+                               },
+                    "approve":  {
+                                    "beforeStatus":  "under_review",
+                                    "productName":  "DAY18-LV2-D18CLOSE0304175712-1",
+                                    "productId":  920047
+                                }
+                },
+    "actions":  [
+                    {
+                        "step":  "GET pending before",
+                        "code":  1,
+                        "total":  4
+                    },
+                    {
+                        "step":  "PUT approve",
+                        "code":  1,
+                        "data":  "ååå®¡æ ¸éè¿",
+                        "msg":  "success"
+                    },
+                    {
+                        "observedStatus":  "on_sale",
+                        "step":  "GET approved filter",
+                        "code":  1,
+                        "total":  1
+                    },
+                    {
+                        "step":  "PUT reject",
+                        "code":  1,
+                        "data":  "ååå®¡æ ¸é©³å",
+                        "msg":  "success"
+                    },
+                    {
+                        "observedStatus":  "off_shelf",
+                        "step":  "GET rejected filter",
+                        "code":  1,
+                        "total":  1
+                    },
+                    {
+                        "step":  "GET pending after",
+                        "code":  1,
+                        "total":  2
+                    }
+                ],
+    "verdict":  "pass"
+}

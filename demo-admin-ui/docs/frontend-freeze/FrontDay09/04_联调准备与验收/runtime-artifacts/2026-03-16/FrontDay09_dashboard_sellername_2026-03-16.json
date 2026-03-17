@@ -1,0 +1,93 @@
+{
+  "executedAt": "2026-03-16T03:01:30.098Z",
+  "date": "2026-03-16",
+  "chain": "Dashboard sellerName 真实页面联调",
+  "verificationType": "real-page-joint-debug",
+  "page": "demo-admin-ui/src/pages/Dashboard.vue",
+  "apiModule": "demo-admin-ui/src/api/dashboard.ts",
+  "requestLayer": "demo-admin-ui/src/utils/request.ts",
+  "backendController": "demo-service/src/main/java/com/demo/controller/admin/AdminDashboardController.java",
+  "backendService": "demo-service/src/main/java/com/demo/service/serviceimpl/AdminDashboardServiceImpl.java",
+  "adminLogin": {
+    "code": 1,
+    "msg": "success",
+    "adminId": 5,
+    "hasToken": true
+  },
+  "apiObservation": {
+    "requestDate": "2026-03-16",
+    "reviewQueueCount": 2,
+    "reviewQueue": [
+      {
+        "id": "审核-920049",
+        "item": "DAY18-LV2-D18CLOSE0304175712-3",
+        "sellerName": "卖家测试同学",
+        "type": "Day18",
+        "price": "¥99",
+        "time": "03-04 17:57",
+        "risk": "正常"
+      },
+      {
+        "id": "审核-920050",
+        "item": "DAY18-LV3-D18CLOSE0304175712",
+        "sellerName": "卖家测试同学",
+        "type": "Day18",
+        "price": "¥99",
+        "time": "03-04 17:57",
+        "risk": "正常"
+      }
+    ],
+    "pageOverviewResponseCode": 1,
+    "pageOverviewResponseReviewQueue": [
+      {
+        "id": "审核-920049",
+        "item": "DAY18-LV2-D18CLOSE0304175712-3",
+        "sellerName": "卖家测试同学",
+        "type": "Day18",
+        "price": "¥99",
+        "time": "03-04 17:57",
+        "risk": "正常"
+      },
+      {
+        "id": "审核-920050",
+        "item": "DAY18-LV3-D18CLOSE0304175712",
+        "sellerName": "卖家测试同学",
+        "type": "Day18",
+        "price": "¥99",
+        "time": "03-04 17:57",
+        "risk": "正常"
+      }
+    ]
+  },
+  "domObservation": {
+    "url": "http://localhost:5173/",
+    "visibleSellerChecks": {
+      "卖家测试同学": true
+    },
+    "unknownSellerVisibleCount": 0,
+    "rows": [
+      {
+        "text": "审核-920049 03-04 17:57提交 DAY18-LV2-D18CLOSE0304175712-3 卖家 卖家测试同学 ¥99 正常 审阅",
+        "cells": [
+          "审核-920049 03-04 17:57提交",
+          "DAY18-LV2-D18CLOSE0304175712-3 卖家 卖家测试同学",
+          "¥99",
+          "正常",
+          "审阅"
+        ]
+      },
+      {
+        "text": "审核-920050 03-04 17:57提交 DAY18-LV3-D18CLOSE0304175712 卖家 卖家测试同学 ¥99 正常 审阅",
+        "cells": [
+          "审核-920050 03-04 17:57提交",
+          "DAY18-LV3-D18CLOSE0304175712 卖家 卖家测试同学",
+          "¥99",
+          "正常",
+          "审阅"
+        ]
+      }
+    ]
+  },
+  "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay09\\04_联调准备与验收\\runtime-artifacts\\2026-03-16\\FrontDay09_dashboard_sellername_live_2026-03-16.png",
+  "verdict": "pass"
+}

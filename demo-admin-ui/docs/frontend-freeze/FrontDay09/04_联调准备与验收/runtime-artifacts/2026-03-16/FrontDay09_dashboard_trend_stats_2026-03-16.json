@@ -1,0 +1,1916 @@
+{
+  "executedAt": "2026-03-16T09:19:30.706Z",
+  "date": "2026-03-16",
+  "chain": "Dashboard 趋势 / 扩展统计证据补强",
+  "verificationType": "real-page-joint-debug",
+  "page": "demo-admin-ui/src/pages/Dashboard.vue",
+  "apiModules": [
+    "demo-admin-ui/src/api/dashboard.ts",
+    "demo-admin-ui/src/api/adminExtra.ts",
+    "demo-admin-ui/src/api/audit.ts"
+  ],
+  "requestLayer": "demo-admin-ui/src/utils/request.ts",
+  "backendControllers": [
+    "demo-service/src/main/java/com/demo/controller/admin/AdminDashboardController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/StatisticsController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/AdminAuditController.java"
+  ],
+  "adminLogin": {
+    "code": 1,
+    "msg": "success",
+    "adminId": 5,
+    "hasToken": true
+  },
+  "directApiObservation": {
+    "requestDate": "2026-03-16",
+    "overviewStatus": 200,
+    "overviewPayload": {
+      "code": 1,
+      "msg": "success",
+      "data": {
+        "coreMetrics": [
+          {
+            "title": "今日成交额(GMV)",
+            "value": "¥213",
+            "trend": "+100.0%",
+            "isUp": true,
+            "subtext": "今日成交订单 2 单"
+          },
+          {
+            "title": "新增付款订单",
+            "value": "2",
+            "trend": "+100.0%",
+            "isUp": true,
+            "subtext": "昨日同期 0 单"
+          },
+          {
+            "title": "待审异常商品",
+            "value": "2",
+            "trend": "0.0%",
+            "isUp": true,
+            "subtext": "今日新增待审 0 条，商品发布 0 条"
+          },
+          {
+            "title": "售后争议 & 举报",
+            "value": "0",
+            "trend": "0.0%",
+            "isUp": true,
+            "subtext": "待处理纠纷 0 单，违规累计 1807 次"
+          }
+        ],
+        "reviewQueue": [
+          {
+            "id": "审核-920049",
+            "item": "DAY18-LV2-D18CLOSE0304175712-3",
+            "sellerName": "卖家测试同学",
+            "type": "Day18",
+            "price": "¥99",
+            "time": "03-04 17:57",
+            "risk": "正常"
+          },
+          {
+            "id": "审核-920050",
+            "item": "DAY18-LV3-D18CLOSE0304175712",
+            "sellerName": "卖家测试同学",
+            "type": "Day18",
+            "price": "¥99",
+            "time": "03-04 17:57",
+            "risk": "正常"
+          }
+        ],
+        "disputeQueue": [],
+        "riskAlerts": [
+          {
+            "id": "违规-ship_timeout",
+            "type": "ship_timeout",
+            "target": "违规类型: ship_timeout",
+            "count": "1795 次"
+          },
+          {
+            "id": "违规-spam",
+            "type": "spam",
+            "target": "违规类型: spam",
+            "count": "11 次"
+          },
+          {
+            "id": "违规-false_delivery",
+            "type": "false_delivery",
+            "target": "违规类型: false_delivery",
+            "count": "1 次"
+          }
+        ]
+      }
+    },
+    "dauStatus": 200,
+    "dauPayload": {
+      "code": 1,
+      "msg": "success",
+      "data": 1
+    },
+    "orderGmvStatus": 200,
+    "orderGmvPayload": {
+      "code": 1,
+      "msg": "success",
+      "data": {
+        "date": "2026-03-16",
+        "gmv": 213,
+        "orderCount": 2
+      }
+    },
+    "productPublishStatus": 200,
+    "productPublishPayload": {
+      "code": 1,
+      "msg": "success",
+      "data": {
+        "date": "2026-03-16",
+        "total": 0,
+        "byCategory": {}
+      }
+    },
+    "auditOverviewStatus": 200,
+    "auditOverviewTicketIds": [
+      "UV-1861",
+      "UV-1860",
+      "UV-1859"
+    ]
+  },
+  "pageCapturedResponses": {
+    "overview": {
+      "url": "http://localhost:5173/api/admin/dashboard/overview?date=2026-03-16",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "coreMetrics": [
+            {
+              "title": "今日成交额(GMV)",
+              "value": "¥213",
+              "trend": "+100.0%",
+              "isUp": true,
+              "subtext": "今日成交订单 2 单"
+            },
+            {
+              "title": "新增付款订单",
+              "value": "2",
+              "trend": "+100.0%",
+              "isUp": true,
+              "subtext": "昨日同期 0 单"
+            },
+            {
+              "title": "待审异常商品",
+              "value": "2",
+              "trend": "0.0%",
+              "isUp": true,
+              "subtext": "今日新增待审 0 条，商品发布 0 条"
+            },
+            {
+              "title": "售后争议 & 举报",
+              "value": "0",
+              "trend": "0.0%",
+              "isUp": true,
+              "subtext": "待处理纠纷 0 单，违规累计 1807 次"
+            }
+          ],
+          "reviewQueue": [
+            {
+              "id": "审核-920049",
+              "item": "DAY18-LV2-D18CLOSE0304175712-3",
+              "sellerName": "卖家测试同学",
+              "type": "Day18",
+              "price": "¥99",
+              "time": "03-04 17:57",
+              "risk": "正常"
+            },
+            {
+              "id": "审核-920050",
+              "item": "DAY18-LV3-D18CLOSE0304175712",
+              "sellerName": "卖家测试同学",
+              "type": "Day18",
+              "price": "¥99",
+              "time": "03-04 17:57",
+              "risk": "正常"
+            }
+          ],
+          "disputeQueue": [],
+          "riskAlerts": [
+            {
+              "id": "违规-ship_timeout",
+              "type": "ship_timeout",
+              "target": "违规类型: ship_timeout",
+              "count": "1795 次"
+            },
+            {
+              "id": "违规-spam",
+              "type": "spam",
+              "target": "违规类型: spam",
+              "count": "11 次"
+            },
+            {
+              "id": "违规-false_delivery",
+              "type": "false_delivery",
+              "target": "违规类型: false_delivery",
+              "count": "1 次"
+            }
+          ]
+        }
+      }
+    },
+    "statistics": [
+      {
+        "url": "http://localhost:5173/api/admin/statistics/dau?date=2026-03-16",
+        "status": 200,
+        "payload": {
+          "code": 1,
+          "msg": "success",
+          "data": 1
+        }
+      },
+      {
+        "url": "http://localhost:5173/api/admin/statistics/order-gmv?date=2026-03-16",
+        "status": 200,
+        "payload": {
+          "code": 1,
+          "msg": "success",
+          "data": {
+            "date": "2026-03-16",
+            "gmv": 213,
+            "orderCount": 2
+          }
+        }
+      },
+      {
+        "url": "http://localhost:5173/api/admin/statistics/product-publish?date=2026-03-16",
+        "status": 200,
+        "payload": {
+          "code": 1,
+          "msg": "success",
+          "data": {
+            "date": "2026-03-16",
+            "total": 0,
+            "byCategory": {}
+          }
+        }
+      }
+    ],
+    "auditOverview": {
+      "url": "http://localhost:5173/api/admin/audit/overview?riskLevel=HIGH",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "stats": {
+            "pendingDisputes": 0,
+            "urgentReports": 2,
+            "platformIntervention": 0,
+            "todayNewClues": 10
+          },
+          "tickets": [
+            {
+              "id": "UV-1861",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-12 15:09",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1861,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1860",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 16:55",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1860,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1859",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 16:52",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1859,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1858",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 16:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1858,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1857",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 16:24",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1857,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1856",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 16:22",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1856,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1855",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:40",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1855,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1854",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1854,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1853",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1853,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1852",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1852,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1851",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1851,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1850",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1850,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1849",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1849,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1848",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1848,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1847",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1847,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1846",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1846,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1845",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1845,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1844",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1844,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1843",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1843,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1842",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1842,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1841",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1841,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1840",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1840,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1839",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1839,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1838",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1838,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1837",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1837,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1836",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1836,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1835",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1835,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1834",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1834,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1833",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1833,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1832",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1832,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1831",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1831,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1830",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1830,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1829",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1829,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1828",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1828,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1827",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1827,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1826",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1826,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1825",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1825,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1824",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1824,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1823",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1823,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1822",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1822,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1821",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1821,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1820",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1820,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1819",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1819,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1818",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1818,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1817",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1817,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1816",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1816,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1815",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1815,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1814",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1814,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1813",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1813,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1812",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1812,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1811",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1811,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1810",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1810,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1809",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1809,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1808",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1808,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1807",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1807,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1806",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1806,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1805",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1805,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1804",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1804,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1803",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1803,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1802",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1802,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1801",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1801,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1800",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1800,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1799",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1799,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1798",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1798,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1797",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1797,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1796",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1796,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1795",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1795,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1794",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1794,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1793",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1793,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1792",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1792,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1791",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1791,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1790",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1790,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1789",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1789,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1788",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1788,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1787",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1787,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1786",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1786,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1785",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1785,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1784",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1784,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1783",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1783,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1782",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1782,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1781",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1781,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1780",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1780,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1779",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1779,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1778",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1778,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1777",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1777,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1776",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1776,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1775",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1775,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1774",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1774,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1773",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1773,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1772",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1772,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1771",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1771,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1770",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1770,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1769",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1769,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1768",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1768,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1767",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1767,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1766",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1766,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1765",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1765,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1764",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1764,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1763",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1763,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1762",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1762,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1761",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1761,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1760",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1760,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1759",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1759,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1758",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1758,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1757",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1757,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1756",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1756,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1755",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1755,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1754",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1754,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1753",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1753,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1752",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1752,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1751",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1751,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1750",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1750,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1749",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1749,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1748",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1748,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1747",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1747,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1746",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1746,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1745",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1745,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1744",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1744,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1743",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1743,
+              "sourceStatus": "RECORDED"
+            },
+            {
+              "id": "UV-1742",
+              "type": "RISK",
+              "title": "违规线索：ship_timeout",
+              "target": "用户 #2",
+              "riskLevel": "HIGH",
+              "status": "PROCESSING",
+              "createTime": "2026-03-08 15:39",
+              "description": "订单超时未发货，系统自动取消；处罚结果：credit_deduct",
+              "sourceId": 1742,
+              "sourceStatus": "RECORDED"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "domObservation": {
+    "url": "http://localhost:5173/",
+    "stateBannerTexts": [
+      "今日运营建议 1. 大促预热期：预计下午 14:00-16:00 迎来商品发布高峰，请提前调度审核人力。 2. 重点品类监控：数码 3C 类目近期出现多起“低价引流”违规，请在审核时重点关注价格偏离度。 3. 处理时效：本周纠纷处理平均时长略有上升，请优先处理临近时限的工单。"
+    ],
+    "errorBannerCount": 0,
+    "errorBannerTexts": [],
+    "statsCards": [
+      "日活用户 1",
+      "支付订单 2",
+      "今日 GMV ¥213",
+      "新增发布 0"
+    ],
+    "statsCardChecks": [
+      {
+        "label": "日活用户",
+        "value": "1",
+        "visible": true
+      },
+      {
+        "label": "支付订单",
+        "value": "2",
+        "visible": true
+      },
+      {
+        "label": "今日 GMV",
+        "value": "¥213",
+        "visible": true
+      },
+      {
+        "label": "新增发布",
+        "value": "0",
+        "visible": true
+      }
+    ],
+    "displayedCoreMetricChecks": [
+      {
+        "title": "今日成交额(GMV)",
+        "value": "¥213",
+        "trend": "+100.0%",
+        "subtext": "今日成交订单 2 单",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      },
+      {
+        "title": "新增付款订单",
+        "value": "2",
+        "trend": "+100.0%",
+        "subtext": "昨日同期 0 单",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      },
+      {
+        "title": "售后争议 & 举报",
+        "value": "0",
+        "trend": "0.0%",
+        "subtext": "待处理纠纷 0 单，违规累计 1807 次",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      }
+    ],
+    "nonDisplayedCoreMetrics": [
+      "待审异常商品"
+    ],
+    "allCoreMetricChecks": [
+      {
+        "title": "今日成交额(GMV)",
+        "value": "¥213",
+        "trend": "+100.0%",
+        "subtext": "今日成交订单 2 单",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      },
+      {
+        "title": "新增付款订单",
+        "value": "2",
+        "trend": "+100.0%",
+        "subtext": "昨日同期 0 单",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      },
+      {
+        "title": "待审异常商品",
+        "value": "2",
+        "trend": "0.0%",
+        "subtext": "今日新增待审 0 条，商品发布 0 条",
+        "pageDesignedToDisplay": false,
+        "titleVisible": false,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": false
+      },
+      {
+        "title": "售后争议 & 举报",
+        "value": "0",
+        "trend": "0.0%",
+        "subtext": "待处理纠纷 0 单，违规累计 1807 次",
+        "pageDesignedToDisplay": true,
+        "titleVisible": true,
+        "valueVisible": true,
+        "trendVisible": true,
+        "subtextVisible": true
+      }
+    ],
+    "riskSectionText": "实时风控关注 ship_timeout 1795 次 违规类型: ship_timeout spam 11 次 违规类型: spam false_delivery 1 次 违规类型: false_delivery",
+    "riskAlertChecks": [
+      {
+        "id": "违规-ship_timeout",
+        "type": "ship_timeout",
+        "count": "1795 次",
+        "target": "违规类型: ship_timeout",
+        "countVisible": true,
+        "targetVisible": true
+      },
+      {
+        "id": "违规-spam",
+        "type": "spam",
+        "count": "11 次",
+        "target": "违规类型: spam",
+        "countVisible": true,
+        "targetVisible": true
+      },
+      {
+        "id": "违规-false_delivery",
+        "type": "false_delivery",
+        "count": "1 次",
+        "target": "违规类型: false_delivery",
+        "countVisible": true,
+        "targetVisible": true
+      }
+    ],
+    "disputeFallback": {
+      "overviewDisputeQueueLength": 0,
+      "pageTitleVisible": true,
+      "pageAuditTicketIds": [
+        "UV-1861",
+        "UV-1860",
+        "UV-1859"
+      ]
+    },
+    "trendVisualDecoration": {
+      "svgPathSamples": [
+        {
+          "dLength": 80,
+          "stroke": "white",
+          "fill": null
+        },
+        {
+          "dLength": 20,
+          "stroke": "white",
+          "fill": null
+        },
+        {
+          "dLength": 24,
+          "stroke": "white",
+          "fill": null
+        },
+        {
+          "dLength": 41,
+          "stroke": null,
+          "fill": null
+        },
+        {
+          "dLength": 27,
+          "stroke": null,
+          "fill": null
+        },
+        {
+          "dLength": 26,
+          "stroke": null,
+          "fill": null
+        }
+      ],
+      "source": "src/pages/Dashboard.vue mockTrendData（静态 UI 增强，不是后端实时接口）"
+    },
+    "bodyTextSample": "KK 运营中枢 Management 总览 工作台 业务 用户与商家 商品审核 风控 纠纷与违规 系统 运维中心 系统设置 Production · Real API 工作区 运营管理后台 状态 核心链路正常 ⌘ K 待审 182 纠纷 12 Admin 运营中枢 当前工作焦点：大促前夕风控排查与高危纠纷清零 最近更新：2026/3/16 17:19:28 今日成交额(GMV) ¥213 今日成交订单 2 单 +100.0% 核心经营概览 看板日期 2026-03-16 日活用户 1 支付订单 2 今日 GMV ¥213 新增发布 0 新增付款订单 2 昨日同期 0 单 +100.0% 售后争议 & 举报 0 待处理纠纷 0 单，违规累计 1807 次 0.0% 优先跟进事项 优先展示需要尽快跟进的纠纷、举报与风险事项 进入处理中心 UV-1861 违规线索：ship_timeout 临近处理时限 订单超时未发货，系统自动取消；处罚结果：cred... 用户 #2 立即处理 UV-1860 违规线索：ship_timeout 临近处理时限 订单超时未发货，系统自动取消；处罚结果：cred... 用户 #2 立即处理 UV-1859 违规线索：ship_timeout 临近处理时限 订单超时未发货，系统自动取消；处罚结果：cred... 用户 #2 立即处理 待审核商品 按风险等级与提交时间排序 查看全部 排队任务 发布信息 标价 审核分类 操作 审核-920049 03-04 17:57提交 DAY18-LV2-D18CLOSE0304175712-3 卖家 卖家测试同学 ¥99 正常 审阅 审核-920050 03-04 17:57提交 DAY18-LV3-D18CLOSE0304175712 卖家 卖家测试同学 ¥99 正常 审阅 今日运营建议 1. 大促预热期：预计下午 14:00-16:00 迎来商品发布高峰，请提前调度审核人力。 2. 重点品类监控：数码 3C 类目近期出现多起“低价引流”违规，请在审核时重点关注价格偏离度。 3. 处理时效：本周纠纷处理平均时长略有上升，请优先处理临近时限的工单。 实时风控关注 ship_timeout 1795 次 违规类型: ship_timeout spam 11 次 违规类型: spam false_delivery 1 次 违规类型: false_delivery"
+  },
+  "contractConclusion": {
+    "trendTextSource": "GET /admin/dashboard/overview -> coreMetrics[*].value / trend / subtext",
+    "statsSource": "GET /admin/statistics/dau + /admin/statistics/order-gmv + /admin/statistics/product-publish",
+    "disputeFallbackSource": "当 /admin/dashboard/overview 的 disputeQueue 为空时，src/api/dashboard.ts 会回退调用 /admin/audit/overview?riskLevel=HIGH 生成“优先跟进事项”",
+    "reviewMetricNote": "overview.coreMetrics 中未被首页趋势区直接消费的指标（如“待审异常商品”）本轮仅记录为接口可用项，不按页面缺陷判 fail。",
+    "chartVisualSource": "Dashboard.vue 内 mockTrendData 仅负责 SVG 趋势装饰，不代表新增后端趋势图接口。"
+  },
+  "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay09\\04_联调准备与验收\\runtime-artifacts\\2026-03-16\\FrontDay09_dashboard_trend_stats_live_2026-03-16.png",
+  "verdict": "pass"
+}

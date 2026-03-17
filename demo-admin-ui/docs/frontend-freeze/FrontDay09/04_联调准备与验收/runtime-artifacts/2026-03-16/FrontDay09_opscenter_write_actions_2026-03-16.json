@@ -1,0 +1,277 @@
+{
+  "executedAt": "2026-03-16T06:12:30.277Z",
+  "date": "2026-03-16",
+  "chain": "OpsCenter publish-once / refund run-once 真实页面联调",
+  "verificationType": "real-page-joint-debug",
+  "page": "demo-admin-ui/src/pages/ops/OpsCenter.vue",
+  "apiModule": "demo-admin-ui/src/api/adminExtra.ts",
+  "requestLayer": "demo-admin-ui/src/utils/request.ts",
+  "backendControllers": [
+    "demo-service/src/main/java/com/demo/controller/admin/AdminOutboxOpsController.java",
+    "demo-service/src/main/java/com/demo/controller/admin/AdminTaskOpsController.java"
+  ],
+  "frontendFixes": [
+    "demo-admin-ui/src/api/adminExtra.ts",
+    "demo-admin-ui/src/pages/ops/OpsCenter.vue"
+  ],
+  "adminLogin": {
+    "code": 1,
+    "msg": "success",
+    "adminId": 5,
+    "hasToken": true
+  },
+  "environment": {
+    "rabbitMqHost": "localhost:5672",
+    "rabbitMqReachable": false
+  },
+  "before": {
+    "outboxMetrics": {
+      "new": 0,
+      "fail": 7,
+      "queriedAt": 1773641543568,
+      "excludeExchanges": [
+        "bad.exchange"
+      ],
+      "sent": 84,
+      "failRetrySum": 1356
+    },
+    "refundPendingTotal": 0,
+    "refundFailedTotal": 0,
+    "pageCards": {
+      "outbox": "人工触发\n\nOutbox 发布一次\n\n消息补发\n\n手动触发一次消息发送，用于处理通知补发与消息积压。\n\n待发送消息\n\n0\n\n优先关注\n\n失败消息 7 条，建议优先处理\n\n立即补发",
+      "refund": "人工触发\n\n退款任务\n\n退款任务处理\n\n触发退款侧任务批次，仅处理当前可执行或失败待重试的退款任务。\n\n待重试任务\n\n0\n\n稳定\n\n当前退款队列空闲\n\n手动执行",
+      "shipTimeout": "人工触发\n\n发货超时任务\n\n超时发货处理\n\n补跑发货超时扫描，实际只会处理当前到期且可执行的任务。\n\n未完成任务\n\n3\n\n待处理\n\n当前仍有未完成超时任务；run-once 仅会处理本轮到期批次\n\n立即处理",
+      "shipReminder": "人工触发\n\n发货提醒任务\n\n提醒队列补跑\n\n补跑提醒任务，仅处理已到期且未完成的提醒任务。\n\n待补跑任务\n\n0\n\n稳定\n\n当前提醒队列空闲\n\n手动执行"
+    }
+  },
+  "actions": {
+    "outboxPublishOnce": {
+      "endpoint": "POST /admin/ops/outbox/publish-once?limit=50",
+      "pageResponse": {
+        "status": 200,
+        "payload": {
+          "code": 1,
+          "msg": "success",
+          "data": {
+            "limit": 50,
+            "processedAt": 1773641546080,
+            "failed": 0,
+            "sent": 0,
+            "pulled": 0
+          }
+        }
+      },
+      "feedbackText": "执行结果\n\n消息补发已完成：成功发送 0 条，发送失败 0 条",
+      "afterMetrics": {
+        "new": 0,
+        "fail": 7,
+        "queriedAt": 1773641547311,
+        "excludeExchanges": [
+          "bad.exchange"
+        ],
+        "sent": 84,
+        "failRetrySum": 1356
+      },
+      "verdict": "pass"
+    },
+    "refundRunOnce": {
+      "endpoint": "POST /admin/ops/tasks/refund/run-once?limit=50",
+      "pageResponse": {
+        "status": 200,
+        "payload": {
+          "code": 1,
+          "msg": "success",
+          "data": {
+            "processedAt": 1773641547644,
+            "taskType": "refund",
+            "batchSize": 50,
+            "success": 0
+          }
+        }
+      },
+      "feedbackText": "执行结果\n\n退款处理已完成：本次共处理 0 条任务",
+      "refundPendingAfter": 0,
+      "refundFailedAfter": 0,
+      "verdict": "pass"
+    }
+  },
+  "after": {
+    "pageCards": {
+      "outbox": "人工触发\n\nOutbox 发布一次\n\n消息补发\n\n手动触发一次消息发送，用于处理通知补发与消息积压。\n\n待发送消息\n\n0\n\n优先关注\n\n失败消息 7 条，建议优先处理\n\n立即补发",
+      "refund": "人工触发\n\n退款任务\n\n退款任务处理\n\n触发退款侧任务批次，仅处理当前可执行或失败待重试的退款任务。\n\n待重试任务\n\n0\n\n稳定\n\n当前退款队列空闲\n\n手动执行",
+      "shipTimeout": "人工触发\n\n发货超时任务\n\n超时发货处理\n\n补跑发货超时扫描，实际只会处理当前到期且可执行的任务。\n\n未完成任务\n\n3\n\n待处理\n\n当前仍有未完成超时任务；run-once 仅会处理本轮到期批次\n\n立即处理",
+      "shipReminder": "人工触发\n\n发货提醒任务\n\n提醒队列补跑\n\n补跑提醒任务，仅处理已到期且未完成的提醒任务。\n\n待补跑任务\n\n0\n\n稳定\n\n当前提醒队列空闲\n\n手动执行"
+    }
+  },
+  "pageCapturedResponses": [
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=PENDING",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=FAILED",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/outbox/metrics",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "new": 0,
+          "fail": 7,
+          "queriedAt": 1773641544964,
+          "excludeExchanges": [
+            "bad.exchange"
+          ],
+          "sent": 84,
+          "failRetrySum": 1356
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/outbox/publish-once?limit=50",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "limit": 50,
+          "processedAt": 1773641546080,
+          "failed": 0,
+          "sent": 0,
+          "pulled": 0
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=PENDING",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/outbox/metrics",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "new": 0,
+          "fail": 7,
+          "queriedAt": 1773641546422,
+          "excludeExchanges": [
+            "bad.exchange"
+          ],
+          "sent": 84,
+          "failRetrySum": 1356
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=FAILED",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund/run-once?limit=50",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "processedAt": 1773641547644,
+          "taskType": "refund",
+          "batchSize": 50,
+          "success": 0
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/outbox/metrics",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "new": 0,
+          "fail": 7,
+          "queriedAt": 1773641547983,
+          "excludeExchanges": [
+            "bad.exchange"
+          ],
+          "sent": 84,
+          "failRetrySum": 1356
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=PENDING",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    },
+    {
+      "url": "http://localhost:5173/api/admin/ops/tasks/refund?page=1&pageSize=1&status=FAILED",
+      "status": 200,
+      "payload": {
+        "code": 1,
+        "msg": "success",
+        "data": {
+          "total": 0,
+          "page": 1,
+          "list": [],
+          "pageSize": 1
+        }
+      }
+    }
+  ],
+  "screenshot": "C:\\Users\\Administrator\\Desktop\\demo\\demo-admin-ui\\docs\\frontend-freeze\\FrontDay09\\04_联调准备与验收\\runtime-artifacts\\2026-03-16\\FrontDay09_opscenter_write_actions_live_2026-03-16.png",
+  "verdict": "pass"
+}
