@@ -138,6 +138,12 @@ public class AuthServiceImpl implements AuthService {
         User user = buildBaseUser();
         user.setMobile(mobile);
         user.setNickname(nickname);
+        /**
+         * Day01 手机注册当前只提交 mobile / smsCode / nickname / password。
+         * 这里用手机号补齐 username，确保 insertUser 仍满足 users.username 非空约束。
+         * 兼容规则收口在服务层，避免把表结构细节泄漏到页面层。
+         */
+        user.setUsername(buildPhoneRegisterUsername(mobile));
         String encodedPassword = passwordEncoder.encode(rawPassword);
         user.setPassword(encodedPassword);
         userMapper.insertUser(user);
@@ -170,6 +176,12 @@ public class AuthServiceImpl implements AuthService {
         User user = buildBaseUser();
         user.setEmail(email);
         user.setNickname(nickname);
+        /**
+         * Day01 邮箱注册当前只提交 email / 可选 emailCode / nickname / password。
+         * 这里用邮箱补齐 username，确保 insertUser 仍满足 users.username 非空约束。
+         * 兼容规则收口在服务层，避免把表结构细节泄漏到页面层。
+         */
+        user.setUsername(buildEmailRegisterUsername(email));
         user.setStatus(UserStatus.INACTIVE.name().toLowerCase(Locale.ROOT));
         String encodedPassword = passwordEncoder.encode(rawPassword);
         user.setPassword(encodedPassword);
@@ -478,9 +490,13 @@ public class AuthServiceImpl implements AuthService {
 
     private String buildActivationUrl(String token) {
         String baseUrl = emailProperties == null
-                ? "http://localhost:8080"
+                ? "http://localhost:5173"
                 : emailProperties.normalizedActivationBaseUrl();
-        return baseUrl + "/user/auth/register/email/activate?token=" + token;
+        /**
+         * 邮件里的激活链接必须先落到用户端 `/activate/email` 页面，
+         * 这样 query token 自动激活入口才会真正执行，而不是直接打开 backend JSON 接口。
+         */
+        return baseUrl + "/activate/email?token=" + token;
     }
 
     private User buildBaseUser() {
@@ -494,6 +510,14 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus("active");                                             // 强烈建议新增（insertUser 会写 status）
 
         return user;
+    }
+
+    private String buildPhoneRegisterUsername(String mobile) {
+        return mobile == null ? null : mobile.trim();
+    }
+
+    private String buildEmailRegisterUsername(String email) {
+        return email == null ? null : email.trim();
     }
 
 

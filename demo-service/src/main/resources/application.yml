@@ -78,7 +78,7 @@ demo:
       provider: mock
       register-code-required: false
       activation-ttl-hours: 24
-      activation-base-url: http://localhost:${server.port}
+      activation-base-url: http://localhost:5173
       mock:
         enabled: true
         store-preview: true

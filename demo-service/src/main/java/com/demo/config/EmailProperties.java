@@ -31,9 +31,10 @@ public class EmailProperties {
     private int activationTtlHours = 24;
 
     /**
-     * 激活链接对外基础地址。
+     * 激活页面对外基础地址。
+     * 这里应指向用户端前台 origin，而不是 backend JSON 接口 origin。
      */
-    private String activationBaseUrl = "http://localhost:8080";
+    private String activationBaseUrl = "http://localhost:5173";
 
     /**
      * mock provider 子配置。
@@ -41,7 +42,7 @@ public class EmailProperties {
     private Mock mock = new Mock();
 
     public String normalizedActivationBaseUrl() {
-        String baseUrl = StringUtils.hasText(activationBaseUrl) ? activationBaseUrl.trim() : "http://localhost:8080";
+        String baseUrl = StringUtils.hasText(activationBaseUrl) ? activationBaseUrl.trim() : "http://localhost:5173";
         while (baseUrl.endsWith("/")) {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
