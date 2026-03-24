@@ -66,3 +66,9 @@ day19回归/执行记录/Day19_P4_S2_动态结果_2026-03-08_15-*.json
 !day19回归/执行记录/Day19_P4_S2_动态结果_2026-03-08_15-27-35.json
 day19回归/执行记录/Day19_P5_S2_压力测试结果_2026-03-08_17-*.json
 !day19回归/执行记录/Day19_P5_S2_压力测试结果_2026-03-08_17-59-31.json
+
+### Local AI / E2E temporary artifacts ###
+.codex/
+.tmp_playwright/
+demo-user-ui/.tmp_runtime/
+demo-user-ui/docs/frontend-freeze/runtime-artifacts/
