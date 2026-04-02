@@ -1,7 +1,7 @@
-# UserFrontDay02 文档总览
+﻿# UserFrontDay02 文档总览
 
 - 日期：`2026-03-23`
-- 状态：`已正式接棒（仅完成文档接棒整理，待进入实现 / 联调）`
+- 状态：`计划中（已正式接棒，待执行）`
 - 主题：`账户中心补强与地址管理`
 - 当日目标：在不打破 Day01 鉴权基线的前提下，把账户资料、账号安全、联系方式绑定解绑与收货地址管理整理成 Day02 的正式执行入口，并冻结首个最小切片。
 
@@ -34,11 +34,11 @@
 
 ## 4. 推荐阅读顺序
 
-1. `01_冻结文档/UserFrontDay02_Scope_Freeze_v1.1.md`
-2. `02_接口对齐/UserFrontDay02_Interface_Alignment_v1.1.md`
-3. `03_API模块/UserFrontDay02_API_Module_Plan_v1.1.md`
-4. `04_联调准备与验收/UserFrontDay02_Joint_Debug_Ready_v1.1.md`
-5. `05_进度回填/UserFrontDay02_Progress_Backfill_v1.1.md`
+1. `01_冻结文档/UserFrontDay02_Scope_Freeze_v1.2.md`
+2. `02_接口对齐/UserFrontDay02_Interface_Alignment_v1.2.md`
+3. `03_API模块/UserFrontDay02_API_Module_Plan_v1.2.md`
+4. `04_联调准备与验收/UserFrontDay02_Joint_Debug_Ready_v1.2.md`
+5. `05_进度回填/UserFrontDay02_Progress_Backfill_v1.2.md`
 6. 若要看跨日归属，再回看 `demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md`
 
 ---
@@ -47,11 +47,11 @@
 
 | 模块 | 作用 | 当前状态 |
 |---|---|---|
-| 冻结文档 | 定义 Day02 范围、非目标、退出口径与首个最小切片 | `v1.1 已完成正式接棒整理（待实现 / 联调）` |
-| 接口对齐 | 冻结 `UserMeController`、`AddressController` 的前后端契约入口与优先级 | `v1.1 已完成正式接棒整理（待实现 / 联调）` |
-| API 模块 | 规划 `profile / address` 模块与页面消费边界 | `v1.1 已完成正式接棒整理（待实现 / 联调）` |
-| 联调准备与验收 | 固定资料编辑、安全操作、地址 CRUD 的后续验证路径 | `v1.1 已完成正式接棒整理（待实现 / 联调）` |
-| 进度回填 | 记录 Day02 正式接棒与后续真实执行回填 | `v1.1 已完成正式接棒整理（待实现 / 联调）` |
+| 冻结文档 | 定义 Day02 范围、非目标、退出口径与首个最小切片 | `v1.2 已完成正式接棒整理（计划中，待执行）` |
+| 接口对齐 | 冻结 `UserMeController`、`AddressController` 的前后端契约入口与优先级 | `v1.2 已完成正式接棒整理（计划中，待执行）` |
+| API 模块 | 规划 `profile / address` 模块与页面消费边界 | `v1.2 已完成正式接棒整理（计划中，待执行）` |
+| 联调准备与验收 | 固定资料编辑、安全操作、地址 CRUD 的后续验证路径 | `v1.2 已完成正式接棒整理（计划中，待执行）` |
+| 进度回填 | 记录 Day02 正式接棒与后续真实执行回填 | `v1.2 已完成正式接棒整理（计划中，待执行）` |
 
 ---
 
@@ -69,5 +69,5 @@
 
 - `2026-03-23` 起当前执行日已经切换为 `UserFrontDay02`，Day01 不再重开；
 - 若 Day02 实现中需要改动 `request / router / authentication / session` 基线，应先在 Day02 进度回填中写明影响，再决定是否补记 Day01；
-- Day02 当前还没有 build / runtime / 联调通过证据，因此状态必须保持在“已正式接棒、待实现 / 联调”；
+- Day02 当前还没有 build / runtime / 联调通过证据，因此状态必须保持在“计划中（已正式接棒，待执行）”；
 - 用户端工作继续只回填到 `demo-user-ui/docs/frontend-freeze/`，不要写回 `demo-admin-ui/docs/frontend-freeze/`。
