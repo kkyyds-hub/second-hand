@@ -45,6 +45,36 @@ const router = createRouter({
           component: () => import('@/pages/AccountCenterPage.vue'),
         },
         {
+          path: 'account/addresses',
+          name: 'AccountAddressList',
+          component: () => import('@/pages/AddressListPage.vue'),
+          /**
+           * 该页面虽然挂在受保护的 layout 下，仍显式标注 requiresAuth，
+           * 便于后续维护者在路由表里直接识别“地址页必须登录后访问”。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/addresses/new',
+          name: 'AccountAddressCreate',
+          component: () => import('@/pages/AddressCreatePage.vue'),
+          /**
+           * 地址新增页属于 Day02 地址管理，必须保持登录保护，
+           * 避免未登录用户绕过列表页直接访问新增表单。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/addresses/:addressId/edit',
+          name: 'AccountAddressEdit',
+          component: () => import('@/pages/AddressEditPage.vue'),
+          /**
+           * 地址编辑页属于 Day02 edit-only 切片，必须保持登录保护；
+           * 同时显式挂路由参数，保证从地址列表进入时能定位目标地址。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'logout',
           name: 'UserLogout',
           component: () => import('@/pages/LogoutPage.vue'),
