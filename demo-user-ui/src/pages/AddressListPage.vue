@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Loader2, MapPinHouse, Plus, RefreshCw } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
-import { createEmptyAddressListResult, getMyAddressList, type UserAddressItem } from '@/api/address'
+import { createEmptyAddressListResult, deleteMyAddress, getMyAddressList, setMyDefaultAddress, type UserAddressItem } from '@/api/address'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,12 +10,20 @@ const loading = ref(false)
 const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
 const addressPage = ref(createEmptyAddressListResult())
+const settingDefaultAddressId = ref<number | null>(null)
+const deletingAddressId = ref<number | null>(null)
+const defaultActionStatus = ref<'idle' | 'success' | 'error'>('idle')
+const defaultActionMessage = ref('')
+const deleteActionStatus = ref<'idle' | 'success' | 'error'>('idle')
+const deleteActionMessage = ref('')
 
 const addressList = computed<UserAddressItem[]>(() => addressPage.value.list)
 const hasCreatedNotice = computed(() => route.query.created === '1')
 const hasEditedNotice = computed(() => route.query.edited === '1')
 const hasActionNotice = computed(() => hasCreatedNotice.value || hasEditedNotice.value)
 const actionNoticeText = computed(() => (hasEditedNotice.value ? '地址编辑成功，列表已刷新。' : '地址新增成功，列表已刷新。'))
+const hasDefaultActionNotice = computed(() => defaultActionStatus.value !== 'idle')
+const hasDeleteActionNotice = computed(() => deleteActionStatus.value !== 'idle')
 const hasEmptyState = computed(() => {
   return !loading.value && hasLoadedOnce.value && !errorMessage.value && addressList.value.length === 0
 })
@@ -35,6 +43,24 @@ function dismissActionNotice() {
   router.replace({ query: nextQuery })
 }
 
+function dismissDefaultActionNotice() {
+  if (!hasDefaultActionNotice.value || settingDefaultAddressId.value !== null) {
+    return
+  }
+
+  defaultActionStatus.value = 'idle'
+  defaultActionMessage.value = ''
+}
+
+function dismissDeleteActionNotice() {
+  if (!hasDeleteActionNotice.value || deletingAddressId.value !== null) {
+    return
+  }
+
+  deleteActionStatus.value = 'idle'
+  deleteActionMessage.value = ''
+}
+
 function readErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
     return error.message
@@ -43,7 +69,39 @@ function readErrorMessage(error: unknown) {
   return '地址列表加载失败，请稍后重试。'
 }
 
-async function loadAddressList() {
+function readDefaultActionErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+
+  return '默认地址设置失败，请稍后重试。'
+}
+
+function readDeleteActionErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+
+  return '地址删除失败，请稍后重试。'
+}
+
+function isSettingDefaultFor(addressId: number | null) {
+  return addressId !== null && settingDefaultAddressId.value === addressId
+}
+
+function isDeletingFor(addressId: number | null) {
+  return addressId !== null && deletingAddressId.value === addressId
+}
+
+function canSetDefaultFor(item: UserAddressItem) {
+  return item.id !== null && !item.isDefault && !loading.value && settingDefaultAddressId.value === null && deletingAddressId.value === null
+}
+
+function canDeleteFor(item: UserAddressItem) {
+  return item.id !== null && !loading.value && deletingAddressId.value === null && settingDefaultAddressId.value === null
+}
+
+async function loadAddressList(options?: { throwOnError?: boolean }) {
   if (loading.value) {
     return
   }
@@ -62,14 +120,75 @@ async function loadAddressList() {
     })
   } catch (error: unknown) {
     errorMessage.value = readErrorMessage(error)
+    if (options?.throwOnError) {
+      throw error
+    }
   } finally {
     loading.value = false
     hasLoadedOnce.value = true
   }
 }
 
+function reloadAddressList() {
+  return loadAddressList()
+}
+
+async function handleSetDefault(item: UserAddressItem) {
+  if (!canSetDefaultFor(item) || item.id === null) {
+    return
+  }
+
+  try {
+    settingDefaultAddressId.value = item.id
+    defaultActionStatus.value = 'idle'
+    defaultActionMessage.value = ''
+
+    /**
+     * set-default 的字段/契约兼容统一在 API 层；
+     * 页面层只维护提交中禁用、防重复点击、成功/失败提示与刷新列表。
+     */
+    await setMyDefaultAddress(item.id)
+    await loadAddressList({ throwOnError: true })
+
+    defaultActionStatus.value = 'success'
+    defaultActionMessage.value = '默认地址设置成功，列表已刷新。'
+  } catch (error: unknown) {
+    defaultActionStatus.value = 'error'
+    defaultActionMessage.value = readDefaultActionErrorMessage(error)
+  } finally {
+    settingDefaultAddressId.value = null
+  }
+}
+
+async function handleDelete(item: UserAddressItem) {
+  if (!canDeleteFor(item) || item.id === null) {
+    return
+  }
+
+  try {
+    deletingAddressId.value = item.id
+    deleteActionStatus.value = 'idle'
+    deleteActionMessage.value = ''
+
+    /**
+     * delete-only 切片把地址 ID 兼容与 endpoint 下沉到 API 层；
+     * 页面层只维护删除中禁用、防重复点击、成功/失败提示与列表刷新。
+     */
+    await deleteMyAddress(item.id)
+    await loadAddressList({ throwOnError: true })
+
+    deleteActionStatus.value = 'success'
+    deleteActionMessage.value = '地址删除成功，列表已刷新。'
+  } catch (error: unknown) {
+    deleteActionStatus.value = 'error'
+    deleteActionMessage.value = readDeleteActionErrorMessage(error)
+  } finally {
+    deletingAddressId.value = null
+  }
+}
+
 onMounted(() => {
-  loadAddressList()
+  reloadAddressList()
 })
 </script>
 
@@ -81,7 +200,7 @@ onMounted(() => {
         <div>
           <h1 class="section-title">收货地址</h1>
           <p class="section-desc">
-            当前页面支持地址列表读取、新增入口与编辑入口，删除与默认地址设置能力将在后续切片补齐。
+            当前页面支持地址列表读取、新增、编辑、删除与设为默认地址。
           </p>
         </div>
 
@@ -91,7 +210,7 @@ onMounted(() => {
             <Plus class="h-4 w-4" />
             <span>新增地址</span>
           </router-link>
-          <button class="btn-default gap-2" type="button" :disabled="loading" @click="loadAddressList">
+          <button class="btn-default gap-2" type="button" :disabled="loading" @click="reloadAddressList">
             <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
             <span>{{ loading ? '刷新中...' : '重试/刷新' }}</span>
@@ -105,9 +224,39 @@ onMounted(() => {
       <button class="btn-default mt-3" type="button" @click="dismissActionNotice">我知道了</button>
     </section>
 
+    <section
+      v-if="hasDefaultActionNotice"
+      :class="[
+        'rounded-2xl px-5 py-4 text-sm',
+        defaultActionStatus === 'success'
+          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border border-orange-200 bg-orange-50 text-orange-700',
+      ]"
+    >
+      <p>{{ defaultActionMessage }}</p>
+      <button class="btn-default mt-3" type="button" :disabled="settingDefaultAddressId !== null" @click="dismissDefaultActionNotice">
+        我知道了
+      </button>
+    </section>
+
+    <section
+      v-if="hasDeleteActionNotice"
+      :class="[
+        'rounded-2xl px-5 py-4 text-sm',
+        deleteActionStatus === 'success'
+          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border border-orange-200 bg-orange-50 text-orange-700',
+      ]"
+    >
+      <p>{{ deleteActionMessage }}</p>
+      <button class="btn-default mt-3" type="button" :disabled="deletingAddressId !== null" @click="dismissDeleteActionNotice">
+        我知道了
+      </button>
+    </section>
+
     <section v-if="errorMessage" class="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-700">
       <p>{{ errorMessage }}</p>
-      <button class="btn-default mt-3" type="button" :disabled="loading" @click="loadAddressList">重试加载</button>
+      <button class="btn-default mt-3" type="button" :disabled="loading" @click="reloadAddressList">重试加载</button>
     </section>
 
     <section v-else-if="loading && !hasLoadedOnce" class="card p-8">
@@ -124,7 +273,7 @@ onMounted(() => {
         <p class="text-sm">当前账号还没有可展示的地址记录。</p>
         <div class="mt-2 flex flex-wrap items-center justify-center gap-2">
           <router-link class="btn-primary" to="/account/addresses/new">新增地址</router-link>
-          <button class="btn-default" type="button" :disabled="loading" @click="loadAddressList">重新加载</button>
+          <button class="btn-default" type="button" :disabled="loading" @click="reloadAddressList">重新加载</button>
         </div>
       </div>
     </section>
@@ -158,13 +307,27 @@ onMounted(() => {
           <p class="mt-3 text-xs text-slate-400">地址 ID：{{ item.id ?? '-' }}</p>
 
           <div class="mt-4 flex items-center gap-2">
-            <router-link
-              v-if="item.id !== null"
-              class="btn-default"
-              :to="{ name: 'AccountAddressEdit', params: { addressId: item.id } }"
-            >
-              编辑地址
-            </router-link>
+            <template v-if="item.id !== null">
+              <router-link class="btn-default" :to="{ name: 'AccountAddressEdit', params: { addressId: item.id } }">
+                编辑地址
+              </router-link>
+
+              <button
+                v-if="!item.isDefault"
+                class="btn-default gap-2"
+                type="button"
+                :disabled="!canSetDefaultFor(item)"
+                @click="handleSetDefault(item)"
+              >
+                <Loader2 v-if="isSettingDefaultFor(item.id)" class="h-4 w-4 animate-spin" />
+                <span>{{ isSettingDefaultFor(item.id) ? '设置中...' : '设为默认地址' }}</span>
+              </button>
+
+              <button class="btn-default gap-2" type="button" :disabled="!canDeleteFor(item)" @click="handleDelete(item)">
+                <Loader2 v-if="isDeletingFor(item.id)" class="h-4 w-4 animate-spin" />
+                <span>{{ isDeletingFor(item.id) ? '删除中...' : '删除地址' }}</span>
+              </button>
+            </template>
             <p v-else class="text-xs text-slate-400">地址 ID 缺失，暂不可编辑。</p>
           </div>
         </article>

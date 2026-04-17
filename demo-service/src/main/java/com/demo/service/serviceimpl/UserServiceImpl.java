@@ -145,10 +145,13 @@ public class UserServiceImpl implements UserService {
         User user = getCurrentUserOrThrow();
         Long currentUserId = user.getId();
         boolean verified = false;
+        String oldPassword = StringUtils.isNotBlank(request.getOldPassword())
+                ? request.getOldPassword()
+                : request.getCurrentPassword();
 
         // 1. 使用当前密码验证（如果传了）
-        if (StringUtils.isNotBlank(request.getOldPassword())) {
-            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+        if (StringUtils.isNotBlank(oldPassword)) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
                 throw new BusinessException(MessageConstant.PASSWORD_ERROR);
             }
             verified = true;

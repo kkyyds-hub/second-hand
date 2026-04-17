@@ -16,6 +16,12 @@ public class ChangePasswordRequest {
     private String oldPassword;
 
     /**
+     * Compatibility alias for frontend payloads that still send `currentPassword`.
+     * The service layer falls back to this field when `oldPassword` is blank.
+     */
+    private String currentPassword;
+
+    /**
      * 新密码
      */
     @NotBlank(message = "新密码不能为空")

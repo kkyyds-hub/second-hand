@@ -297,3 +297,22 @@ export async function updateMyAddress(addressId: number | string, input: UpdateA
 
   return normalizeAddressItem(payload)
 }
+
+export async function deleteMyAddress(addressId: number | string) {
+  /**
+   * Day02 delete-only 切片约定：
+   * DELETE /user/addresses/{addressId}
+   * addressId 的兜底与路径拼接继续复用 buildAddressDetailPath，
+   * 保持 create/edit/set-default/delete 的 ID 兼容口径一致。
+   */
+  await request.delete<any, unknown>(buildAddressDetailPath(addressId))
+}
+
+export async function setMyDefaultAddress(addressId: number | string) {
+  /**
+   * Day02 set-default 切片约定为独立 endpoint：
+   * PUT /user/addresses/{addressId}/default
+   * 页面层只消费“成功/失败”语义，具体字段兼容仍留在地址列表 GET 归一化中。
+   */
+  await request.put<any, unknown>(`${buildAddressDetailPath(addressId)}/default`)
+}

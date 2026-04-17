@@ -71,9 +71,11 @@ public class UserMeController {
      */
     @PostMapping("/password")
     public Result<String> changePassword(@Validated @RequestBody ChangePasswordRequest request) {
+        boolean hasOldPassword = (request.getOldPassword() != null && !request.getOldPassword().isEmpty())
+                || (request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty());
         log.info("修改密码: verifyChannel={}, hasOldPassword={}, hasCode={}",
                 request.getVerifyChannel(),
-                request.getOldPassword() != null && !request.getOldPassword().isEmpty(),
+                hasOldPassword,
                 request.getCode() != null && !request.getCode().isEmpty());
         userService.changePassword(request);
         return Result.success("修改密码成功");
@@ -128,7 +130,12 @@ public class UserMeController {
     }
 
     private String currentBaseUrl() {
-        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        // Vite proxy may forward requests with a synthetic "/api" prefix; upload URLs must point to real backend routes.
+        if (baseUrl.endsWith("/api")) {
+            return baseUrl.substring(0, baseUrl.length() - "/api".length());
+        }
+        return baseUrl;
     }
 
     private java.io.InputStream safeInputStream(HttpServletRequest request) {

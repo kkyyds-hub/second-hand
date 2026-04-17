@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
@@ -122,6 +123,23 @@ protected void addInterceptors(InterceptorRegistry registry) {
             resourceLocation = resourceLocation + "/";
         }
         registry.addResourceHandler(publicPattern).addResourceLocations(resourceLocation);
+    }
+
+    @Override
+    protected void addCorsMappings(CorsRegistry registry) {
+        registerAvatarUploadCors(registry, "/user/me/avatar/upload");
+        // Keep a compatibility mapping for proxy-prefixed upload URLs.
+        registerAvatarUploadCors(registry, "/api/user/me/avatar/upload");
+    }
+
+    private void registerAvatarUploadCors(CorsRegistry registry, String pathPattern) {
+        // 头像上传 URL 由后端返回绝对地址（localhost:8080），会绕过前端 /api 代理并触发浏览器跨域预检。
+        // 这里仅对头像上传端点放开本地开发常见 host:port 组合，避免把宽松 CORS 扩散到其他业务接口。
+        registry.addMapping(pathPattern)
+                .allowedOriginPatterns("http://user-ui:*", "http://localhost:*", "http://127.0.0.1:*")
+                .allowedMethods("PUT", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
     }
 
     /**

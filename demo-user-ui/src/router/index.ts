@@ -45,6 +45,51 @@ const router = createRouter({
           component: () => import('@/pages/AccountCenterPage.vue'),
         },
         {
+          path: 'account/security/password',
+          name: 'AccountPassword',
+          component: () => import('@/pages/AccountPasswordPage.vue'),
+          /**
+           * This preserves the existing Day02 security slice as its own independent page.
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/security/email',
+          name: 'AccountEmailBinding',
+          component: () => import('@/pages/AccountEmailBindingPage.vue'),
+          /**
+           * Day02 security is split by slice. This route is dedicated to email bind/unbind only.
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/security/phone',
+          name: 'AccountPhoneBinding',
+          component: () => import('@/pages/AccountPhoneBindingPage.vue'),
+          /**
+           * Day02 security is split by slice. This route is dedicated to phone bind/unbind only.
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/profile',
+          name: 'AccountProfileEdit',
+          component: () => import('@/pages/AccountProfileEditPage.vue'),
+          /**
+           * 资料编辑从账户中心拆到独立页面，避免继续把 Day02 能力堆回总览页。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'account/avatar',
+          name: 'AccountAvatarUpload',
+          component: () => import('@/pages/AccountAvatarUploadPage.vue'),
+          /**
+           * 头像上传属于 Day02 两步链路切片，必须保留独立入口和登录保护。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'account/addresses',
           name: 'AccountAddressList',
           component: () => import('@/pages/AddressListPage.vue'),
