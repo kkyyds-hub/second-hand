@@ -27,7 +27,7 @@ function readErrorMessage(error: unknown) {
     return error.message
   }
 
-  return 'Profile save failed. Please try again.'
+  return '资料保存失败，请稍后重试。'
 }
 
 const profileForm = reactive({
@@ -70,13 +70,13 @@ const saveProfile = async () => {
 
   if (!normalizedNickname.value) {
     profileSaveStatus.value = 'error'
-    profileSaveMessage.value = 'Nickname is required.'
+    profileSaveMessage.value = '用户昵称为必填项。'
     return
   }
 
   if (!hasProfileChanges.value) {
     profileSaveStatus.value = 'error'
-    profileSaveMessage.value = 'No profile changes to save.'
+    profileSaveMessage.value = '当前没有新的资料变更。'
     return
   }
 
@@ -98,7 +98,7 @@ const saveProfile = async () => {
     syncFormWithCurrentUser()
 
     profileSaveStatus.value = 'success'
-    profileSaveMessage.value = 'Profile saved.'
+    profileSaveMessage.value = '资料保存成功。'
   } catch (error: unknown) {
     profileSaveStatus.value = 'error'
     profileSaveMessage.value = readErrorMessage(error)
@@ -109,99 +109,29 @@ const saveProfile = async () => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="card p-6 md:p-8">
-      <p class="muted-kicker">Profile edit</p>
-      <div class="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 class="section-title">Edit Profile</h1>
-          <p class="section-desc mt-2">
-            This page keeps the existing nickname and bio edit flow, while moving it out of the account overview page.
-          </p>
-        </div>
-        <router-link class="btn-default" to="/account">Back to account center</router-link>
-      </div>
+  <div class="page-body page-body-narrow">
+    <section class="page-header">
+      <div class="page-header-main"><p class="page-kicker">资料</p><h1 class="page-title">编辑个人资料</h1><p class="page-desc">表单、说明卡片和状态反馈统一放在同一种中性容器里，减少页面碎片感。</p></div>
+      <div class="page-actions"><span class="chip chip-neutral">资料设置</span><router-link class="btn-default" to="/account">返回账户中心</router-link></div>
     </section>
 
-    <section v-if="!hasSessionProfile" class="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-700">
-      No local account snapshot is available. Please sign in again before editing your profile.
-    </section>
+    <section v-if="!hasSessionProfile" class="notice-banner notice-banner-warning"><span class="notice-dot bg-orange-500"></span><span>当前没有可用的本地账户快照，请重新登录后再编辑资料。</span></section>
 
-    <section class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <section class="card p-6">
-        <form class="space-y-5" @submit.prevent="saveProfile">
-          <div>
-            <label class="form-label" for="profile-nickname">Nickname</label>
-            <input
-              id="profile-nickname"
-              v-model="profileForm.nickname"
-              class="input-standard"
-              type="text"
-              maxlength="20"
-              placeholder="Enter a nickname"
-              :disabled="savingProfile"
-              @input="clearProfileStatus"
-            />
-            <p class="form-helper">Required, up to 20 characters.</p>
-          </div>
-
-          <div>
-            <label class="form-label" for="profile-bio">Bio</label>
-            <textarea
-              id="profile-bio"
-              v-model="profileForm.bio"
-              class="input-standard min-h-[120px] resize-y"
-              rows="4"
-              maxlength="150"
-              placeholder="Tell people a little about yourself"
-              :disabled="savingProfile"
-              @input="clearProfileStatus"
-            />
-            <p class="form-helper">Optional, up to 150 characters.</p>
-          </div>
-
-          <section
-            v-if="profileSaveStatus === 'success'"
-            class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          >
-            {{ profileSaveMessage }}
-          </section>
-          <section
-            v-else-if="profileSaveStatus === 'error'"
-            class="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700"
-          >
-            {{ profileSaveMessage }}
-          </section>
-
-          <div class="flex flex-wrap items-center gap-3">
-            <button class="btn-primary" type="submit" :disabled="!canSubmitProfile">
-              {{ savingProfile ? 'Saving...' : 'Save profile' }}
-            </button>
-            <p v-if="!normalizedNickname" class="text-xs text-orange-600">Nickname is required.</p>
-            <p v-else-if="!hasProfileChanges" class="text-xs text-slate-500">No profile changes yet.</p>
-          </div>
+    <section class="grid gap-6 lg:grid-cols-[1.1fr_0.85fr]">
+      <div class="section-panel">
+        <div class="section-header section-header-plain"><div><h2 class="section-heading">基础信息修改</h2><p class="section-subtitle">聚焦昵称与简介两个可编辑字段，按钮和反馈区与其他表单页保持一致。</p></div></div>
+        <form class="section-body pt-0 space-y-5" @submit.prevent="saveProfile">
+          <div><label class="form-label" for="profile-nickname">用户昵称</label><input id="profile-nickname" v-model="profileForm.nickname" class="input-standard" type="text" maxlength="20" placeholder="请输入昵称" :disabled="savingProfile" @input="clearProfileStatus" /><p class="form-helper">必填，最多 20 个字符。</p></div>
+          <div><label class="form-label" for="profile-bio">个人简介（可选）</label><textarea id="profile-bio" v-model="profileForm.bio" class="input-standard min-h-[120px] resize-y" rows="4" maxlength="150" placeholder="向大家简单介绍一下自己..." :disabled="savingProfile" @input="clearProfileStatus" /><p class="form-helper">最多 150 个字符。</p></div>
+          <section v-if="profileSaveStatus === 'success'" class="notice-banner notice-banner-success"><span class="notice-dot bg-emerald-500"></span><span>{{ profileSaveMessage }}</span></section>
+          <section v-else-if="profileSaveStatus === 'error'" class="notice-banner notice-banner-warning"><span class="notice-dot bg-orange-500"></span><span>{{ profileSaveMessage }}</span></section>
+          <div class="flex flex-wrap items-center gap-3 pt-2"><button class="btn-primary" type="submit" :disabled="!canSubmitProfile">{{ savingProfile ? '保存中...' : '保存资料' }}</button><p v-if="!normalizedNickname" class="text-[12px] text-orange-600">用户昵称不能为空。</p><p v-else-if="!hasProfileChanges" class="text-[12px] text-gray-500">当前资料还没有发生变更。</p></div>
         </form>
-      </section>
-
-      <section class="card p-6">
-        <p class="muted-kicker">Current snapshot</p>
-        <h2 class="section-title mt-2">Current profile summary</h2>
-        <div class="mt-6 space-y-4 text-sm text-slate-600">
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Display name</p>
-            <p class="mt-2 text-base font-medium text-slate-900">{{ displayName }}</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Current bio</p>
-            <p class="mt-2 text-base font-medium text-slate-900">{{ currentUser?.bio || 'No bio yet' }}</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Avatar maintenance</p>
-            <p class="mt-2 text-base font-medium text-slate-900">Avatar upload now lives on its own page.</p>
-            <router-link class="btn-default mt-4 inline-flex" to="/account/avatar">Open avatar upload</router-link>
-          </div>
-        </div>
-      </section>
+      </div>
+      <div class="section-panel-muted">
+        <div class="section-header section-header-plain"><div><h2 class="section-heading">当前快照</h2><p class="section-subtitle">右侧统一使用浅底信息卡，弱化辅助说明但保留完整性。</p></div></div>
+        <div class="section-body pt-0"><div class="detail-grid"><div class="detail-row !items-start !justify-start !gap-1.5"><span class="detail-label">当前显示名称</span><span class="detail-value">{{ displayName }}</span></div><div class="detail-row !items-start !justify-start !gap-1.5"><span class="detail-label">当前简介</span><span class="detail-value">{{ currentUser?.bio || '暂无简介' }}</span></div><div class="meta-item mt-1"><p class="meta-label">头像管理</p><p class="meta-value">头像上传保留在独立页面，避免继续向这个页面叠加额外职责。</p><router-link class="btn-default mt-4 w-full" to="/account/avatar">前往头像页</router-link></div></div></div>
+      </div>
     </section>
   </div>
 </template>

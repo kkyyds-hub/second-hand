@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { House, LogOut, Menu, UserRound, X } from 'lucide-vue-next'
@@ -10,18 +10,15 @@ import {
   readCurrentUser,
   type UserProfile,
 } from '@/utils/request'
+import { USER_APP_TITLE, USER_BRAND_MARK, USER_BRAND_SUBTITLE, USER_SESSION_STATUS_TEXT } from '@/utils/brand'
 
 const router = useRouter()
 const route = useRoute()
 const menuOpen = ref(false)
 const currentUser = ref<UserProfile | null>(readCurrentUser())
 
-const appTitle = import.meta.env.VITE_APP_TITLE || '用户端工作台'
+const appTitle = import.meta.env.VITE_APP_TITLE?.trim() || USER_APP_TITLE
 
-/**
- * Day01 的壳层导航只保留首页摘要和账户中心。
- * 这样可以先冻结鉴权壳和登录后骨架，不把 Day02+ 的业务菜单提前塞进来。
- */
 const navItems = [
   { to: '/', label: '首页摘要', icon: House },
   { to: '/account', label: '账户中心', icon: UserRound },
@@ -33,7 +30,7 @@ const syncCurrentUser = () => {
 
 const displayName = computed(() => getUserDisplayName(currentUser.value))
 const primaryContact = computed(() => getUserPrimaryContact(currentUser.value))
-const roleText = computed(() => (isSellerUser(currentUser.value) ? '卖家 / 普通用户' : '普通用户'))
+const roleText = computed(() => (isSellerUser(currentUser.value) ? '卖家账号' : '普通账号'))
 
 const quickLogout = async () => {
   clearUserSession()
@@ -51,10 +48,6 @@ const handleStorageSync = (event: StorageEvent) => {
   }
 }
 
-/**
- * 当前用户信息来自本地 session 快照。
- * Day01 还没有独立 profile 刷新接口，所以壳层通过路由切换和 storage 事件同步，覆盖登录、退出和多标签页变化。
- */
 watch(
   () => route.fullPath,
   () => {
@@ -74,33 +67,51 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 lg:flex">
-    <aside class="hidden lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white">
-      <div class="border-b border-slate-200 px-6 py-6">
-        <p class="muted-kicker">demo-user-ui</p>
-        <h1 class="mt-2 text-xl font-semibold text-slate-900">{{ appTitle }}</h1>
-        <p class="mt-2 text-sm text-slate-500">登录后可查看首页摘要、账户快照，并随时安全退出当前会话。</p>
+  <div class="page-shell flex min-h-screen text-gray-800">
+    <aside class="hidden lg:flex lg:w-[272px] lg:flex-col lg:border-r lg:border-gray-200/80 lg:bg-white/90 lg:backdrop-blur">
+      <div class="flex h-[72px] items-center gap-3 border-b border-gray-200/70 px-6">
+        <div class="brand-mark h-10 w-10 text-[15px]">{{ USER_BRAND_MARK }}</div>
+        <div class="min-w-0">
+          <p class="truncate text-[15px] font-semibold text-gray-900">{{ appTitle }}</p>
+          <p class="mt-0.5 text-[11px] text-gray-500">{{ USER_BRAND_SUBTITLE }}</p>
+        </div>
       </div>
 
-      <nav class="flex-1 space-y-2 px-4 py-6">
-        <router-link
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-          active-class="bg-slate-900 text-white hover:bg-slate-900 hover:text-white"
-        >
-          <component :is="item.icon" class="h-4 w-4" />
-          <span>{{ item.label }}</span>
-        </router-link>
+      <nav class="custom-scrollbar flex-1 overflow-y-auto px-4 py-6">
+        <div class="space-y-2">
+          <router-link
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="nav-link"
+            :class="route.path === item.to ? 'nav-link-active' : 'nav-link-idle'"
+          >
+            <component
+              :is="item.icon"
+              class="h-[18px] w-[18px] shrink-0"
+              :class="route.path === item.to ? 'text-white' : 'text-gray-400'"
+            />
+            <span>{{ item.label }}</span>
+          </router-link>
+        </div>
       </nav>
 
-      <div class="border-t border-slate-200 px-6 py-5">
-        <div class="rounded-2xl bg-slate-50 p-4">
-          <p class="text-sm font-semibold text-slate-900">{{ displayName }}</p>
-          <p class="mt-1 text-xs text-slate-500">{{ roleText }}</p>
-          <p class="mt-3 text-xs text-slate-500">{{ primaryContact }}</p>
-          <button class="btn-default mt-4 w-full gap-2" type="button" @click="quickLogout">
+      <div class="border-t border-gray-200/70 px-5 py-5">
+        <div class="panel-muted p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-gray-700 shadow-sm shadow-gray-200/40">
+              {{ displayName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-[13px] font-semibold text-gray-900">{{ displayName }}</p>
+              <p class="truncate text-[11px] text-gray-500">{{ primaryContact }}</p>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center justify-between rounded-xl border border-gray-200/80 bg-white/90 px-3 py-2.5 text-[12px] text-gray-500">
+            <span class="font-medium text-gray-700">{{ roleText }}</span>
+            <span class="chip chip-accent">{{ USER_SESSION_STATUS_TEXT }}</span>
+          </div>
+          <button class="btn-default mt-4 w-full" @click="quickLogout">
             <LogOut class="h-4 w-4" />
             <span>退出登录</span>
           </button>
@@ -108,52 +119,103 @@ onUnmounted(() => {
       </div>
     </aside>
 
-    <div class="flex min-h-screen flex-1 flex-col">
-      <header class="border-b border-slate-200 bg-white px-4 py-4 lg:hidden">
-        <div class="flex items-center justify-between gap-3">
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="sticky top-0 z-30 hidden h-[72px] items-center justify-between border-b border-gray-200/70 bg-stone-50/90 px-6 backdrop-blur lg:flex">
+        <div class="flex items-center gap-3">
+          <div class="brand-mark h-10 w-10 text-[14px]">{{ USER_BRAND_MARK }}</div>
           <div>
-            <p class="muted-kicker">demo-user-ui</p>
-            <p class="text-base font-semibold text-slate-900">{{ appTitle }}</p>
-            <p class="mt-1 text-xs text-slate-500">{{ displayName }}</p>
+            <p class="page-kicker mb-1">工作台</p>
+            <h1 class="text-[18px] font-semibold text-gray-900">用户工作台</h1>
           </div>
-          <button
-            type="button"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700"
-            @click="menuOpen = !menuOpen"
-          >
-            <Menu v-if="!menuOpen" class="h-5 w-5" />
-            <X v-else class="h-5 w-5" />
-          </button>
         </div>
-
-        <div v-if="menuOpen" class="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <div class="rounded-2xl bg-white px-4 py-3 text-sm text-slate-600">
-            <p class="font-medium text-slate-900">{{ displayName }}</p>
-            <p class="mt-1 text-xs text-slate-500">{{ roleText }}</p>
-            <p class="mt-2 text-xs text-slate-500">{{ primaryContact }}</p>
+        <div class="flex items-center gap-3">
+          <div class="rounded-2xl border border-gray-200/80 bg-white px-4 py-2.5 text-right shadow-sm shadow-gray-200/25">
+            <div class="flex items-center justify-end gap-2">
+              <span class="chip chip-muted">{{ roleText }}</span>
+              <p class="text-[12px] font-medium text-gray-900">{{ displayName }}</p>
+            </div>
+            <p class="text-[11px] text-gray-500">{{ primaryContact }}</p>
           </div>
-
-          <router-link
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white"
-            active-class="bg-white text-slate-900"
-            @click="closeMenu"
-          >
-            <component :is="item.icon" class="h-4 w-4" />
-            <span>{{ item.label }}</span>
+          <router-link class="btn-default" to="/account">
+            <UserRound class="h-4 w-4" />
+            <span>账户中心</span>
           </router-link>
-          <button class="btn-default mt-2 w-full gap-2" type="button" @click="quickLogout">
-            <LogOut class="h-4 w-4" />
-            <span>退出登录</span>
-          </button>
         </div>
       </header>
 
-      <main class="flex-1 px-4 py-6 md:px-6 lg:px-10 lg:py-8">
-        <router-view />
+      <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200/70 bg-stone-50/90 px-4 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-3">
+          <div class="brand-mark h-9 w-9 text-[14px]">{{ USER_BRAND_MARK }}</div>
+          <div>
+            <p class="text-[14px] font-semibold text-gray-900">{{ appTitle }}</p>
+            <p class="text-[11px] text-gray-500">{{ displayName }}</p>
+          </div>
+        </div>
+        <button
+          @click="menuOpen = !menuOpen"
+          class="rounded-xl border border-gray-200 bg-white p-2 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+        >
+          <Menu v-if="!menuOpen" class="h-[18px] w-[18px]" />
+          <X v-else class="h-[18px] w-[18px]" />
+        </button>
+      </header>
+
+      <transition name="fade">
+        <div v-if="menuOpen" class="border-b border-gray-200/70 bg-white px-4 py-4 shadow-sm lg:hidden">
+          <div class="rounded-2xl border border-gray-200/80 bg-gray-50/80 p-4">
+            <div class="flex items-center gap-3 border-b border-gray-200/70 pb-4">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-gray-700 shadow-sm shadow-gray-200/40">
+                {{ displayName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[13px] font-semibold text-gray-900">{{ displayName }}</p>
+                <p class="truncate text-[11px] text-gray-500">{{ primaryContact }}</p>
+              </div>
+            </div>
+            <nav class="mt-4 space-y-2">
+              <router-link
+                v-for="item in navItems"
+                :key="item.to"
+                :to="item.to"
+                class="nav-link"
+                :class="route.path === item.to ? 'nav-link-active' : 'nav-link-idle'"
+                @click="closeMenu"
+              >
+                <component
+                  :is="item.icon"
+                  class="h-[18px] w-[18px] shrink-0"
+                  :class="route.path === item.to ? 'text-white' : 'text-gray-400'"
+                />
+                <span>{{ item.label }}</span>
+              </router-link>
+            </nav>
+            <button class="btn-default mt-4 w-full" @click="quickLogout">
+              <LogOut class="h-4 w-4" />
+              <span>退出登录</span>
+            </button>
+          </div>
+        </div>
+      </transition>
+
+      <main class="flex-1 overflow-y-auto px-4 py-5 md:px-6 lg:px-8 lg:py-6">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </main>
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

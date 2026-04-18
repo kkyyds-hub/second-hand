@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { Loader2, RefreshCw } from 'lucide-vue-next'
 import { createEmptySellerSummary, getSellerSummary, type SellerSummary } from '@/api/seller'
@@ -18,19 +18,15 @@ const summaryStatusText = computed(() => {
     return '正在同步最新卖家摘要...'
   }
 
-  /**
-   * Day01 联调仍可能停在接口异常或鉴权失败。
-   * 这里优先展示失败态，避免首轮请求失败后仍沿用“已加载”文案误导联调判断。
-   */
   if (errorMessage.value) {
-    return '卖家摘要加载失败，请检查当前登录态或接口状态后重试。'
+    return '卖家摘要加载失败，请重试'
   }
 
   if (hasLoadedOnce.value) {
-    return '卖家摘要已加载，可手动刷新。'
+    return '卖家摘要已加载'
   }
 
-  return '页面初始化中...'
+  return '初始化中...'
 })
 
 const primaryMetrics = computed(() => {
@@ -62,11 +58,6 @@ const loadSummary = async () => {
   try {
     loading.value = true
     errorMessage.value = ''
-
-    /**
-     * 页面层只维护 loading / error / retry。
-     * 字段默认值、数字归一化和别名兼容已经下沉到 `src/api/seller.ts`。
-     */
     summary.value = await getSellerSummary()
   } catch (error: any) {
     errorMessage.value = error.message || '卖家摘要加载失败，请稍后重试。'
@@ -82,69 +73,120 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="card p-6 md:p-8">
-      <p class="muted-kicker">首页摘要</p>
-      <h1 class="section-title mt-3">你好，{{ greetingName }}</h1>
-      <p class="section-desc">
-        这里展示当前登录账号的基础卖家摘要，便于你在进入更完整的业务模块前先确认会话状态与关键统计。
-      </p>
-
-      <div class="mt-5 grid gap-3 md:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-          <p class="text-xs text-slate-400">当前会话</p>
-          <p class="mt-2 text-sm font-medium text-slate-900">{{ roleText }}</p>
+  <div class="page-body">
+    <section class="page-hero">
+      <div class="page-hero-content">
+        <div class="page-header-main">
+          <p class="page-kicker">概览</p>
+          <h1 class="page-title">你好，{{ greetingName }}</h1>
+          <p class="page-desc">确认会话状态与关键业务摘要，开启今天的工作。</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-          <p class="text-xs text-slate-400">联系方式</p>
-          <p class="mt-2 text-sm font-medium text-slate-900">{{ primaryContact }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-          <p class="text-xs text-slate-400">摘要状态</p>
-          <p class="mt-2 text-sm font-medium text-slate-900">{{ summaryStatusText }}</p>
+        <div class="page-actions">
+          <span class="chip chip-muted">{{ summaryStatusText }}</span>
+          <button class="btn-default" type="button" :disabled="loading" @click="loadSummary">
+            <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
+            <RefreshCw v-else class="h-4 w-4" />
+            <span>{{ loading ? '刷新中' : '刷新摘要' }}</span>
+          </button>
         </div>
       </div>
     </section>
 
-    <section v-if="errorMessage" class="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-700">
-      {{ errorMessage }}
+    <section v-if="errorMessage" class="notice-banner notice-banner-danger">
+      <span class="notice-dot bg-red-500"></span>
+      <div>
+        <p class="font-semibold">数据加载失败</p>
+        <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
+      </div>
     </section>
 
-    <section class="card p-6">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <section class="section-panel">
+      <div class="section-header">
         <div>
-          <p class="muted-kicker">Seller summary</p>
-          <h2 class="section-title mt-2">卖家经营概览</h2>
-          <p class="section-desc mt-1">
-            当前首页只冻结摘要级数据，不等同于完整的市场首页、卖家工作台或订单域页面。
-          </p>
+          <h2 class="section-heading">会话状态</h2>
+          <p class="section-subtitle">统一查看当前身份、联系方式与摘要同步状态。</p>
         </div>
-
-        <button class="btn-default gap-2" type="button" :disabled="loading" @click="loadSummary">
-          <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
-          <RefreshCw v-else class="h-4 w-4" />
-          <span>{{ loading ? '刷新中...' : '刷新摘要' }}</span>
-        </button>
+        <span class="chip chip-neutral">{{ summaryStatusText }}</span>
       </div>
-
-      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article v-for="metric in primaryMetrics" :key="metric.label" class="metric-card">
-          <p class="text-sm text-slate-500">{{ metric.label }}</p>
-          <p class="mt-4 text-3xl font-semibold text-slate-900">{{ metric.value }}</p>
-        </article>
+      <div class="section-body">
+        <div class="meta-grid">
+          <div class="meta-item">
+            <p class="meta-label">当前身份</p>
+            <p class="meta-value">{{ roleText }}</p>
+          </div>
+          <div class="meta-item">
+            <p class="meta-label">联系方式</p>
+            <p class="meta-value font-numeric">{{ primaryContact }}</p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="card p-6">
-      <p class="muted-kicker">More details</p>
-      <h2 class="section-title mt-2">补充统计</h2>
-      <p class="section-desc mt-1">这些字段与首页摘要共用同一接口，便于在 Day01 就确认基础数据口径。</p>
+    <section class="section-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-heading">卖家经营概览</h2>
+          <p class="section-subtitle">以统一卡片语法承载核心指标，避免页面各自定义一套统计样式。</p>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="metric-grid">
+          <article v-for="metric in primaryMetrics" :key="metric.label" class="metric-card">
+            <p class="metric-label">{{ metric.label }}</p>
+            <p class="metric-value font-numeric">{{ metric.value }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <article v-for="metric in secondaryMetrics" :key="metric.label" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-          <p class="text-sm text-slate-500">{{ metric.label }}</p>
-          <p class="mt-3 text-2xl font-semibold text-slate-900">{{ metric.value }}</p>
-        </article>
+    <section class="section-panel-muted">
+      <div class="section-header section-header-plain">
+        <div>
+          <h2 class="section-heading">补充统计</h2>
+          <p class="section-subtitle">次级指标统一使用浅底信息卡，降低视觉噪声。</p>
+        </div>
+      </div>
+      <div class="section-body pt-0">
+        <div class="submetric-grid">
+          <article v-for="metric in secondaryMetrics" :key="metric.label" class="submetric-card">
+            <p class="text-[12px] text-gray-500">{{ metric.label }}</p>
+            <p class="mt-2 text-[18px] font-semibold text-gray-900 font-numeric">{{ metric.value }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-heading">快捷入口</h2>
+          <p class="section-subtitle">延续同系列产品的中性卡片风格，只在细节上保留少量强调色。</p>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="link-grid">
+          <router-link class="link-card" to="/market">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">浏览市场</p>
+              <span class="chip chip-accent">市场</span>
+            </div>
+            <p class="link-card-desc">浏览商品、进入详情、查看评价并执行收藏与举报操作。</p>
+          </router-link>
+          <router-link class="link-card" to="/favorites">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">我的收藏夹</p>
+              <span class="chip chip-neutral">收藏</span>
+            </div>
+            <p class="link-card-desc">集中查看已收藏商品列表，并执行取消收藏操作。</p>
+          </router-link>
+          <router-link class="link-card" to="/reviews/mine">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">我的评价记录</p>
+              <span class="chip chip-neutral">评价</span>
+            </div>
+            <p class="link-card-desc">查看我提交过的评价记录，便于后续校验与回顾。</p>
+          </router-link>
+        </div>
       </div>
     </section>
   </div>

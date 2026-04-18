@@ -120,6 +120,33 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'market',
+          name: 'MarketList',
+          component: () => import('@/pages/market/MarketListPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'market/:productId',
+          name: 'MarketDetail',
+          component: () => import('@/pages/market/MarketDetailPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'favorites',
+          name: 'FavoriteList',
+          component: () => import('@/pages/market/FavoriteListPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'reviews/mine',
+          name: 'MyReviews',
+          component: () => import('@/pages/market/MyReviewsPage.vue'),
+          /**
+           * Day03 第二包“我的评价入口”保留独立路由，供后续 verify 线程做最小链路验证。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'logout',
           name: 'UserLogout',
           component: () => import('@/pages/LogoutPage.vue'),

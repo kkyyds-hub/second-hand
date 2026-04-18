@@ -81,7 +81,7 @@ async function submitBindForm() {
 
   if (!normalizedBindEmail.value || !normalizedBindCode.value) {
     bindStatus.value = 'error'
-    bindMessage.value = 'Email and verification code are required.'
+    bindMessage.value = '请完整填写邮箱和验证码后再提交。'
     return
   }
 
@@ -105,10 +105,10 @@ async function submitBindForm() {
     bindForm.verifyCode = ''
 
     bindStatus.value = 'success'
-    bindMessage.value = 'Email binding updated.'
+    bindMessage.value = '邮箱绑定更新成功。'
   } catch (error: unknown) {
     bindStatus.value = 'error'
-    bindMessage.value = readErrorMessage(error, 'Email binding failed.')
+    bindMessage.value = readErrorMessage(error, '邮箱绑定失败，请稍后重试。')
   } finally {
     binding.value = false
   }
@@ -121,13 +121,13 @@ async function submitUnbindForm() {
 
   if (!hasBoundEmail.value) {
     unbindStatus.value = 'error'
-    unbindMessage.value = 'No email is currently bound.'
+    unbindMessage.value = '当前没有可解绑的邮箱。'
     return
   }
 
   if (!normalizedUnbindCode.value) {
     unbindStatus.value = 'error'
-    unbindMessage.value = 'Verification code is required.'
+    unbindMessage.value = '验证码不能为空。'
     return
   }
 
@@ -152,10 +152,10 @@ async function submitUnbindForm() {
     unbindForm.currentPassword = ''
 
     unbindStatus.value = 'success'
-    unbindMessage.value = 'Email unbound.'
+    unbindMessage.value = '邮箱解绑成功。'
   } catch (error: unknown) {
     unbindStatus.value = 'error'
-    unbindMessage.value = readErrorMessage(error, 'Email unbind failed.')
+    unbindMessage.value = readErrorMessage(error, '邮箱解绑失败，请稍后重试。')
   } finally {
     unbinding.value = false
   }
@@ -163,152 +163,40 @@ async function submitUnbindForm() {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="card p-6 md:p-8">
-      <p class="muted-kicker">Security</p>
-      <div class="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 class="section-title">Email Binding</h1>
-          <p class="section-desc mt-2">
-            This slice only covers email bind and unbind flows. Phone bind/unbind stays out of this thread.
-          </p>
-        </div>
-        <router-link class="btn-default" to="/account">Back to account center</router-link>
+  <div class="page-body page-body-narrow">
+    <section class="page-header">
+      <div class="page-header-main"><p class="page-kicker">安全</p><h1 class="page-title">邮箱绑定管理</h1><p class="page-desc">绑定、解绑和当前状态说明统一放入同一视觉体系下，避免同一域内再拆成两套样式。</p></div>
+      <div class="page-actions"><span class="chip chip-neutral">安全设置</span><router-link class="btn-default" to="/account">返回账户中心</router-link></div>
+    </section>
+    <section v-if="!hasSessionProfile" class="notice-banner notice-banner-warning"><span class="notice-dot bg-orange-500"></span><span>当前没有本地账户快照，请重新登录后再调整邮箱绑定状态。</span></section>
+    <section class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div class="section-panel-muted">
+        <div class="section-header section-header-plain"><div><h2 class="section-heading">当前绑定快照</h2><p class="section-subtitle">左侧统一展示当前账户、邮箱状态和页面边界说明。</p></div></div>
+        <div class="section-body pt-0"><div class="detail-grid"><div class="detail-row"><span class="detail-label">账户显示名</span><span class="detail-value">{{ displayName }}</span></div><div class="detail-row"><span class="detail-label">已绑定邮箱</span><span class="detail-value font-numeric">{{ currentEmail || '暂未绑定' }}</span></div><div class="meta-item"><p class="meta-label">页面边界</p><p class="meta-value">这里只处理邮箱绑定与解绑，不再混入手机等其他安全表单。</p></div></div></div>
       </div>
-    </section>
-
-    <section v-if="!hasSessionProfile" class="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-700">
-      No local account snapshot is available. Please sign in again before changing email binding.
-    </section>
-
-    <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <section class="card p-6">
-        <p class="muted-kicker">Current snapshot</p>
-        <h2 class="section-title mt-2">Email status</h2>
-
-        <div class="mt-6 grid gap-4 text-sm text-slate-600">
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Account</p>
-            <p class="mt-2 text-base font-medium text-slate-900">{{ displayName }}</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Bound email</p>
-            <p class="mt-2 text-base font-medium text-slate-900">{{ currentEmail || 'No email bound' }}</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p class="text-xs text-slate-400">Thread boundary</p>
-            <p class="mt-2 text-base font-medium text-slate-900">Email bind/unbind only. Phone binding is not implemented here.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="space-y-6">
-        <section class="card p-6">
-          <p class="muted-kicker">Bind</p>
-          <h2 class="section-title mt-2">Bind or update email</h2>
-
-          <form class="mt-6 space-y-4" @submit.prevent="submitBindForm">
-            <div>
-              <label class="form-label" for="bind-email-value">Email</label>
-              <input
-                id="bind-email-value"
-                v-model="bindForm.email"
-                class="input-standard"
-                type="email"
-                autocomplete="email"
-                placeholder="Enter email"
-                :disabled="binding"
-                @input="clearBindStatus"
-              />
-            </div>
-
-            <div>
-              <label class="form-label" for="bind-email-code">Verification code</label>
-              <input
-                id="bind-email-code"
-                v-model="bindForm.verifyCode"
-                class="input-standard"
-                type="text"
-                autocomplete="one-time-code"
-                placeholder="Enter verification code"
-                :disabled="binding"
-                @input="clearBindStatus"
-              />
-            </div>
-
-            <section
-              v-if="bindStatus === 'success'"
-              class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            >
-              {{ bindMessage }}
-            </section>
-            <section
-              v-else-if="bindStatus === 'error'"
-              class="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700"
-            >
-              {{ bindMessage }}
-            </section>
-
-            <button class="btn-primary" type="submit" :disabled="!canSubmitBind">
-              {{ binding ? 'Submitting...' : 'Submit email bind' }}
-            </button>
+      <div class="space-y-6">
+        <section class="section-panel">
+          <div class="section-header section-header-plain"><div><h2 class="section-heading">绑定或更新邮箱</h2><p class="section-subtitle">表单和反馈区域统一使用一套留白和圆角规则。</p></div></div>
+          <form class="section-body pt-0 space-y-4" @submit.prevent="submitBindForm">
+            <div><label class="form-label" for="bind-email-value">新邮箱地址</label><input id="bind-email-value" v-model="bindForm.email" class="input-standard" type="email" autocomplete="email" placeholder="请输入有效邮箱" :disabled="binding" @input="clearBindStatus" /></div>
+            <div><label class="form-label" for="bind-email-code">验证码</label><input id="bind-email-code" v-model="bindForm.verifyCode" class="input-standard font-numeric" type="text" autocomplete="one-time-code" placeholder="输入收到的验证码" :disabled="binding" @input="clearBindStatus" /></div>
+            <section v-if="bindStatus === 'success'" class="notice-banner notice-banner-success"><span class="notice-dot bg-emerald-500"></span><span>{{ bindMessage }}</span></section>
+            <section v-else-if="bindStatus === 'error'" class="notice-banner notice-banner-warning"><span class="notice-dot bg-orange-500"></span><span>{{ bindMessage }}</span></section>
+            <div class="pt-2"><button class="btn-primary" type="submit" :disabled="!canSubmitBind">{{ binding ? '提交中...' : '提交绑定' }}</button></div>
           </form>
         </section>
-
-        <section class="card p-6">
-          <p class="muted-kicker">Unbind</p>
-          <h2 class="section-title mt-2">Unbind current email</h2>
-
-          <form class="mt-6 space-y-4" @submit.prevent="submitUnbindForm">
-            <div>
-              <label class="form-label" for="unbind-email-code">Verification code</label>
-              <input
-                id="unbind-email-code"
-                v-model="unbindForm.verifyCode"
-                class="input-standard"
-                type="text"
-                autocomplete="one-time-code"
-                placeholder="Enter verification code"
-                :disabled="unbinding || !hasBoundEmail"
-                @input="clearUnbindStatus"
-              />
-            </div>
-
-            <div>
-              <label class="form-label" for="unbind-email-password">Current password (optional)</label>
-              <input
-                id="unbind-email-password"
-                v-model="unbindForm.currentPassword"
-                class="input-standard"
-                type="password"
-                autocomplete="current-password"
-                placeholder="Enter current password when required"
-                :disabled="unbinding || !hasBoundEmail"
-                @input="clearUnbindStatus"
-              />
-            </div>
-
-            <p v-if="!hasBoundEmail" class="text-xs text-slate-500">There is no bound email to unbind.</p>
-
-            <section
-              v-if="unbindStatus === 'success'"
-              class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            >
-              {{ unbindMessage }}
-            </section>
-            <section
-              v-else-if="unbindStatus === 'error'"
-              class="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700"
-            >
-              {{ unbindMessage }}
-            </section>
-
-            <button class="btn-primary" type="submit" :disabled="!canSubmitUnbind">
-              {{ unbinding ? 'Submitting...' : 'Submit email unbind' }}
-            </button>
+        <section class="section-panel">
+          <div class="section-header section-header-plain"><div><h2 class="section-heading">解除绑定</h2><p class="section-subtitle">弱化危险视觉噪声，但保留必要的风险提示。</p></div></div>
+          <form class="section-body pt-0 space-y-4" @submit.prevent="submitUnbindForm">
+            <div><label class="form-label" for="unbind-email-code">原邮箱验证码</label><input id="unbind-email-code" v-model="unbindForm.verifyCode" class="input-standard font-numeric" type="text" autocomplete="one-time-code" placeholder="输入当前绑定邮箱收到的验证码" :disabled="unbinding || !hasBoundEmail" @input="clearUnbindStatus" /></div>
+            <div><label class="form-label" for="unbind-email-password">当前账户密码（可选）</label><input id="unbind-email-password" v-model="unbindForm.currentPassword" class="input-standard" type="password" autocomplete="current-password" placeholder="如后端要求二次校验可填写" :disabled="unbinding || !hasBoundEmail" @input="clearUnbindStatus" /></div>
+            <p v-if="!hasBoundEmail" class="text-[12px] text-gray-500">当前没有可解除绑定的邮箱。</p>
+            <section v-if="unbindStatus === 'success'" class="notice-banner notice-banner-success"><span class="notice-dot bg-emerald-500"></span><span>{{ unbindMessage }}</span></section>
+            <section v-else-if="unbindStatus === 'error'" class="notice-banner notice-banner-warning"><span class="notice-dot bg-orange-500"></span><span>{{ unbindMessage }}</span></section>
+            <div class="pt-2"><button class="btn-danger" type="submit" :disabled="!canSubmitUnbind">{{ unbinding ? '提交中...' : '提交解绑' }}</button></div>
           </form>
         </section>
-      </section>
+      </div>
     </section>
   </div>
 </template>

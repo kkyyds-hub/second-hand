@@ -13,14 +13,16 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex min-h-[40vh] items-center justify-center">
-    <div class="card w-full max-w-md p-8 text-center">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-        <Loader2 class="h-6 w-6 animate-spin" />
+  <div class="page-body page-body-narrow">
+    <section class="section-panel">
+      <div class="section-body">
+        <div class="empty-state min-h-[260px] border-0 bg-transparent px-0 py-0">
+          <Loader2 class="empty-state-icon animate-spin text-blue-500" />
+          <p class="page-kicker">退出</p>
+          <h1 class="empty-state-title mt-1">正在安全退出</h1>
+          <p class="empty-state-text">系统正在清理本地登录会话，并将你带回登录页。</p>
+        </div>
       </div>
-      <p class="muted-kicker mt-4">Logout</p>
-      <h1 class="section-title mt-3">正在安全退出</h1>
-      <p class="section-desc">系统正在清理本地登录会话，并将你带回登录页。</p>
-    </div>
+    </section>
   </div>
 </template>

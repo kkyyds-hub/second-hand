@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { Loader2, MapPinHouse, Plus, RefreshCw } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
@@ -33,10 +33,6 @@ function dismissActionNotice() {
     return
   }
 
-  /**
-   * 成功提示通过 query 参数透传一次即可（created / edited），
-   * 手动关闭后从 URL 清理，避免刷新页面时重复出现历史提示。
-   */
   const nextQuery = { ...route.query }
   delete nextQuery.created
   delete nextQuery.edited
@@ -109,11 +105,6 @@ async function loadAddressList(options?: { throwOnError?: boolean }) {
   try {
     loading.value = true
     errorMessage.value = ''
-
-    /**
-     * 页面层只处理 loading / empty / error / retry。
-     * 字段兼容和分页结构兼容统一收敛在 `src/api/address.ts`。
-     */
     addressPage.value = await getMyAddressList({
       page: 1,
       pageSize: 20,
@@ -142,14 +133,8 @@ async function handleSetDefault(item: UserAddressItem) {
     settingDefaultAddressId.value = item.id
     defaultActionStatus.value = 'idle'
     defaultActionMessage.value = ''
-
-    /**
-     * set-default 的字段/契约兼容统一在 API 层；
-     * 页面层只维护提交中禁用、防重复点击、成功/失败提示与刷新列表。
-     */
     await setMyDefaultAddress(item.id)
     await loadAddressList({ throwOnError: true })
-
     defaultActionStatus.value = 'success'
     defaultActionMessage.value = '默认地址设置成功，列表已刷新。'
   } catch (error: unknown) {
@@ -169,14 +154,8 @@ async function handleDelete(item: UserAddressItem) {
     deletingAddressId.value = item.id
     deleteActionStatus.value = 'idle'
     deleteActionMessage.value = ''
-
-    /**
-     * delete-only 切片把地址 ID 兼容与 endpoint 下沉到 API 层；
-     * 页面层只维护删除中禁用、防重复点击、成功/失败提示与列表刷新。
-     */
     await deleteMyAddress(item.id)
     await loadAddressList({ throwOnError: true })
-
     deleteActionStatus.value = 'success'
     deleteActionMessage.value = '地址删除成功，列表已刷新。'
   } catch (error: unknown) {
@@ -193,144 +172,143 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="card p-6 md:p-8">
-      <p class="muted-kicker">Address center</p>
-      <div class="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 class="section-title">收货地址</h1>
-          <p class="section-desc">
-            当前页面支持地址列表读取、新增、编辑、删除与设为默认地址。
-          </p>
+  <div class="page-body page-body-narrow">
+    <section class="page-hero">
+      <div class="page-hero-content">
+        <div class="page-header-main">
+          <p class="page-kicker">地址</p>
+          <h1 class="page-title">收货地址</h1>
+          <p class="page-desc">列表、新增、编辑、删除与默认地址操作统一放在同一种壳层里，减少地址域的样式割裂。</p>
         </div>
-
-        <div class="flex items-center gap-3">
+        <div class="page-actions">
           <router-link class="btn-default" to="/account">返回账户中心</router-link>
-          <router-link class="btn-primary gap-2" to="/account/addresses/new">
+          <button class="btn-default" type="button" :disabled="loading" @click="reloadAddressList">
+            <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
+            <RefreshCw v-else class="h-4 w-4" />
+            <span>{{ loading ? '刷新中' : '刷新列表' }}</span>
+          </button>
+          <router-link class="btn-primary" to="/account/addresses/new">
             <Plus class="h-4 w-4" />
             <span>新增地址</span>
           </router-link>
-          <button class="btn-default gap-2" type="button" :disabled="loading" @click="reloadAddressList">
-            <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
-            <RefreshCw v-else class="h-4 w-4" />
-            <span>{{ loading ? '刷新中...' : '重试/刷新' }}</span>
-          </button>
         </div>
       </div>
     </section>
 
-    <section v-if="hasActionNotice" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
-      <p>{{ actionNoticeText }}</p>
-      <button class="btn-default mt-3" type="button" @click="dismissActionNotice">我知道了</button>
+    <section v-if="hasActionNotice" class="notice-banner notice-banner-success">
+      <span class="notice-dot bg-emerald-500"></span>
+      <span class="flex-1">{{ actionNoticeText }}</span>
+      <button class="text-[12px] font-medium" type="button" @click="dismissActionNotice">关闭</button>
     </section>
 
     <section
       v-if="hasDefaultActionNotice"
-      :class="[
-        'rounded-2xl px-5 py-4 text-sm',
-        defaultActionStatus === 'success'
-          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border border-orange-200 bg-orange-50 text-orange-700',
-      ]"
+      class="notice-banner"
+      :class="defaultActionStatus === 'success' ? 'notice-banner-success' : 'notice-banner-danger'"
     >
-      <p>{{ defaultActionMessage }}</p>
-      <button class="btn-default mt-3" type="button" :disabled="settingDefaultAddressId !== null" @click="dismissDefaultActionNotice">
-        我知道了
-      </button>
+      <span class="notice-dot" :class="defaultActionStatus === 'success' ? 'bg-emerald-500' : 'bg-red-500'"></span>
+      <span class="flex-1">{{ defaultActionMessage }}</span>
+      <button class="text-[12px] font-medium" type="button" :disabled="settingDefaultAddressId !== null" @click="dismissDefaultActionNotice">关闭</button>
     </section>
 
     <section
       v-if="hasDeleteActionNotice"
-      :class="[
-        'rounded-2xl px-5 py-4 text-sm',
-        deleteActionStatus === 'success'
-          ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border border-orange-200 bg-orange-50 text-orange-700',
-      ]"
+      class="notice-banner"
+      :class="deleteActionStatus === 'success' ? 'notice-banner-success' : 'notice-banner-danger'"
     >
-      <p>{{ deleteActionMessage }}</p>
-      <button class="btn-default mt-3" type="button" :disabled="deletingAddressId !== null" @click="dismissDeleteActionNotice">
-        我知道了
-      </button>
+      <span class="notice-dot" :class="deleteActionStatus === 'success' ? 'bg-emerald-500' : 'bg-red-500'"></span>
+      <span class="flex-1">{{ deleteActionMessage }}</span>
+      <button class="text-[12px] font-medium" type="button" :disabled="deletingAddressId !== null" @click="dismissDeleteActionNotice">关闭</button>
     </section>
 
-    <section v-if="errorMessage" class="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-700">
-      <p>{{ errorMessage }}</p>
-      <button class="btn-default mt-3" type="button" :disabled="loading" @click="reloadAddressList">重试加载</button>
-    </section>
-
-    <section v-else-if="loading && !hasLoadedOnce" class="card p-8">
-      <div class="flex items-center gap-3 text-slate-600">
-        <Loader2 class="h-5 w-5 animate-spin" />
-        <p class="text-sm">正在加载地址列表...</p>
+    <section v-if="errorMessage" class="notice-banner notice-banner-danger">
+      <span class="notice-dot bg-red-500"></span>
+      <div class="flex-1">
+        <p>{{ errorMessage }}</p>
+        <button class="btn-default mt-3" type="button" :disabled="loading" @click="reloadAddressList">重试加载</button>
       </div>
     </section>
 
-    <section v-else-if="hasEmptyState" class="card p-8">
-      <div class="flex flex-col items-center justify-center gap-3 text-center text-slate-500">
-        <MapPinHouse class="h-10 w-10 text-slate-300" />
-        <p class="text-base font-medium text-slate-700">暂无收货地址</p>
-        <p class="text-sm">当前账号还没有可展示的地址记录。</p>
-        <div class="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <router-link class="btn-primary" to="/account/addresses/new">新增地址</router-link>
-          <button class="btn-default" type="button" :disabled="loading" @click="reloadAddressList">重新加载</button>
+    <section v-else-if="loading && !hasLoadedOnce" class="section-panel">
+      <div class="section-body flex min-h-[280px] items-center justify-center">
+        <div class="flex items-center gap-3 text-gray-500">
+          <Loader2 class="h-5 w-5 animate-spin" />
+          <p class="text-[13px]">正在加载地址列表...</p>
         </div>
       </div>
     </section>
 
-    <section v-else class="card p-6">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+    <section v-else-if="hasEmptyState" class="section-panel">
+      <div class="section-body">
+        <div class="empty-state min-h-[280px]">
+          <MapPinHouse class="empty-state-icon" />
+          <p class="empty-state-title">暂无收货地址</p>
+          <p class="empty-state-text">当前账户还没有可展示的地址记录，可以先新增一个默认地址用于后续下单。</p>
+          <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button class="btn-default" type="button" :disabled="loading" @click="reloadAddressList">重新加载</button>
+            <router-link class="btn-primary" to="/account/addresses/new">
+              <Plus class="h-4 w-4" />
+              <span>新增地址</span>
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-else class="section-panel">
+      <div class="section-header">
         <div>
-          <p class="muted-kicker">Address list</p>
-          <h2 class="section-title mt-2">地址列表</h2>
+          <h2 class="section-heading">地址列表</h2>
+          <p class="section-subtitle">共 <span class="font-numeric text-gray-800">{{ addressPage.total }}</span> 条记录</p>
         </div>
-        <p class="text-sm text-slate-500">
-          共 {{ addressPage.total }} 条，当前第 {{ addressPage.page }} 页（pageSize={{ addressPage.pageSize }}）
-        </p>
+        <span class="chip chip-muted font-numeric">第 {{ addressPage.page }} 页 · 每页 {{ addressPage.pageSize }} 条</span>
       </div>
 
-      <div class="mt-6 grid gap-4">
-        <article
-          v-for="item in addressList"
-          :key="item.id ?? `${item.receiverName}-${item.mobile}-${item.fullAddress}`"
-          class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5"
-        >
-          <div class="flex flex-wrap items-center gap-2">
-            <p class="text-base font-semibold text-slate-900">{{ item.receiverName || '未命名收件人' }}</p>
-            <span v-if="item.isDefault" class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">
-              默认地址
-            </span>
-          </div>
+      <div class="section-body bg-gray-50/50">
+        <div class="grid gap-4">
+          <article
+            v-for="item in addressList"
+            :key="item.id ?? `${item.receiverName}-${item.mobile}-${item.fullAddress}`"
+            class="list-card-item"
+          >
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[16px] font-semibold text-gray-900">{{ item.receiverName || '未命名收件人' }}</span>
+                  <span class="text-[14px] font-numeric text-gray-600">{{ item.mobile || '未绑定手机号' }}</span>
+                  <span v-if="item.isDefault" class="chip chip-success">默认地址</span>
+                </div>
+                <p class="mt-3 text-[13px] leading-6 text-gray-700">{{ item.fullAddress || '地址信息缺失' }}</p>
+                <p class="mt-2 text-[12px] font-numeric text-gray-400">地址 ID：{{ item.id ?? '-' }}</p>
+              </div>
 
-          <p class="mt-2 text-sm text-slate-600">{{ item.mobile || '未绑定手机号' }}</p>
-          <p class="mt-2 text-sm leading-6 text-slate-700">{{ item.fullAddress || '地址信息缺失' }}</p>
-          <p class="mt-3 text-xs text-slate-400">地址 ID：{{ item.id ?? '-' }}</p>
+              <div class="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 md:border-0 md:pt-0">
+                <template v-if="item.id !== null">
+                  <button
+                    v-if="!item.isDefault"
+                    class="btn-default !h-9 px-3"
+                    type="button"
+                    :disabled="!canSetDefaultFor(item)"
+                    @click="handleSetDefault(item)"
+                  >
+                    <Loader2 v-if="isSettingDefaultFor(item.id)" class="h-3.5 w-3.5 animate-spin" />
+                    <span>设为默认</span>
+                  </button>
 
-          <div class="mt-4 flex items-center gap-2">
-            <template v-if="item.id !== null">
-              <router-link class="btn-default" :to="{ name: 'AccountAddressEdit', params: { addressId: item.id } }">
-                编辑地址
-              </router-link>
+                  <router-link class="btn-default !h-9 px-3" :to="{ name: 'AccountAddressEdit', params: { addressId: item.id } }">
+                    编辑
+                  </router-link>
 
-              <button
-                v-if="!item.isDefault"
-                class="btn-default gap-2"
-                type="button"
-                :disabled="!canSetDefaultFor(item)"
-                @click="handleSetDefault(item)"
-              >
-                <Loader2 v-if="isSettingDefaultFor(item.id)" class="h-4 w-4 animate-spin" />
-                <span>{{ isSettingDefaultFor(item.id) ? '设置中...' : '设为默认地址' }}</span>
-              </button>
-
-              <button class="btn-default gap-2" type="button" :disabled="!canDeleteFor(item)" @click="handleDelete(item)">
-                <Loader2 v-if="isDeletingFor(item.id)" class="h-4 w-4 animate-spin" />
-                <span>{{ isDeletingFor(item.id) ? '删除中...' : '删除地址' }}</span>
-              </button>
-            </template>
-            <p v-else class="text-xs text-slate-400">地址 ID 缺失，暂不可编辑。</p>
-          </div>
-        </article>
+                  <button class="btn-danger !h-9 px-3" type="button" :disabled="!canDeleteFor(item)" @click="handleDelete(item)">
+                    <Loader2 v-if="isDeletingFor(item.id)" class="h-3.5 w-3.5 animate-spin" />
+                    <span>删除</span>
+                  </button>
+                </template>
+                <p v-else class="text-[12px] text-gray-400">ID 缺失，不可操作</p>
+              </div>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
   </div>

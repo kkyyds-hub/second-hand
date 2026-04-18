@@ -1,9 +1,10 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
 import { activateEmail, activateEmailByToken } from '@/api/auth'
 import { getUserDisplayName, type UserProfile } from '@/utils/request'
+import { USER_BRAND_MARK } from '@/utils/brand'
 
 const route = useRoute()
 
@@ -100,53 +101,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-shell px-4 py-10">
+  <div class="auth-shell">
     <div class="auth-card">
-      <p class="muted-kicker">邮箱激活</p>
-      <h1 class="section-title mt-3">完成邮箱激活</h1>
-      <p class="section-desc">
-        你可以直接打开邮件中的激活链接，也可以把邮件里的 token 粘贴到下方手动完成激活。
-      </p>
-
-      <div v-if="errorMessage" class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-        {{ errorMessage }}
-      </div>
-      <div v-if="successMessage" class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-        {{ successMessage }}
-      </div>
-
-      <form class="mt-6 space-y-5" @submit.prevent="handleActivate">
-        <div>
-          <label class="form-label">激活 token</label>
-          <textarea
-            v-model="form.token"
-            class="input-standard min-h-28 resize-y"
-            placeholder="请粘贴激活邮件中的 token"
-            :disabled="loading"
-          />
-        </div>
-
-        <button class="btn-primary w-full gap-2" type="submit" :disabled="loading">
-          <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
-          <span>{{ loading ? '激活中...' : '立即激活' }}</span>
-        </button>
+      <div class="auth-brand"><div class="auth-logo">{{ USER_BRAND_MARK }}</div><h1 class="auth-title">激活用户工作台账户</h1><p class="auth-desc">粘贴激活令牌或直接打开邮件链接，完成用户工作台账户激活。</p></div>
+      <div v-if="errorMessage" class="auth-message auth-message-danger"><svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span>{{ errorMessage }}</span></div>
+      <div v-if="successMessage" class="auth-message auth-message-success"><svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{{ successMessage }}</span></div>
+      <form v-if="!activatedUserRows.length" class="space-y-5" @submit.prevent="handleActivate">
+        <div><label class="form-label">激活令牌</label><textarea v-model="form.token" class="input-standard min-h-[120px] resize-none" placeholder="请粘贴激活邮件中的令牌" :disabled="loading" /></div>
+        <button class="btn-primary w-full" type="submit" :disabled="loading"><Loader2 v-if="loading" class="h-4 w-4 animate-spin" /><span>{{ loading ? '激活中...' : '立即激活' }}</span></button>
       </form>
-
-      <div v-if="activatedUserRows.length" class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        <p class="font-medium text-slate-900">激活结果</p>
-        <div class="mt-3 grid gap-3 md:grid-cols-2">
-          <div v-for="row in activatedUserRows" :key="row.label">
-            <p class="text-xs text-slate-400">{{ row.label }}</p>
-            <p class="mt-1 text-sm font-medium text-slate-900">{{ row.value }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-6 grid gap-3 md:grid-cols-3">
-        <router-link class="btn-default" to="/login">返回登录</router-link>
-        <router-link class="btn-default" to="/register/email">继续邮箱注册</router-link>
-        <button class="btn-default" type="button" @click="openEmailPreview">打开邮件预览</button>
-      </div>
+      <div v-if="activatedUserRows.length" class="rounded-2xl border border-gray-200/80 bg-gray-50/80 p-5 shadow-sm"><div class="flex items-center gap-3 border-b border-gray-200/70 pb-4"><div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div><div><p class="text-[15px] font-semibold text-gray-900">激活成功</p><p class="text-[12px] text-gray-500">你的账户现在可以正常使用。</p></div></div><div class="mt-4 grid gap-4 sm:grid-cols-2"><div v-for="row in activatedUserRows" :key="row.label" class="meta-item"><p class="meta-label">{{ row.label }}</p><p class="meta-value truncate" :title="String(row.value)">{{ row.value }}</p></div></div></div>
+      <div class="auth-divider"><div class="auth-links"><span class="text-gray-400">需要其他帮助？</span><div class="auth-link-group"><router-link class="auth-link" to="/login">返回登录</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><router-link class="auth-link" to="/register/email">继续注册</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><button class="auth-link cursor-pointer border-0 bg-transparent p-0" type="button" @click="openEmailPreview">邮件预览</button></div></div></div>
     </div>
   </div>
 </template>
