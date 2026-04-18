@@ -1,7 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, LogOut, Menu, UserRound, X } from 'lucide-vue-next'
+import { House, LogOut, Menu, Store, UserRound, X } from 'lucide-vue-next'
 import {
   clearUserSession,
   getUserDisplayName,
@@ -19,11 +19,6 @@ const currentUser = ref<UserProfile | null>(readCurrentUser())
 
 const appTitle = import.meta.env.VITE_APP_TITLE?.trim() || USER_APP_TITLE
 
-const navItems = [
-  { to: '/', label: '首页摘要', icon: House },
-  { to: '/account', label: '账户中心', icon: UserRound },
-]
-
 const syncCurrentUser = () => {
   currentUser.value = readCurrentUser()
 }
@@ -31,6 +26,23 @@ const syncCurrentUser = () => {
 const displayName = computed(() => getUserDisplayName(currentUser.value))
 const primaryContact = computed(() => getUserPrimaryContact(currentUser.value))
 const roleText = computed(() => (isSellerUser(currentUser.value) ? '卖家账号' : '普通账号'))
+
+const navItems = computed(() => {
+  const items = [
+    { to: '/', label: '首页摘要', icon: House },
+    { to: '/account', label: '账户中心', icon: UserRound },
+  ]
+
+  if (isSellerUser(currentUser.value)) {
+    items.push({ to: '/seller', label: '卖家工作台', icon: Store })
+  }
+
+  return items
+})
+
+function isNavItemActive(targetPath: string) {
+  return route.path === targetPath || route.path.startsWith(`${targetPath}/`)
+}
 
 const quickLogout = async () => {
   clearUserSession()
@@ -84,12 +96,12 @@ onUnmounted(() => {
             :key="item.to"
             :to="item.to"
             class="nav-link"
-            :class="route.path === item.to ? 'nav-link-active' : 'nav-link-idle'"
+            :class="isNavItemActive(item.to) ? 'nav-link-active' : 'nav-link-idle'"
           >
             <component
               :is="item.icon"
               class="h-[18px] w-[18px] shrink-0"
-              :class="route.path === item.to ? 'text-white' : 'text-gray-400'"
+              :class="isNavItemActive(item.to) ? 'text-white' : 'text-gray-400'"
             />
             <span>{{ item.label }}</span>
           </router-link>
@@ -178,13 +190,13 @@ onUnmounted(() => {
                 :key="item.to"
                 :to="item.to"
                 class="nav-link"
-                :class="route.path === item.to ? 'nav-link-active' : 'nav-link-idle'"
+                :class="isNavItemActive(item.to) ? 'nav-link-active' : 'nav-link-idle'"
                 @click="closeMenu"
               >
                 <component
                   :is="item.icon"
                   class="h-[18px] w-[18px] shrink-0"
-                  :class="route.path === item.to ? 'text-white' : 'text-gray-400'"
+                  :class="isNavItemActive(item.to) ? 'text-white' : 'text-gray-400'"
                 />
                 <span>{{ item.label }}</span>
               </router-link>

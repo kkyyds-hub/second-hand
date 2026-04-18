@@ -45,6 +45,49 @@ const router = createRouter({
           component: () => import('@/pages/AccountCenterPage.vue'),
         },
         {
+          path: 'seller',
+          name: 'SellerWorkbench',
+          component: () => import('@/pages/seller/SellerWorkbenchPage.vue'),
+          /**
+           * Day04 第一包入口：卖家工作台只读入口。
+           * 写操作链路（创建/编辑/删除/状态流转）留到下一包。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'seller/products',
+          name: 'SellerProductList',
+          component: () => import('@/pages/seller/UserProductListPage.vue'),
+          /**
+           * Day04 第二包升级：我的商品列表承接 create/edit/delete/状态流转入口。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'seller/products/new',
+          name: 'SellerProductCreate',
+          component: () => import('@/pages/seller/UserProductCreatePage.vue'),
+          /**
+           * 固定放在 `:productId` 动态路由前面，避免 `/seller/products/new` 被错误解析为详情页参数。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'seller/products/:productId/edit',
+          name: 'SellerProductEdit',
+          component: () => import('@/pages/seller/UserProductEditPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'seller/products/:productId',
+          name: 'SellerProductDetail',
+          component: () => import('@/pages/seller/UserProductDetailPage.vue'),
+          /**
+           * Day04 第二包升级：详情页提供编辑、删除与状态写操作入口。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'account/security/password',
           name: 'AccountPassword',
           component: () => import('@/pages/AccountPasswordPage.vue'),

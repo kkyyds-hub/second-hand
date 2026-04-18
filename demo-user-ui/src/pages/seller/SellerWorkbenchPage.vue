@@ -6,22 +6,25 @@ import { getUserDisplayName, getUserPrimaryContact, isSellerUser, readCurrentUse
 
 const currentUser = readCurrentUser()
 const loading = ref(false)
-const errorMessage = ref('')
 const hasLoadedOnce = ref(false)
+const errorMessage = ref('')
 const summary = ref<SellerSummary>(createEmptySellerSummary())
 
 const greetingName = computed(() => getUserDisplayName(currentUser))
 const primaryContact = computed(() => getUserPrimaryContact(currentUser))
 const sellerEnabled = computed(() => isSellerUser(currentUser))
-const roleText = computed(() => (sellerEnabled.value ? '当前账号已具备卖家身份。' : '当前账号可能尚未开通卖家身份。'))
 
 const summaryStatusText = computed(() => {
+  if (!sellerEnabled.value) {
+    return '当前账号未开通卖家身份'
+  }
+
   if (loading.value) {
-    return '正在同步最新卖家摘要...'
+    return '正在同步卖家摘要...'
   }
 
   if (errorMessage.value) {
-    return '卖家摘要加载失败，请重试'
+    return '卖家摘要加载失败'
   }
 
   if (hasLoadedOnce.value) {
@@ -53,7 +56,7 @@ const secondaryMetrics = computed(() => {
 })
 
 const loadSummary = async () => {
-  if (loading.value) {
+  if (loading.value || !sellerEnabled.value) {
     return
   }
 
@@ -74,7 +77,11 @@ const loadSummary = async () => {
 }
 
 onMounted(() => {
-  loadSummary()
+  if (sellerEnabled.value) {
+    loadSummary()
+  } else {
+    hasLoadedOnce.value = true
+  }
 })
 </script>
 
@@ -83,13 +90,13 @@ onMounted(() => {
     <section class="page-hero">
       <div class="page-hero-content">
         <div class="page-header-main">
-          <p class="page-kicker">概览</p>
-          <h1 class="page-title">你好，{{ greetingName }}</h1>
-          <p class="page-desc">确认会话状态与关键业务摘要，开启今天的工作。</p>
+          <p class="page-kicker">卖家</p>
+          <h1 class="page-title">卖家工作台</h1>
+          <p class="page-desc">你好，{{ greetingName }}（{{ primaryContact }}）。这里聚合卖家摘要，并提供 Day04 第二包的 userProducts 写操作入口。</p>
         </div>
         <div class="page-actions">
           <span class="chip chip-muted">{{ summaryStatusText }}</span>
-          <button class="btn-default" type="button" :disabled="loading" @click="loadSummary">
+          <button class="btn-default" type="button" :disabled="loading || !sellerEnabled" @click="loadSummary">
             <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
             <span>{{ loading ? '刷新中' : '刷新摘要' }}</span>
@@ -98,10 +105,15 @@ onMounted(() => {
       </div>
     </section>
 
+    <section v-if="!sellerEnabled" class="notice-banner notice-banner-warning">
+      <span class="notice-dot bg-orange-500"></span>
+      <span>当前账号尚未开通卖家身份。Day04 第一包已提供页面入口，但运行态是否可访问依赖后端卖家身份校验。</span>
+    </section>
+
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
       <div>
-        <p class="font-semibold">数据加载失败</p>
+        <p class="font-semibold">摘要加载失败</p>
         <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
       </div>
     </section>
@@ -109,30 +121,8 @@ onMounted(() => {
     <section class="section-panel">
       <div class="section-header">
         <div>
-          <h2 class="section-heading">会话状态</h2>
-          <p class="section-subtitle">统一查看当前身份、联系方式与摘要同步状态。</p>
-        </div>
-        <span class="chip chip-neutral">{{ summaryStatusText }}</span>
-      </div>
-      <div class="section-body">
-        <div class="meta-grid">
-          <div class="meta-item">
-            <p class="meta-label">当前身份</p>
-            <p class="meta-value">{{ roleText }}</p>
-          </div>
-          <div class="meta-item">
-            <p class="meta-label">联系方式</p>
-            <p class="meta-value font-numeric">{{ primaryContact }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="section-header">
-        <div>
-          <h2 class="section-heading">卖家经营概览</h2>
-          <p class="section-subtitle">核心指标使用统一卡片语法，避免页面各自定义一套统计样式。</p>
+          <h2 class="section-heading">经营概览</h2>
+          <p class="section-subtitle">复用 seller summary 指标，不引入 Day04 写操作按钮。</p>
         </div>
       </div>
       <div class="section-body">
@@ -149,7 +139,7 @@ onMounted(() => {
       <div class="section-header section-header-plain">
         <div>
           <h2 class="section-heading">补充统计</h2>
-          <p class="section-subtitle">次级指标统一使用浅底信息卡，降低视觉噪声。</p>
+          <p class="section-subtitle">同一套中性卡片风格承载次级指标。</p>
         </div>
       </div>
       <div class="section-body pt-0">
@@ -165,40 +155,33 @@ onMounted(() => {
     <section class="section-panel">
       <div class="section-header">
         <div>
-          <h2 class="section-heading">快捷入口</h2>
-          <p class="section-subtitle">延续同系列产品的中性卡片风格，只在细节上保留少量强调色。</p>
+          <h2 class="section-heading">Day04 第二包入口</h2>
+          <p class="section-subtitle">本包补齐 userProducts 创建、编辑、删除与状态流转入口，并保留列表/详情读取链路。</p>
         </div>
       </div>
       <div class="section-body">
-        <div class="link-grid">
-          <router-link v-if="sellerEnabled" class="link-card" to="/seller">
+        <div class="link-grid !grid-cols-1 md:!grid-cols-3">
+          <router-link class="link-card" to="/seller/products">
             <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">卖家工作台</p>
-              <span class="chip chip-accent">Day04</span>
+              <p class="link-card-title">我的商品列表</p>
+              <span class="chip chip-accent">userProducts</span>
             </div>
-            <p class="link-card-desc">进入卖家工作台，并继续到 userProducts 列表/详情只读链路。</p>
+            <p class="link-card-desc">查看卖家商品列表，进入详情页并执行编辑、删除、状态操作。</p>
           </router-link>
-          <router-link class="link-card" to="/market">
+          <router-link class="link-card" to="/seller/products/new">
             <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">浏览市场</p>
-              <span class="chip chip-accent">市场</span>
+              <p class="link-card-title">创建商品</p>
+              <span class="chip chip-success">create</span>
             </div>
-            <p class="link-card-desc">浏览商品、进入详情、查看评价并执行收藏与举报操作。</p>
+            <p class="link-card-desc">进入创建表单，提交后进入商品详情页继续后续管理。</p>
           </router-link>
-          <router-link class="link-card" to="/favorites">
+          <div class="link-card border-dashed">
             <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">我的收藏夹</p>
-              <span class="chip chip-neutral">收藏</span>
+              <p class="link-card-title">状态流转提示</p>
+              <span class="chip chip-neutral">off-shelf / resubmit / on-shelf / withdraw</span>
             </div>
-            <p class="link-card-desc">集中查看已收藏商品列表，并执行取消收藏操作。</p>
-          </router-link>
-          <router-link class="link-card" to="/reviews/mine">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">我的评价记录</p>
-              <span class="chip chip-neutral">评价</span>
-            </div>
-            <p class="link-card-desc">查看我提交过的评价记录，便于后续校验与回顾。</p>
-          </router-link>
+            <p class="link-card-desc">on-shelf 保留兼容提审语义，不代表直接进入在售状态。</p>
+          </div>
         </div>
       </div>
     </section>
