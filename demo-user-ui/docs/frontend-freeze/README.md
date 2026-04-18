@@ -62,4 +62,8 @@
 3. 头像上传历史 `backend/contract-gap` 已通过最小后端修复关闭；Day02 目前仅提升到“待最终裁定/待收口确认”，不替代 accept/gate 最终裁定；
 4. 继续保持用户端工作只回填到 `demo-user-ui/docs/frontend-freeze/`，不要写回 `demo-admin-ui/docs/frontend-freeze/`。
 5. `UserFrontDay03` 第一包+第二包已完成独立 runtime verify 并回填，且评论列表分页 `page=2` 已完成定向 runtime verify 并转为 `pass`；Day03 当前口径统一为 `已具备收口材料，待最终裁定`，但这不等于 Day03 已完成，也不等于整站联调已通过；root 当前执行日仍保持 `UserFrontDay02` 待最终裁定，不做切换。
+6. 2026-04-18 已完成 UserFrontDay04 第一包 runtime verify 的 docs-only 回填：未登录 `/seller` 守卫、卖家工作台只读、商品列表只读、商品详情只读均已留证并回填到 Day04；该包结论为只读链路 `pass`，不代表 Day04 已完成。
+7. 2026-04-18（Day04 最终 acceptance 裁定线程）已基于包1+包2既有代码/build/runtime/docs 事实完成 docs-only 裁定回填：Day04 口径由“进行中”更新为“已具备收口材料，待最终裁定”；该结论不等于“已完成并回填”，不等于“整站联调已通过”，且不切 root active day。当前仍不升级到 `$drive-demo-user-ui-delivery`。
+
+
 
