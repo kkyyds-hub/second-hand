@@ -1,4 +1,4 @@
-﻿# 用户端前端冻结文档主入口
+# 用户端前端冻结文档主入口
 
 > 启用日期：`2026-03-18`
 > 适用项目：`demo-user-ui`
@@ -61,4 +61,5 @@
 2. Day02 当前已由“进行中执行态”收敛为 `已具备收口材料，待最终裁定`，且“账户资料编辑最小链路 + 地址只读起步切片 + 地址新增 create-only 切片 + 地址编辑 edit-only 切片 + 地址默认切换 set-default 切片 + 地址删除 delete-only 切片 + 修改密码 current-password 最小链路 + 手机绑定/解绑最小链路 + 邮箱绑定/解绑最小链路 + 头像上传最小真实闭环”均有 `代码已确认 + 构建已通过 + 运行态已确认` 证据；
 3. 头像上传历史 `backend/contract-gap` 已通过最小后端修复关闭；Day02 目前仅提升到“待最终裁定/待收口确认”，不替代 accept/gate 最终裁定；
 4. 继续保持用户端工作只回填到 `demo-user-ui/docs/frontend-freeze/`，不要写回 `demo-admin-ui/docs/frontend-freeze/`。
-5. `UserFrontDay03` 已完成 docs-only 输入准备（`v1.1`），可直接交由后续执行线程接手；但 root 当前执行日仍保持 `UserFrontDay02` 待最终裁定，不做切换。
+5. `UserFrontDay03` 第一包+第二包已完成独立 runtime verify 并回填，且评论列表分页 `page=2` 已完成定向 runtime verify 并转为 `pass`；Day03 当前口径统一为 `已具备收口材料，待最终裁定`，但这不等于 Day03 已完成，也不等于整站联调已通过；root 当前执行日仍保持 `UserFrontDay02` 待最终裁定，不做切换。
+

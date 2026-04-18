@@ -1,15 +1,15 @@
 # UserFrontDay03 文档总览
 
-- 日期：`2026-04-17`
-- 状态：`输入准备完成（待后续执行线程接手）`
+- 日期：`2026-04-18`
+- 状态：`已具备收口材料，待最终裁定（第一包+第二包 runtime 证据已回填；评论分页 page=2 已完成定向 runtime verify）`
 - 主题：`市场浏览、详情、评论、举报、收藏`
-- 当前执行日关系：`root README 当前执行日仍为 UserFrontDay02（待最终裁定），Day03 本次仅做 docs-only 输入准备`
+- 当前执行日关系：`root README 当前执行日仍为 UserFrontDay02（待最终裁定）；Day03 本轮完成 page=2 定向 runtime verify，状态收敛为“已具备收口材料，待最终裁定”，但不切换 active day`
 
 ---
 
 ## 1. 一句话结论
 
-`UserFrontDay03` 已形成可执行输入包：范围、接口、API 分层、联调前置、回填规则已决策完整；但 Day03 尚未开始实现与运行验证。
+`UserFrontDay03` 当前 docs-only 收口评估结论为 `已具备收口材料，待最终裁定`：第一包+第二包关键最小链路均有 runtime 证据，且评论列表分页 `page=2` 已从 `blocked/environment/auth-or-data-precondition` 转为 `pass`。
 
 ---
 
@@ -21,34 +21,37 @@
 
 ---
 
-## 3. 非 Day03 范围
+## 3. 当前已回填与未回填边界
 
-1. Day02 账户资料/安全/地址（仍由 Day02 口径收口）。
-2. Day04+ 的用户商品管理、订单、钱包、积分、信用、消息中心。
-3. 任何“已实现/已联调/已完成并回填”结论（本线程不产出运行态证据）。
-
----
-
-## 4. 推荐最小读取顺序（执行线程）
-
-1. `demo-user-ui/docs/frontend-freeze/README.md`（确认 Day02 仍为当前执行日，Day03 只接输入包）
-2. `demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md`（确认 Day03 三行 owner/status/next action）
-3. `UserFrontDay03/01_冻结文档/UserFrontDay03_Scope_Freeze_v1.1.md`
-4. `UserFrontDay03/02_接口对齐/UserFrontDay03_Interface_Alignment_v1.1.md`
-5. `UserFrontDay03/03_API模块/UserFrontDay03_API_Module_Plan_v1.1.md`
-6. `UserFrontDay03/04_联调准备与验收/UserFrontDay03_Joint_Debug_Ready_v1.1.md`
-7. `demo-user-ui/src/router/index.ts`（新增市场域路由入口的唯一上游）
-8. 最接近页面入口：`demo-user-ui/src/pages/HomePage.vue`（市场域导航承接点）
-9. 最接近 API 入口：`demo-user-ui/src/api/seller.ts`（现有 API 模块风格参考，不复用业务语义）
-10. 控制器入口：`MarketProductController.java`、`FavoriteController.java`、`ReviewController.java`
+1. 已回填（本轮）：
+   - `/market` 列表读取/筛选/分页 + 收藏状态读取
+   - `/market/:productId` 详情读取 + 收藏状态读取
+   - 收藏/取消收藏最小闭环
+   - `/favorites` 最小读取映射
+   - `/market/:productId` 评论提交表单可见 + `orderId` 前置校验 + `POST /user/reviews` 提交成功
+   - `/market/:productId` 举报表单可见 + `POST /user/market/products/{productId}/report` 提交成功
+   - `/reviews/mine` 路由可达 + `GET /user/reviews/mine` 请求成功
+2. 当前 blocker：无未消除 blocker（Day03 口径已收敛为“已具备收口材料，待最终裁定”）。
+3. Day03 仍不能写成“已完成并回填”或“整站联调已通过”。
 
 ---
 
-## 5. 先做顺序（执行建议）
+## 4. 推荐最小读取顺序（后续执行线程）
 
-1. 先落市场列表 + 详情只读链路（含评论列表只读）。
-2. 再接收藏状态 + 收藏/取消收藏 + 收藏列表。
-3. 最后接举报提交与“我的评价入口”；若发现订单前置条件，记录阻塞并最小拆分。
+1. `demo-user-ui/docs/frontend-freeze/README.md`
+2. `demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md`
+3. `UserFrontDay03/04_联调准备与验收/UserFrontDay03_Joint_Debug_Ready_v1.1.md`
+4. `UserFrontDay03/05_进度回填/UserFrontDay03_Progress_Backfill_v1.1.md`
+5. `demo-user-ui/.tmp_runtime/2026-04-17-userfront-day03-package1-runtime-verify/userfront-day03-package1-runtime-verify-result.json`
+6. `demo-user-ui/.tmp_runtime/2026-04-18-userfront-day03-package2-runtime-verify/userfront-day03-package2-runtime-verify-result.json`
+
+---
+
+## 5. 后续优先顺序（执行建议）
+
+1. 先做 Day03 同域 focused regression（评论/举报/我的评价与列表详情联动）。
+2. 再进入最终 acceptance 线程做最终裁定。
+3. 保持“已具备收口材料，待最终裁定”口径，直到最终 acceptance 明确结论。
 
 ---
 
@@ -61,19 +64,12 @@
 
 ---
 
-## 7. 必须验证 vs 暂不要求
-
-1. 必须验证（执行线程）：列表加载、详情加载、收藏状态一致性、收藏动作成败态、举报提交成败态、鉴权守卫不回归。
-2. 暂不要求（本输入线程）：build/dev/browser/runtime、跨线程 accept/gate 最终裁定。
-
----
-
-## 8. 文档版本入口
+## 7. 文档版本入口
 
 1. 范围冻结：`v1.1`
 2. 接口对齐：`v1.1`
 3. API 模块：`v1.1`
-4. 联调准备与验收：`v1.1`
-5. 进度回填：`v1.1`
+4. 联调准备与验收：`v1.4`（文件名沿用 `v1.1`）
+5. 进度回填：`v1.5`（文件名沿用 `v1.1`）
 
 v1.0 作为历史计划建档记录保留，不删除。
