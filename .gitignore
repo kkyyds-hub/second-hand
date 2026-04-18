@@ -72,3 +72,7 @@ day19回归/执行记录/Day19_P5_S2_压力测试结果_2026-03-08_17-*.json
 .tmp_playwright/
 demo-user-ui/.tmp_runtime/
 demo-user-ui/docs/frontend-freeze/runtime-artifacts/
+
+demo-service/uploads/
+
+.tmp_runtime/
