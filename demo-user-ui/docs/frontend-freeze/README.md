@@ -19,51 +19,53 @@
 
 ---
 
-## 2. 当前推荐执行日（按 2026-04-17 Day02 docs-only 收口评估结论汇总）
+## 2. 当前推荐执行日（截至 2026-04-24）
 
-- 当前日期：`2026-04-17`
-- 当前执行日：`UserFrontDay02`
-- 当前执行主题：`账户中心补强与地址管理`
-- 当前状态：`待最终裁定（Day01 已完成并回填并退出当前执行日；Day02 已具备十个已运行回填切片证据并完成 docs-only 收口评估，当前进入“可收口/待裁定”阶段）`
-- 进入入口：`demo-user-ui/docs/frontend-freeze/UserFrontDay02/README.md`
+- 当前日期：`2026-04-24`
+- 当前执行日：`UserFrontDay07`
+- 当前执行主题：`钱包、积分与信用资产视图`
+- 当前状态：`UserFrontDay07 Package-1A 资产中心 auth/data 前置已解除，wallet / points / credit 读链路 runtime pass`
+- 进入入口：`demo-user-ui/docs/frontend-freeze/UserFrontDay07/README.md`
+- Day06 final acceptance 文档：`demo-user-ui/docs/frontend-freeze/UserFrontDay06/04_联调准备与验收/UserFrontDay06_Joint_Debug_Ready_v1.5.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay06/05_进度回填/UserFrontDay06_Progress_Backfill_v1.7.md`
 - 接棒依据：
-  1. `UserFrontDay01` 负责的鉴权 / 登录 / 退出、手机注册、邮箱注册与激活、路由与布局、首页卖家摘要、账户中心基础展示，均已在覆盖矩阵中收口为 `已完成并回填`；
-  2. `demo-user-ui/docs/frontend-freeze/UserFrontDay01/05_进度回填/UserFrontDay01_Progress_Backfill_v1.10.md` 已正式写明 Day01 退出当前执行日，因此本线程不再回头重开 Day01 验证；
-  3. `demo-user-ui/src/pages/AccountCenterPage.vue` 仍停留在本地 session 基础展示，而 `UserMeController`、`AddressController` 已提供 Day02 所需账户资料 / 安全 / 地址接口面，具备正式接棒条件。
+  1. `UserFrontDay02` 已于 `2026-04-22` 完成 final acceptance docs-only adjudication，并升级为 `已完成并回填`；
+  2. `UserFrontDay03`、`UserFrontDay04`、`UserFrontDay05` 当前均已完成并回填，不再作为 active day；
+  3. `UserFrontDay06` 已于 `2026-04-24` 完成 final acceptance 文档收口，Package-1 / Package-2 / Package-3 均为 runtime pass；
+  4. `UserFrontDay07` 已开始执行，Package-1 聚焦钱包 / 积分 / 信用资产中心最小完整切片。
 - 当前边界：
-  - Day02 当前口径可提升为“已具备收口材料，待最终裁定（账户资料切片 + 地址只读切片 + 地址新增 create-only 切片 + 地址编辑 edit-only 切片 + 地址默认切换 set-default 切片 + 地址删除 delete-only 切片 + 修改密码 current-password 切片 + 手机绑定/解绑切片 + 邮箱绑定/解绑切片 + 头像上传切片均已运行通过）”，但仍不能写成“已完成并回填”“已冻结完成”或“整站联调已通过”；
-  - 历史 blocked 根因应统一更正为 `environment / wrong-dev-instance-and-backend-not-listening`，不再沿用“功能未打通”口径；
-  - 地址编辑/edit-only、地址默认切换/set-default、地址删除/delete-only 本轮结论均属于浏览器可控 mock 运行态验证，不是后端真实联调通过结论；不写“整站联调已通过”。
+  - Day06 final acceptance 仅覆盖卖家订单履约、订单会话、卖家售后处理 owned scope；
+  - Day07 Package-1 已完成代码落地与 fresh build；Package-1A 已完成 wallet / points / credit 读链路 runtime pass，但不写 Day07 final acceptance；
+  - 系统通知中心仍归属 `UserFrontDay08`，不并入 Day06 或 Day07；
+  - 当前未识别出需要升级到 `$drive-demo-user-ui-delivery` 的新冲突。
 
 ---
 
-## 3. 当前前端基线（截至 2026-04-17）
+## 3. 当前前端基线
 
 | 层级 | 当前结论 | 证据等级 | 主要证据 | 明确边界 |
 |---|---|---|---|---|
 | Day01 基线 | Day01 最小用户端基建、鉴权壳、登录 / 退出、注册、激活、首页 seller summary、账户中心基础展示均已完成并回填 | `Day01 = 已完成并回填` | `demo-user-ui/docs/frontend-freeze/UserFrontDay01/README.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay01/05_进度回填/UserFrontDay01_Progress_Backfill_v1.10.md`、`demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md` | 不等于整站联调已通过，也不代表 Day02+ 已覆盖 |
-| Day02 接棒状态 | Day02 关键子流证据已齐备，当前口径为`已具备收口材料，待最终裁定`：① 账户资料编辑（昵称 / 简介）+ `PATCH /user/me/profile` + `saveCurrentUser()` 回写（同切片 focused regression 通过）；② 地址管理只读起步切片（`/account/addresses`、`GET /user/addresses`、`loading/empty/error/retry`、无写操作）通过；③ 地址新增 create-only 切片（`/account/addresses/new`、表单校验、`POST /user/addresses`、成功跳转、失败分支不持久化）通过；④ 地址编辑 edit-only 切片（`/account/addresses/:id/edit`、详情 GET+回填、校验/提交态、`PUT` 成功回列表、失败分支恢复）通过；⑤ 地址默认切换 set-default 切片（`PUT /user/addresses/{id}/default` + 刷新 GET + 失败恢复）通过；⑥ 地址删除 delete-only 切片（`DELETE /user/addresses/{id}` + 刷新 GET + 失败恢复 + 与 set-default 互斥）通过；⑦ 修改密码 current-password 路径最小闭环通过（真实登录拿 token -> `/account/security/password` -> `POST /api/user/me/password` -> `code=1` -> 改密后改回）；⑧ 手机绑定/解绑最小运行态通过（`/account/security/phone`、`POST/DELETE /api/user/me/bindings/phone`、`localStorage.user_profile.mobile` 写回确认）；⑨ 邮箱绑定/解绑最小运行态通过（`/account/security/email`、`POST/DELETE /api/user/me/bindings/email`、`localStorage.user_profile.email` 写回确认）；⑩ 头像上传最小真实闭环通过（`POST /api/user/me/upload-config` -> `PUT /user/me/avatar/upload` -> `PATCH /api/user/me/profile`，session/avatar 写回确认）。Day02 全量范围仍未完成 | 代码已确认 + 构建已通过 + 运行态已确认（账户资料切片 + 地址只读切片 + 地址新增 create-only 切片 + 地址编辑 edit-only 切片 + 地址默认切换 set-default 切片 + 地址删除 delete-only 切片 + 修改密码 current-password 最小链路 + 手机绑定/解绑最小链路 + 邮箱绑定/解绑最小链路 + 头像上传最小真实闭环；其中 edit-only / set-default / delete-only 为浏览器可控 mock 验证） | `demo-user-ui/docs/frontend-freeze/UserFrontDay02/03_API模块/UserFrontDay02_API_Module_Plan_v2.0.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/04_联调准备与验收/UserFrontDay02_Joint_Debug_Ready_v2.4.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/05_进度回填/UserFrontDay02_Progress_Backfill_v2.4.md`、`demo-user-ui/.tmp_runtime/2026-04-17-userfront-day02-email-avatar-runtime-v3/email-binding/email-minimal-chain-result.json`、`demo-user-ui/.tmp_runtime/2026-04-17-userfront-day02-avatar-runtime-v4/avatar-upload/userfront-day02-avatar-minimal-runtime.json`、`demo-user-ui/src/router/index.ts`、`demo-user-ui/src/pages/AccountAvatarUploadPage.vue`、`demo-user-ui/src/pages/AccountEmailBindingPage.vue`、`demo-user-ui/src/api/profile.ts`、`demo-service/src/main/java/com/demo/config/WebMvcConfiguration.java` | 不得写成 Day02 已完成并回填，也不得写成整站联调已通过 |
-| 当前最小起点 | 账户中心仍有 `AccountCenterPage.vue` 本地 session 展示基线，可直接承接 Day02 下一最小切片 | 代码已确认 + 文档已记录 | `demo-user-ui/src/pages/AccountCenterPage.vue`、`demo-user-ui/src/utils/request.ts`、`demo-service/src/main/java/com/demo/controller/user/UserMeController.java`、`demo-service/src/main/java/com/demo/controller/user/AddressController.java` | 只说明 Day02 仍有清晰入口，不等于 Day02 已完成 |
+| Day02 最终裁定 | Day02 已于 `2026-04-22` 基于十个已运行回填切片完成 final acceptance docs-only adjudication，口径升级为 `已完成并回填` | 代码已确认 + 构建已通过 + 运行态已确认（其中手机绑定/解绑为 joint-debug 级 running evidence，`edit-only / set-default / delete-only` 为浏览器可控 mock 运行态） | `demo-user-ui/docs/frontend-freeze/UserFrontDay02/01_冻结文档/UserFrontDay02_Scope_Freeze_v1.3.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/02_接口对齐/UserFrontDay02_Interface_Alignment_v1.4.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/03_API模块/UserFrontDay02_API_Module_Plan_v2.1.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/04_联调准备与验收/UserFrontDay02_Joint_Debug_Ready_v2.5.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay02/05_进度回填/UserFrontDay02_Progress_Backfill_v2.5.md` | Day02 完成仅覆盖 Day02 owned scope，不等于整站联调已通过 |
+| Day03 / Day04 / Day05 已回填基线 | Day03 市场/评论/收藏、Day04 卖家工作台/商品管理、Day05 买家订单/买家售后均已完成并回填 | 代码已确认 + 构建已通过 + 对应 owned scope 运行态已确认 | `demo-user-ui/docs/frontend-freeze/UserFrontDay03/README.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay04/README.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay05/README.md`、`demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md` | 这些结论不外推 Day06 或后续资产域，也不等于整站联调已通过 |
+| Day06 final acceptance | Day06 Package-1 / Package-2 / Package-3 均已完成并回填，owned scope final acceptance pass | 代码已确认 + fresh build 已通过 + 运行态已确认（Day06 owned scope） | `demo-user-ui/docs/frontend-freeze/UserFrontDay06/04_联调准备与验收/UserFrontDay06_Joint_Debug_Ready_v1.5.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay06/05_进度回填/UserFrontDay06_Progress_Backfill_v1.7.md`、`demo-user-ui/.tmp_runtime/2026-04-22-userfront-day06-package1-runtime-verify/userfront-day06-package1-runtime-verify-result.json`、`demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/userfront-day06-env-unblock-admin-result.json` | 仅覆盖 Day06 owned scope；不外推钱包 / 积分 / 信用、系统通知或整站回归 |
+| Day07 当前执行日 | Package-1A 资产中心 auth/data 前置已解除，wallet / points / credit 读链路 runtime pass | 代码已确认 + fresh build 已通过 + 运行态已确认（资产中心读链路） | `demo-user-ui/docs/frontend-freeze/UserFrontDay07/README.md`、`demo-user-ui/docs/frontend-freeze/UserFrontDay07/05_进度回填/UserFrontDay07_Progress_Backfill_v1.1.md`、`demo-user-ui/.tmp_runtime/2026-04-26-userfront-day07-package1A-auth-data-runtime-2026-04-26-225327/runtime-conclusion.md`、`demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md` | 不写 Day07 final acceptance；不把提现写成真实金融出金已打通；不推进 Day08 |
 
 说明：
 
 - Day01 的完成证据仍然来自 `2026-03-19 ~ 2026-03-21` 既有留证，本轮没有重开 Day01 验证；
-- Day02 已补齐同切片 focused regression 运行回填（账户资料编辑），并新增地址只读起步切片 + 地址新增 create-only 切片 + 地址编辑 edit-only 切片 + 地址默认切换 set-default 切片 + 地址删除 delete-only 切片最小运行态回填（delete-only goal1~goal6 全 pass）；`2026-04-16` 已补齐修改密码 current-password 路径最小运行态闭环（真实登录 token、页面提交、`POST /api/user/me/password`、`code=1`、改密后改回）；`2026-04-17` 已补齐手机绑定/解绑最小运行态 pass（`/account/security/phone` + `POST/DELETE /api/user/me/bindings/phone` + `localStorage.user_profile.mobile` 写回确认）与邮箱绑定/解绑最小运行态 pass（`/account/security/email` + `POST/DELETE /api/user/me/bindings/email` + `localStorage.user_profile.email` 写回确认）；
-- `2026-04-17` 头像上传子流 `/account/avatar` 已在 delivery 修复后取得最小真实闭环 pass：`POST /api/user/me/upload-config`、`PUT /user/me/avatar/upload`、`PATCH /api/user/me/profile` 均命中成功，session/profile 头像写回已确认；
-- 地址编辑/edit-only、地址默认切换/set-default、地址删除/delete-only 切片本轮均为浏览器可控 mock 运行态验证，不构成后端真实联调通过结论；
-- 若后续实现涉及 Day01 基线变更，必须先在对应执行线程诚实回填影响，再决定是否补记 Day01。
+- Day02 最终裁定基于既有十个已运行回填切片与既有文档链完成，不新增 build/dev/browser/runtime 实测；
+- Day06 final acceptance 基于 `2026-04-22` Package-1 runtime 与 `2026-04-24` env-unblock Package-2 / Package-3 runtime pass 证据完成，本轮仅做文档收口；
+- Day07 Package-1A 已在 `2026-04-26` 完成 browser runtime / network verify，证据目录 `demo-user-ui/.tmp_runtime/2026-04-26-userfront-day07-package1A-auth-data-runtime-2026-04-26-225327`；
+- 若后续实现涉及已完成执行日基线变更，必须先在对应执行线程诚实回填影响，再决定是否补记。
 
 ---
 
 ## 4. 当前推荐动作
 
-1. Day01 已完成并回填，`2026-03-23` 起不再作为当前执行日；（本轮未重开 Day01）
-2. Day02 当前已由“进行中执行态”收敛为 `已具备收口材料，待最终裁定`，且“账户资料编辑最小链路 + 地址只读起步切片 + 地址新增 create-only 切片 + 地址编辑 edit-only 切片 + 地址默认切换 set-default 切片 + 地址删除 delete-only 切片 + 修改密码 current-password 最小链路 + 手机绑定/解绑最小链路 + 邮箱绑定/解绑最小链路 + 头像上传最小真实闭环”均有 `代码已确认 + 构建已通过 + 运行态已确认` 证据；
-3. 头像上传历史 `backend/contract-gap` 已通过最小后端修复关闭；Day02 目前仅提升到“待最终裁定/待收口确认”，不替代 accept/gate 最终裁定；
-4. 继续保持用户端工作只回填到 `demo-user-ui/docs/frontend-freeze/`，不要写回 `demo-admin-ui/docs/frontend-freeze/`。
-5. `UserFrontDay03` 第一包+第二包已完成独立 runtime verify 并回填，且评论列表分页 `page=2` 已完成定向 runtime verify 并转为 `pass`；Day03 当前口径统一为 `已具备收口材料，待最终裁定`，但这不等于 Day03 已完成，也不等于整站联调已通过；root 当前执行日仍保持 `UserFrontDay02` 待最终裁定，不做切换。
-6. 2026-04-18 已完成 UserFrontDay04 第一包 runtime verify 的 docs-only 回填：未登录 `/seller` 守卫、卖家工作台只读、商品列表只读、商品详情只读均已留证并回填到 Day04；该包结论为只读链路 `pass`，不代表 Day04 已完成。
-7. 2026-04-18（Day04 最终 acceptance 裁定线程）已基于包1+包2既有代码/build/runtime/docs 事实完成 docs-only 裁定回填：Day04 口径由“进行中”更新为“已具备收口材料，待最终裁定”；该结论不等于“已完成并回填”，不等于“整站联调已通过”，且不切 root active day。当前仍不升级到 `$drive-demo-user-ui-delivery`。
-
+1. 保持 `UserFrontDay07` 为当前 active day；
+2. 后续如继续 Day07，只验证提现申请等尚未覆盖写链路；不得把 Package-1A 读链路外推为真实金融出金；
+3. 不把 Day06 订单履约 / 会话 / seller decision 结论外推到资产域；
+4. 不把 Day08 系统通知中心提前并入 Day07；
+5. Day07 执行过程中如发现跨前后端真实冲突，再按交付规则判断是否升级 `$drive-demo-user-ui-delivery`。
 
 

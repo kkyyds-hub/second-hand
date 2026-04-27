@@ -1,60 +1,85 @@
-# UserFrontDay06 文档总览
+﻿# UserFrontDay06 说明
 
-- 日期：`2026-03-18`
-- 状态：`计划建档完成（待 UserFrontDay01 收口后接棒）`
-- 主题：`卖家订单、发货、物流、售后处理与订单会话`
-- 当日目标：为卖家履约订单、发货与物流查看、卖家售后处理，以及订单会话消息建立统一的卖家履约域推进入口。
-
----
-
-## 1. 当天一句话结论
-
-`UserFrontDay06` 已完成计划建档，但尚未进入代码实现或联调执行；它的作用是把“卖家订单、发货、物流、售后处理与订单会话”从前序 Days 中独立出来，形成可持续回填的唯一入口。
+- 日期：`2026-04-24`
+- 当前状态：`已完成 final acceptance 并回填；Package-1 / Package-2 / Package-3 均已有代码+build+runtime pass 证据`
+- 执行边界：`本轮仅做文档收口；不改业务代码；不补 seller after-sale 查询接口；不重跑 build/runtime；当前执行日已交接到 UserFrontDay07`
 
 ---
 
-## 2. 为什么 UserFrontDay06 接在 Day05 之后
+## 1. 当前上下文
 
-1. Day05 已把买家订单创建、支付、取消、确认收货与售后发起单独建档，卖家履约必须在此基础上继续拆分。
-2. 后端已存在 `OrdersController`、`AfterSaleController`、`MessageController`，而用户端还没有卖家订单页、物流页与订单会话入口。
-3. 若不独立建档，发货、物流、卖家售后处理和订单会话消息很容易被买家订单日或 Day08 共享治理日稀释。
+`UserFrontDay06` 已在 `2026-04-24` 完成 final acceptance 文档收口：
+
+1. `Package-1 seller orders / logistics / ship` 已有代码、build、runtime 证据，结论为 `pass`。
+2. `Package-2 order messages` 已在环境解阻后完成 runtime rerun，结论为 `pass`。
+3. `Package-3 seller decision` 已通过 fresh completed order + `APPLIED afterSaleId=7` 完成 runtime rerun，结论为 `pass`。
+4. fresh `npm.cmd run build`、Java loopback / embedded Tomcat / `localhost:8080`、frontend `localhost:5175` 均已有通过证据。
+5. `UserFrontDay06` 不再作为 active day；当前执行日推进到 `UserFrontDay07`。
 
 ---
 
-## 3. 做什么 / 不做什么 / 退出标准
+## 2. 当天范围快照
 
-| 分类 | 内容 |
+| 模块 | 当前口径 |
 |---|---|
-| UserFrontDay06 要做什么 | 冻结卖家订单列表 / 详情 / 发货 / 物流查看 / 卖家售后处理 / 订单会话消息的契约、API 模块、路由与回填口径。 |
-| UserFrontDay06 不做什么 | 不回写 Day05 的买家支付与取消；不把系统通知、钱包积分、全局错误治理提前写进 Day06；不把 MessageController 直接写成完整消息中心已交付。 |
-| UserFrontDay06 退出标准 | 卖家订单、发货、物流、卖家售后处理和订单会话三组子流都已有明确 owner、接口口径、回填入口和失败态说明。 |
-| UserFrontDay06 输出物 | `README`、`01_冻结文档`、`02_接口对齐`、`03_API模块`、`04_联调准备与验收`、`05_进度回填` 六个入口统一到“卖家订单、发货、物流、售后处理与订单会话”主题。 |
+| 已完成并有 runtime 回填 | `Package-1 seller orders / logistics / ship`、`Package-2 order messages`、`Package-3 seller decision` |
+| 已完成收口 | `Day06 final acceptance` |
+| 本轮明确不做 | 业务代码修改、后端改造、seller after-sale 查询接口、系统通知中心、钱包 / 积分 / 信用资产视图 |
+| 下一执行日 | `UserFrontDay07` |
 
 ---
 
-## 4. 推荐阅读顺序
+## 3. 最新文档版本
 
 1. `01_冻结文档/UserFrontDay06_Scope_Freeze_v1.0.md`
 2. `02_接口对齐/UserFrontDay06_Interface_Alignment_v1.0.md`
-3. `03_API模块/UserFrontDay06_API_Module_Plan_v1.0.md`
-4. `04_联调准备与验收/UserFrontDay06_Joint_Debug_Ready_v1.0.md`
-5. `05_进度回填/UserFrontDay06_Progress_Backfill_v1.0.md`
+3. `03_API模块/UserFrontDay06_API_Module_Plan_v1.2.md`
+4. `04_联调准备与验收/UserFrontDay06_Joint_Debug_Ready_v1.5.md`
+5. `05_进度回填/UserFrontDay06_Progress_Backfill_v1.7.md`
 6. `demo-user-ui/docs/frontend-freeze/00_Business_Coverage_Matrix.md`
+7. `demo-user-ui/docs/frontend-freeze/README.md`
 
 ---
 
-## 5. 覆盖业务域
+## 4. 2026-04-24 环境解阻与 runtime 重跑结果
 
-| 业务域 | 当前前端基线 | 本日承担 |
-|---|---|---|
-| 卖家订单履约 | 当前无卖家订单列表、详情页、发货动作与履约台账。 | 承接卖家订单列表 / 详情、发货、物流查看的前端入口。 |
-| 卖家售后处理 | 当前无卖家同意 / 拒绝售后页面与回填入口。 | 承接 seller decision 处理链路，与 Day05 分开。 |
-| 订单会话消息 | 当前无订单消息列表、发送框、已读状态与 badge 规划。 | 承接订单会话消息入口；系统通知留给 Day08。 |
+runtime 产物目录：
+
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/`
+
+| 项目 | 结论 |
+|---|---|
+| Node / esbuild | 已解阻；Node child_process pass，fresh `npm.cmd run build` pass |
+| Java / localhost | 已解阻；Java loopback pass，backend `8080` 与 frontend `5175` 可用 |
+| Package-2 `order messages` | runtime pass；已观察到 `GET/POST/PUT /api/user/messages/orders/907610...` |
+| Package-3 `seller decision` | runtime pass；已观察到 `PUT /api/user/after-sales/7/seller-decision` |
+| product defect | 未证明；本轮无需修改业务代码 |
+
+关键证据：
+
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/node-spawn-matrix.log`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/java-loopback-check.log`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/build.log`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/backend-boot-status.txt`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/frontend-boot-status.txt`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/userfront-day06-env-unblock-admin-result.json`
+- `demo-user-ui/.tmp_runtime/2026-04-24-userfront-day06-env-unblock-admin/summary.md`
 
 ---
 
-## 6. 与当前执行日衔接
+## 5. 三层状态
 
-- 当前执行日仍是 `UserFrontDay01`，Day06 当前只是“已建档、待接棒”。
-- 若 Day06 启动时发现发货 / 物流页面需要回引 Day05 的订单状态定义，应在 Day06 文档中引用 Day05 结论。
-- 若订单会话与系统通知边界存在歧义，必须先在 Day06 / Day08 文档中写清楚再进入实现线程。
+| 层 | 状态 |
+|---|---|
+| 代码已落地 | 是 |
+| 构建已通过 | 是（fresh build pass 证据已存在；本轮未重跑） |
+| 运行态已验证 | 是（Day06 owned scope） |
+
+---
+
+## 6. 收口结论
+
+1. Day06 final acceptance 已完成并回填。
+2. Day06 三个包均为 `已完成并回填 / runtime pass`。
+3. 新 blocker：无。
+4. root README 与 coverage matrix 当前执行日已推进到 `UserFrontDay07`。
