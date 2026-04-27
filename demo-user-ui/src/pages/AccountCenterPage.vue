@@ -197,6 +197,13 @@ const accountRows = computed(() => {
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/addresses">进入页面</router-link>
           </div>
+          <div class="link-card">
+            <div class="flex-1">
+              <h3 class="link-card-title">资产中心</h3>
+              <p class="link-card-desc">查看钱包、积分与信用资产视图。</p>
+            </div>
+            <router-link class="btn-default mt-4 w-full" to="/assets/wallet">进入页面</router-link>
+          </div>
         </div>
       </div>
     </section>

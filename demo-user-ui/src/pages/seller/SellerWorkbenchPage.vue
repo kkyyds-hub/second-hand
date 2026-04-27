@@ -185,5 +185,39 @@ onMounted(() => {
         </div>
       </div>
     </section>
+
+    <section class="section-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-heading">Day06 入口</h2>
+          <p class="section-subtitle">Day06 现已分成 fulfillment 主链、order messages，以及 seller decision 独立最小入口。</p>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="link-grid !grid-cols-1 md:!grid-cols-3">
+          <router-link class="link-card" to="/orders/seller">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">卖家订单</p>
+              <span class="chip chip-accent">Day06</span>
+            </div>
+            <p class="link-card-desc">查看卖家订单列表，进入详情页继续执行物流查看与卖家发货。</p>
+          </router-link>
+          <router-link class="link-card" to="/orders/seller/after-sales/decision">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">售后处理</p>
+              <span class="chip chip-warning">Package-3</span>
+            </div>
+            <p class="link-card-desc">进入 seller decision 页面，手动输入或通过 URL query 预填 afterSaleId 后提交同意/拒绝。</p>
+          </router-link>
+          <div class="link-card border-dashed">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">Day06 剩余边界</p>
+              <span class="chip chip-neutral">messages runtime / final acceptance</span>
+            </div>
+            <p class="link-card-desc">本轮已接 seller decision 最小包；运行态验证、截图与最终验收继续留给后续 verify 线程。</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>

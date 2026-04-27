@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, LogOut, Menu, Store, UserRound, X } from 'lucide-vue-next'
+import { House, LogOut, Menu, PackageSearch, Store, Truck, UserRound, Wallet, X } from 'lucide-vue-next'
 import {
   clearUserSession,
   getUserDisplayName,
@@ -31,10 +31,18 @@ const navItems = computed(() => {
   const items = [
     { to: '/', label: '首页摘要', icon: House },
     { to: '/account', label: '账户中心', icon: UserRound },
+    { to: '/assets', label: '资产中心', icon: Wallet },
+    { to: '/orders/buyer', label: '我的订单', icon: PackageSearch },
   ]
 
   if (isSellerUser(currentUser.value)) {
+    /**
+     * 卖家导航保持“工作台 + 卖家订单”两级入口：
+     * - 工作台继续承接 Day04 的经营与商品管理；
+     * - 卖家订单承接 Day06 的履约主链，避免 buyer/seller 订单混成一套入口。
+     */
     items.push({ to: '/seller', label: '卖家工作台', icon: Store })
+    items.push({ to: '/orders/seller', label: '卖家订单', icon: Truck })
   }
 
   return items

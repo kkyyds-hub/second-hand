@@ -45,6 +45,41 @@ const router = createRouter({
           component: () => import('@/pages/AccountCenterPage.vue'),
         },
         {
+          path: 'assets',
+          redirect: '/assets/wallet',
+          /**
+           * Day07 Package-1：资产中心总入口，当前默认进入钱包页。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'assets/wallet',
+          name: 'AssetWallet',
+          component: () => import('@/pages/assets/WalletPage.vue'),
+          /**
+           * Day07 Package-1：钱包余额 / 流水 / 提现申请最小闭环。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'assets/points',
+          name: 'AssetPoints',
+          component: () => import('@/pages/assets/PointsPage.vue'),
+          /**
+           * Day07 Package-1：积分总额 / 积分流水最小闭环。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'assets/credit',
+          name: 'AssetCredit',
+          component: () => import('@/pages/assets/CreditPage.vue'),
+          /**
+           * Day07 Package-1：信用概览 / 信用流水最小闭环。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'seller',
           name: 'SellerWorkbench',
           component: () => import('@/pages/seller/SellerWorkbenchPage.vue'),
@@ -186,6 +221,56 @@ const router = createRouter({
           component: () => import('@/pages/market/MyReviewsPage.vue'),
           /**
            * Day03 第二包“我的评价入口”保留独立路由，供后续 verify 线程做最小链路验证。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'orders/buyer',
+          name: 'BuyerOrders',
+          component: () => import('@/pages/orders/BuyerOrdersPage.vue'),
+          /**
+           * Day05 Package-1：买家订单列表只读入口。
+           * 支付/取消/确认收货/售后写链路留到后续包分段接入。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'orders/buyer/:orderId',
+          name: 'BuyerOrderDetail',
+          component: () => import('@/pages/orders/BuyerOrderDetailPage.vue'),
+          /**
+           * Day05 Package-1：详情页保持只读，先稳定接入 `GET /user/orders/{orderId}`。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'orders/seller',
+          name: 'SellerOrders',
+          component: () => import('@/pages/orders/SellerOrdersPage.vue'),
+          /**
+           * Day06 Package-1：卖家订单列表作为 seller fulfillment 主链入口。
+           * 先把列表、详情、物流查看、发货串在一起，不把第一包过早拆成多个孤立页面。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'orders/seller/after-sales/decision',
+          name: 'SellerAfterSaleDecision',
+          component: () => import('@/pages/orders/SellerAfterSaleDecisionPage.vue'),
+          /**
+           * Day06 Package-3：卖家售后处理独立页面。
+           * 由于当前用户端没有售后查询接口，也没有稳定 afterSaleId 来源，
+           * 页面只承接“手动输入 / URL query 预填 afterSaleId + seller decision 提交”。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'orders/seller/:orderId',
+          name: 'SellerOrderDetail',
+          component: () => import('@/pages/orders/SellerOrderDetailPage.vue'),
+          /**
+           * Day06 Package-1：详情页承接物流查看与发货表单，
+           * 继续保持“一个线程先打通最核心 seller fulfill 链路”的边界。
            */
           meta: { requiresAuth: true },
         },

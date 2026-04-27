@@ -192,6 +192,13 @@ onMounted(() => {
             </div>
             <p class="link-card-desc">集中查看已收藏商品列表，并执行取消收藏操作。</p>
           </router-link>
+          <router-link class="link-card" to="/orders/buyer">
+            <div class="flex items-center justify-between gap-3">
+              <p class="link-card-title">我的买家订单</p>
+              <span class="chip chip-accent">Day05</span>
+            </div>
+            <p class="link-card-desc">查看买家订单列表并进入订单详情只读页面。</p>
+          </router-link>
           <router-link class="link-card" to="/reviews/mine">
             <div class="flex items-center justify-between gap-3">
               <p class="link-card-title">我的评价记录</p>
