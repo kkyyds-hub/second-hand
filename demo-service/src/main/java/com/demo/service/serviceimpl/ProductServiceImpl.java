@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -765,7 +766,12 @@ public class ProductServiceImpl implements ProductService {
      */
     private PageResult<MarketProductSummaryDTO> loadMarketProductListFromDb(MarketProductQueryDTO queryDTO) {
         PageHelper.startPage(queryDTO.getPage(), queryDTO.getPageSize());
-        List<Product> productList = productMapper.getMarketProductList(queryDTO.getKeyword(), queryDTO.getCategory());
+        List<Product> productList = productMapper.getMarketProductList(
+                queryDTO.getKeyword(),
+                queryDTO.getCategory(),
+                queryDTO.getMinPrice(),
+                queryDTO.getMaxPrice()
+        );
         PageInfo<Product> pageInfo = new PageInfo<>(productList);
 
         List<MarketProductSummaryDTO> summaryList = productList.stream()
@@ -1377,10 +1383,13 @@ public class ProductServiceImpl implements ProductService {
     private String buildMarketProductListQuerySignature(MarketProductQueryDTO queryDTO) {
         String keyword = normalizeQueryField(queryDTO.getKeyword());
         String category = normalizeQueryField(queryDTO.getCategory());
+        String minPrice = normalizeQueryPrice(queryDTO.getMinPrice());
+        String maxPrice = normalizeQueryPrice(queryDTO.getMaxPrice());
         Integer page = queryDTO.getPage() == null ? 1 : queryDTO.getPage();
         Integer pageSize = queryDTO.getPageSize() == null ? 10 : queryDTO.getPageSize();
         // 只纳入会影响结果集的数据字段，避免无关参数导致缓存碎片化。
-        String normalized = "keyword=" + keyword + "&category=" + category + "&page=" + page + "&pageSize=" + pageSize;
+        String normalized = "keyword=" + keyword + "&category=" + category + "&minPrice=" + minPrice
+                + "&maxPrice=" + maxPrice + "&page=" + page + "&pageSize=" + pageSize;
         return sha256Hex(normalized);
     }
 
@@ -1389,6 +1398,10 @@ public class ProductServiceImpl implements ProductService {
             return "";
         }
         return value.trim().toLowerCase();
+    }
+
+    private String normalizeQueryPrice(BigDecimal value) {
+        return value == null ? "" : value.stripTrailingZeros().toPlainString();
     }
 
     private String sha256Hex(String source) {
@@ -1570,6 +1583,5 @@ public class ProductServiceImpl implements ProductService {
     }
 
 }
-
 
 

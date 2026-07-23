@@ -206,7 +206,7 @@
    <!--
      SQL_ID: P2S3-PROD-002
      用途: 市场商品检索（全文检索 + 条件过滤 + 相关性排序）
-     输入: keyword, category
+     输入: keyword, category, minPrice, maxPrice
      索引依赖: FULLTEXT(ft_title_desc_ngram), idx_products_status(status,is_deleted,create_time)
      不迁移原因: FULLTEXT/MATCH 排序策略与执行计划强相关，MP Wrapper 可读性与可控性不如 XML
    -->
@@ -222,6 +222,12 @@
     </if>
     <if test="category != null and category != ''">
         AND p.category = #{category}
+    </if>
+    <if test="minPrice != null">
+        AND p.price <![CDATA[>=]]> #{minPrice}
+    </if>
+    <if test="maxPrice != null">
+        AND p.price <![CDATA[<=]]> #{maxPrice}
     </if>
 
     <choose>
