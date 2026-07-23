@@ -70,6 +70,9 @@ verify_static() {
     require_text "$sql_file" "$fragment"
   done
 
+  rg -q "1001, 'DEV-ORDER-PENDING-001'.*'pending'.*NOW\\(\\)" "$sql_file" || fail 'pending-order fixture must use current time to avoid timeout-job cancellation at startup'
+  rg -q "1002, 'DEV-ORDER-PAID-001'.*'paid'.*DATE_SUB\\(NOW\\(\\)" "$sql_file" || fail 'paid-order fixture must use relative current time'
+
   if rg -n "(password|密码).*(admin123|123456)|(admin123|123456).*password" "$sql_file"; then
     fail 'plaintext demo password found in SQL seed data'
   fi

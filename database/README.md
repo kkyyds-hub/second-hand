@@ -97,7 +97,8 @@ export DEMO_RABBITMQ_PASSWORD=secondhand_mq_2026
 Start the backend from the repository root after dependencies are healthy:
 
 ```bash
-mvn -pl demo-service -am spring-boot:run
+mvn -pl demo-service -am install -DskipTests
+mvn -pl demo-service spring-boot:run
 ```
 
 ## Verification

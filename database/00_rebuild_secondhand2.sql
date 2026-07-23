@@ -540,8 +540,8 @@ INSERT INTO `favorites` (`id`, `user_id`, `product_id`, `is_deleted`, `create_ti
   (1, 2, 101, 0, '2026-07-22 09:00:00', '2026-07-22 09:00:00');
 
 INSERT INTO `orders` (`id`, `order_no`, `buyer_id`, `seller_id`, `total_amount`, `status`, `shipping_address`, `shipping_company`, `tracking_no`, `shipping_remark`, `create_time`, `pay_time`, `ship_time`, `complete_time`, `cancel_time`, `update_time`, `cancel_reason`) VALUES
-  (1001, 'DEV-ORDER-PENDING-001', 2, 3, 199.00, 'pending', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', NULL, NULL, NULL, '2026-07-23 08:00:00', NULL, NULL, NULL, NULL, '2026-07-23 08:00:00', NULL),
-  (1002, 'DEV-ORDER-PAID-001', 2, 3, 49.00, 'paid', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', NULL, NULL, 'Prepare demo shipment.', '2026-07-22 08:00:00', '2026-07-22 08:10:00', NULL, NULL, NULL, '2026-07-22 08:10:00', NULL),
+  (1001, 'DEV-ORDER-PENDING-001', 2, 3, 199.00, 'pending', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', NULL, NULL, NULL, NOW(), NULL, NULL, NULL, NULL, NOW(), NULL),
+  (1002, 'DEV-ORDER-PAID-001', 2, 3, 49.00, 'paid', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', NULL, NULL, 'Prepare demo shipment.', DATE_SUB(NOW(), INTERVAL 5 MINUTE), DATE_SUB(NOW(), INTERVAL 1 MINUTE), NULL, NULL, NULL, NOW(), NULL),
   (1003, 'DEV-ORDER-SHIPPED-001', 2, 3, 35.00, 'shipped', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', 'Mock Express', 'MOCK-TRACK-1003', 'Shipped for after-sale fixture.', '2026-07-21 08:00:00', '2026-07-21 08:10:00', '2026-07-21 09:00:00', NULL, NULL, '2026-07-21 09:00:00', NULL),
   (1004, 'DEV-ORDER-COMPLETED-001', 2, 3, 399.00, 'completed', 'Dev Buyer, 13800000001, 88 Example Road, Room 501', 'Mock Express', 'MOCK-TRACK-1004', 'Completed review fixture.', '2026-07-20 08:00:00', '2026-07-20 08:10:00', '2026-07-20 09:00:00', '2026-07-22 10:00:00', NULL, '2026-07-22 10:00:00', NULL),
   (1005, 'DEV-ORDER-CANCELLED-001', 4, 3, 129.00, 'cancelled', 'Restricted Demo, 13600000001, 99 Sample Street', NULL, NULL, NULL, '2026-07-20 08:00:00', NULL, NULL, NULL, '2026-07-20 08:20:00', '2026-07-20 08:20:00', 'buyer_cancel');
@@ -578,13 +578,13 @@ INSERT INTO `order_flags` (`id`, `order_id`, `type`, `remark`, `created_by`, `cr
   (1, 1005, 'suspicious', 'Development cancelled-order risk flag.', 1, '2026-07-20 08:25:00');
 
 INSERT INTO `order_ship_timeout_task` (`id`, `order_id`, `deadline_time`, `status`, `retry_count`, `next_retry_time`, `last_error`, `create_time`, `update_time`) VALUES
-  (1, 1002, '2026-07-24 08:10:00', 'PENDING', 0, NULL, NULL, '2026-07-22 08:10:00', '2026-07-22 08:10:00'),
+  (1, 1002, DATE_ADD(NOW(), INTERVAL 48 HOUR), 'PENDING', 0, NULL, NULL, NOW(), NOW()),
   (2, 1003, '2026-07-23 08:10:00', 'CANCELLED', 0, NULL, 'Cancelled after shipment.', '2026-07-21 08:10:00', '2026-07-21 09:00:00');
 
 INSERT INTO `order_ship_reminder_task` (`id`, `order_id`, `seller_id`, `level`, `deadline_time`, `remind_time`, `status`, `retry_count`, `running_at`, `sent_at`, `client_msg_id`, `last_error`, `create_time`, `update_time`) VALUES
-  (1, 1002, 3, 'H24', '2026-07-24 08:10:00', '2026-07-23 08:10:00', 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H24', NULL, '2026-07-22 08:10:00', '2026-07-22 08:10:00'),
-  (2, 1002, 3, 'H6', '2026-07-24 08:10:00', '2026-07-24 02:10:00', 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H6', NULL, '2026-07-22 08:10:00', '2026-07-22 08:10:00'),
-  (3, 1002, 3, 'H1', '2026-07-24 08:10:00', '2026-07-24 07:10:00', 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H1', NULL, '2026-07-22 08:10:00', '2026-07-22 08:10:00');
+  (1, 1002, 3, 'H24', DATE_ADD(NOW(), INTERVAL 48 HOUR), DATE_ADD(NOW(), INTERVAL 24 HOUR), 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H24', NULL, NOW(), NOW()),
+  (2, 1002, 3, 'H6', DATE_ADD(NOW(), INTERVAL 48 HOUR), DATE_ADD(NOW(), INTERVAL 42 HOUR), 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H6', NULL, NOW(), NOW()),
+  (3, 1002, 3, 'H1', DATE_ADD(NOW(), INTERVAL 48 HOUR), DATE_ADD(NOW(), INTERVAL 47 HOUR), 'PENDING', 0, NULL, NULL, 'DEV-REMIND-1002-H1', NULL, NOW(), NOW());
 
 INSERT INTO `order_refund_task` (`id`, `order_id`, `refund_type`, `amount`, `status`, `idempotency_key`, `retry_count`, `next_retry_time`, `fail_reason`, `create_time`, `update_time`) VALUES
   (1, 1005, 'ship_timeout', 129.00, 'SUCCESS', 'DEV-REFUND-1005-SHIP-TIMEOUT', 0, NULL, NULL, '2026-07-20 08:25:00', '2026-07-20 08:30:00');

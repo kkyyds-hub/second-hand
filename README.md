@@ -17,7 +17,8 @@ The command starts Redis, MongoDB, and RabbitMQ through Docker Compose; rebuilds
 Start the backend after initialization:
 
 ```bash
-mvn -pl demo-service -am spring-boot:run
+mvn -pl demo-service -am install -DskipTests
+mvn -pl demo-service spring-boot:run
 ```
 
 The backend uses `http://127.0.0.1:8080`. RabbitMQ Management is available at `http://127.0.0.1:15672` with `secondhand_mq` / `secondhand_mq_2026`.
