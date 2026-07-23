@@ -1,18 +1,18 @@
 ﻿demo:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    host: localhost
-    port: 3306
-    database: secondhand2
-    username: root
-    password: 1234
+    host: ${DEMO_MYSQL_HOST:127.0.0.1}
+    port: ${DEMO_MYSQL_PORT:3306}
+    database: ${DEMO_MYSQL_DATABASE:secondhand2}
+    username: ${DEMO_MYSQL_USERNAME:secondhand_dev}
+    password: ${DEMO_MYSQL_PASSWORD:secondhand_dev_2026}
 
 
 
   redis:
-    host: localhost
-    port: 6379
-    database: 2
+    host: ${DEMO_REDIS_HOST:127.0.0.1}
+    port: ${DEMO_REDIS_PORT:6379}
+    database: ${DEMO_REDIS_DATABASE:2}
     enabled: true
   cache:
     enabled: true
@@ -30,16 +30,16 @@
 
   # MongoDB锛堢珯鍐呮秷鎭級鏃犺璇佺洿杩?
   mongodb:
-    uri: mongodb://localhost:27017/demo
+    uri: ${DEMO_MONGODB_URI:mongodb://127.0.0.1:27017/demo}
 
   # Day14 RabbitMQ锛堝紑鍙戞満榛樿鏈湴瀹瑰櫒/鏈満鏈嶅姟锛?
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: root
-    password: 1234
-    virtual-host: /
-    prefetch: 20
+    host: ${DEMO_RABBITMQ_HOST:127.0.0.1}
+    port: ${DEMO_RABBITMQ_PORT:5672}
+    username: ${DEMO_RABBITMQ_USERNAME:secondhand_mq}
+    password: ${DEMO_RABBITMQ_PASSWORD:secondhand_mq_2026}
+    virtual-host: ${DEMO_RABBITMQ_VHOST:/}
+    prefetch: ${DEMO_RABBITMQ_PREFETCH:20}
 
   auth:
     sms:
@@ -92,4 +92,3 @@ avatar-storage:
 logging:
   level:
     com.demo.mapper: debug
-
