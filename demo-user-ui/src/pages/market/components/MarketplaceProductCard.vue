@@ -57,10 +57,8 @@ watch(
       </router-link>
       <h3 v-else class="product-card-title" :title="product.title">{{ product.title }}</h3>
       <p class="product-card-price font-numeric">¥ {{ product.price.toFixed(2) }}</p>
-      <div class="product-card-meta">
-        <span v-if="product.categoryName">{{ product.categoryName }}</span>
-        <span v-if="product.sellerName">{{ product.sellerName }}</span>
-        <span>库存 {{ product.stock }}</span>
+      <div v-if="product.categoryName" class="product-card-meta">
+        <span>{{ product.categoryName }}</span>
       </div>
       <p v-if="product.shortDescription" class="product-card-summary">{{ product.shortDescription }}</p>
       <router-link v-if="product.id !== null" class="product-card-detail-link" :to="`/market/${product.id}`">查看详情</router-link>

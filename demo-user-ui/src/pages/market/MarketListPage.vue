@@ -13,8 +13,10 @@ const router = useRouter()
 const loading = ref(false)
 const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
-const actionMessage = ref('')
+const actionSuccessMessage = ref('')
+const actionErrorMessage = ref('')
 const validationMessage = ref('')
+const routeValidationMessage = ref('')
 const submittingFavoriteId = ref<number | null>(null)
 const pageData = ref(createEmptyProductPage())
 const favoriteMap = ref<Record<number, boolean>>({})
@@ -33,7 +35,11 @@ interface AppliedMarketFilters {
   maxPrice: number | null
   page: number
   pageSize: number
-  hasValidPriceRange: boolean
+}
+
+interface ParsedMarketRoute {
+  filters: AppliedMarketFilters
+  validationMessage: string
 }
 
 const draft = reactive<MarketFilterDraft>({
@@ -42,7 +48,7 @@ const draft = reactive<MarketFilterDraft>({
   maxPrice: '',
   pageSize: DEFAULT_PAGE_SIZE,
 })
-const appliedFilters = ref<AppliedMarketFilters>(parseRouteQuery(route.query))
+const appliedFilters = ref<AppliedMarketFilters>(parseRouteQuery(route.query).filters)
 
 const list = computed<MarketProductSummary[]>(() => pageData.value.list)
 const totalPages = computed(() => Math.max(1, Math.ceil(pageData.value.total / appliedFilters.value.pageSize)))
@@ -55,11 +61,6 @@ function readQueryText(value: LocationQuery[string] | undefined) {
   return typeof rawValue === 'string' ? rawValue.trim() : ''
 }
 
-function readPositiveInteger(value: string, fallback: number) {
-  const parsed = Number(value)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
-}
-
 function readNonNegativePrice(value: string) {
   if (!value) {
     return null
@@ -68,18 +69,53 @@ function readNonNegativePrice(value: string) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
 }
 
-function parseRouteQuery(query: LocationQuery): AppliedMarketFilters {
+function readRoutePrice(value: string, label: string, issues: string[]) {
+  if (!value) {
+    return null
+  }
+
+  const parsed = readNonNegativePrice(value)
+  if (parsed === null) {
+    issues.push(`${label}必须是不小于 0 的数字，已恢复为不限。`)
+  }
+  return parsed
+}
+
+function readRouteInteger(value: string, fallback: number, label: string, max: number | null, issues: string[]) {
+  if (!value) {
+    return fallback
+  }
+
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1 || (max !== null && parsed > max)) {
+    const range = max === null ? '正整数' : `1 到 ${max}`
+    issues.push(`${label}必须为${range}，已恢复为 ${fallback}。`)
+    return fallback
+  }
+  return parsed
+}
+
+function parseRouteQuery(query: LocationQuery): ParsedMarketRoute {
   const keyword = readQueryText(query.keyword)
-  const minPrice = readNonNegativePrice(readQueryText(query.minPrice))
-  const maxPrice = readNonNegativePrice(readQueryText(query.maxPrice))
+  const issues: string[] = []
+  let minPrice = readRoutePrice(readQueryText(query.minPrice), '最低价', issues)
+  let maxPrice = readRoutePrice(readQueryText(query.maxPrice), '最高价', issues)
+
+  if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+    issues.push('最低价不能高于最高价，已清除价格区间。')
+    minPrice = null
+    maxPrice = null
+  }
 
   return {
-    keyword,
-    minPrice,
-    maxPrice,
-    page: readPositiveInteger(readQueryText(query.page), DEFAULT_PAGE),
-    pageSize: readPositiveInteger(readQueryText(query.pageSize), DEFAULT_PAGE_SIZE),
-    hasValidPriceRange: minPrice === null || maxPrice === null || minPrice <= maxPrice,
+    filters: {
+      keyword,
+      minPrice,
+      maxPrice,
+      page: readRouteInteger(readQueryText(query.page), DEFAULT_PAGE, '页码', null, issues),
+      pageSize: readRouteInteger(readQueryText(query.pageSize), DEFAULT_PAGE_SIZE, '每页数量', 100, issues),
+    },
+    validationMessage: issues.join(' '),
   }
 }
 
@@ -100,7 +136,7 @@ function buildListQuery(filters: AppliedMarketFilters): MarketProductListQuery {
   }
 }
 
-function buildRouteQuery(filters: Omit<AppliedMarketFilters, 'hasValidPriceRange'>) {
+function buildRouteQuery(filters: AppliedMarketFilters) {
   const query: Record<string, string> = {}
   if (filters.keyword) query.keyword = filters.keyword
   if (filters.minPrice !== null) query.minPrice = String(filters.minPrice)
@@ -140,23 +176,24 @@ async function syncFavoriteStatus(listData: MarketProductSummary[], sequence: nu
 
 async function loadFromRoute(filters: AppliedMarketFilters) {
   const sequence = ++requestSequence
-  if (!filters.hasValidPriceRange) {
-    loading.value = false
-    hasLoadedOnce.value = true
-    errorMessage.value = '最低价不能高于最高价。请调整价格区间后重新筛选。'
-    pageData.value = createEmptyProductPage()
-    favoriteMap.value = {}
-    return
-  }
-
   try {
     loading.value = true
     errorMessage.value = ''
-    actionMessage.value = ''
     const payload = await getMarketProductList(buildListQuery(filters))
     if (sequence !== requestSequence) {
       return
     }
+
+    const lastPage = payload.total === 0 ? DEFAULT_PAGE : Math.max(DEFAULT_PAGE, Math.ceil(payload.total / filters.pageSize))
+    const canonicalPage = Math.min(filters.page, lastPage)
+    if (canonicalPage !== filters.page) {
+      router.replace({
+        path: '/market',
+        query: buildRouteQuery({ ...filters, page: canonicalPage }),
+      })
+      return
+    }
+
     pageData.value = payload
     await syncFavoriteStatus(payload.list, sequence)
   } catch (error: unknown) {
@@ -241,18 +278,19 @@ async function handleToggleFavorite(item: MarketProductSummary) {
   const currentState = Boolean(favoriteMap.value[productId])
   try {
     submittingFavoriteId.value = productId
-    actionMessage.value = ''
+    actionSuccessMessage.value = ''
+    actionErrorMessage.value = ''
     if (currentState) {
       await unfavoriteProduct(productId)
       favoriteMap.value = { ...favoriteMap.value, [productId]: false }
-      actionMessage.value = `已取消收藏：${item.title}`
+      actionSuccessMessage.value = `已取消收藏：${item.title}`
     } else {
       await favoriteProduct(productId)
       favoriteMap.value = { ...favoriteMap.value, [productId]: true }
-      actionMessage.value = `已收藏：${item.title}`
+      actionSuccessMessage.value = `已收藏：${item.title}`
     }
   } catch (error: unknown) {
-    actionMessage.value = readErrorMessage(error)
+    actionErrorMessage.value = currentState ? '取消收藏失败，请稍后重试。' : '收藏失败，请稍后重试。'
   } finally {
     submittingFavoriteId.value = null
   }
@@ -261,11 +299,21 @@ async function handleToggleFavorite(item: MarketProductSummary) {
 watch(
   () => route.fullPath,
   () => {
-    const filters = parseRouteQuery(route.query)
-    appliedFilters.value = filters
-    syncDraft(filters)
-    validationMessage.value = ''
-    loadFromRoute(filters)
+    const parsedRoute = parseRouteQuery(route.query)
+    actionSuccessMessage.value = ''
+    actionErrorMessage.value = ''
+
+    if (parsedRoute.validationMessage) {
+      routeValidationMessage.value = parsedRoute.validationMessage
+      router.replace({ path: '/market', query: buildRouteQuery(parsedRoute.filters) })
+      return
+    }
+
+    appliedFilters.value = parsedRoute.filters
+    syncDraft(parsedRoute.filters)
+    validationMessage.value = routeValidationMessage.value
+    routeValidationMessage.value = ''
+    loadFromRoute(parsedRoute.filters)
   },
   { immediate: true },
 )
@@ -324,9 +372,13 @@ watch(
         <button class="btn-default mt-3" type="button" :disabled="loading" @click="retryLoad">重新加载</button>
       </div>
     </section>
-    <section v-if="actionMessage" class="notice-banner notice-banner-success" role="status">
+    <section v-if="actionSuccessMessage" class="notice-banner notice-banner-success" role="status">
       <span class="notice-dot bg-emerald-500"></span>
-      <span>{{ actionMessage }}</span>
+      <span>{{ actionSuccessMessage }}</span>
+    </section>
+    <section v-if="actionErrorMessage" class="notice-banner notice-banner-danger" role="alert">
+      <span class="notice-dot bg-red-500"></span>
+      <span>{{ actionErrorMessage }}</span>
     </section>
 
     <section class="market-results" aria-labelledby="market-results-heading">

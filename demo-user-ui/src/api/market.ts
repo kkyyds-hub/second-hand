@@ -203,7 +203,7 @@ function normalizeMarketProductSummary(payload: unknown): MarketProductSummary {
   return {
     id: id >= 0 ? id : null,
     title: readFirstText(source.title, source.productTitle, source.name) || '未命名商品',
-    coverUrl: readFirstText(source.coverUrl, source.cover, source.mainImage, source.imageUrl),
+    coverUrl: readFirstText(source.coverUrl, source.thumbnail, source.cover, source.mainImage, source.imageUrl),
     price: normalizePrice(source.price, source.salePrice, source.currentPrice),
     categoryName: readFirstText(source.categoryName, source.category),
     sellerName: readFirstText(source.sellerName, source.shopName, source.storeName),
