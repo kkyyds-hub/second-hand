@@ -2,12 +2,12 @@
 
 @theme {
   --font-sans: 'Inter', "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
-  --color-blue-50: #f4f7fb;
-  --color-blue-100: #e7edf6;
-  --color-blue-200: #d2ddef;
-  --color-blue-500: #5d76ad;
-  --color-blue-600: #4d6598;
-  --color-blue-700: #3f557f;
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
 }
 
 @layer base {
@@ -18,7 +18,7 @@
   }
 
   body {
-    @apply bg-stone-50 text-gray-800;
+    @apply bg-[#f8f7f5] text-gray-800;
     margin: 0;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -29,6 +29,11 @@
     color: inherit;
     text-decoration: none;
   }
+
+  :focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
@@ -38,7 +43,59 @@
   }
 
   .page-shell {
-    @apply min-h-screen bg-stone-50;
+    @apply min-h-screen bg-[#f8f7f5];
+  }
+
+  .site-container {
+    @apply mx-auto w-full max-w-[1320px];
+  }
+
+  .user-site-header {
+    @apply sticky top-0 z-40 border-b border-gray-200/90 bg-white/95 backdrop-blur;
+  }
+
+  .site-nav-link {
+    @apply inline-flex h-9 items-center rounded-lg px-3 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-950;
+  }
+
+  .site-nav-link-active {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .profile-trigger {
+    @apply inline-flex h-10 items-center gap-2 rounded-lg px-2 text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950;
+  }
+
+  .profile-avatar {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[12px] font-semibold text-blue-700;
+  }
+
+  .account-popover {
+    @apply absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg shadow-gray-900/10;
+  }
+
+  .account-menu-link {
+    @apply flex min-h-9 items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-950;
+  }
+
+  .account-menu-link-active {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .icon-button {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950;
+  }
+
+  .mobile-bottom-nav {
+    @apply fixed inset-x-0 bottom-0 z-40 flex min-h-[4.75rem] border-t border-gray-200 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 shadow-[0_-4px_14px_rgba(15,23,42,0.06)];
+  }
+
+  .mobile-bottom-link {
+    @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] font-medium text-gray-500 transition-colors;
+  }
+
+  .mobile-bottom-link-active {
+    @apply bg-blue-50 text-blue-700;
   }
 
   .page-body {
@@ -79,7 +136,7 @@
   }
 
   .nav-link {
-    @apply flex items-center gap-3 rounded-2xl border border-transparent px-3.5 py-3 text-[13px] font-medium transition-all duration-200;
+    @apply flex items-center gap-3 rounded-lg border border-transparent px-3.5 py-3 text-[13px] font-medium transition-all duration-200;
   }
 
   .nav-link-active {
@@ -91,7 +148,7 @@
   }
 
   .card {
-    @apply rounded-2xl border border-gray-200/80 bg-white shadow-sm shadow-gray-200/35;
+    @apply rounded-lg border border-gray-200/80 bg-white shadow-sm shadow-gray-200/25;
   }
 
   .card-padding {
@@ -99,7 +156,7 @@
   }
 
   .brand-mark {
-    @apply relative flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 font-bold tracking-tight text-white shadow-sm;
+    @apply relative flex items-center justify-center overflow-hidden rounded-lg bg-gray-950 font-bold tracking-tight text-white shadow-sm;
   }
 
   .brand-mark::after {
@@ -108,11 +165,11 @@
   }
 
   .panel-muted {
-    @apply rounded-2xl border border-gray-200/80 bg-gray-50/80;
+    @apply rounded-lg border border-gray-200/80 bg-gray-50/80;
   }
 
   .soft-panel {
-    @apply rounded-2xl border border-gray-200/70 bg-gray-50/72;
+    @apply rounded-lg border border-gray-200/70 bg-gray-50/72;
   }
 
   .soft-panel-hover {
@@ -120,11 +177,11 @@
   }
 
   .icon-badge {
-    @apply flex h-9 w-9 items-center justify-center rounded-2xl border border-gray-200/80 bg-white text-gray-500 shadow-sm shadow-gray-200/20;
+    @apply flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200/80 bg-white text-gray-500 shadow-sm shadow-gray-200/20;
   }
 
   .page-hero {
-    @apply relative overflow-hidden rounded-[28px] border border-gray-200/80 bg-white px-6 py-6 shadow-sm shadow-gray-200/40 md:px-8 md:py-7;
+    @apply relative overflow-hidden rounded-xl border border-gray-200/80 bg-white px-6 py-6 shadow-sm shadow-gray-200/30 md:px-8 md:py-7;
   }
 
   .page-hero::after {
