@@ -1,47 +1,150 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { ChevronLeft, ChevronRight, Heart, Loader2, PackageOpen, Search, SlidersHorizontal } from 'lucide-vue-next'
-import {
-  createEmptyProductPage,
-  getMarketProductList,
-  type MarketProductListQuery,
-  type MarketProductSummary,
-} from '@/api/market'
+import { computed, reactive, ref, watch } from 'vue'
+import { Box, ChevronLeft, ChevronRight, Heart, Loader2, Search, SlidersHorizontal } from 'lucide-vue-next'
+import { useRoute, useRouter, type LocationQuery } from 'vue-router'
+import { createEmptyProductPage, getMarketProductList, type MarketProductListQuery, type MarketProductSummary } from '@/api/market'
 import { favoriteProduct, getFavoriteStatus, unfavoriteProduct } from '@/api/favorite'
-import FavoriteToggleButton from '@/pages/market/components/FavoriteToggleButton.vue'
+import MarketplaceProductCard from '@/pages/market/components/MarketplaceProductCard.vue'
 
+const DEFAULT_PAGE = 1
+const DEFAULT_PAGE_SIZE = 12
+const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
-const actionMessage = ref('')
+const actionSuccessMessage = ref('')
+const actionErrorMessage = ref('')
+const validationMessage = ref('')
+const routeValidationMessage = ref('')
 const submittingFavoriteId = ref<number | null>(null)
 const pageData = ref(createEmptyProductPage())
+const favoriteMap = ref<Record<number, boolean>>({})
+let requestSequence = 0
 
-interface MarketFilterForm {
+interface MarketFilterDraft {
   keyword: string
-  minPrice: string
-  maxPrice: string
+  minPrice: string | number
+  maxPrice: string | number
   pageSize: number
 }
 
-const filters = reactive<MarketFilterForm>({
+interface AppliedMarketFilters {
+  keyword: string
+  minPrice: number | null
+  maxPrice: number | null
+  page: number
+  pageSize: number
+}
+
+interface ParsedMarketRoute {
+  filters: AppliedMarketFilters
+  validationMessage: string
+}
+
+const draft = reactive<MarketFilterDraft>({
   keyword: '',
   minPrice: '',
   maxPrice: '',
-  pageSize: 12,
+  pageSize: DEFAULT_PAGE_SIZE,
 })
-
-const pagination = reactive({
-  page: 1,
-})
-
-const favoriteMap = ref<Record<number, boolean>>({})
+const appliedFilters = ref<AppliedMarketFilters>(parseRouteQuery(route.query).filters)
 
 const list = computed<MarketProductSummary[]>(() => pageData.value.list)
-const totalPages = computed(() => Math.max(1, Math.ceil(pageData.value.total / pageData.value.pageSize)))
+const totalPages = computed(() => Math.max(1, Math.ceil(pageData.value.total / appliedFilters.value.pageSize)))
 const hasEmptyState = computed(() => !loading.value && hasLoadedOnce.value && !errorMessage.value && list.value.length === 0)
-const hasPrevPage = computed(() => pagination.page > 1)
-const hasNextPage = computed(() => pagination.page < totalPages.value)
+const hasPrevPage = computed(() => appliedFilters.value.page > 1)
+const hasNextPage = computed(() => appliedFilters.value.page < totalPages.value)
+
+function readQueryText(value: LocationQuery[string] | undefined) {
+  const rawValue = Array.isArray(value) ? value[0] : value
+  return typeof rawValue === 'string' ? rawValue.trim() : ''
+}
+
+function readNonNegativePrice(value: string) {
+  if (!value) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
+function readRoutePrice(value: string, label: string, issues: string[]) {
+  if (!value) {
+    return null
+  }
+
+  const parsed = readNonNegativePrice(value)
+  if (parsed === null) {
+    issues.push(`${label}必须是不小于 0 的数字，已恢复为不限。`)
+  }
+  return parsed
+}
+
+function readRouteInteger(value: string, fallback: number, label: string, max: number | null, issues: string[]) {
+  if (!value) {
+    return fallback
+  }
+
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1 || (max !== null && parsed > max)) {
+    const range = max === null ? '正整数' : `1 到 ${max}`
+    issues.push(`${label}必须为${range}，已恢复为 ${fallback}。`)
+    return fallback
+  }
+  return parsed
+}
+
+function parseRouteQuery(query: LocationQuery): ParsedMarketRoute {
+  const keyword = readQueryText(query.keyword)
+  const issues: string[] = []
+  let minPrice = readRoutePrice(readQueryText(query.minPrice), '最低价', issues)
+  let maxPrice = readRoutePrice(readQueryText(query.maxPrice), '最高价', issues)
+
+  if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+    issues.push('最低价不能高于最高价，已清除价格区间。')
+    minPrice = null
+    maxPrice = null
+  }
+
+  return {
+    filters: {
+      keyword,
+      minPrice,
+      maxPrice,
+      page: readRouteInteger(readQueryText(query.page), DEFAULT_PAGE, '页码', null, issues),
+      pageSize: readRouteInteger(readQueryText(query.pageSize), DEFAULT_PAGE_SIZE, '每页数量', 100, issues),
+    },
+    validationMessage: issues.join(' '),
+  }
+}
+
+function syncDraft(filters: AppliedMarketFilters) {
+  draft.keyword = filters.keyword
+  draft.minPrice = filters.minPrice === null ? '' : String(filters.minPrice)
+  draft.maxPrice = filters.maxPrice === null ? '' : String(filters.maxPrice)
+  draft.pageSize = filters.pageSize
+}
+
+function buildListQuery(filters: AppliedMarketFilters): MarketProductListQuery {
+  return {
+    keyword: filters.keyword || undefined,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    page: filters.page,
+    pageSize: filters.pageSize,
+  }
+}
+
+function buildRouteQuery(filters: AppliedMarketFilters) {
+  const query: Record<string, string> = {}
+  if (filters.keyword) query.keyword = filters.keyword
+  if (filters.minPrice !== null) query.minPrice = String(filters.minPrice)
+  if (filters.maxPrice !== null) query.maxPrice = String(filters.maxPrice)
+  if (filters.page > DEFAULT_PAGE) query.page = String(filters.page)
+  if (filters.pageSize !== DEFAULT_PAGE_SIZE) query.pageSize = String(filters.pageSize)
+  return query
+}
 
 function readErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -50,69 +153,120 @@ function readErrorMessage(error: unknown) {
   return '市场列表加载失败，请稍后重试。'
 }
 
-function sanitizePriceInput(value: string) {
-  const normalized = value.trim()
-  if (!normalized) {
-    return ''
-  }
-  const parsed = Number(normalized)
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return ''
-  }
-  return parsed
-}
-
-function buildListQuery(): MarketProductListQuery {
-  return {
-    keyword: filters.keyword,
-    minPrice: sanitizePriceInput(filters.minPrice),
-    maxPrice: sanitizePriceInput(filters.maxPrice),
-    page: pagination.page,
-    pageSize: filters.pageSize,
-  }
-}
-
-async function syncFavoriteStatus(listData: MarketProductSummary[]) {
+async function syncFavoriteStatus(listData: MarketProductSummary[], sequence: number) {
   const entries = await Promise.all(
     listData
       .filter((item) => item.id !== null)
       .map(async (item) => {
         const id = Number(item.id)
         try {
-          const favorited = await getFavoriteStatus(id)
-          return [id, favorited] as const
+          return [id, await getFavoriteStatus(id)] as const
         } catch {
           return [id, false] as const
         }
       }),
   )
 
-  const snapshot: Record<number, boolean> = {}
-  for (const [id, favorited] of entries) {
-    snapshot[id] = favorited
-  }
-  favoriteMap.value = snapshot
-}
-
-async function loadList() {
-  if (loading.value) {
+  if (sequence !== requestSequence) {
     return
   }
 
+  favoriteMap.value = Object.fromEntries(entries)
+}
+
+async function loadFromRoute(filters: AppliedMarketFilters) {
+  const sequence = ++requestSequence
   try {
     loading.value = true
     errorMessage.value = ''
-    actionMessage.value = ''
+    const payload = await getMarketProductList(buildListQuery(filters))
+    if (sequence !== requestSequence) {
+      return
+    }
 
-    const payload = await getMarketProductList(buildListQuery())
+    const lastPage = payload.total === 0 ? DEFAULT_PAGE : Math.max(DEFAULT_PAGE, Math.ceil(payload.total / filters.pageSize))
+    const canonicalPage = Math.min(filters.page, lastPage)
+    if (canonicalPage !== filters.page) {
+      router.replace({
+        path: '/market',
+        query: buildRouteQuery({ ...filters, page: canonicalPage }),
+      })
+      return
+    }
+
     pageData.value = payload
-    await syncFavoriteStatus(payload.list)
+    await syncFavoriteStatus(payload.list, sequence)
   } catch (error: unknown) {
-    errorMessage.value = readErrorMessage(error)
+    if (sequence === requestSequence) {
+      errorMessage.value = readErrorMessage(error)
+    }
   } finally {
-    loading.value = false
-    hasLoadedOnce.value = true
+    if (sequence === requestSequence) {
+      loading.value = false
+      hasLoadedOnce.value = true
+    }
   }
+}
+
+function validateDraft() {
+  const minPriceInput = String(draft.minPrice).trim()
+  const maxPriceInput = String(draft.maxPrice).trim()
+  const minPrice = readNonNegativePrice(minPriceInput)
+  const maxPrice = readNonNegativePrice(maxPriceInput)
+  if (minPriceInput && minPrice === null) {
+    validationMessage.value = '最低价请输入不小于 0 的数字。'
+    return null
+  }
+  if (maxPriceInput && maxPrice === null) {
+    validationMessage.value = '最高价请输入不小于 0 的数字。'
+    return null
+  }
+  if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+    validationMessage.value = '最低价不能高于最高价。'
+    return null
+  }
+
+  validationMessage.value = ''
+  return {
+    keyword: draft.keyword.trim(),
+    minPrice,
+    maxPrice,
+    pageSize: draft.pageSize,
+  }
+}
+
+function submitFilters() {
+  const next = validateDraft()
+  if (!next) {
+    return
+  }
+  router.push({ path: '/market', query: buildRouteQuery({ ...next, page: DEFAULT_PAGE }) })
+}
+
+function resetFilters() {
+  validationMessage.value = ''
+  router.push({ path: '/market' })
+}
+
+function changePage(nextPage: number) {
+  if (nextPage < 1 || nextPage > totalPages.value || nextPage === appliedFilters.value.page) {
+    return
+  }
+  const filters = appliedFilters.value
+  router.push({
+    path: '/market',
+    query: buildRouteQuery({
+      keyword: filters.keyword,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      page: nextPage,
+      pageSize: filters.pageSize,
+    }),
+  })
+}
+
+function retryLoad() {
+  loadFromRoute(appliedFilters.value)
 }
 
 async function handleToggleFavorite(item: MarketProductSummary) {
@@ -122,199 +276,161 @@ async function handleToggleFavorite(item: MarketProductSummary) {
 
   const productId = item.id
   const currentState = Boolean(favoriteMap.value[productId])
-
   try {
     submittingFavoriteId.value = productId
-    actionMessage.value = ''
-
+    actionSuccessMessage.value = ''
+    actionErrorMessage.value = ''
     if (currentState) {
       await unfavoriteProduct(productId)
-      favoriteMap.value = {
-        ...favoriteMap.value,
-        [productId]: false,
-      }
-      actionMessage.value = `已取消收藏：${item.title}`
+      favoriteMap.value = { ...favoriteMap.value, [productId]: false }
+      actionSuccessMessage.value = `已取消收藏：${item.title}`
     } else {
       await favoriteProduct(productId)
-      favoriteMap.value = {
-        ...favoriteMap.value,
-        [productId]: true,
-      }
-      actionMessage.value = `已收藏：${item.title}`
+      favoriteMap.value = { ...favoriteMap.value, [productId]: true }
+      actionSuccessMessage.value = `已收藏：${item.title}`
     }
   } catch (error: unknown) {
-    actionMessage.value = readErrorMessage(error)
+    actionErrorMessage.value = currentState ? '取消收藏失败，请稍后重试。' : '收藏失败，请稍后重试。'
   } finally {
     submittingFavoriteId.value = null
   }
 }
 
-function submitFilters() {
-  pagination.page = 1
-  loadList()
-}
+watch(
+  () => route.fullPath,
+  () => {
+    const parsedRoute = parseRouteQuery(route.query)
+    actionSuccessMessage.value = ''
+    actionErrorMessage.value = ''
 
-function resetFilters() {
-  filters.keyword = ''
-  filters.minPrice = ''
-  filters.maxPrice = ''
-  pagination.page = 1
-  loadList()
-}
+    if (parsedRoute.validationMessage) {
+      routeValidationMessage.value = parsedRoute.validationMessage
+      router.replace({ path: '/market', query: buildRouteQuery(parsedRoute.filters) })
+      return
+    }
 
-function changePage(nextPage: number) {
-  if (nextPage < 1 || nextPage > totalPages.value || nextPage === pagination.page) {
-    return
-  }
-
-  pagination.page = nextPage
-  loadList()
-}
-
-onMounted(() => {
-  loadList()
-})
+    appliedFilters.value = parsedRoute.filters
+    syncDraft(parsedRoute.filters)
+    validationMessage.value = routeValidationMessage.value
+    routeValidationMessage.value = ''
+    loadFromRoute(parsedRoute.filters)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <div class="page-body">
-    <section class="page-hero">
-      <div class="page-hero-content">
-        <div class="page-header-main">
-          <p class="page-kicker">市场</p>
-          <h1 class="page-title">发现好物</h1>
-          <p class="page-desc">让市场页回到与管理端同系列的中性卡片和节奏，只保留少量蓝色强调筛选与状态。</p>
-        </div>
-        <div class="page-actions">
-          <router-link class="btn-default" to="/favorites">
-            <Heart class="h-4 w-4" />
-            <span>我的收藏</span>
-          </router-link>
-        </div>
+  <div class="page-body market-page">
+    <section class="market-page-header">
+      <div>
+        <p class="page-kicker">市场</p>
+        <h1 class="page-title">发现闲置好物</h1>
+        <p class="page-desc">按关键词和价格找到更合适的商品。</p>
       </div>
+      <router-link class="btn-default" to="/favorites">
+        <Heart class="h-4 w-4" />
+        <span>我的收藏</span>
+      </router-link>
     </section>
 
-    <section class="toolbar">
-      <form class="w-full space-y-4 md:space-y-0" @submit.prevent="submitFilters">
-        <div class="flex flex-col gap-4 md:flex-row md:items-end">
-          <div class="toolbar-field">
-            <label class="form-label" for="market-keyword">商品关键词</label>
-            <div class="relative">
-              <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input id="market-keyword" v-model="filters.keyword" class="input-standard !pl-10" type="text" maxlength="40" placeholder="搜索商品名称、品牌或描述..." :disabled="loading" />
-            </div>
-          </div>
-          <div class="w-full md:w-40">
-            <label class="form-label" for="market-min-price">最低价</label>
-            <input id="market-min-price" v-model="filters.minPrice" class="input-standard" type="number" min="0" step="0.01" placeholder="0.00" :disabled="loading" />
-          </div>
-          <div class="w-full md:w-40">
-            <label class="form-label" for="market-max-price">最高价</label>
-            <input id="market-max-price" v-model="filters.maxPrice" class="input-standard" type="number" min="0" step="0.01" placeholder="不限" :disabled="loading" />
-          </div>
-          <div class="toolbar-group md:pl-2">
-            <button class="btn-primary" type="submit" :disabled="loading">
-              <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
-              <SlidersHorizontal v-else class="h-4 w-4" />
-              <span>筛选</span>
-            </button>
-            <button class="btn-default" type="button" :disabled="loading" @click="resetFilters">重置</button>
+    <section class="market-filter-panel" aria-label="商品筛选">
+      <form class="market-filter-form" @submit.prevent="submitFilters">
+        <div class="market-keyword-field">
+          <label class="form-label" for="market-keyword">搜索商品</label>
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+            <input id="market-keyword" v-model="draft.keyword" class="input-standard !pl-10" type="search" maxlength="40" placeholder="商品名称、品牌或描述" @keydown.enter.prevent="submitFilters" />
           </div>
         </div>
+        <div class="market-price-fields">
+          <div>
+            <label class="form-label" for="market-min-price">最低价</label>
+            <input id="market-min-price" v-model="draft.minPrice" class="input-standard" type="number" min="0" step="0.01" inputmode="decimal" placeholder="不限" @keydown.enter.prevent="submitFilters" />
+          </div>
+          <div>
+            <label class="form-label" for="market-max-price">最高价</label>
+            <input id="market-max-price" v-model="draft.maxPrice" class="input-standard" type="number" min="0" step="0.01" inputmode="decimal" placeholder="不限" @keydown.enter.prevent="submitFilters" />
+          </div>
+        </div>
+        <div class="market-filter-actions">
+          <button class="btn-primary" type="submit" :disabled="loading">
+            <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
+            <SlidersHorizontal v-else class="h-4 w-4" />
+            <span>筛选</span>
+          </button>
+          <button class="btn-default" type="button" :disabled="loading" @click="resetFilters">重置</button>
+        </div>
       </form>
+      <p v-if="validationMessage" class="market-validation-message" role="alert">{{ validationMessage }}</p>
     </section>
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
       <div class="flex-1">
-        <p class="font-semibold">列表刷新失败</p>
+        <p class="font-semibold">商品没有加载成功</p>
         <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
-        <button class="btn-default mt-3" type="button" :disabled="loading" @click="loadList">重新加载</button>
+        <button class="btn-default mt-3" type="button" :disabled="loading" @click="retryLoad">重新加载</button>
       </div>
     </section>
-    <section v-if="actionMessage" class="notice-banner notice-banner-success">
+    <section v-if="actionSuccessMessage" class="notice-banner notice-banner-success" role="status">
       <span class="notice-dot bg-emerald-500"></span>
-      <span>{{ actionMessage }}</span>
+      <span>{{ actionSuccessMessage }}</span>
+    </section>
+    <section v-if="actionErrorMessage" class="notice-banner notice-banner-danger" role="alert">
+      <span class="notice-dot bg-red-500"></span>
+      <span>{{ actionErrorMessage }}</span>
     </section>
 
-    <section class="section-panel">
-      <div class="section-header">
+    <section class="market-results" aria-labelledby="market-results-heading">
+      <div class="market-results-header">
         <div>
-          <h2 class="section-heading">全部商品</h2>
-          <p class="section-subtitle">共 {{ pageData.total }} 件商品，当前第 {{ pageData.page }} / {{ totalPages }} 页</p>
+          <h2 id="market-results-heading" class="section-heading">全部商品</h2>
+          <p class="section-subtitle">共 {{ pageData.total }} 件商品</p>
         </div>
-        <div class="section-actions">
-          <span class="chip chip-muted font-numeric">共 {{ pageData.total }} 件</span>
+        <span class="chip chip-muted font-numeric">第 {{ appliedFilters.page }} / {{ totalPages }} 页</span>
+      </div>
+
+      <div v-if="loading && !hasLoadedOnce" class="market-product-grid" aria-label="商品加载中">
+        <div v-for="item in appliedFilters.pageSize" :key="item" class="product-card product-card-skeleton" aria-hidden="true">
+          <div class="product-card-skeleton-media"></div>
+          <div class="product-card-body gap-3">
+            <div class="skeleton-line w-3/4"></div>
+            <div class="skeleton-line w-2/5"></div>
+            <div class="skeleton-line w-1/2"></div>
+          </div>
         </div>
       </div>
-      <div class="section-body">
-        <div v-if="loading && !hasLoadedOnce" class="empty-state min-h-[360px]">
-          <Loader2 class="empty-state-icon animate-spin text-blue-500" />
-          <p class="empty-state-title">正在加载商品列表</p>
-          <p class="empty-state-text">请稍候，系统正在同步最新市场数据。</p>
-        </div>
-        <div v-else-if="hasEmptyState" class="empty-state min-h-[360px]">
-          <PackageOpen class="empty-state-icon" />
-          <p class="empty-state-title">当前条件下暂无商品</p>
-          <p class="empty-state-text">可以尝试放宽关键字或价格区间，查看更多市场结果。</p>
-        </div>
-        <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <article v-for="item in list" :key="item.id ?? item.title" class="group product-card">
-            <div class="product-card-media">
-              <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              <div v-else class="flex h-full items-center justify-center text-[12px] text-gray-400">暂无商品主图</div>
-              <div class="absolute right-3 top-3">
-                <FavoriteToggleButton
-                  :active="item.id !== null ? Boolean(favoriteMap[item.id]) : false"
-                  :loading="item.id !== null && submittingFavoriteId === item.id"
-                  :disabled="item.id === null"
-                  @toggle="item.id !== null && handleToggleFavorite(item)"
-                  class="!rounded-full !border-gray-200/80 !bg-white/95 shadow-sm shadow-gray-200/30"
-                />
-              </div>
-            </div>
-            <div class="product-card-body">
-              <h3 class="product-card-title" :title="item.title">{{ item.title }}</h3>
-              <div class="mt-3 flex flex-wrap items-center gap-2">
-                <span v-if="item.categoryName" class="chip chip-accent">{{ item.categoryName }}</span>
-                <span v-if="item.sellerName" class="chip chip-neutral max-w-[120px] truncate">{{ item.sellerName }}</span>
-              </div>
-              <p class="product-card-summary">{{ item.shortDescription || '卖家暂未补充商品摘要。' }}</p>
-              <div class="product-card-footer">
-                <div class="space-y-1.5">
-                  <p class="font-numeric text-[22px] font-bold tracking-tight text-gray-900">¥ {{ item.price.toFixed(2) }}</p>
-                  <div class="inline-meta font-numeric">
-                    <span>库存 {{ item.stock }}</span>
-                    <span class="inline-meta-dot"></span>
-                    <span>已售 {{ item.soldCount }}</span>
-                  </div>
-                </div>
-                <router-link v-if="item.id !== null" class="btn-default !h-9 px-3" :to="`/market/${item.id}`">
-                  <span>查看详情</span>
-                  <ChevronRight class="h-4 w-4" />
-                </router-link>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div class="pagination-bar">
-          <div class="inline-meta">
-            <span class="chip chip-neutral font-numeric">第 {{ pagination.page }} / {{ totalPages }} 页</span>
-            <span>显示 {{ pageData.total === 0 ? 0 : (pagination.page - 1) * filters.pageSize + 1 }} 到 {{ Math.min(pagination.page * filters.pageSize, pageData.total) }} 条</span>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn-default !h-9 px-3.5" type="button" :disabled="!hasPrevPage || loading" @click="changePage(pagination.page - 1)">
-              <ChevronLeft class="h-4 w-4" />
-              <span>上一页</span>
-            </button>
-            <button class="btn-default !h-9 px-3.5" type="button" :disabled="!hasNextPage || loading" @click="changePage(pagination.page + 1)">
-              <span>下一页</span>
-              <ChevronRight class="h-4 w-4" />
-            </button>
-          </div>
+      <div v-else-if="hasEmptyState" class="empty-state market-empty-state">
+        <Box class="empty-state-icon" />
+        <p class="empty-state-title">当前条件下没有商品</p>
+        <p class="empty-state-text">可以放宽关键词或价格区间，再试一次。</p>
+        <button class="btn-default mt-5" type="button" @click="resetFilters">重置筛选</button>
+      </div>
+      <div v-else-if="!errorMessage" class="market-product-grid">
+        <MarketplaceProductCard
+          v-for="product in list"
+          :key="product.id ?? product.title"
+          :product="product"
+          :favorited="product.id !== null ? Boolean(favoriteMap[product.id]) : false"
+          :favorite-loading="product.id !== null && submittingFavoriteId === product.id"
+          :show-favorite="true"
+          @toggle-favorite="handleToggleFavorite(product)"
+        />
+      </div>
+
+      <div v-if="!errorMessage && !hasEmptyState && hasLoadedOnce" class="pagination-bar">
+        <p class="inline-meta">显示 {{ pageData.total === 0 ? 0 : (appliedFilters.page - 1) * appliedFilters.pageSize + 1 }} 到 {{ Math.min(appliedFilters.page * appliedFilters.pageSize, pageData.total) }} 条</p>
+        <div class="flex gap-2">
+          <button class="btn-default !h-9 px-3.5" type="button" :disabled="!hasPrevPage || loading" aria-label="上一页" @click="changePage(appliedFilters.page - 1)">
+            <ChevronLeft class="h-4 w-4" />
+            <span>上一页</span>
+          </button>
+          <button class="btn-default !h-9 px-3.5" type="button" :disabled="!hasNextPage || loading" aria-label="下一页" @click="changePage(appliedFilters.page + 1)">
+            <span>下一页</span>
+            <ChevronRight class="h-4 w-4" />
+          </button>
         </div>
       </div>
     </section>
   </div>
 </template>
-

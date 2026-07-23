@@ -5,6 +5,8 @@ import com.demo.dto.statistics.ProductPublishCountDTO;
 import com.demo.entity.Product;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -52,7 +54,9 @@ public interface ProductMapper {
      * 查询市场商品列表（仅展示可售商品）。
      */
     List<Product> getMarketProductList(@Param("keyword") String keyword,
-                                       @Param("category") String category);
+                                       @Param("category") String category,
+                                       @Param("minPrice") BigDecimal minPrice,
+                                       @Param("maxPrice") BigDecimal maxPrice);
 
     /**
      * 查询市场商品详情（仅展示可售商品）。
@@ -138,4 +142,3 @@ public interface ProductMapper {
                               @Param("date") java.time.LocalDate date);
 
 }
-
