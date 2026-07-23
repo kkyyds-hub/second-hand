@@ -1,58 +1,29 @@
-﻿<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { Loader2, RefreshCw } from 'lucide-vue-next'
-import { createEmptySellerSummary, getSellerSummary, type SellerSummary } from '@/api/seller'
-import { getUserDisplayName, getUserPrimaryContact, isSellerUser, readCurrentUser } from '@/utils/request'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ArrowRight, Box, CirclePlus, Heart, RefreshCw, Search, ShoppingBag } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { createEmptyProductPage, getMarketProductList } from '@/api/market'
+import MarketplaceProductCard from '@/pages/market/components/MarketplaceProductCard.vue'
+import { isSellerUser, readCurrentUser } from '@/utils/request'
 
+const router = useRouter()
 const currentUser = readCurrentUser()
-const loading = ref(false)
-const errorMessage = ref('')
-const hasLoadedOnce = ref(false)
-const summary = ref<SellerSummary>(createEmptySellerSummary())
-
-const greetingName = computed(() => getUserDisplayName(currentUser))
-const primaryContact = computed(() => getUserPrimaryContact(currentUser))
 const sellerEnabled = computed(() => isSellerUser(currentUser))
-const roleText = computed(() => (sellerEnabled.value ? '当前账号已具备卖家身份。' : '当前账号可能尚未开通卖家身份。'))
+const loading = ref(false)
+const hasLoadedOnce = ref(false)
+const errorMessage = ref('')
+const searchKeyword = ref('')
+const pageData = ref(createEmptyProductPage())
+let isActive = true
 
-const summaryStatusText = computed(() => {
-  if (loading.value) {
-    return '正在同步最新卖家摘要...'
+function readErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
   }
+  return '商品加载失败，请稍后重试。'
+}
 
-  if (errorMessage.value) {
-    return '卖家摘要加载失败，请重试'
-  }
-
-  if (hasLoadedOnce.value) {
-    return '卖家摘要已加载'
-  }
-
-  return '初始化中...'
-})
-
-const primaryMetrics = computed(() => {
-  return [
-    { label: '全部商品', value: summary.value.totalProducts },
-    { label: '审核中商品', value: summary.value.underReviewProducts },
-    { label: '在售商品', value: summary.value.onSaleProducts },
-    { label: '全部订单', value: summary.value.totalOrders },
-    { label: '待处理订单', value: summary.value.pendingOrders },
-    { label: '已完成订单', value: summary.value.completedOrders },
-  ]
-})
-
-const secondaryMetrics = computed(() => {
-  return [
-    { label: '已下架商品', value: summary.value.offShelfProducts },
-    { label: '已售出商品', value: summary.value.soldProducts },
-    { label: '已支付订单', value: summary.value.paidOrders },
-    { label: '已发货订单', value: summary.value.shippedOrders },
-    { label: '已取消订单', value: summary.value.cancelledOrders },
-  ]
-})
-
-const loadSummary = async () => {
+async function loadProducts() {
   if (loading.value) {
     return
   }
@@ -60,154 +31,135 @@ const loadSummary = async () => {
   try {
     loading.value = true
     errorMessage.value = ''
-    summary.value = await getSellerSummary()
+    const payload = await getMarketProductList({ page: 1, pageSize: 8 })
+    if (isActive) {
+      pageData.value = payload
+    }
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.trim()) {
-      errorMessage.value = error.message
-    } else {
-      errorMessage.value = '卖家摘要加载失败，请稍后重试。'
+    if (isActive) {
+      errorMessage.value = readErrorMessage(error)
     }
   } finally {
-    loading.value = false
-    hasLoadedOnce.value = true
+    if (isActive) {
+      loading.value = false
+      hasLoadedOnce.value = true
+    }
   }
 }
 
-onMounted(() => {
-  loadSummary()
+function submitSearch() {
+  const keyword = searchKeyword.value.trim()
+  router.push({ path: '/market', query: keyword ? { keyword } : {} })
+}
+
+onMounted(loadProducts)
+
+onBeforeUnmount(() => {
+  isActive = false
 })
 </script>
 
 <template>
-  <div class="page-body">
-    <section class="page-hero">
-      <div class="page-hero-content">
-        <div class="page-header-main">
-          <p class="page-kicker">概览</p>
-          <h1 class="page-title">你好，{{ greetingName }}</h1>
-          <p class="page-desc">确认会话状态与关键业务摘要，开启今天的工作。</p>
+  <div class="page-body home-page">
+    <section class="home-hero">
+      <div class="home-hero-content">
+        <div class="home-hero-copy">
+          <p class="page-kicker">二手市场</p>
+          <h1 class="home-hero-title">让闲置，遇见真正需要它的人</h1>
+          <p class="home-hero-desc">把仍有价值的好物，交给下一个懂得使用它的人。</p>
         </div>
-        <div class="page-actions">
-          <span class="chip chip-muted">{{ summaryStatusText }}</span>
-          <button class="btn-default" type="button" :disabled="loading" @click="loadSummary">
-            <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
-            <RefreshCw v-else class="h-4 w-4" />
-            <span>{{ loading ? '刷新中' : '刷新摘要' }}</span>
+        <div class="home-hero-actions">
+          <router-link class="btn-default" to="/market">
+            <ShoppingBag class="h-4 w-4" />
+            <span>浏览市场</span>
+          </router-link>
+          <router-link v-if="sellerEnabled" class="btn-primary" to="/seller/products/new">
+            <CirclePlus class="h-4 w-4" />
+            <span>发布闲置</span>
+          </router-link>
+        </div>
+      </div>
+      <form class="home-search" @submit.prevent="submitSearch">
+        <label class="sr-only" for="home-search">搜索商品</label>
+        <Search class="home-search-icon" aria-hidden="true" />
+        <input
+          id="home-search"
+          v-model="searchKeyword"
+          class="home-search-input"
+          type="search"
+          maxlength="40"
+          placeholder="搜索你正在寻找的闲置好物"
+          @keydown.enter.prevent="submitSearch"
+        />
+        <button class="btn-primary home-search-button" type="submit">搜索商品</button>
+      </form>
+    </section>
+
+    <section class="home-products-section" aria-labelledby="home-products-heading">
+      <div class="home-section-heading">
+        <div>
+          <p class="page-kicker">最近上架</p>
+          <h2 id="home-products-heading" class="section-heading">最新闲置</h2>
+          <p class="section-subtitle">看看刚刚进入市场的实用好物。</p>
+        </div>
+        <router-link class="home-text-link" to="/market">
+          <span>浏览全部商品</span>
+          <ArrowRight class="h-4 w-4" />
+        </router-link>
+      </div>
+
+      <div v-if="loading && !hasLoadedOnce" class="market-product-grid" aria-label="商品加载中">
+        <div v-for="item in 8" :key="item" class="product-card product-card-skeleton" aria-hidden="true">
+          <div class="product-card-skeleton-media"></div>
+          <div class="product-card-body gap-3">
+            <div class="skeleton-line w-3/4"></div>
+            <div class="skeleton-line w-1/2"></div>
+            <div class="skeleton-line w-2/5"></div>
+          </div>
+        </div>
+      </div>
+
+      <section v-else-if="errorMessage" class="empty-state home-state">
+        <Box class="empty-state-icon" />
+        <p class="empty-state-title">商品暂时没有加载出来</p>
+        <p class="empty-state-text">{{ errorMessage }}</p>
+        <button class="btn-default mt-5" type="button" :disabled="loading" @click="loadProducts">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+          <span>重新加载</span>
+        </button>
+      </section>
+
+      <section v-else-if="hasLoadedOnce && pageData.list.length === 0" class="empty-state home-state">
+        <Box class="empty-state-icon" />
+        <p class="empty-state-title">暂时没有在售商品</p>
+        <p class="empty-state-text">可以稍后刷新，或先浏览市场看看。</p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+          <button class="btn-default" type="button" @click="loadProducts">
+            <RefreshCw class="h-4 w-4" />
+            <span>刷新商品</span>
           </button>
+          <router-link class="btn-primary" to="/market">浏览市场</router-link>
         </div>
+      </section>
+
+      <div v-else class="market-product-grid">
+        <MarketplaceProductCard v-for="product in pageData.list" :key="product.id ?? product.title" :product="product" />
       </div>
     </section>
 
-    <section v-if="errorMessage" class="notice-banner notice-banner-danger">
-      <span class="notice-dot bg-red-500"></span>
-      <div>
-        <p class="font-semibold">数据加载失败</p>
-        <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
-      </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="section-header">
-        <div>
-          <h2 class="section-heading">会话状态</h2>
-          <p class="section-subtitle">统一查看当前身份、联系方式与摘要同步状态。</p>
-        </div>
-        <span class="chip chip-neutral">{{ summaryStatusText }}</span>
-      </div>
-      <div class="section-body">
-        <div class="meta-grid">
-          <div class="meta-item">
-            <p class="meta-label">当前身份</p>
-            <p class="meta-value">{{ roleText }}</p>
-          </div>
-          <div class="meta-item">
-            <p class="meta-label">联系方式</p>
-            <p class="meta-value font-numeric">{{ primaryContact }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="section-header">
-        <div>
-          <h2 class="section-heading">卖家经营概览</h2>
-          <p class="section-subtitle">核心指标使用统一卡片语法，避免页面各自定义一套统计样式。</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="metric-grid">
-          <article v-for="metric in primaryMetrics" :key="metric.label" class="metric-card">
-            <p class="metric-label">{{ metric.label }}</p>
-            <p class="metric-value font-numeric">{{ metric.value }}</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-panel-muted">
-      <div class="section-header section-header-plain">
-        <div>
-          <h2 class="section-heading">补充统计</h2>
-          <p class="section-subtitle">次级指标统一使用浅底信息卡，降低视觉噪声。</p>
-        </div>
-      </div>
-      <div class="section-body pt-0">
-        <div class="submetric-grid">
-          <article v-for="metric in secondaryMetrics" :key="metric.label" class="submetric-card">
-            <p class="text-[12px] text-gray-500">{{ metric.label }}</p>
-            <p class="mt-2 text-[18px] font-semibold text-gray-900 font-numeric">{{ metric.value }}</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="section-header">
-        <div>
-          <h2 class="section-heading">快捷入口</h2>
-          <p class="section-subtitle">延续同系列产品的中性卡片风格，只在细节上保留少量强调色。</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="link-grid">
-          <router-link v-if="sellerEnabled" class="link-card" to="/seller">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">卖家工作台</p>
-              <span class="chip chip-accent">Day04</span>
-            </div>
-            <p class="link-card-desc">进入卖家工作台，并继续到 userProducts 列表/详情只读链路。</p>
-          </router-link>
-          <router-link class="link-card" to="/market">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">浏览市场</p>
-              <span class="chip chip-accent">市场</span>
-            </div>
-            <p class="link-card-desc">浏览商品、进入详情、查看评价并执行收藏与举报操作。</p>
-          </router-link>
-          <router-link class="link-card" to="/favorites">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">我的收藏夹</p>
-              <span class="chip chip-neutral">收藏</span>
-            </div>
-            <p class="link-card-desc">集中查看已收藏商品列表，并执行取消收藏操作。</p>
-          </router-link>
-          <router-link class="link-card" to="/orders/buyer">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">我的买家订单</p>
-              <span class="chip chip-accent">Day05</span>
-            </div>
-            <p class="link-card-desc">查看买家订单列表并进入订单详情只读页面。</p>
-          </router-link>
-          <router-link class="link-card" to="/reviews/mine">
-            <div class="flex items-center justify-between gap-3">
-              <p class="link-card-title">我的评价记录</p>
-              <span class="chip chip-neutral">评价</span>
-            </div>
-            <p class="link-card-desc">查看我提交过的评价记录，便于后续校验与回顾。</p>
-          </router-link>
-        </div>
-      </div>
-    </section>
+    <nav class="home-quick-links" aria-label="常用入口">
+      <router-link class="home-quick-link" to="/favorites">
+        <Heart class="h-5 w-5" />
+        <span>我的收藏</span>
+      </router-link>
+      <router-link class="home-quick-link" to="/orders/buyer">
+        <ShoppingBag class="h-5 w-5" />
+        <span>我的订单</span>
+      </router-link>
+      <router-link v-if="sellerEnabled" class="home-quick-link" to="/seller">
+        <CirclePlus class="h-5 w-5" />
+        <span>卖家中心</span>
+      </router-link>
+    </nav>
   </div>
 </template>
