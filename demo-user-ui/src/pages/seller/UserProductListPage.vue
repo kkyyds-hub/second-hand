@@ -25,6 +25,8 @@ type PendingAction =
   | { kind: 'delete'; item: UserProductSummary }
   | { kind: 'status'; item: UserProductSummary; actionMeta: UserProductStatusActionMeta }
 
+type ListLoadOutcome = 'loaded' | 'redirected' | 'stale' | 'failed'
+
 const route = useRoute()
 const router = useRouter()
 const validStatuses = new Set(['under_review', 'on_sale', 'off_shelf', 'sold'])
@@ -43,6 +45,7 @@ const listError = ref('')
 const pageData = ref(createEmptyUserProductPage())
 const requestSequence = ref(0)
 const isViewActive = ref(true)
+const explicitRouteReloadKey = ref('')
 const runningActionKey = ref('')
 const pendingAction = ref<PendingAction | null>(null)
 const feedback = ref<{ tone: 'success' | 'warning' | 'error'; message: string } | null>(null)
@@ -156,33 +159,67 @@ function actionFailureMessage(action: UserProductStatusAction | 'delete') {
   }
 }
 
-async function loadList(state: AppliedListState, options?: { throwOnError?: boolean }) {
+function actionRemovesItemFromState(action: PendingAction, state: AppliedListState) {
+  if (action.kind === 'delete') return true
+  if (!state.status) return false
+
+  const targetStatusByAction: Partial<Record<UserProductStatusAction, string>> = {
+    off_shelf: 'off_shelf',
+    withdraw: 'off_shelf',
+    resubmit: 'under_review',
+    on_shelf: 'under_review',
+  }
+  const targetStatus = targetStatusByAction[action.actionMeta.action]
+  return Boolean(targetStatus && targetStatus !== state.status)
+}
+
+async function loadList(state: AppliedListState): Promise<ListLoadOutcome> {
   const sequence = ++requestSequence.value
   loading.value = true
   listError.value = ''
 
   try {
     const nextPageData = await getUserProductList(state)
-    if (!isViewActive.value || sequence !== requestSequence.value) return false
+    if (!isViewActive.value || sequence !== requestSequence.value) return 'stale'
 
     const lastPage = Math.max(1, Math.ceil(nextPageData.total / state.pageSize))
     if (state.page > lastPage) {
       await router.replace({ query: buildQuery({ ...state, page: lastPage }) })
-      return false
+      return 'redirected'
     }
 
-    if (!isViewActive.value || sequence !== requestSequence.value || stateKey(state) !== stateKey(appliedState.value)) return false
+    if (!isViewActive.value || sequence !== requestSequence.value || stateKey(state) !== stateKey(appliedState.value)) return 'stale'
     pageData.value = nextPageData
-    return true
-  } catch (error) {
-    if (!isViewActive.value || sequence !== requestSequence.value) return false
-    if (options?.throwOnError) throw error
+    return 'loaded'
+  } catch {
+    if (!isViewActive.value || sequence !== requestSequence.value) return 'stale'
     listError.value = '商品列表暂时无法加载，请稍后重试。'
-    return false
+    return 'failed'
   } finally {
     if (isViewActive.value && sequence === requestSequence.value) {
       loading.value = false
       hasLoadedOnce.value = true
+    }
+  }
+}
+
+async function replaceAndReloadList(targetState: AppliedListState): Promise<ListLoadOutcome> {
+  const targetKey = stateKey(targetState)
+  explicitRouteReloadKey.value = targetKey
+
+  try {
+    await router.replace({ query: buildQuery(targetState) })
+    if (!isViewActive.value || stateKey(appliedState.value) !== targetKey) return 'stale'
+
+    return await loadList(targetState)
+  } catch {
+    if (isViewActive.value) {
+      listError.value = '商品列表暂时无法加载，请稍后重试。'
+    }
+    return 'failed'
+  } finally {
+    if (explicitRouteReloadKey.value === targetKey) {
+      explicitRouteReloadKey.value = ''
     }
   }
 }
@@ -231,6 +268,9 @@ async function confirmAction() {
 
   const actionName = action.kind === 'delete' ? 'delete' : action.actionMeta.action
   const successMessage = actionSuccessMessage(actionName)
+  const mutationStartState = { ...appliedState.value }
+  const mutationStartStateKey = stateKey(mutationStartState)
+  const mutationStartPageItemCount = list.value.length
 
   runningActionKey.value = buildActionKey(action.item.id, actionName)
   feedback.value = null
@@ -242,11 +282,23 @@ async function confirmAction() {
       await runUserProductStatusAction(action.item.id, action.actionMeta.action)
     }
 
-    try {
-      await loadList(appliedState.value, { throwOnError: true })
-      if (isViewActive.value) feedback.value = { tone: 'success', message: successMessage }
-    } catch {
-      if (isViewActive.value) feedback.value = { tone: 'warning', message: `${successMessage.slice(0, -1)}，但列表刷新失败，请手动重新加载。` }
+    if (!isViewActive.value || stateKey(appliedState.value) !== mutationStartStateKey) return
+
+    const shouldShrinkPage = actionRemovesItemFromState(action, mutationStartState)
+      && mutationStartPageItemCount === 1
+      && mutationStartState.page > 1
+    const refreshState = shouldShrinkPage
+      ? { ...mutationStartState, page: mutationStartState.page - 1 }
+      : mutationStartState
+    const outcome = shouldShrinkPage
+      ? await replaceAndReloadList(refreshState)
+      : await loadList(refreshState)
+
+    if (!isViewActive.value) return
+    if (outcome === 'loaded') {
+      feedback.value = { tone: 'success', message: successMessage }
+    } else if (outcome === 'failed') {
+      feedback.value = { tone: 'warning', message: `${successMessage.slice(0, -1)}，但列表刷新失败，请手动重新加载。` }
     }
   } catch {
     if (isViewActive.value) feedback.value = { tone: 'error', message: actionFailureMessage(actionName) }
@@ -277,6 +329,7 @@ watch(
 
     filterDraft.status = state.status
     filterDraft.pageSize = state.pageSize
+    if (stateKey(state) === explicitRouteReloadKey.value) return
     await loadList(state)
   },
   { immediate: true },
