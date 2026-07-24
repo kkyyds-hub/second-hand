@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Loader2, Package, PackagePlus, PackageSearch } from 'lucide-vue-next'
 import SellerProductActionDialog from '@/pages/seller/components/SellerProductActionDialog.vue'
@@ -27,14 +27,13 @@ type PendingAction =
 
 const route = useRoute()
 const router = useRouter()
-const validStatuses = new Set(['under_review', 'on_sale', 'off_shelf', 'sold', 'rejected'])
+const validStatuses = new Set(['under_review', 'on_sale', 'off_shelf', 'sold'])
 const validPageSizes = new Set([10, 20, 50])
 const statusOptions = [
   { value: '', label: '全部' },
   { value: 'on_sale', label: '在售' },
   { value: 'under_review', label: '审核中' },
   { value: 'off_shelf', label: '已下架' },
-  { value: 'rejected', label: '审核驳回' },
   { value: 'sold', label: '已售出' },
 ]
 
@@ -43,10 +42,11 @@ const hasLoadedOnce = ref(false)
 const listError = ref('')
 const pageData = ref(createEmptyUserProductPage())
 const requestSequence = ref(0)
-const skipNextLoadForKey = ref('')
+const isViewActive = ref(true)
 const runningActionKey = ref('')
 const pendingAction = ref<PendingAction | null>(null)
 const feedback = ref<{ tone: 'success' | 'warning' | 'error'; message: string } | null>(null)
+const routeNotice = ref('')
 const filterDraft = reactive({ status: '', pageSize: 10 })
 
 const appliedState = computed(() => readAppliedState(route.query))
@@ -163,26 +163,24 @@ async function loadList(state: AppliedListState, options?: { throwOnError?: bool
 
   try {
     const nextPageData = await getUserProductList(state)
-    if (sequence !== requestSequence.value) return false
+    if (!isViewActive.value || sequence !== requestSequence.value) return false
 
-    pageData.value = nextPageData
     const lastPage = Math.max(1, Math.ceil(nextPageData.total / state.pageSize))
-    const resolvedPage = Math.min(Math.max(nextPageData.page, 1), lastPage)
-    const resolvedState = { ...state, page: resolvedPage }
-
-    if (stateKey(resolvedState) !== stateKey(state)) {
-      skipNextLoadForKey.value = stateKey(resolvedState)
-      await router.replace({ query: buildQuery(resolvedState) })
+    if (state.page > lastPage) {
+      await router.replace({ query: buildQuery({ ...state, page: lastPage }) })
+      return false
     }
 
+    if (!isViewActive.value || sequence !== requestSequence.value || stateKey(state) !== stateKey(appliedState.value)) return false
+    pageData.value = nextPageData
     return true
   } catch (error) {
-    if (sequence !== requestSequence.value) return false
+    if (!isViewActive.value || sequence !== requestSequence.value) return false
     if (options?.throwOnError) throw error
     listError.value = '商品列表暂时无法加载，请稍后重试。'
     return false
   } finally {
-    if (sequence === requestSequence.value) {
+    if (isViewActive.value && sequence === requestSequence.value) {
       loading.value = false
       hasLoadedOnce.value = true
     }
@@ -233,9 +231,6 @@ async function confirmAction() {
 
   const actionName = action.kind === 'delete' ? 'delete' : action.actionMeta.action
   const successMessage = actionSuccessMessage(actionName)
-  const refreshState = action.kind === 'delete' && list.value.length === 1 && appliedState.value.page > 1
-    ? { ...appliedState.value, page: appliedState.value.page - 1 }
-    : appliedState.value
 
   runningActionKey.value = buildActionKey(action.item.id, actionName)
   feedback.value = null
@@ -248,22 +243,32 @@ async function confirmAction() {
     }
 
     try {
-      await loadList(refreshState, { throwOnError: true })
-      feedback.value = { tone: 'success', message: successMessage }
+      await loadList(appliedState.value, { throwOnError: true })
+      if (isViewActive.value) feedback.value = { tone: 'success', message: successMessage }
     } catch {
-      feedback.value = { tone: 'warning', message: `${successMessage.slice(0, -1)}，但列表刷新失败，请手动重新加载。` }
+      if (isViewActive.value) feedback.value = { tone: 'warning', message: `${successMessage.slice(0, -1)}，但列表刷新失败，请手动重新加载。` }
     }
   } catch {
-    feedback.value = { tone: 'error', message: actionFailureMessage(actionName) }
+    if (isViewActive.value) feedback.value = { tone: 'error', message: actionFailureMessage(actionName) }
   } finally {
-    runningActionKey.value = ''
-    pendingAction.value = null
+    if (isViewActive.value) {
+      runningActionKey.value = ''
+      pendingAction.value = null
+    }
   }
 }
 
 watch(
   () => route.fullPath,
   async () => {
+    const hasCreatedNotice = readQueryValue(route.query.created) === '1'
+    const hasDeletedNotice = readQueryValue(route.query.deleted) === '1'
+    if (hasCreatedNotice) {
+      routeNotice.value = '商品已创建。'
+    } else if (hasDeletedNotice) {
+      routeNotice.value = '商品已删除。'
+    }
+
     const state = readAppliedState(route.query)
     if (!isCanonicalQuery(route.query, state)) {
       await router.replace({ query: buildQuery(state) })
@@ -272,16 +277,15 @@ watch(
 
     filterDraft.status = state.status
     filterDraft.pageSize = state.pageSize
-    const key = stateKey(state)
-    if (skipNextLoadForKey.value === key) {
-      skipNextLoadForKey.value = ''
-      return
-    }
-
     await loadList(state)
   },
   { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  isViewActive.value = false
+  requestSequence.value += 1
+})
 </script>
 
 <template>
@@ -311,6 +315,12 @@ watch(
       <span class="notice-dot" :class="feedback.tone === 'success' ? 'bg-emerald-500' : feedback.tone === 'warning' ? 'bg-orange-500' : 'bg-red-500'"></span>
       <span class="flex-1">{{ feedback.message }}</span>
       <button class="text-[12px] font-medium" type="button" :disabled="isMutating" @click="feedback = null">关闭</button>
+    </section>
+
+    <section v-if="routeNotice" class="notice-banner notice-banner-success">
+      <span class="notice-dot bg-emerald-500"></span>
+      <span class="flex-1">{{ routeNotice }}</span>
+      <button class="text-[12px] font-medium" type="button" @click="routeNotice = ''">关闭</button>
     </section>
 
     <section class="toolbar">
@@ -389,7 +399,7 @@ watch(
               </div>
               <div class="flex shrink-0 flex-wrap gap-2 border-t border-gray-100 pt-4 lg:max-w-[360px] lg:justify-end lg:border-t-0 lg:pt-0">
                 <router-link v-if="item.id !== null" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}`">查看详情</router-link>
-                <router-link v-if="item.id !== null" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}/edit`">编辑</router-link>
+                <router-link v-if="item.id !== null && item.status !== 'sold'" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}/edit`">编辑</router-link>
                 <button
                   v-for="actionMeta in readStatusActions(item.status)"
                   :key="`${item.id}-${actionMeta.action}`"

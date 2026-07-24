@@ -25,13 +25,13 @@ const primaryMetrics = computed(() => [
   { label: '全部商品', value: summary.value.totalProducts, icon: PackageOpen },
   { label: '在售商品', value: summary.value.onSaleProducts, icon: ShoppingBag },
   { label: '审核中', value: summary.value.underReviewProducts, icon: ClipboardList },
-  { label: '待处理订单', value: summary.value.pendingOrders, icon: PackageCheck },
+  { label: '待发货订单', value: summary.value.paidOrders, icon: PackageCheck },
   { label: '已完成订单', value: summary.value.completedOrders, icon: BadgeCheck },
 ])
 const secondaryMetrics = computed(() => [
   { label: '已下架', value: summary.value.offShelfProducts },
   { label: '已售出', value: summary.value.soldProducts },
-  { label: '已支付', value: summary.value.paidOrders },
+  { label: '待支付', value: summary.value.pendingOrders },
   { label: '已发货', value: summary.value.shippedOrders },
   { label: '已取消', value: summary.value.cancelledOrders },
 ])
@@ -43,10 +43,10 @@ const pendingItems = computed(() => [
         to: '/seller/products?status=under_review',
       }
     : null,
-  summary.value.pendingOrders > 0
+  summary.value.paidOrders > 0
     ? {
-        title: `${summary.value.pendingOrders} 个订单等待处理`,
-        description: '进入卖家订单查看待处理交易。',
+        title: `${summary.value.paidOrders} 个订单等待发货`,
+        description: '买家已完成支付，请及时处理物流信息。',
         to: '/orders/seller',
       }
     : null,
@@ -98,7 +98,10 @@ onMounted(() => {
       <ShoppingBag class="empty-state-icon" aria-hidden="true" />
       <h2 class="empty-state-title">当前账号尚未开通卖家功能</h2>
       <p class="empty-state-text">开通后即可发布闲置商品并管理交易进度。</p>
-      <router-link class="btn-primary mt-5" to="/">返回首页</router-link>
+      <div class="mt-5 flex flex-wrap justify-center gap-3">
+        <router-link class="btn-primary" to="/market">返回市场</router-link>
+        <router-link class="btn-default" to="/">返回首页</router-link>
+      </div>
     </section>
 
     <template v-else>
