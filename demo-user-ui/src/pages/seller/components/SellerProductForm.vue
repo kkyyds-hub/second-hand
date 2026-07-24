@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ImageOff } from 'lucide-vue-next'
 import SellerProductImageFields from '@/pages/seller/components/SellerProductImageFields.vue'
 import type { UserProductFormField, UserProductFormModel } from '@/pages/seller/user-product-form'
@@ -22,12 +22,15 @@ const emit = defineEmits<{
 }>()
 
 const previewImage = computed(() => props.model.imageUrls.map((url) => url.trim()).find(Boolean) || '')
+const previewImageFailed = ref(false)
 const previewTitle = computed(() => props.model.title.trim() || '商品标题')
 const previewCategory = computed(() => props.model.category.trim() || props.categoryLabel || '未填写分类')
 const previewPrice = computed(() => {
   const price = Number(props.model.price.trim())
   return Number.isFinite(price) && price > 0 ? `¥${price.toFixed(2)}` : '价格待填写'
 })
+
+watch(previewImage, () => { previewImageFailed.value = false })
 </script>
 
 <template>
@@ -71,15 +74,15 @@ const previewPrice = computed(() => {
         </div>
       </section>
 
-      <SellerProductImageFields v-model="model.imageUrls" :disabled="disabled" :error="errors.imageUrls" @blur="emit('blur', 'imageUrls')" />
+      <SellerProductImageFields v-model="model.imageUrls" :disabled="disabled" :error="errors.imageUrls" @blur="emit('blur', 'imageUrls')" @change="emit('change', 'imageUrls')" />
     </div>
 
     <aside class="section-panel lg:sticky lg:top-6">
       <div class="section-header section-header-plain"><div><h2 class="section-heading">实时商品预览</h2><p class="section-subtitle">预览仅使用当前填写的信息。</p></div></div>
       <div class="section-body space-y-4 pt-0">
         <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-          <img v-if="previewImage" :src="previewImage" :alt="previewTitle" class="h-full w-full object-contain" />
-          <div v-else class="flex flex-col items-center gap-2 text-[13px] text-gray-400"><ImageOff class="h-7 w-7" aria-hidden="true" /><span>暂无商品图片</span></div>
+          <img v-if="previewImage && !previewImageFailed" :src="previewImage" :alt="previewTitle" class="h-full w-full object-contain" @error="previewImageFailed = true" />
+          <div v-else class="flex flex-col items-center gap-2 text-[13px] text-gray-400"><ImageOff class="h-7 w-7" aria-hidden="true" /><span>{{ previewImage ? '图片无法加载' : '暂无商品图片' }}</span></div>
         </div>
         <div class="space-y-2">
           <p class="break-words text-[17px] font-semibold text-gray-900">{{ previewTitle }}</p>

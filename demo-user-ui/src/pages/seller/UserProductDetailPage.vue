@@ -32,7 +32,7 @@ const feedback = ref<Feedback | null>(null)
 const navigationNotice = ref('')
 let requestSequence = 0
 let active = true
-let noticeKey = ''
+let noticeOwnerPath = ''
 
 const productId = computed(() => {
   const text = typeof route.params.productId === 'string' ? route.params.productId.trim() : ''
@@ -98,38 +98,56 @@ function closeDialog() { if (!runningAction.value) pendingAction.value = null }
 
 async function confirmAction() {
   const action = pendingAction.value
-  const id = productId.value
-  if (!action || !id || runningAction.value) return
+  const actionProductId = productId.value
+  const actionRoutePath = route.path
+  if (!action || !actionProductId || runningAction.value) return
+  const isActionCurrent = () => active
+    && productId.value === actionProductId
+    && route.path === actionRoutePath
   try {
     runningAction.value = true
     feedback.value = null
     if (action.kind === 'delete') {
-      await deleteUserProduct(id)
-      if (active) await router.replace({ name: 'SellerProductList', query: { deleted: '1' } })
+      await deleteUserProduct(actionProductId)
+      if (!isActionCurrent()) return
+      await router.replace({ name: 'SellerProductList', query: { deleted: '1' } })
       return
     }
-    await runUserProductStatusAction(id, action.meta.action)
+    await runUserProductStatusAction(actionProductId, action.meta.action)
+    if (!isActionCurrent()) return
     pendingAction.value = null
     const refreshed = await loadDetail({ preserveDetail: true, suppressError: true })
-    if (!active) return
+    if (!isActionCurrent()) return
     feedback.value = refreshed
       ? { tone: 'success', message: successMessage(action.meta.action) }
       : { tone: 'warning', message: `${successMessage(action.meta.action).slice(0, -1)}，但最新详情加载失败，请重新加载。` }
   } catch (error: unknown) {
-    if (active) feedback.value = { tone: 'error', message: action.kind === 'delete' ? readError(error, '商品删除失败，请稍后重试。') : failureMessage(action.meta.action) }
+    if (isActionCurrent()) feedback.value = { tone: 'error', message: action.kind === 'delete' ? readError(error, '商品删除失败，请稍后重试。') : failureMessage(action.meta.action) }
   } finally {
     if (active) runningAction.value = false
   }
 }
 
-watch(productId, () => { void loadDetail() }, { immediate: true })
+watch(productId, () => {
+  pendingAction.value = null
+  feedback.value = null
+  loadError.value = ''
+  navigationNotice.value = ''
+  noticeOwnerPath = ''
+  void loadDetail()
+}, { immediate: true })
 watch(
   () => ({ created: route.query.created, edited: route.query.edited, path: route.path }),
   (value) => {
     const nextNotice = value.created === '1' ? '商品已发布并提交审核。' : value.edited === '1' ? '商品修改已保存并重新提交审核。' : ''
-    const key = `${value.path}:${nextNotice}`
-    if (!nextNotice || key === noticeKey) return
-    noticeKey = key
+    if (!nextNotice) {
+      if (noticeOwnerPath && noticeOwnerPath !== value.path) {
+        navigationNotice.value = ''
+        noticeOwnerPath = ''
+      }
+      return
+    }
+    noticeOwnerPath = value.path
     navigationNotice.value = nextNotice
     const query = { ...route.query }
     delete query.created

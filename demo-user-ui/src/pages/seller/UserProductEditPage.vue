@@ -84,19 +84,27 @@ async function loadProduct() {
 
 async function submitEditForm() {
   if (submitting.value || loading.value || !canEdit.value) return
-  const id = productId.value
-  if (!id) return
+  const submittingProductId = productId.value
+  if (!submittingProductId) return
   submitAttempted.value = true
   if (Object.keys(validationErrors.value).length) { focusFirstError(); return }
   if (userProductUpdateFingerprint(productForm) === originalFingerprint.value) { submitMessage.value = '商品信息尚未修改'; return }
+  const submittingRequestSequence = requestSequence
+  const isSubmittingProductCurrent = () => active
+    && productId.value === submittingProductId
+    && requestSequence === submittingRequestSequence
+    && route.name === 'SellerProductEdit'
   try {
     submitting.value = true
     submitMessage.value = ''
-    await updateUserProduct(id, normalizeUpdateUserProductInput(productForm))
-    await router.replace({ name: 'SellerProductDetail', params: { productId: id }, query: { edited: '1' } })
+    await updateUserProduct(submittingProductId, normalizeUpdateUserProductInput(productForm))
+    if (!isSubmittingProductCurrent()) return
+    await router.replace({ name: 'SellerProductDetail', params: { productId: submittingProductId }, query: { edited: '1' } })
   } catch (error: unknown) {
-    submitMessage.value = readError(error, '保存失败，请稍后重试。')
-  } finally { submitting.value = false }
+    if (isSubmittingProductCurrent()) submitMessage.value = readError(error, '保存失败，请稍后重试。')
+  } finally {
+    if (active) submitting.value = false
+  }
 }
 
 watch(productId, () => { void loadProduct() }, { immediate: true })

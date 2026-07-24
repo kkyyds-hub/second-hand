@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ImageOff, Plus, Trash2 } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
@@ -14,25 +14,51 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string[]]
   blur: []
+  change: []
 }>()
 
 const failedImageIndexes = ref(new Set<number>())
 const images = computed(() => props.modelValue)
 const primaryImageIndex = computed(() => images.value.findIndex((url) => Boolean(url.trim())))
+const localImageUpdates = ref<string[]>([])
+
+function imageSignature(value: string[]) { return JSON.stringify(value) }
+function emitImages(next: string[]) {
+  localImageUpdates.value = [...localImageUpdates.value, imageSignature(next)]
+  emit('update:modelValue', next)
+  emit('change')
+}
+
+watch(
+  () => props.modelValue,
+  (next) => {
+    const signature = imageSignature(next)
+    const localUpdateIndex = localImageUpdates.value.indexOf(signature)
+    if (localUpdateIndex >= 0) {
+      localImageUpdates.value = localImageUpdates.value.slice(localUpdateIndex + 1)
+      return
+    }
+    localImageUpdates.value = []
+    failedImageIndexes.value = new Set()
+  },
+)
 
 function updateImage(index: number, value: string) {
   const next = [...images.value]
   next[index] = value
-  emit('update:modelValue', next)
+  failedImageIndexes.value = new Set([...failedImageIndexes.value].filter((itemIndex) => itemIndex !== index))
+  emitImages(next)
 }
 
 function addImage() {
-  emit('update:modelValue', [...images.value, ''])
+  emitImages([...images.value, ''])
 }
 
 function removeImage(index: number) {
-  emit('update:modelValue', images.value.filter((_, itemIndex) => itemIndex !== index))
-  failedImageIndexes.value = new Set([...failedImageIndexes.value].filter((itemIndex) => itemIndex !== index))
+  failedImageIndexes.value = new Set([...failedImageIndexes.value]
+    .filter((itemIndex) => itemIndex !== index)
+    .map((itemIndex) => itemIndex > index ? itemIndex - 1 : itemIndex))
+  emitImages(images.value.filter((_, itemIndex) => itemIndex !== index))
 }
 
 function markImageFailed(index: number) {
@@ -66,8 +92,8 @@ function markImageFailed(index: number) {
                 :id="`seller-product-image-${index}`"
                 :value="url"
                 class="input-standard min-w-0 flex-1"
-                type="url"
-                maxlength="500"
+                type="text"
+                inputmode="url"
                 placeholder="https://example.com/product.jpg"
                 :disabled="disabled"
                 @input="updateImage(index, ($event.target as HTMLInputElement).value)"
