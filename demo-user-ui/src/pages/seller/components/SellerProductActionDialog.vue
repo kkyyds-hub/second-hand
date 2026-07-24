@@ -17,11 +17,46 @@ const props = withDefaults(defineProps<{
 const dialog = ref<HTMLElement | null>(null)
 const cancelButton = ref<HTMLButtonElement | null>(null)
 const previousActiveElement = ref<HTMLElement | null>(null)
+let isDocumentFocusGuardActive = false
 
 const emit = defineEmits<{
   close: []
   confirm: []
 }>()
+
+function focusPreferredDialogTarget() {
+  if (!props.open) return
+
+  if (props.loading) {
+    dialog.value?.focus()
+    return
+  }
+
+  cancelButton.value?.focus()
+}
+
+function handleDocumentFocusIn(event: FocusEvent) {
+  if (!props.open || !dialog.value) return
+
+  const target = event.target
+  if (target instanceof Node && dialog.value.contains(target)) return
+
+  focusPreferredDialogTarget()
+}
+
+function addDocumentFocusGuard() {
+  if (typeof document === 'undefined' || isDocumentFocusGuardActive) return
+
+  document.addEventListener('focusin', handleDocumentFocusIn)
+  isDocumentFocusGuardActive = true
+}
+
+function removeDocumentFocusGuard() {
+  if (typeof document === 'undefined' || !isDocumentFocusGuardActive) return
+
+  document.removeEventListener('focusin', handleDocumentFocusIn)
+  isDocumentFocusGuardActive = false
+}
 
 watch(() => props.open, async (open) => {
   if (open) {
@@ -29,14 +64,36 @@ watch(() => props.open, async (open) => {
       ? document.activeElement
       : null
     await nextTick()
-    cancelButton.value?.focus()
+    if (!props.open) return
+
+    addDocumentFocusGuard()
+    focusPreferredDialogTarget()
     return
   }
 
+  removeDocumentFocusGuard()
   const activeElement = previousActiveElement.value
-  previousActiveElement.value = null
   await nextTick()
-  activeElement?.focus()
+  if (activeElement?.isConnected) {
+    activeElement.focus()
+  }
+  if (previousActiveElement.value === activeElement) {
+    previousActiveElement.value = null
+  }
+})
+
+watch(() => props.loading, async (loading) => {
+  if (!props.open) return
+
+  await nextTick()
+  if (!props.open) return
+
+  if (loading) {
+    dialog.value?.focus()
+    return
+  }
+
+  cancelButton.value?.focus()
 })
 
 function close() {
@@ -53,12 +110,22 @@ function handleKeydown(event: KeyboardEvent) {
 
   if (event.key !== 'Tab') return
 
+  if (props.loading) {
+    event.preventDefault()
+    dialog.value?.focus()
+    return
+  }
+
   const focusableElements = Array.from(
     dialog.value?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [],
   ).filter((element) => !element.hasAttribute('disabled'))
   const firstElement = focusableElements[0]
   const lastElement = focusableElements[focusableElements.length - 1]
-  if (!firstElement || !lastElement) return
+  if (!firstElement || !lastElement) {
+    event.preventDefault()
+    dialog.value?.focus()
+    return
+  }
 
   if (event.shiftKey && document.activeElement === firstElement) {
     event.preventDefault()
@@ -70,7 +137,12 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 onBeforeUnmount(() => {
-  previousActiveElement.value?.focus()
+  removeDocumentFocusGuard()
+  const activeElement = previousActiveElement.value
+  previousActiveElement.value = null
+  if (activeElement?.isConnected) {
+    activeElement.focus()
+  }
 })
 </script>
 
@@ -87,6 +159,7 @@ onBeforeUnmount(() => {
       aria-modal="true"
       aria-labelledby="seller-product-action-dialog-title"
       aria-describedby="seller-product-action-dialog-description"
+      :aria-busy="loading"
       tabindex="-1"
       @keydown="handleKeydown"
     >
