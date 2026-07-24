@@ -29,14 +29,13 @@ export interface MarketProductSummary {
 export interface MarketProductDetail {
   id: number | null
   title: string
-  coverUrl: string
+  description: string
   price: number
   categoryName: string
-  sellerName: string
-  stock: number
-  soldCount: number
-  description: string
-  images: string[]
+  imageUrls: string[]
+  coverUrl: string
+  ownerId: number | null
+  createTime: string
 }
 
 export interface ReviewItem {
@@ -215,13 +214,38 @@ function normalizeMarketProductSummary(payload: unknown): MarketProductSummary {
 
 function normalizeMarketProductDetail(payload: unknown): MarketProductDetail {
   const source = isRecord(payload) ? payload : {}
-  const summary = normalizeMarketProductSummary(source)
-  const images = readFirstArray(source.images, source.imageList, source.gallery, source.pictures).map((item) => readFirstText(item)).filter(Boolean)
+  const rawImageUrls = readFirstArray(
+    source.imageUrls,
+    source.images,
+    source.imageList,
+    source.gallery,
+    source.pictures,
+  )
+    .map((item) => readFirstText(item))
+    .filter(Boolean)
+  const explicitCoverUrl = readFirstText(
+    source.coverUrl,
+    source.cover,
+    source.mainImage,
+    source.imageUrl,
+  )
+  const imageUrls = [explicitCoverUrl, ...rawImageUrls]
+    .filter(Boolean)
+    .filter((url, index, list) => list.indexOf(url) === index)
+  const id = readNonNegativeInt(-1, source.productId, source.id)
+  const ownerId = readNonNegativeInt(-1, source.ownerId)
+  const coverUrl = imageUrls[0] || ''
 
   return {
-    ...summary,
+    id: id >= 0 ? id : null,
+    title: readFirstText(source.title, source.productTitle, source.name) || '未命名商品',
     description: readFirstText(source.description, source.detail, source.content),
-    images,
+    price: normalizePrice(source.price, source.salePrice, source.currentPrice),
+    categoryName: readFirstText(source.categoryName, source.category),
+    imageUrls,
+    coverUrl,
+    ownerId: ownerId >= 0 ? ownerId : null,
+    createTime: readFirstText(source.createTime, source.createdAt),
   }
 }
 
