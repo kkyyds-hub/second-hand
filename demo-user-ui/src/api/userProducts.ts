@@ -377,12 +377,6 @@ export function getUserProductStatusActions(status: string): UserProductStatusAc
           description: '把审核中商品撤回到已下架。',
           tone: 'warning',
         },
-        {
-          action: 'off_shelf',
-          label: '下架',
-          description: '兼容入口：审核中商品也可直接下架。',
-          tone: 'warning',
-        },
       ]
     case 'off_shelf':
     case 'rejected':
@@ -392,12 +386,6 @@ export function getUserProductStatusActions(status: string): UserProductStatusAc
           label: '重新提交审核',
           description: '标准入口：下架商品提审。',
           tone: 'accent',
-        },
-        {
-          action: 'on_shelf',
-          label: '兼容提审(on-shelf)',
-          description: '兼容入口：语义等价于重新提交审核，不是直接在售。',
-          tone: 'neutral',
         },
       ]
     default:
