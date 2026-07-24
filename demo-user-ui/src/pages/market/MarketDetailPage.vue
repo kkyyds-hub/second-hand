@@ -200,11 +200,13 @@ async function toggleFavorite() {
       await unfavoriteProduct(id)
       if (sequence !== requestSequence) return
       favoriteStatus.value = false
+      favoriteStatusSyncError.value = ''
       favoriteSuccessMessage.value = '已取消收藏该商品。'
     } else {
       await favoriteProduct(id)
       if (sequence !== requestSequence) return
       favoriteStatus.value = true
+      favoriteStatusSyncError.value = ''
       favoriteSuccessMessage.value = '已收藏该商品。'
     }
   } catch {
@@ -457,7 +459,8 @@ watch(productId, () => {
 
 <style scoped>
 .market-detail-page {
-  padding: 1.5rem 1rem;
+  padding-top: 1.5rem;
+  padding-inline: 1rem;
 }
 
 .market-detail-hero,

@@ -214,7 +214,7 @@ function normalizeMarketProductSummary(payload: unknown): MarketProductSummary {
 
 function normalizeMarketProductDetail(payload: unknown): MarketProductDetail {
   const source = isRecord(payload) ? payload : {}
-  const imageUrls = readFirstArray(
+  const rawImageUrls = readFirstArray(
     source.imageUrls,
     source.images,
     source.imageList,
@@ -223,15 +223,18 @@ function normalizeMarketProductDetail(payload: unknown): MarketProductDetail {
   )
     .map((item) => readFirstText(item))
     .filter(Boolean)
-  const id = readNonNegativeInt(-1, source.productId, source.id)
-  const ownerId = readNonNegativeInt(-1, source.ownerId)
-  const coverUrl = readFirstText(
+  const explicitCoverUrl = readFirstText(
     source.coverUrl,
     source.cover,
     source.mainImage,
     source.imageUrl,
-    imageUrls[0],
   )
+  const imageUrls = [explicitCoverUrl, ...rawImageUrls]
+    .filter(Boolean)
+    .filter((url, index, list) => list.indexOf(url) === index)
+  const id = readNonNegativeInt(-1, source.productId, source.id)
+  const ownerId = readNonNegativeInt(-1, source.ownerId)
+  const coverUrl = imageUrls[0] || ''
 
   return {
     id: id >= 0 ? id : null,
