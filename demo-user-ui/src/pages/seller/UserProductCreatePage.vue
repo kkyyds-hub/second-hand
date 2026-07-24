@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { createUserProduct } from '@/api/userProducts'
 import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
@@ -13,6 +13,7 @@ import {
 } from '@/pages/seller/user-product-form'
 import { isSellerUser, readCurrentUser } from '@/utils/request'
 
+const route = useRoute()
 const router = useRouter()
 const sellerEnabled = computed(() => isSellerUser(readCurrentUser()))
 const productForm = reactive<UserProductFormModel>(createEmptyUserProductFormModel())
@@ -20,6 +21,8 @@ const submitting = ref(false)
 const submitAttempted = ref(false)
 const touched = reactive<Partial<Record<UserProductFormField, boolean>>>({})
 const submitMessage = ref('')
+let active = true
+let createSequence = 0
 
 const validationErrors = computed(() => collectUserProductValidationErrors(productForm))
 const visibleErrors = computed(() => Object.fromEntries(Object.entries(validationErrors.value).filter(([field]) => submitAttempted.value || touched[field as UserProductFormField])) as Partial<Record<UserProductFormField, string>>)
@@ -37,19 +40,33 @@ async function submitCreateForm() {
   if (submitting.value) return
   submitAttempted.value = true
   if (Object.keys(validationErrors.value).length) { focusFirstError(); return }
+  const submittingSequence = ++createSequence
+  const submittingRoutePath = route.path
+  const isCreateRequestCurrent = () => active
+    && createSequence === submittingSequence
+    && route.name === 'SellerProductCreate'
+    && route.path === submittingRoutePath
   try {
     submitting.value = true
     submitMessage.value = ''
     const created = await createUserProduct(normalizeCreateUserProductInput(productForm))
+    if (!isCreateRequestCurrent()) return
     if (created.id !== null) {
       await router.replace({ name: 'SellerProductDetail', params: { productId: created.id }, query: { created: '1' } })
       return
     }
     await router.replace({ name: 'SellerProductList', query: { created: '1' } })
   } catch (error: unknown) {
-    submitMessage.value = readError(error)
-  } finally { submitting.value = false }
+    if (isCreateRequestCurrent()) submitMessage.value = readError(error)
+  } finally {
+    if (active && createSequence === submittingSequence) submitting.value = false
+  }
 }
+
+onBeforeUnmount(() => {
+  active = false
+  createSequence += 1
+})
 </script>
 
 <template>
