@@ -20,6 +20,7 @@ import com.demo.mapper.ProductMapper;
 import com.demo.result.PageResult;
 import com.demo.security.InputSecurityGuard;
 import com.demo.service.CreditService;
+import com.demo.service.AddressService;
 import com.demo.service.OrderService;
 import com.demo.service.ProductAuditService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,6 +97,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductMapper productMapper;
+
+    @Autowired
+    private AddressService addressService;
 
     @Autowired
     private CreditService creditService;
@@ -388,8 +392,11 @@ public class OrderServiceImpl implements OrderService {
     public CreateOrderResponse createOrder(CreateOrderRequest request, Long currentUserId) {
 
         // 0) 基础参数（一般由 @Validated 做，这里只做关键兜底）
-        if (request == null || request.getProductId() == null) {
+        if (request == null || request.getProductId() == null || request.getProductId() <= 0) {
             throw new BusinessException("商品 ID 不能为空");
+        }
+        if (request.getAddressId() == null || request.getAddressId() <= 0) {
+            throw new BusinessException("收货地址不能为空");
         }
 
         Long productId = request.getProductId();
@@ -413,6 +420,9 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("不能购买自己发布的商品");
         }
 
+        String shippingAddress = buildShippingAddressSnapshot(
+                addressService.getAddressById(currentUserId, request.getAddressId()));
+
         // 3) 原子占用商品（防重复购买的核心）：抢到=1，抢不到=0
         int rows = orderMapper.markProductSoldIfOnSale(productId);
         if (rows == 0) {
@@ -426,7 +436,7 @@ public class OrderServiceImpl implements OrderService {
         order.setSellerId(sellerId);
         order.setTotalAmount(product.getPrice()); // Day3 固定 quantity=1
         order.setStatus(OrderStatus.PENDING.getDbValue()); // 与你项目的 dbValue 对齐（如有枚举就用枚举）
-        order.setShippingAddress(request.getShippingAddress());
+        order.setShippingAddress(shippingAddress);
         // shippingCompany / trackingNo / shippingRemark 默认 null 即可（你的 insertOrder
 
         int inserted = orderMapper.insertOrder(order);
@@ -498,6 +508,35 @@ public class OrderServiceImpl implements OrderService {
         resp.setTotalAmount(order.getTotalAmount());
         resp.setCreateTime(LocalDateTime.now());
         return resp;
+    }
+
+    private String buildShippingAddressSnapshot(com.demo.vo.address.AddressVO address) {
+        if (address == null) {
+            throw new BusinessException("地址不存在或无权查看该地址");
+        }
+
+        String snapshot = String.join(" ",
+                requireAddressPart("收货人", address.getReceiverName()),
+                requireAddressPart("手机号", address.getMobile()),
+                requireAddressPart("省", address.getProvinceName()),
+                requireAddressPart("市", address.getCityName()),
+                requireAddressPart("区", address.getDistrictName()),
+                requireAddressPart("详细地址", address.getDetailAddress()));
+        if (snapshot.length() > 1000) {
+            throw new BusinessException("收货地址长度超过限制");
+        }
+        return snapshot;
+    }
+
+    private String requireAddressPart(String label, String value) {
+        if (value == null) {
+            throw new BusinessException("地址数据不完整：缺少" + label);
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        if (normalized.isEmpty()) {
+            throw new BusinessException("地址数据不完整：缺少" + label);
+        }
+        return normalized;
     }
 
     /**
@@ -1154,4 +1193,3 @@ public class OrderServiceImpl implements OrderService {
         PageHelper.startPage(page, size);
     }
 }
-

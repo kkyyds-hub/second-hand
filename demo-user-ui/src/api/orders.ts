@@ -79,7 +79,7 @@ export interface SellerOrderLogistics {
 
 export interface CreateBuyerOrderInput {
   productId: number | string
-  shippingAddress: string
+  addressId: number | string
 }
 
 export interface CreateBuyerOrderResult {
@@ -358,21 +358,11 @@ function normalizeOrderDetail(payload: unknown): BuyerOrderDetail {
 
 function normalizeCreateOrderInput(input: CreateBuyerOrderInput) {
   const productId = normalizeOrderId(input.productId, '商品 ID 无效，无法提交下单。')
-  const shippingAddress = readFirstText(input.shippingAddress)
+  const addressId = normalizeOrderId(input.addressId, '收货地址无效，无法提交下单。')
 
-  if (shippingAddress.length < 5 || shippingAddress.length > 200) {
-    throw new Error('收货地址长度需在 5~200 个字符之间。')
-  }
-
-  /**
-   * 后端合同当前明确 quantity 固定为 1：
-   * 1) 避免前端误传多件导致 400；
-   * 2) 页面层只维护“是否下单”这一最小写链路状态，不引入数量编辑歧义。
-   */
   return {
     productId,
-    shippingAddress,
-    quantity: 1,
+    addressId,
   }
 }
 

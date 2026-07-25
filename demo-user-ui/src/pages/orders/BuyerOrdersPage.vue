@@ -2,12 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ChevronLeft, ChevronRight, Loader2, PackageSearch } from 'lucide-vue-next'
 import {
-  createBuyerOrder,
   createEmptyBuyerOrderPage,
   getBuyerOrderList,
   getBuyerOrderStatusMeta,
   type BuyerOrderSummary,
-  type CreateBuyerOrderResult,
 } from '@/api/orders'
 
 const loading = ref(false)
@@ -39,44 +37,6 @@ const hasPrevPage = computed(() => pagination.page > 1)
 const hasNextPage = computed(() => pagination.page < totalPages.value)
 const hasEmptyState = computed(() => !loading.value && hasLoadedOnce.value && !errorMessage.value && list.value.length === 0)
 
-const createSubmitting = ref(false)
-const createErrorMessage = ref('')
-const createSuccessMessage = ref('')
-const createdOrderId = ref<number | null>(null)
-
-const createForm = reactive({
-  productId: '',
-  shippingAddress: '',
-})
-
-const canSubmitCreate = computed(() => {
-  const productId = readPositiveProductId(createForm.productId)
-  const shippingAddress = readShippingAddress(createForm.shippingAddress)
-  return !createSubmitting.value && productId !== null && shippingAddress.length >= 5 && shippingAddress.length <= 200
-})
-
-function readPositiveProductId(value: unknown) {
-  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
-    return value
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.trim()
-    if (/^\d+$/.test(normalized)) {
-      const parsed = Number(normalized)
-      if (parsed > 0) {
-        return parsed
-      }
-    }
-  }
-
-  return null
-}
-
-function readShippingAddress(value: string) {
-  return value.trim()
-}
-
 function readErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
     return error.message
@@ -101,84 +61,6 @@ function readStatusChipClass(status: string) {
   }
 
   return 'chip chip-neutral'
-}
-
-function clearCreateMessages() {
-  if (createSubmitting.value) {
-    return
-  }
-
-  createErrorMessage.value = ''
-  createSuccessMessage.value = ''
-  createdOrderId.value = null
-}
-
-function readCreateValidationError() {
-  if (readPositiveProductId(createForm.productId) === null) {
-    return '请输入有效的商品 ID。'
-  }
-
-  const shippingAddress = readShippingAddress(createForm.shippingAddress)
-  if (shippingAddress.length < 5 || shippingAddress.length > 200) {
-    return '收货地址长度需在 5~200 个字符之间。'
-  }
-
-  return ''
-}
-
-function readCreateSuccessMessage(result: CreateBuyerOrderResult) {
-  const orderNo = result.orderNo || '-'
-  const statusLabel = result.statusLabel || '待确认'
-  return `下单成功，订单号 ${orderNo}，当前状态：${statusLabel}。`
-}
-
-async function submitCreateOrder() {
-  if (createSubmitting.value) {
-    return
-  }
-
-  const validationError = readCreateValidationError()
-  if (validationError) {
-    createErrorMessage.value = validationError
-    createSuccessMessage.value = ''
-    createdOrderId.value = null
-    return
-  }
-
-  const productId = readPositiveProductId(createForm.productId)
-  if (productId === null) {
-    createErrorMessage.value = '请输入有效的商品 ID。'
-    return
-  }
-
-  try {
-    createSubmitting.value = true
-    createErrorMessage.value = ''
-    createSuccessMessage.value = ''
-    createdOrderId.value = null
-
-    const result = await createBuyerOrder({
-      productId,
-      shippingAddress: readShippingAddress(createForm.shippingAddress),
-    })
-
-    createSuccessMessage.value = readCreateSuccessMessage(result)
-    createdOrderId.value = result.orderId
-
-    /**
-     * create 成功后主动刷新列表：
-     * - 让用户能在同页看到新订单读路径；
-     * - 只做“代码层状态同步”，不在本线程宣称 runtime 验证结果。
-     */
-    pagination.page = 1
-    await loadList()
-  } catch (error: unknown) {
-    createErrorMessage.value = readErrorMessage(error)
-    createSuccessMessage.value = ''
-    createdOrderId.value = null
-  } finally {
-    createSubmitting.value = false
-  }
 }
 
 async function loadList() {
@@ -239,65 +121,9 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">订单</p>
           <h1 class="page-title">我的买家订单</h1>
-          <p class="page-desc">Day05 Package-2 先补买家下单 create，再在详情页接支付 pay / mock-pay 演示辅助。</p>
+          <p class="page-desc">查看已创建的买家订单，并按状态筛选和进入订单详情。</p>
         </div>
       </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="section-header">
-        <div>
-          <h2 class="section-heading">快捷下单（create）</h2>
-          <p class="section-subtitle">当前包只接入 `POST /user/orders` 最小写链路，数量固定 1，由后端状态机判定可下单性。</p>
-        </div>
-      </div>
-      <form class="section-body space-y-4" @submit.prevent="submitCreateOrder">
-        <div v-if="createErrorMessage" class="notice-banner notice-banner-danger">
-          <span class="notice-dot bg-red-500"></span>
-          <span>{{ createErrorMessage }}</span>
-        </div>
-        <div v-if="createSuccessMessage" class="notice-banner notice-banner-success">
-          <span class="notice-dot bg-emerald-500"></span>
-          <span>{{ createSuccessMessage }}</span>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div>
-            <label class="form-label" for="buyer-create-product-id">商品 ID</label>
-            <input
-              id="buyer-create-product-id"
-              v-model="createForm.productId"
-              class="input-standard"
-              type="text"
-              inputmode="numeric"
-              placeholder="例如 10001"
-              :disabled="createSubmitting"
-              @input="clearCreateMessages"
-            />
-          </div>
-          <div>
-            <label class="form-label" for="buyer-create-shipping-address">收货地址</label>
-            <input
-              id="buyer-create-shipping-address"
-              v-model="createForm.shippingAddress"
-              class="input-standard"
-              type="text"
-              maxlength="200"
-              placeholder="请填写完整收货地址（5~200 字）"
-              :disabled="createSubmitting"
-              @input="clearCreateMessages"
-            />
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-          <button class="btn-primary" type="submit" :disabled="!canSubmitCreate">
-            <Loader2 v-if="createSubmitting" class="h-4 w-4 animate-spin" />
-            <span>{{ createSubmitting ? '下单中...' : '提交下单' }}</span>
-          </button>
-          <router-link v-if="createdOrderId !== null" class="btn-default" :to="`/orders/buyer/${createdOrderId}`">查看新订单</router-link>
-        </div>
-      </form>
     </section>
 
     <section class="toolbar">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { createMyAddress } from '@/api/address'
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/pages/address-form'
 
 const router = useRouter()
+const route = useRoute()
 const submitting = ref(false)
 const submitStatus = ref<'idle' | 'success' | 'error'>('idle')
 const submitMessage = ref('')
@@ -26,6 +27,11 @@ const validationErrors = computed<Partial<Record<AddressFormField, string>>>(() 
 
 const hasValidationErrors = computed(() => Object.keys(validationErrors.value).length > 0)
 const canSubmit = computed(() => !submitting.value && !hasValidationErrors.value)
+const checkoutRedirect = computed(() => {
+  const redirect = route.query.redirect
+  const value = Array.isArray(redirect) ? redirect[0] : redirect
+  return typeof value === 'string' && /^\/checkout\/[1-9]\d*$/.test(value) ? value : ''
+})
 
 function clearSubmitStatus() {
   if (submitting.value || submitStatus.value === 'idle') {
@@ -67,8 +73,8 @@ async function submitCreateForm() {
     await createMyAddress(normalizedForm.value)
 
     submitStatus.value = 'success'
-    submitMessage.value = '地址新增成功，正在返回地址列表...'
-    await router.replace({
+    submitMessage.value = checkoutRedirect.value ? '地址新增成功，正在返回确认订单...' : '地址新增成功，正在返回地址列表...'
+    await router.replace(checkoutRedirect.value || {
       name: 'AccountAddressList',
       query: { created: '1' },
     })

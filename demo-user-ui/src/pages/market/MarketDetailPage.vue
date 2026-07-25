@@ -13,9 +13,11 @@ import { favoriteProduct, getFavoriteStatus, unfavoriteProduct } from '@/api/fav
 import FavoriteToggleButton from '@/pages/market/components/FavoriteToggleButton.vue'
 import ProductImageGallery from '@/pages/market/components/ProductImageGallery.vue'
 import ProductReviewList from '@/pages/market/components/ProductReviewList.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { readCurrentUser } from '@/utils/request'
 
 const route = useRoute()
+const router = useRouter()
 const detailLoading = ref(false)
 const reviewLoading = ref(false)
 const favoriteLoading = ref(false)
@@ -78,6 +80,10 @@ function readEvidenceUrls(value: string) {
 
 const productId = computed(() => readProductId(route.params.productId))
 const invalidProductId = computed(() => productId.value === null)
+const currentUser = computed(() => readCurrentUser())
+const isOwnProduct = computed(() => {
+  return detail.value?.ownerId !== null && currentUser.value?.id !== null && detail.value?.ownerId === currentUser.value?.id
+})
 const canSubmitReview = computed(() => {
   return Boolean(
     productId.value !== null &&
@@ -184,6 +190,13 @@ async function loadProduct() {
 
 async function reloadDetail() {
   await loadProduct()
+}
+
+function startCheckout() {
+  if (productId.value === null || !detail.value || isOwnProduct.value) {
+    return
+  }
+  void router.push(`/checkout/${productId.value}`)
 }
 
 async function toggleFavorite() {
@@ -358,6 +371,10 @@ watch(productId, () => {
             <div v-if="favoriteSuccessMessage" class="notice-banner notice-banner-success mt-5">{{ favoriteSuccessMessage }}</div>
             <div v-if="favoriteErrorMessage" class="notice-banner notice-banner-danger mt-5">{{ favoriteErrorMessage }}</div>
             <div v-if="favoriteStatusSyncError" class="notice-banner notice-banner-warning mt-5">{{ favoriteStatusSyncError }}</div>
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <button class="btn-primary" type="button" :disabled="isOwnProduct" @click="startCheckout">立即购买</button>
+              <p v-if="isOwnProduct" class="text-[13px] text-amber-700">不能购买自己发布的商品</p>
+            </div>
             <div class="mt-8 border-t border-gray-100 pt-6">
               <h2 class="text-[15px] font-semibold text-gray-900">商品描述</h2>
               <p class="mt-3 whitespace-pre-line break-words text-[14px] leading-7 text-gray-700">{{ detail.description || '该商品暂未提供详细描述。' }}</p>

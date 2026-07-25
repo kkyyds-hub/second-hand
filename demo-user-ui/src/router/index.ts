@@ -210,6 +210,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'checkout/:productId',
+          name: 'BuyerCheckout',
+          component: () => import('@/pages/orders/BuyerCheckoutPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'favorites',
           name: 'FavoriteList',
           component: () => import('@/pages/market/FavoriteListPage.vue'),
