@@ -65,9 +65,9 @@
     <insert id="insertOrderItem">
         <include refid="bindStatus"/>
         INSERT INTO order_items (
-        order_id, product_id, price, quantity, create_time, update_time
+        order_id, product_id, price, quantity, create_time
         ) VALUES (
-        #{orderId}, #{productId}, #{price}, #{quantity}, NOW(), NOW()
+        #{orderId}, #{productId}, #{price}, #{quantity}, NOW()
         )
     </insert>
 
