@@ -23,6 +23,7 @@ const touched = reactive<Partial<Record<UserProductFormField, boolean>>>({})
 const submitMessage = ref('')
 let active = true
 let createSequence = 0
+let createRequestInFlight = false
 
 const validationErrors = computed(() => collectUserProductValidationErrors(productForm))
 const visibleErrors = computed(() => Object.fromEntries(Object.entries(validationErrors.value).filter(([field]) => submitAttempted.value || touched[field as UserProductFormField])) as Partial<Record<UserProductFormField, string>>)
@@ -37,9 +38,11 @@ function focusFirstError() {
 function readError(error: unknown) { return error instanceof Error && error.message.trim() ? error.message : '发布失败，请稍后重试。' }
 
 async function submitCreateForm() {
-  if (submitting.value) return
+  if (createRequestInFlight || submitting.value) return
   submitAttempted.value = true
   if (Object.keys(validationErrors.value).length) { focusFirstError(); return }
+  createRequestInFlight = true
+  submitting.value = true
   const submittingSequence = ++createSequence
   const submittingRoutePath = route.path
   const isCreateRequestCurrent = () => active
@@ -47,9 +50,9 @@ async function submitCreateForm() {
     && route.name === 'SellerProductCreate'
     && route.path === submittingRoutePath
   try {
-    submitting.value = true
     submitMessage.value = ''
-    const created = await createUserProduct(normalizeCreateUserProductInput(productForm))
+    const payload = normalizeCreateUserProductInput(productForm)
+    const created = await createUserProduct(payload)
     if (!isCreateRequestCurrent()) return
     if (created.id !== null) {
       await router.replace({ name: 'SellerProductDetail', params: { productId: created.id }, query: { created: '1' } })
@@ -59,6 +62,7 @@ async function submitCreateForm() {
   } catch (error: unknown) {
     if (isCreateRequestCurrent()) submitMessage.value = readError(error)
   } finally {
+    createRequestInFlight = false
     if (active && createSequence === submittingSequence) submitting.value = false
   }
 }
