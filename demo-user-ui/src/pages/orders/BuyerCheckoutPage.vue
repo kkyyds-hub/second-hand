@@ -42,7 +42,16 @@ const productId = computed(() => readProductId(route.params.productId))
 const invalidProductId = computed(() => productId.value === null)
 const currentUser = computed(() => readCurrentUser())
 const isOwnProduct = computed(() => {
-  return product.value?.ownerId !== null && currentUser.value?.id !== null && product.value?.ownerId === currentUser.value?.id
+  const ownerId = product.value?.ownerId
+  const currentUserId = currentUser.value?.id
+
+  return typeof ownerId === 'number'
+    && Number.isSafeInteger(ownerId)
+    && ownerId > 0
+    && typeof currentUserId === 'number'
+    && Number.isSafeInteger(currentUserId)
+    && currentUserId > 0
+    && ownerId === currentUserId
 })
 const selectedAddress = computed(() => addresses.value.find((item) => item.id === selectedAddressId.value) ?? null)
 const hasAddress = computed(() => addresses.value.some((item) => item.id !== null && item.id > 0))
@@ -103,6 +112,7 @@ async function loadProduct(id: number, sequence: number) {
   } catch (error: unknown) {
     if (!isRequestCurrent(sequence, id)) return
     productError.value = readErrorMessage(error, '商品详情暂时无法加载，请稍后重试。')
+    productLoading.value = false
     await focusProductError(sequence, id)
   } finally {
     if (isRequestCurrent(sequence, id)) productLoading.value = false
@@ -121,6 +131,7 @@ async function loadAddresses(id: number, sequence: number) {
   } catch (error: unknown) {
     if (!isRequestCurrent(sequence, id)) return
     addressError.value = readErrorMessage(error, '地址列表暂时无法加载，请稍后重试。')
+    addressLoading.value = false
     await focusAddressError(sequence, id)
   } finally {
     if (isRequestCurrent(sequence, id)) addressLoading.value = false
