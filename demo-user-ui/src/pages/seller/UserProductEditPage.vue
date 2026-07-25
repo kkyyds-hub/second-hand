@@ -7,6 +7,7 @@ import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
 import {
   collectUserProductValidationErrors,
   createEmptyUserProductFormModel,
+  findFirstOverlongUserProductImageIndex,
   normalizeUpdateUserProductInput,
   toUserProductFormModel,
   userProductUpdateFingerprint,
@@ -30,6 +31,7 @@ const submitAttempted = ref(false)
 const touched = reactive<Partial<Record<UserProductFormField, boolean>>>({})
 let requestSequence = 0
 let active = true
+let editRequestInFlight = false
 
 const productId = computed(() => {
   const value = route.params.productId
@@ -54,9 +56,20 @@ function readError(error: unknown, fallback: string) { return error instanceof E
 function markTouched(field: UserProductFormField) { touched[field] = true }
 function clearSubmitMessage() { if (!submitting.value) submitMessage.value = '' }
 function focusFirstError() {
-  const ids: Record<UserProductFormField, string> = { title: 'seller-product-title', price: 'seller-product-price', category: 'seller-product-category', description: 'seller-product-description', imageUrls: 'seller-product-image-0' }
   const field = Object.keys(validationErrors.value)[0] as UserProductFormField | undefined
-  if (field) document.getElementById(ids[field])?.focus()
+  if (!field) return
+  if (field === 'imageUrls') {
+    const imageIndex = findFirstOverlongUserProductImageIndex(productForm)
+    document.getElementById(imageIndex >= 0 ? `seller-product-image-${imageIndex}` : 'seller-product-image-0')?.focus()
+    return
+  }
+  const ids: Record<Exclude<UserProductFormField, 'imageUrls'>, string> = {
+    title: 'seller-product-title',
+    price: 'seller-product-price',
+    category: 'seller-product-category',
+    description: 'seller-product-description',
+  }
+  document.getElementById(ids[field])?.focus()
 }
 
 async function loadProduct() {
@@ -83,26 +96,29 @@ async function loadProduct() {
 }
 
 async function submitEditForm() {
-  if (submitting.value || loading.value || !canEdit.value) return
+  if (editRequestInFlight || submitting.value || loading.value || !canEdit.value) return
   const submittingProductId = productId.value
   if (!submittingProductId) return
   submitAttempted.value = true
   if (Object.keys(validationErrors.value).length) { focusFirstError(); return }
   if (userProductUpdateFingerprint(productForm) === originalFingerprint.value) { submitMessage.value = '商品信息尚未修改'; return }
+  editRequestInFlight = true
+  submitting.value = true
   const submittingRequestSequence = requestSequence
   const isSubmittingProductCurrent = () => active
     && productId.value === submittingProductId
     && requestSequence === submittingRequestSequence
     && route.name === 'SellerProductEdit'
   try {
-    submitting.value = true
     submitMessage.value = ''
-    await updateUserProduct(submittingProductId, normalizeUpdateUserProductInput(productForm))
+    const payload = normalizeUpdateUserProductInput(productForm)
+    await updateUserProduct(submittingProductId, payload)
     if (!isSubmittingProductCurrent()) return
     await router.replace({ name: 'SellerProductDetail', params: { productId: submittingProductId }, query: { edited: '1' } })
   } catch (error: unknown) {
     if (isSubmittingProductCurrent()) submitMessage.value = readError(error, '保存失败，请稍后重试。')
   } finally {
+    editRequestInFlight = false
     if (active) submitting.value = false
   }
 }

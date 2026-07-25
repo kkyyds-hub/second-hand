@@ -7,6 +7,7 @@ import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
 import {
   collectUserProductValidationErrors,
   createEmptyUserProductFormModel,
+  findFirstOverlongUserProductImageIndex,
   normalizeCreateUserProductInput,
   type UserProductFormField,
   type UserProductFormModel,
@@ -31,9 +32,20 @@ const visibleErrors = computed(() => Object.fromEntries(Object.entries(validatio
 function markTouched(field: UserProductFormField) { touched[field] = true }
 function clearSubmitMessage() { if (!submitting.value) submitMessage.value = '' }
 function focusFirstError() {
-  const ids: Record<UserProductFormField, string> = { title: 'seller-product-title', price: 'seller-product-price', category: 'seller-product-category', description: 'seller-product-description', imageUrls: 'seller-product-image-0' }
   const field = Object.keys(validationErrors.value)[0] as UserProductFormField | undefined
-  if (field) document.getElementById(ids[field])?.focus()
+  if (!field) return
+  if (field === 'imageUrls') {
+    const imageIndex = findFirstOverlongUserProductImageIndex(productForm)
+    document.getElementById(imageIndex >= 0 ? `seller-product-image-${imageIndex}` : 'seller-product-image-0')?.focus()
+    return
+  }
+  const ids: Record<Exclude<UserProductFormField, 'imageUrls'>, string> = {
+    title: 'seller-product-title',
+    price: 'seller-product-price',
+    category: 'seller-product-category',
+    description: 'seller-product-description',
+  }
+  document.getElementById(ids[field])?.focus()
 }
 function readError(error: unknown) { return error instanceof Error && error.message.trim() ? error.message : '发布失败，请稍后重试。' }
 

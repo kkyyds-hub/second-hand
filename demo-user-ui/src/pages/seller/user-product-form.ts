@@ -19,6 +19,10 @@ function normalizeText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+export function findFirstOverlongUserProductImageIndex(model: UserProductFormModel) {
+  return model.imageUrls.findIndex((url) => normalizeText(url).length > IMAGE_URL_MAX_LENGTH)
+}
+
 function normalizeImageUrls(values: unknown) {
   if (!Array.isArray(values)) return []
   return values.map((value) => normalizeText(value)).filter(Boolean)
