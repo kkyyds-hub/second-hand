@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Loader2, RefreshCcw, ShoppingCart, Trash2 } from 'lucide-vue-next'
 import {
@@ -10,6 +10,7 @@ import {
   type CartCheckoutResult,
   type CartItem,
 } from '@/api/cart'
+import { getBuyerOrderList } from '@/api/orders'
 import { getMyAddressList, type UserAddressItem } from '@/api/address'
 import { useCartStore } from '@/stores/cart'
 import { readCurrentUser } from '@/utils/request'
@@ -40,6 +41,25 @@ const checkoutUnknown = ref(false)
 const checkoutResult = ref<CartCheckoutResult | null>(null)
 const selectLimitNotice = ref('')
 
+/**
+ * 结算结果需重新核对锁。
+ *
+ * 触发条件：
+ * 1) checkout 请求网络/超时类失败（后端可能已成功但前端不知道）；
+ * 2) 后端响应计数不满足一致性恒等式。
+ *
+ * 锁定期间禁止再次提交 checkout、选择、删除、切换地址；
+ * 只能通过“重新检查”成功同步后解除，不得定时自动解锁，不得自动重试结算。
+ */
+const checkoutReconcileRequired = ref(false)
+const reconciling = ref(false)
+
+/** 错误/状态区引用，出现后调用 focus()。 */
+const reconcileRegionRef = ref<HTMLElement | null>(null)
+const checkoutErrorRef = ref<HTMLElement | null>(null)
+const loadErrorRef = ref<HTMLElement | null>(null)
+const selectAllCheckboxRef = ref<HTMLInputElement | null>(null)
+
 const currentUserId = computed(() => readCurrentUser()?.id ?? null)
 
 const availableItems = computed(() => items.value.filter((item) => item.available && item.cartItemId !== null))
@@ -54,11 +74,33 @@ const selectedTotalAmount = computed(() =>
   selectedItems.value.reduce((sum, item) => sum + (Number.isFinite(item.price) ? item.price : 0), 0),
 )
 
-const allAvailableSelected = computed(() => {
-  const list = availableItems.value
-  if (list.length === 0) return false
-  const set = new Set(selectedIds.value)
-  return list.every((item) => item.cartItemId !== null && set.has(item.cartItemId))
+/**
+ * 全选状态机：none / partial / capped-all / all。
+ *
+ * - none：未选择任何可结算项；
+ * - partial：选择了部分；
+ * - capped-all：可结算项超过上限且已选满上限（前 20 件）；
+ * - all：可结算项不超过上限且全部选中。
+ */
+type SelectAllState = 'none' | 'partial' | 'capped-all' | 'all'
+const selectAllState = computed<SelectAllState>(() => {
+  const availableCount = availableItems.value.length
+  const selected = selectedCount.value
+  if (availableCount === 0 || selected === 0) return 'none'
+  if (availableCount > CHECKOUT_MAX_SELECT) {
+    return selected >= CHECKOUT_MAX_SELECT ? 'capped-all' : 'partial'
+  }
+  return selected === availableCount ? 'all' : 'partial'
+})
+const selectAllChecked = computed(() => selectAllState.value === 'all' || selectAllState.value === 'capped-all')
+const selectAllIndeterminate = computed(() => selectAllState.value === 'partial')
+const selectAllLabel = computed(() => {
+  if (availableItems.value.length > CHECKOUT_MAX_SELECT) {
+    return selectAllState.value === 'capped-all'
+      ? `取消选择（已选 ${CHECKOUT_MAX_SELECT} 件）`
+      : `选择前 ${CHECKOUT_MAX_SELECT} 件（共 ${availableItems.value.length} 件可结算）`
+  }
+  return `全选可结算（${availableItems.value.length}）`
 })
 
 const canCheckout = computed(() => {
@@ -66,11 +108,24 @@ const canCheckout = computed(() => {
     selectedCount.value > 0 &&
     selectedAddressId.value !== null &&
     !checkoutSubmitting.value &&
+    !checkoutReconcileRequired.value &&
     !loading.value
   )
 })
 
+/** 结果未知锁定时，禁用页面上所有会改变状态的操作。 */
+const interactionLocked = computed(() => checkoutSubmitting.value || checkoutReconcileRequired.value)
+
 const selectedAddress = computed(() => addresses.value.find((a) => a.id === selectedAddressId.value) ?? null)
+
+/** 同步全选框的 indeterminate DOM 属性（无法通过 attribute 绑定）。 */
+watch([selectAllIndeterminate, selectAllChecked], () => {
+  nextTick(() => {
+    if (selectAllCheckboxRef.value) {
+      selectAllCheckboxRef.value.indeterminate = selectAllIndeterminate.value
+    }
+  })
+})
 
 function formatPrice(value: number) {
   return (Number.isFinite(value) ? value : 0).toFixed(2)
@@ -97,6 +152,8 @@ async function loadCart() {
     items.value = []
     selectedIds.value = []
     loadError.value = error instanceof Error && error.message ? error.message : '购物车加载失败'
+    await nextTick()
+    loadErrorRef.value?.focus()
   } finally {
     loading.value = false
   }
@@ -123,13 +180,14 @@ async function loadAddresses() {
 async function reloadAll() {
   checkoutResult.value = null
   checkoutError.value = ''
-  checkoutUnknown.value = false
+  // 注意：手动刷新不清除结果未知锁（checkoutReconcileRequired），
+  // 该锁只能通过“重新检查”成功同步后解除，避免在订单状态未核对前误解锁。
   await Promise.all([loadCart(), loadAddresses()])
   cartStore.refreshCount(currentUserId.value).catch(() => {})
 }
 
 function toggleSelect(cartItemId: number | null, available: boolean) {
-  if (cartItemId === null || !available) return
+  if (cartItemId === null || !available || interactionLocked.value) return
   const index = selectedIds.value.indexOf(cartItemId)
   if (index >= 0) {
     selectedIds.value.splice(index, 1)
@@ -145,7 +203,9 @@ function toggleSelect(cartItemId: number | null, available: boolean) {
 }
 
 function toggleSelectAll() {
-  if (allAvailableSelected.value) {
+  if (interactionLocked.value) return
+  // 已处于 all 或 capped-all：一次操作清空全部选择。
+  if (selectAllChecked.value) {
     selectedIds.value = []
     selectLimitNotice.value = ''
     return
@@ -158,7 +218,7 @@ function toggleSelectAll() {
 }
 
 async function removeSingle(cartItemId: number | null) {
-  if (cartItemId === null || singleDeleteSubmitting.value) return
+  if (cartItemId === null || singleDeleteSubmitting.value || interactionLocked.value) return
   singleDeleteSubmitting.value = true
   try {
     await deleteCartItem(cartItemId)
@@ -174,7 +234,7 @@ async function removeSingle(cartItemId: number | null) {
 }
 
 async function runBatchDelete(ids: number[]) {
-  if (ids.length === 0 || batchDeleteSubmitting.value) return
+  if (ids.length === 0 || batchDeleteSubmitting.value || interactionLocked.value) return
   batchDeleteSubmitting.value = true
   try {
     await batchDeleteCartItems(ids)
@@ -199,8 +259,32 @@ function clearUnavailable() {
   void runBatchDelete(ids)
 }
 
+/**
+ * 校验后端结算响应是否满足计数一致性恒等式：
+ * requestedCount = successCount + failureCount
+ * successCount = orders.length
+ * failureCount = failures.length
+ *
+ * 不一致时不得显示“全部完成”，必须进入结果需重新检查状态。
+ */
+function isConsistentResult(result: CartCheckoutResult) {
+  return (
+    result.successCount === result.orders.length &&
+    result.failureCount === result.failures.length &&
+    result.requestedCount === result.successCount + result.failureCount
+  )
+}
+
+/** 进入“结果需重新检查”锁定状态，并聚焦状态区。 */
+async function enterReconcileLock() {
+  checkoutReconcileRequired.value = true
+  checkoutResult.value = null
+  await nextTick()
+  reconcileRegionRef.value?.focus()
+}
+
 async function submitCheckout() {
-  if (!canCheckout.value || checkoutSubmitting.value) return
+  if (!canCheckout.value || checkoutSubmitting.value || checkoutReconcileRequired.value) return
   const cartItemIds = [...selectedIds.value]
   const addressId = selectedAddressId.value
   if (cartItemIds.length === 0 || addressId === null) return
@@ -208,9 +292,19 @@ async function submitCheckout() {
   checkoutSubmitting.value = true
   checkoutError.value = ''
   checkoutUnknown.value = false
+  checkoutReconcileRequired.value = false
   checkoutResult.value = null
   try {
     const result = await checkoutCart({ cartItemIds, addressId })
+
+    // 响应一致性校验：不满足恒等式则视为结果不可信，进入重新检查锁。
+    if (!isConsistentResult(result)) {
+      await enterReconcileLock()
+      await loadCart()
+      cartStore.refreshCount(currentUserId.value).catch(() => {})
+      return
+    }
+
     checkoutResult.value = result
     const successIds = new Set(result.orders.map((o) => o.cartItemId).filter((id): id is number => id !== null))
     items.value = items.value.filter((item) => item.cartItemId === null || !successIds.has(item.cartItemId))
@@ -221,14 +315,59 @@ async function submitCheckout() {
   } catch (error) {
     const message = error instanceof Error && error.message ? error.message : '结算失败'
     if (isNetworkLikeError(message)) {
-      checkoutUnknown.value = true
+      // 结果未知：后端可能已成功创建订单，进入重新检查锁，禁止再次提交。
+      await enterReconcileLock()
     } else {
       checkoutError.value = message
+      await nextTick()
+      checkoutErrorRef.value?.focus()
     }
     await loadCart()
     cartStore.refreshCount(currentUserId.value).catch(() => {})
   } finally {
     checkoutSubmitting.value = false
+  }
+}
+
+/**
+ * 重新检查：在不发送 checkout POST 的前提下同步真实状态。
+ *
+ * 1) 重新 GET 购物车；
+ * 2) GET 买家订单列表（读取已创建订单，不新增）；
+ * 3) 更新角标；
+ * 4) 移除已创建订单或已失效商品的选中项；
+ * 5) 同步成功后才解除结果未知锁；失败则继续保持锁定。
+ */
+async function reconcile() {
+  if (reconciling.value) return
+  reconciling.value = true
+  try {
+    // 读取买家订单（仅 GET，绝不 POST checkout）。失败不阻断购物车同步，但记录。
+    let ordersOk = true
+    try {
+      await getBuyerOrderList({ page: 1, pageSize: 20 })
+    } catch {
+      ordersOk = false
+    }
+
+    // 重新拉取购物车并剔除已不存在/已失效的选中项。
+    const cart = await getCartItems()
+    items.value = cart
+    pruneSelection()
+    cartStore.refreshCount(currentUserId.value).catch(() => {})
+
+    if (!ordersOk) {
+      // 订单读取失败：状态仍不可信，保持锁定。
+      return
+    }
+
+    // 同步成功：解除锁定。
+    checkoutReconcileRequired.value = false
+    checkoutUnknown.value = false
+  } catch {
+    // 同步失败：继续保持锁定，不得自动解锁。
+  } finally {
+    reconciling.value = false
   }
 }
 
@@ -267,6 +406,7 @@ onMounted(() => {
     <!-- 加载失败 -->
     <div
       v-else-if="loadError"
+      ref="loadErrorRef"
       class="section-panel section-body"
       role="alert"
       aria-live="assertive"
@@ -293,20 +433,21 @@ onMounted(() => {
           <div class="section-panel section-body flex flex-wrap items-center gap-3">
             <label class="flex cursor-pointer items-center gap-2 text-[14px] font-medium text-gray-800">
               <input
+                ref="selectAllCheckboxRef"
                 type="checkbox"
                 class="checkbox-standard"
-                :checked="allAvailableSelected"
-                :disabled="availableItems.length === 0 || checkoutSubmitting"
-                aria-label="全选可结算商品"
+                :checked="selectAllChecked"
+                :disabled="availableItems.length === 0 || interactionLocked"
+                :aria-label="selectAllLabel"
                 @change="toggleSelectAll"
               />
-              全选可结算（{{ availableItems.length }}）
+              {{ selectAllLabel }}
             </label>
             <div class="ml-auto flex flex-wrap gap-2">
               <button
                 class="btn-default"
                 type="button"
-                :disabled="selectedIds.length === 0 || batchDeleteSubmitting || checkoutSubmitting"
+                :disabled="selectedIds.length === 0 || batchDeleteSubmitting || interactionLocked"
                 @click="deleteSelected"
               >
                 <Trash2 class="h-4 w-4" aria-hidden="true" />
@@ -315,7 +456,7 @@ onMounted(() => {
               <button
                 class="btn-default"
                 type="button"
-                :disabled="unavailableItems.length === 0 || batchDeleteSubmitting || checkoutSubmitting"
+                :disabled="unavailableItems.length === 0 || batchDeleteSubmitting || interactionLocked"
                 @click="clearUnavailable"
               >
                 清理失效商品（{{ unavailableItems.length }}）
@@ -337,7 +478,7 @@ onMounted(() => {
                   type="checkbox"
                   class="checkbox-standard mt-1 shrink-0"
                   :checked="item.cartItemId !== null && selectedIds.includes(item.cartItemId)"
-                  :disabled="!item.available || checkoutSubmitting"
+                  :disabled="!item.available || interactionLocked"
                   :aria-label="`选择商品 ${item.title}`"
                   @change="toggleSelect(item.cartItemId, item.available)"
                 />
@@ -384,7 +525,7 @@ onMounted(() => {
                       <button
                         class="btn-danger"
                         type="button"
-                        :disabled="singleDeleteSubmitting || checkoutSubmitting"
+                        :disabled="singleDeleteSubmitting || interactionLocked"
                         @click="removeSingle(item.cartItemId)"
                       >确认删除</button>
                       <button class="btn-default" type="button" :disabled="singleDeleteSubmitting" @click="confirmDeleteId = null">取消</button>
@@ -393,7 +534,7 @@ onMounted(() => {
                       v-else
                       class="btn-default"
                       type="button"
-                      :disabled="checkoutSubmitting"
+                      :disabled="interactionLocked"
                       :aria-label="`删除商品 ${item.title}`"
                       @click="confirmDeleteId = item.cartItemId"
                     >
@@ -431,7 +572,7 @@ onMounted(() => {
                 <p class="text-[13px] text-gray-500">暂无收货地址</p>
                 <router-link class="btn-default mt-2 inline-flex" to="/account/addresses/new?redirect=/cart">新增收货地址</router-link>
               </div>
-              <fieldset v-else :disabled="checkoutSubmitting">
+              <fieldset v-else :disabled="interactionLocked">
                 <legend class="sr-only">选择收货地址</legend>
                 <div class="space-y-2">
                   <label
@@ -494,13 +635,39 @@ onMounted(() => {
 
       <!-- 结算结果 -->
       <section class="space-y-4" aria-live="polite">
-        <div v-if="checkoutUnknown" class="notice-banner notice-banner-warning" role="alert" tabindex="-1">
+        <div
+          v-if="checkoutReconcileRequired"
+          ref="reconcileRegionRef"
+          class="notice-banner notice-banner-warning"
+          role="alert"
+          aria-live="assertive"
+          tabindex="-1"
+        >
           <p class="font-semibold">结算结果尚未确认</p>
-          <p class="mt-1">网络波动导致结果未知，请不要重复提交。请先前往「我的订单」核对，并重新检查购物车。</p>
-          <button class="btn-default mt-2" type="button" @click="goToOrders">去我的订单核对</button>
+          <p class="mt-1">网络波动或响应异常导致结果未知，已暂时锁定结算。请不要重复提交，先核对订单并重新检查购物车状态。</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button class="btn-default" type="button" @click="goToOrders">去我的订单核对</button>
+            <button
+              class="btn-primary"
+              type="button"
+              :disabled="reconciling"
+              :aria-busy="reconciling"
+              @click="reconcile"
+            >
+              <Loader2 v-if="reconciling" class="h-4 w-4 animate-spin" aria-hidden="true" />
+              {{ reconciling ? '正在重新检查...' : '重新检查' }}
+            </button>
+          </div>
         </div>
 
-        <div v-else-if="checkoutError" class="notice-banner notice-banner-danger" role="alert" tabindex="-1">{{ checkoutError }}</div>
+        <div
+          v-else-if="checkoutError"
+          ref="checkoutErrorRef"
+          class="notice-banner notice-banner-danger"
+          role="alert"
+          aria-live="assertive"
+          tabindex="-1"
+        >{{ checkoutError }}</div>
 
         <div v-else-if="checkoutResult" class="section-panel section-body space-y-4">
           <p class="text-[16px] font-bold text-gray-950">

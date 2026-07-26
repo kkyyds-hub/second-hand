@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -57,6 +58,15 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
 
     /** 单次批量结算去重后上限。 */
     private static final int CHECKOUT_MAX_SIZE = 20;
+
+    /** 结算失败原因：购物车项不存在或无权操作（权限安全文案，不泄漏归属）。 */
+    private static final String REASON_NOT_OWNED = "购物车项不存在或无权操作";
+
+    /** 结算失败原因：当前商品遇到未知系统异常。 */
+    private static final String REASON_SYSTEM_ABORT = "系统异常，当前商品结算失败";
+
+    /** 结算失败原因：前序商品系统异常导致本商品未执行。 */
+    private static final String REASON_NOT_EXECUTED = "前序系统异常，本商品未执行";
 
     /** 商品被软删除时对外展示的状态值。 */
     private static final String STATUS_DELETED = "deleted";
@@ -100,7 +110,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public CartItemVO add(Long userId, AddCartItemRequest request) {
         Long productId = request.getProductId();
 
@@ -126,6 +136,13 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
 
         // 3) 数据库级串行化点：锁定当前用户行，使并发加入不同商品时容量检查串行执行。
         //    用户行不存在（理论上不会，因为当前用户已登录）时给出明确错误。
+        //
+        //    隔离级别说明（READ_COMMITTED）：
+        //    本方法显式使用 READ_COMMITTED。若沿用 MySQL 默认 REPEATABLE_READ，
+        //    被行锁阻塞的事务在获得锁后，其 count() 仍读取事务开始时的旧快照，
+        //    看不到先获锁事务已提交的插入，导致多个并发请求都判定“未满”而超量插入。
+        //    READ_COMMITTED 保证获锁后的 count() 能看到其他事务已提交的最新行数，
+        //    与本项目支付回调链路（handlePaymentCallback）的并发修复口径一致。
         Long lockedUserId = baseMapper.selectUserIdForUpdate(userId);
         if (lockedUserId == null) {
             throw new BusinessException("用户不存在或会话已失效");
@@ -139,9 +156,14 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
             return toItemVO(recheckRow, userId);
         }
 
-        long currentCount = count(new LambdaQueryWrapper<CartItem>()
-                .eq(CartItem::getUserId, userId));
-        if (currentCount >= CART_MAX_SIZE) {
+        // 容量校验只统计“其他商品”的数量（排除当前 productId）。
+        // 这样即便上面的 recheck 因极端时序未读到已存在的同款商品，
+        // 当前商品作为“第 50 件”时 otherCount=49<50，仍会走到插入并由唯一索引幂等收敛，
+        // 而不会把同款重复加入误判为“购物车已满”。
+        long otherCount = count(new LambdaQueryWrapper<CartItem>()
+                .eq(CartItem::getUserId, userId)
+                .ne(CartItem::getProductId, productId));
+        if (otherCount >= CART_MAX_SIZE) {
             throw new BusinessException("购物车已达上限（最多 " + CART_MAX_SIZE + " 项）");
         }
 
@@ -229,14 +251,26 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
         response.setRequestedCount(orderedIds.size());
 
         // 4) 按去重后的原始顺序逐项结算。
-        for (Long cartItemId : orderedIds) {
+        //    一旦遇到未知系统异常，立即停止继续下单，但必须把当前项与所有后续项
+        //    都记入 failures，保证 requestedCount = successCount + failureCount 恒成立。
+        boolean aborted = false;
+        for (int i = 0; i < orderedIds.size(); i++) {
+            Long cartItemId = orderedIds.get(i);
             CartItem cartItem = itemMap.get(cartItemId);
-            if (cartItem == null) {
-                // 不属于当前用户或已不存在：记为失败，不泄漏归属。
-                response.getFailures().add(buildFailure(cartItemId, null, "购物车项不存在或无权操作"));
+            Long productId = cartItem == null ? null : cartItem.getProductId();
+
+            // 4a) 前序已因系统异常中止：后续项一律记为“未执行”，不下单/不改状态/不删购物车。
+            if (aborted) {
+                response.getFailures().add(buildFailure(cartItemId, productId, REASON_NOT_EXECUTED));
                 continue;
             }
-            Long productId = cartItem.getProductId();
+
+            // 4b) 不属于当前用户或已不存在：记为失败，不泄漏归属。
+            if (cartItem == null) {
+                response.getFailures().add(buildFailure(cartItemId, null, REASON_NOT_OWNED));
+                continue;
+            }
+
             try {
                 CreateOrderRequest orderRequest = new CreateOrderRequest();
                 orderRequest.setProductId(productId);
@@ -256,16 +290,17 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
                 // 5) 成功项移出购物车（订单事务已独立提交，删除失败不回滚订单）。
                 removeCartItemBestEffort(userId, cartItemId, productId);
             } catch (BusinessException ex) {
-                // 6) 可识别业务失败：记入 failures，商品保留在购物车。
+                // 6) 可识别业务失败：记入 failures，商品保留在购物车，继续处理后续项。
                 log.info("批量结算单项失败：userId={}, cartItemId={}, productId={}, reason={}",
                         userId, cartItemId, productId, ex.getMessage());
                 response.getFailures().add(buildFailure(cartItemId, productId, ex.getMessage()));
             } catch (RuntimeException ex) {
-                // 7) 未知系统异常：不伪装成商品失效，记录安全日志并中止剩余处理。
-                log.error("批量结算遇到未知系统异常，中止剩余处理：userId={}, cartItemId={}, productId={}",
+                // 7) 未知系统异常：不伪装成商品失效，不继续循环下单；
+                //    当前项记为系统异常失败，并置 aborted 使后续项记为“未执行”。
+                log.error("批量结算遇到未知系统异常，中止后续下单：userId={}, cartItemId={}, productId={}",
                         userId, cartItemId, productId, ex);
-                response.getFailures().add(buildFailure(cartItemId, productId, "系统异常，结算已中止，请稍后重试"));
-                break;
+                response.getFailures().add(buildFailure(cartItemId, productId, REASON_SYSTEM_ABORT));
+                aborted = true;
             }
         }
 
