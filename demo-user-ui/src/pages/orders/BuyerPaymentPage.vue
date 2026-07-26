@@ -90,6 +90,12 @@ const canPay = computed(() => Boolean(
     && !loading.value
     && !paying.value
     && !rechecking.value
+    /**
+     * P1-D2-A-F1：支付请求成功但订单状态尚未确认期间，
+     * 必须保持“确认支付”锁定，只能通过“重新检查”解除，
+     * 避免用户在结果未知时重复发起支付。
+     */
+    && !payStatusPendingSync.value
     && isCurrentBuyer.value
     && detail.value.status === 'pending',
 ))
