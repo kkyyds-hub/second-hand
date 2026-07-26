@@ -271,7 +271,7 @@ onMounted(() => {
           <p class="page-kicker">卖家履约</p>
           <h1 class="page-title">卖家订单详情</h1>
           <p class="page-desc">
-            {{ sellerName }}，这里把订单详情、物流查看与卖家发货保持在同一页，避免把 Day06 第一条主链过早拆碎。
+            {{ sellerName }}，这里可以查看订单详情、物流信息并执行发货操作。
           </p>
         </div>
         <div class="page-actions">

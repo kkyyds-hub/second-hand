@@ -38,6 +38,7 @@ const normalizeQueryToken = (value: unknown): string => {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+const showEmailPreview = import.meta.env.DEV
 const previewUrl = import.meta.env.VITE_EMAIL_PREVIEW_PATH || '/api/user/auth/email-preview/latest'
 
 const openEmailPreview = () => {
@@ -111,7 +112,7 @@ onMounted(() => {
         <button class="btn-primary w-full" type="submit" :disabled="loading"><Loader2 v-if="loading" class="h-4 w-4 animate-spin" /><span>{{ loading ? '激活中...' : '立即激活' }}</span></button>
       </form>
       <div v-if="activatedUserRows.length" class="rounded-2xl border border-gray-200/80 bg-gray-50/80 p-5 shadow-sm"><div class="flex items-center gap-3 border-b border-gray-200/70 pb-4"><div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div><div><p class="text-[15px] font-semibold text-gray-900">激活成功</p><p class="text-[12px] text-gray-500">你的账户现在可以正常使用。</p></div></div><div class="mt-4 grid gap-4 sm:grid-cols-2"><div v-for="row in activatedUserRows" :key="row.label" class="meta-item"><p class="meta-label">{{ row.label }}</p><p class="meta-value truncate" :title="String(row.value)">{{ row.value }}</p></div></div></div>
-      <div class="auth-divider"><div class="auth-links"><span class="text-gray-400">需要其他帮助？</span><div class="auth-link-group"><router-link class="auth-link" to="/login">返回登录</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><router-link class="auth-link" to="/register/email">继续注册</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><button class="auth-link cursor-pointer border-0 bg-transparent p-0" type="button" @click="openEmailPreview">邮件预览</button></div></div></div>
+      <div class="auth-divider"><div class="auth-links"><span class="text-gray-400">需要其他帮助？</span><div class="auth-link-group"><router-link class="auth-link" to="/login">返回登录</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><router-link class="auth-link" to="/register/email">继续注册</router-link><template v-if="showEmailPreview"><span class="h-1 w-1 rounded-full bg-gray-300"></span><button class="auth-link cursor-pointer border-0 bg-transparent p-0" type="button" @click="openEmailPreview">邮件预览</button></template></div></div></div>
     </div>
   </div>
 </template>

@@ -166,9 +166,9 @@ watch(
       <div class="page-hero-content">
         <div class="page-header-main">
           <p class="page-kicker">卖家售后</p>
-          <h1 class="page-title">seller decision</h1>
+          <h1 class="page-title">卖家售后处理</h1>
           <p class="page-desc">
-            {{ sellerName }}，这里提供 Day06 Package-3 的最小卖家售后处理入口：手动输入 afterSaleId，选择同意或拒绝后提交。
+            {{ sellerName }}，这里可以处理买家售后申请：输入售后单号，选择同意或拒绝后提交。
           </p>
         </div>
         <div class="page-actions">

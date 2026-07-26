@@ -137,7 +137,7 @@ onMounted(() => {
           <p class="page-kicker">卖家履约</p>
           <h1 class="page-title">卖家订单列表</h1>
           <p class="page-desc">
-            {{ sellerName }}，这里承接 Day06 Package-1 的 seller fulfillment 主链第一站：列表筛选、详情进入、物流查看与发货动作入口。
+            {{ sellerName }}，这里可以筛选订单、查看详情、跟踪物流并执行发货操作。
           </p>
         </div>
         <div class="page-actions">

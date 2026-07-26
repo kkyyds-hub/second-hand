@@ -15,6 +15,7 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const message = ref('')
 
+const showEmailPreview = import.meta.env.DEV
 const previewUrl = import.meta.env.VITE_EMAIL_PREVIEW_PATH || '/api/user/auth/email-preview/latest'
 
 const openEmailPreview = () => {
@@ -65,7 +66,7 @@ const handleRegister = async () => {
         <div><label class="form-label">登录密码</label><input v-model="form.secret" class="input-standard" type="password" placeholder="请至少设置 6 位密码" autocomplete="new-password" :disabled="submitting" /></div>
         <button class="btn-primary w-full" type="submit" :disabled="submitting"><Loader2 v-if="submitting" class="h-4 w-4 animate-spin" /><span>{{ submitting ? '提交中...' : '提交注册' }}</span></button>
       </form>
-      <div class="auth-divider"><div class="auth-links"><span class="text-gray-400">已有账号？</span><div class="auth-link-group"><router-link class="auth-link" to="/login">返回登录</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><router-link class="auth-link" to="/activate/email">前往激活</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><button class="auth-link cursor-pointer border-0 bg-transparent p-0" type="button" @click="openEmailPreview">邮件预览</button></div></div></div>
+      <div class="auth-divider"><div class="auth-links"><span class="text-gray-400">已有账号？</span><div class="auth-link-group"><router-link class="auth-link" to="/login">返回登录</router-link><span class="h-1 w-1 rounded-full bg-gray-300"></span><router-link class="auth-link" to="/activate/email">前往激活</router-link><template v-if="showEmailPreview"><span class="h-1 w-1 rounded-full bg-gray-300"></span><button class="auth-link cursor-pointer border-0 bg-transparent p-0" type="button" @click="openEmailPreview">邮件预览</button></template></div></div></div>
     </div>
   </div>
 </template>

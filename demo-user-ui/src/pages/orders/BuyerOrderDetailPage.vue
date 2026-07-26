@@ -337,7 +337,7 @@ function readStatusChipClass() {
   return 'chip chip-neutral'
 }
 
-function readErrorMessage(error: unknown, fallback = 'Request failed, please retry later.') {
+function readErrorMessage(error: unknown, fallback = '请求失败，请稍后重试。') {
   if (error instanceof Error && error.message.trim()) {
     return error.message
   }
@@ -407,7 +407,7 @@ async function submitCancelOrder() {
     actionSuccessMessage.value = message || 'Cancel request submitted.'
     await loadDetail()
   } catch (error: unknown) {
-    actionErrorMessage.value = readErrorMessage(error, 'Order action failed. Please retry later.')
+    actionErrorMessage.value = readErrorMessage(error, '订单操作失败，请稍后重试。')
   } finally {
     actionSubmitting.value = false
   }
@@ -427,7 +427,7 @@ async function submitConfirmReceipt() {
     actionSuccessMessage.value = message || 'Confirm-receipt request submitted.'
     await loadDetail()
   } catch (error: unknown) {
-    actionErrorMessage.value = readErrorMessage(error, 'Order action failed. Please retry later.')
+    actionErrorMessage.value = readErrorMessage(error, '订单操作失败，请稍后重试。')
   } finally {
     actionSubmitting.value = false
   }
@@ -495,7 +495,7 @@ async function submitAfterSaleApply() {
       clearDisputeMessages()
     }
   } catch (error: unknown) {
-    afterSaleErrorMessage.value = readErrorMessage(error, 'After-sale apply failed. Please retry later.')
+    afterSaleErrorMessage.value = readErrorMessage(error, '售后申请失败，请稍后重试。')
     afterSaleSuccessMessage.value = ''
     createdAfterSaleId.value = null
   } finally {
@@ -530,7 +530,7 @@ async function submitDisputeInitiate() {
     const message = await initiateBuyerAfterSaleDispute(afterSaleId, { content })
     disputeSuccessMessage.value = message || 'Dispute request submitted.'
   } catch (error: unknown) {
-    disputeErrorMessage.value = readErrorMessage(error, 'Dispute submit failed. Please retry later.')
+    disputeErrorMessage.value = readErrorMessage(error, '争议提交失败，请稍后重试。')
     disputeSuccessMessage.value = ''
   } finally {
     disputeSubmitting.value = false
@@ -554,14 +554,12 @@ async function loadDetail() {
 
     detail.value = await getBuyerOrderDetail(orderId.value)
   } catch (error: unknown) {
-    errorMessage.value = readErrorMessage(error, 'Order detail load failed. Please retry later.')
+    errorMessage.value = readErrorMessage(error, '订单详情加载失败，请稍后重试。')
   } finally {
     loading.value = false
     hasLoadedOnce.value = true
   }
 }
-
-const packageHint = 'This page now includes payment entry (formal payment page)/cancel/confirm-receipt/after-sale-apply/dispute-initiate. Final acceptance is out of scope.'
 
 onMounted(() => {
   loadDetail()
@@ -593,11 +591,6 @@ onMounted(() => {
         <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
         <button class="btn-default mt-3" type="button" :disabled="loading" @click="loadDetail">重新加载</button>
       </div>
-    </section>
-
-    <section class="notice-banner notice-banner-warning">
-      <span class="notice-dot bg-orange-500"></span>
-      <span>{{ packageHint }}</span>
     </section>
 
     <section v-if="loading && !hasLoadedOnce" class="section-panel">
@@ -651,8 +644,8 @@ onMounted(() => {
       <section class="section-panel">
         <div class="section-header">
           <div>
-            <h2 class="section-heading">Order actions</h2>
-            <p class="section-subtitle">Actions are enabled by status: payment entry, cancel, confirm receipt, after-sale apply, dispute initiate.</p>
+            <h2 class="section-heading">订单操作</h2>
+            <p class="section-subtitle">根据订单状态启用：支付、取消、确认收货、售后申请、争议发起。</p>
           </div>
         </div>
         <div class="section-body space-y-4">
@@ -682,16 +675,16 @@ onMounted(() => {
             </section>
 
             <section class="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 space-y-3">
-              <h3 class="text-[14px] font-semibold text-gray-900">Cancel order</h3>
+              <h3 class="text-[14px] font-semibold text-gray-900">取消订单</h3>
               <div class="w-full">
-                <label class="form-label" for="buyer-cancel-reason">Cancel reason (optional)</label>
+                <label class="form-label" for="buyer-cancel-reason">取消原因（选填）</label>
                 <input
                   id="buyer-cancel-reason"
                   v-model="cancelReason"
                   class="input-standard"
                   type="text"
                   maxlength="100"
-                  placeholder="Optional short reason (<=100 chars)"
+                  placeholder="选填，不超过 100 字"
                   :disabled="!canTriggerCancel"
                   @input="clearActionMessages"
                 />
@@ -699,7 +692,7 @@ onMounted(() => {
               <div class="flex flex-wrap items-center gap-3">
                 <button class="btn-default" type="button" :disabled="!canTriggerCancel" @click="submitCancelOrder">
                   <Loader2 v-if="actionSubmitting" class="h-4 w-4 animate-spin" />
-                  <span>{{ actionSubmitting ? 'Submitting...' : 'Cancel order' }}</span>
+                  <span>{{ actionSubmitting ? '提交中...' : '取消订单' }}</span>
                 </button>
               </div>
               <p class="form-helper">{{ cancelGuardText }}</p>
@@ -707,18 +700,18 @@ onMounted(() => {
           </div>
 
           <section class="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 space-y-3">
-            <h3 class="text-[14px] font-semibold text-gray-900">Confirm receipt</h3>
+            <h3 class="text-[14px] font-semibold text-gray-900">确认收货</h3>
             <div class="flex flex-wrap items-center gap-3">
               <button class="btn-primary" type="button" :disabled="!canTriggerConfirmReceipt" @click="submitConfirmReceipt">
                 <Loader2 v-if="actionSubmitting" class="h-4 w-4 animate-spin" />
-                <span>{{ actionSubmitting ? 'Submitting...' : 'Confirm receipt' }}</span>
+                <span>{{ actionSubmitting ? '提交中...' : '确认收货' }}</span>
               </button>
             </div>
             <p class="form-helper">{{ confirmReceiptGuardText }}</p>
           </section>
 
           <section class="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 space-y-3">
-            <h3 class="text-[14px] font-semibold text-gray-900">After-sale apply</h3>
+            <h3 class="text-[14px] font-semibold text-gray-900">申请售后</h3>
             <div v-if="afterSaleErrorMessage" class="notice-banner notice-banner-danger">
               <span class="notice-dot bg-red-500"></span>
               <span>{{ afterSaleErrorMessage }}</span>
@@ -729,35 +722,35 @@ onMounted(() => {
             </div>
 
             <div class="w-full">
-              <label class="form-label" for="buyer-after-sale-reason">After-sale reason</label>
+              <label class="form-label" for="buyer-after-sale-reason">售后原因</label>
               <textarea
                 id="buyer-after-sale-reason"
                 v-model="afterSaleForm.reason"
                 class="input-standard min-h-[112px]"
                 maxlength="200"
-                placeholder="Input reason (2~200 chars)"
+                placeholder="请输入原因（2~200 字）"
                 :disabled="afterSaleSubmitting"
                 @input="clearAfterSaleMessages"
               ></textarea>
             </div>
 
             <div class="w-full">
-              <label class="form-label" for="buyer-after-sale-evidence-images">Evidence image URLs (optional)</label>
+              <label class="form-label" for="buyer-after-sale-evidence-images">凭证图片链接（选填）</label>
               <textarea
                 id="buyer-after-sale-evidence-images"
                 v-model="afterSaleForm.evidenceImageText"
                 class="input-standard min-h-[96px]"
-                placeholder="Split by newline/comma, up to 3 URLs"
+                placeholder="每行或逗号分隔，最多 3 个链接"
                 :disabled="afterSaleSubmitting"
                 @input="clearAfterSaleMessages"
               ></textarea>
-              <p class="form-helper">The page input is normalized in API layer and mapped to <code>evidenceImages</code>.</p>
+              <p class="form-helper">输入内容将在提交时自动规范化。</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
               <button class="btn-primary" type="button" :disabled="!canTriggerAfterSaleApply" @click="submitAfterSaleApply">
                 <Loader2 v-if="afterSaleSubmitting" class="h-4 w-4 animate-spin" />
-                <span>{{ afterSaleSubmitting ? 'Submitting...' : 'Submit apply' }}</span>
+                <span>{{ afterSaleSubmitting ? '提交中...' : '提交申请' }}</span>
               </button>
               <span v-if="createdAfterSaleId !== null" class="chip chip-neutral font-numeric">afterSaleId {{ createdAfterSaleId }}</span>
             </div>
@@ -765,7 +758,7 @@ onMounted(() => {
           </section>
 
           <section class="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 space-y-3">
-            <h3 class="text-[14px] font-semibold text-gray-900">Dispute initiate (platform intervention)</h3>
+            <h3 class="text-[14px] font-semibold text-gray-900">发起争议（平台介入）</h3>
             <div v-if="disputeErrorMessage" class="notice-banner notice-banner-danger">
               <span class="notice-dot bg-red-500"></span>
               <span>{{ disputeErrorMessage }}</span>
@@ -777,26 +770,26 @@ onMounted(() => {
 
             <div class="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
               <div>
-                <label class="form-label" for="buyer-dispute-after-sale-id">afterSaleId</label>
+                <label class="form-label" for="buyer-dispute-after-sale-id">售后单号</label>
                 <input
                   id="buyer-dispute-after-sale-id"
                   v-model="disputeForm.afterSaleId"
                   class="input-standard"
                   type="text"
                   inputmode="numeric"
-                  placeholder="e.g. 50001"
+                  placeholder="例如 50001"
                   :disabled="disputeSubmitting"
                   @input="clearDisputeMessages"
                 />
               </div>
               <div>
-                <label class="form-label" for="buyer-dispute-content">Dispute content</label>
+                <label class="form-label" for="buyer-dispute-content">争议内容</label>
                 <textarea
                   id="buyer-dispute-content"
                   v-model="disputeForm.content"
                   class="input-standard min-h-[112px]"
                   maxlength="500"
-                  placeholder="Input content (2~500 chars)"
+                  placeholder="请输入内容（2~500 字）"
                   :disabled="disputeSubmitting"
                   @input="clearDisputeMessages"
                 ></textarea>
@@ -806,7 +799,7 @@ onMounted(() => {
             <div class="flex flex-wrap items-center gap-3">
               <button class="btn-default" type="button" :disabled="!canTriggerDisputeInitiate" @click="submitDisputeInitiate">
                 <Loader2 v-if="disputeSubmitting" class="h-4 w-4 animate-spin" />
-                <span>{{ disputeSubmitting ? 'Submitting...' : 'Submit dispute' }}</span>
+                <span>{{ disputeSubmitting ? '提交中...' : '提交争议' }}</span>
               </button>
             </div>
             <p class="form-helper">{{ disputeGuardText }}</p>

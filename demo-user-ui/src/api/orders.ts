@@ -101,25 +101,6 @@ export interface ShipSellerOrderInput {
   remark?: string
 }
 
-export type BuyerMockPayScenario = 'SUCCESS' | 'FAIL' | 'REPEAT'
-
-export interface BuyerMockPayResult {
-  orderId: number | null
-  orderNo: string
-  scenario: BuyerMockPayScenario
-  channel: string
-  beforeStatus: string
-  afterStatus: string
-  callbackCount: number
-  firstStatus: string
-  firstTradeNo: string
-  firstResult: string
-  secondStatus: string
-  secondTradeNo: string
-  secondResult: string
-  finalResult: string
-}
-
 export interface OrderStatusMeta {
   label: string
   tone: 'neutral' | 'accent' | 'success' | 'warning'
@@ -227,16 +208,6 @@ function normalizeOrderStatus(value: unknown) {
   }
 
   return normalized || 'unknown'
-}
-
-function normalizeMockPayScenario(value: unknown): BuyerMockPayScenario {
-  const normalized = readFirstText(value).toUpperCase()
-
-  if (normalized === 'FAIL' || normalized === 'REPEAT') {
-    return normalized
-  }
-
-  return 'SUCCESS'
 }
 
 function normalizeListQuery(query?: BuyerOrderListQuery | SellerOrderListQuery) {
@@ -456,26 +427,7 @@ function normalizeActionMessage(payload: unknown, fallback: string) {
   return message || fallback
 }
 
-function normalizeMockPayResult(payload: unknown, fallbackScenario: BuyerMockPayScenario): BuyerMockPayResult {
-  const source = isRecord(payload) ? payload : {}
 
-  return {
-    orderId: readPositiveId(source.orderId, source.id),
-    orderNo: readFirstText(source.orderNo, source.orderSn),
-    scenario: normalizeMockPayScenario(source.scenario || fallbackScenario),
-    channel: readFirstText(source.channel) || 'mock',
-    beforeStatus: normalizeOrderStatus(source.beforeStatus),
-    afterStatus: normalizeOrderStatus(source.afterStatus),
-    callbackCount: readPositiveInt(1, source.callbackCount),
-    firstStatus: normalizeOrderStatus(source.firstStatus),
-    firstTradeNo: readFirstText(source.firstTradeNo),
-    firstResult: readFirstText(source.firstResult),
-    secondStatus: normalizeOrderStatus(source.secondStatus),
-    secondTradeNo: readFirstText(source.secondTradeNo),
-    secondResult: readFirstText(source.secondResult),
-    finalResult: readFirstText(source.finalResult),
-  }
-}
 
 function normalizeLogisticsTraceItem(payload: unknown): SellerOrderLogisticsTraceItem {
   const source = isRecord(payload) ? payload : {}
@@ -671,16 +623,4 @@ export async function confirmBuyerOrderReceipt(orderId: number | string) {
     `/user/orders/${normalizeOrderId(orderId, '订单 ID 无效，无法确认收货。')}/confirm-receipt`,
   )
   return normalizeActionMessage(payload, '确认收货请求已提交。')
-}
-
-export async function simulateBuyerOrderMockPay(orderId: number | string, scenario: BuyerMockPayScenario = 'SUCCESS') {
-  const normalizedScenario = normalizeMockPayScenario(scenario)
-  const payload = await request.post<any, unknown>(
-    `/user/orders/${normalizeOrderId(orderId, '订单 ID 无效，无法触发 mock 支付。')}/pay/mock`,
-    undefined,
-    {
-      params: { scenario: normalizedScenario },
-    },
-  )
-  return normalizeMockPayResult(payload, normalizedScenario)
 }

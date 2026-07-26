@@ -196,7 +196,7 @@ watch(
           <span class="chip chip-neutral font-numeric">消息 {{ pageData.total }}</span>
           <span v-if="unreadIncomingCount > 0" class="chip chip-warning font-numeric">待读 {{ unreadIncomingCount }}</span>
         </div>
-        <p class="section-subtitle">只覆盖 order chat 的 list / send / mark-as-read；系统通知中心仍归 Day08。</p>
+        <p class="section-subtitle">支持订单会话消息的查看、发送与已读标记。</p>
       </div>
       <div class="section-actions">
         <button class="btn-default !h-9 px-3" type="button" :disabled="loading" @click="loadMessages">

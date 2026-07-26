@@ -171,7 +171,7 @@ function normalizeListQuery(query?: MarketProductListQuery) {
 
   const categoryId = normalizeNumber(query?.categoryId)
   if (categoryId !== null && categoryId > 0) {
-    params.categoryId = Math.trunc(categoryId)
+    params.category = String(Math.trunc(categoryId))
   }
 
   const minPrice = normalizeNumber(query?.minPrice)

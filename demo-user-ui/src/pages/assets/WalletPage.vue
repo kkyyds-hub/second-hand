@@ -158,9 +158,10 @@ onMounted(() => {
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
-      <div>
+      <div class="flex-1">
         <p class="font-semibold">钱包数据加载失败</p>
         <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
+        <button class="btn-default mt-3" type="button" :disabled="loading" @click="loadWallet()">重新加载</button>
       </div>
     </section>
 
@@ -182,7 +183,7 @@ onMounted(() => {
           <p class="text-[13px] text-gray-500">当前可用余额</p>
           <p class="mt-3 font-numeric text-[34px] font-bold tracking-tight text-gray-900">{{ formatCurrency(balance.balance) }}</p>
           <div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-[12px] leading-6 text-blue-800">
-            说明：Day07 仅承接用户端资产中心前端最小闭环；提现按钮提交的是后端申请记录，不写成真实金融出金链路。
+            说明：提现功能提交的是演示申请记录，不涉及真实金融出金。
           </div>
         </div>
       </section>

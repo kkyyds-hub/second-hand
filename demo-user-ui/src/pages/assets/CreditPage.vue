@@ -139,7 +139,7 @@ onMounted(() => {
             </div>
           </div>
           <p class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-[12px] leading-6 text-gray-600">
-            信用等级文案由前端按已知 dbValue 做展示映射；若后续风控规则变更，应先回填 Day07 文档再调整页面。
+            信用等级文案由前端按已知等级值做展示映射。
           </p>
         </div>
       </section>

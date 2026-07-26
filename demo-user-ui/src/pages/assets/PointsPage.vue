@@ -110,9 +110,10 @@ onMounted(() => {
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
-      <div>
+      <div class="flex-1">
         <p class="font-semibold">积分数据加载失败</p>
         <p class="mt-1 text-[12px] leading-5">{{ errorMessage }}</p>
+        <button class="btn-default mt-3" type="button" :disabled="loading" @click="loadPoints()">重新加载</button>
       </div>
     </section>
 
