@@ -124,6 +124,16 @@ public class OrderServiceImpl implements OrderService {
     private OrderShipTimeoutTaskMapper orderShipTimeoutTaskMapper;
 
     /**
+     * P3-CART-A：购物车数据访问。
+     *
+     * 用于“立即购买”成功后同步清理购物车：
+     * 在同一下单事务内按 buyerId + productId 做幂等删除，
+     * 保证订单创建与购物车清理原子一致。
+     */
+    @Autowired
+    private com.demo.mapper.CartMapper cartMapper;
+
+    /**
      * 当前类的 Spring 代理。
      *
      * 使用原因：
@@ -499,6 +509,14 @@ public class OrderServiceImpl implements OrderService {
         // 发送订单超时延迟消息（失败不影响主交易，仍有 DB 扫描 Job 兜底）
         safePublish("ORDER_TIMEOUT_DELAY", () -> orderEventProducer.sendOrderTimeoutDelay(order));
 
+        // P3-CART-A：立即购买成功后同步清理购物车。
+        // 在同一事务内按 buyerId + productId 幂等删除：存在则删除，不存在返回 0 不报错。
+        // 放在订单/明细/Outbox 写入之后，若删除异常则整体回滚，保证订单与购物车状态一致。
+        int cartRemoved = cartMapper.deleteByUserAndProduct(currentUserId, productId);
+        if (cartRemoved > 0) {
+            log.info("立即购买同步清理购物车：userId={}, productId={}, orderId={}, removed={}",
+                    currentUserId, productId, order.getId(), cartRemoved);
+        }
 
         // 6) 返回响应（SQL 用 NOW()，这里返回当前时间即可；若要严格一致可再查一次订单）
         CreateOrderResponse resp = new CreateOrderResponse();

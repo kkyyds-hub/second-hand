@@ -167,6 +167,20 @@ CREATE TABLE `favorites` (
   CONSTRAINT `chk_favorites_deleted` CHECK (`is_deleted` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `cart_items` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT NOT NULL,
+  `product_id` BIGINT NOT NULL,
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cart_user_product` (`user_id`, `product_id`),
+  INDEX `idx_cart_user_time` (`user_id`, `create_time`),
+  INDEX `idx_cart_product` (`product_id`),
+  CONSTRAINT `fk_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_cart_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `orders` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `order_no` VARCHAR(64) NOT NULL,

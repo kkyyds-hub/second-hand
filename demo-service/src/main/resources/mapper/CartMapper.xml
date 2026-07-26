@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.CartMapper">
+
+    <!--
+      购物车列表联表查询：
+      1) LEFT JOIN products：商品被软删除（is_deleted=1）时仍返回购物车行，
+         由 Service 标记为 deleted，不让整表查询失败；
+      2) LEFT JOIN users：回填卖家昵称；
+      3) 按加入时间倒序。
+    -->
+    <select id="listCartItems" resultType="com.demo.dto.cart.CartItemRow">
+        SELECT
+            c.id            AS cartItemId,
+            c.product_id    AS productId,
+            p.title         AS title,
+            p.images        AS images,
+            p.price         AS price,
+            p.owner_id      AS sellerId,
+            u.nickname      AS sellerNickname,
+            p.status        AS productStatus,
+            p.is_deleted    AS productDeleted,
+            c.create_time   AS createTime
+        FROM cart_items c
+        LEFT JOIN products p ON p.id = c.product_id
+        LEFT JOIN users u ON u.id = p.owner_id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.create_time DESC, c.id DESC
+    </select>
+
+    <!--
+      立即购买成功后幂等删除购物车项：
+      存在则删除，不存在返回 0，不报错。
+    -->
+    <delete id="deleteByUserAndProduct">
+        DELETE FROM cart_items
+        WHERE user_id = #{userId}
+          AND product_id = #{productId}
+    </delete>
+
+</mapper>
