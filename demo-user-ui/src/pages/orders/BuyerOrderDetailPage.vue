@@ -13,10 +13,6 @@ import {
   createEmptyBuyerOrderDetail,
   getBuyerOrderDetail,
   getBuyerOrderStatusMeta,
-  payBuyerOrder,
-  simulateBuyerOrderMockPay,
-  type BuyerMockPayScenario,
-  type BuyerMockPayResult,
   type BuyerOrderDetail,
 } from '@/api/orders'
 import OrderMessagePanel from '@/pages/orders/components/OrderMessagePanel.vue'
@@ -31,7 +27,6 @@ const detail = ref<BuyerOrderDetail>(createEmptyBuyerOrderDetail())
 const actionSubmitting = ref(false)
 const actionErrorMessage = ref('')
 const actionSuccessMessage = ref('')
-const mockPayScenario = ref<BuyerMockPayScenario>('SUCCESS')
 const cancelReason = ref('')
 
 const afterSaleSubmitting = ref(false)
@@ -50,12 +45,6 @@ const disputeForm = reactive({
   afterSaleId: '',
   content: '',
 })
-
-const mockPayScenarioOptions: Array<{ value: BuyerMockPayScenario; label: string }> = [
-  { value: 'SUCCESS', label: 'SUCCESS (simulate successful callback)' },
-  { value: 'FAIL', label: 'FAIL (simulate failed callback)' },
-  { value: 'REPEAT', label: 'REPEAT (simulate duplicate callback)' },
-]
 
 const orderId = computed(() => {
   const rawId = route.params.orderId
@@ -80,7 +69,11 @@ const productImages = computed(() => {
   return []
 })
 
-const canTriggerPayment = computed(() => {
+const canEnterPaymentPage = computed(() => {
+  /**
+   * P1-D2-A：详情页只保留“去支付”入口，支付执行下沉到正式支付页。
+   * 仅在订单有效、状态为 pending、且页面没有其他提交任务时显示入口。
+   */
   return Boolean(
     detail.value.orderId !== null
       && detail.value.status === 'pending'
@@ -247,10 +240,10 @@ const paymentGuardText = computed(() => {
   }
 
   if (detail.value.status !== 'pending') {
-    return `Current status is "${statusMeta.value.label}". Only pending orders can pay/mock-pay.`
+    return `Current status is "${statusMeta.value.label}". Only pending orders show the payment entry.`
   }
 
-  return 'Pending order detected. Pay/mock-pay is available.'
+  return 'Pending order detected. Use "去支付" to enter the formal payment page.'
 })
 
 const cancelGuardText = computed(() => {
@@ -383,63 +376,12 @@ function normalizeCancelReason(value: string) {
   return value.trim()
 }
 
-function readMockPaySummary(result: BuyerMockPayResult) {
-  const beforeLabel = getBuyerOrderStatusMeta(result.beforeStatus).label
-  const afterLabel = getBuyerOrderStatusMeta(result.afterStatus).label
-  const finalResult = result.finalResult || 'result returned'
-  return `mock(${result.scenario}) done: ${finalResult}, ${beforeLabel} -> ${afterLabel}.`
-}
-
 function readAfterSaleSuccessMessage(result: CreateAfterSaleResult) {
   if (result.afterSaleId !== null) {
     return `After-sale apply submitted. afterSaleId: ${result.afterSaleId}.`
   }
 
   return 'After-sale apply submitted.'
-}
-
-async function submitPay() {
-  if (!canTriggerPayment.value || detail.value.orderId === null) {
-    return
-  }
-
-  try {
-    actionSubmitting.value = true
-    actionErrorMessage.value = ''
-    actionSuccessMessage.value = ''
-
-    const message = await payBuyerOrder(detail.value.orderId)
-    actionSuccessMessage.value = message || 'Pay request submitted.'
-    await loadDetail()
-  } catch (error: unknown) {
-    actionErrorMessage.value = readErrorMessage(error, 'Order action failed. Please retry later.')
-  } finally {
-    actionSubmitting.value = false
-  }
-}
-
-async function submitMockPay() {
-  if (!canTriggerPayment.value || detail.value.orderId === null) {
-    return
-  }
-
-  try {
-    actionSubmitting.value = true
-    actionErrorMessage.value = ''
-    actionSuccessMessage.value = ''
-
-    /**
-     * mock-pay is only for demo/testing.
-     * It reuses the same callback chain, but does not mean real PSP integration is done.
-     */
-    const result = await simulateBuyerOrderMockPay(detail.value.orderId, mockPayScenario.value)
-    actionSuccessMessage.value = readMockPaySummary(result)
-    await loadDetail()
-  } catch (error: unknown) {
-    actionErrorMessage.value = readErrorMessage(error, 'Order action failed. Please retry later.')
-  } finally {
-    actionSubmitting.value = false
-  }
 }
 
 async function submitCancelOrder() {
@@ -619,7 +561,7 @@ async function loadDetail() {
   }
 }
 
-const packageHint = 'This page now includes pay/cancel/confirm-receipt/after-sale-apply/dispute-initiate. Final acceptance is out of scope.'
+const packageHint = 'This page now includes payment entry (formal payment page)/cancel/confirm-receipt/after-sale-apply/dispute-initiate. Final acceptance is out of scope.'
 
 onMounted(() => {
   loadDetail()
@@ -710,7 +652,7 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">Order actions</h2>
-            <p class="section-subtitle">Actions are enabled by status: pay, cancel, confirm receipt, after-sale apply, dispute initiate.</p>
+            <p class="section-subtitle">Actions are enabled by status: payment entry, cancel, confirm receipt, after-sale apply, dispute initiate.</p>
           </div>
         </div>
         <div class="section-body space-y-4">
@@ -725,29 +667,16 @@ onMounted(() => {
 
           <div class="grid gap-4 lg:grid-cols-2">
             <section class="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 space-y-3">
-              <h3 class="text-[14px] font-semibold text-gray-900">Pay actions</h3>
+              <h3 class="text-[14px] font-semibold text-gray-900">订单支付</h3>
               <div class="flex flex-wrap items-end gap-3">
-                <button class="btn-primary" type="button" :disabled="!canTriggerPayment" @click="submitPay">
-                  <Loader2 v-if="actionSubmitting" class="h-4 w-4 animate-spin" />
-                  <span>{{ actionSubmitting ? 'Submitting...' : 'Pay now (pay)' }}</span>
-                </button>
-
-                <div class="w-full max-w-[320px]">
-                  <label class="form-label" for="buyer-mock-pay-scenario">Mock scenario</label>
-                  <select
-                    id="buyer-mock-pay-scenario"
-                    v-model="mockPayScenario"
-                    class="input-standard"
-                    :disabled="!canTriggerPayment"
-                    @change="clearActionMessages"
-                  >
-                    <option v-for="option in mockPayScenarioOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                  </select>
-                </div>
-
-                <button class="btn-default" type="button" :disabled="!canTriggerPayment" @click="submitMockPay">
-                  Run mock pay
-                </button>
+                <router-link
+                  v-if="canEnterPaymentPage"
+                  class="btn-primary"
+                  :to="`/orders/buyer/${detail.orderId}/pay`"
+                >
+                  去支付
+                </router-link>
+                <span v-else class="chip chip-neutral">暂无可用支付入口</span>
               </div>
               <p class="form-helper">{{ paymentGuardText }}</p>
             </section>

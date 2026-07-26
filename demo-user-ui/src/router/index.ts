@@ -241,6 +241,17 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'orders/buyer/:orderId/pay',
+          name: 'BuyerOrderPayment',
+          component: () => import('@/pages/orders/BuyerPaymentPage.vue'),
+          /**
+           * P1-D2-A：买家正式支付页。
+           * 固定放在 `:orderId` 详情动态路由前面，避免 `/orders/buyer/123/pay` 被误解析为详情参数；
+           * 支付统一在独立页面完成，订单详情页不再直接发起支付请求。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'orders/buyer/:orderId',
           name: 'BuyerOrderDetail',
           component: () => import('@/pages/orders/BuyerOrderDetailPage.vue'),
