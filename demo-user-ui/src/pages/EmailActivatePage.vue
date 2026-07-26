@@ -39,7 +39,9 @@ const normalizeQueryToken = (value: unknown): string => {
 }
 
 const showEmailPreview = import.meta.env.DEV
-const previewUrl = import.meta.env.VITE_EMAIL_PREVIEW_PATH || '/api/user/auth/email-preview/latest'
+const previewUrl = import.meta.env.DEV
+  ? (import.meta.env.VITE_EMAIL_PREVIEW_PATH || '/api/user/auth/email-preview/latest')
+  : ''
 
 const openEmailPreview = () => {
   window.open(previewUrl, '_blank', 'noopener,noreferrer')

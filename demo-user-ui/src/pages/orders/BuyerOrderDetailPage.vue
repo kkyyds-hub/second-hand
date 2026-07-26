@@ -404,7 +404,7 @@ async function submitCancelOrder() {
     const message = await cancelBuyerOrder(detail.value.orderId, {
       reason: normalizedReason || undefined,
     })
-    actionSuccessMessage.value = message || 'Cancel request submitted.'
+    actionSuccessMessage.value = message || '取消订单请求已提交。'
     await loadDetail()
   } catch (error: unknown) {
     actionErrorMessage.value = readErrorMessage(error, '订单操作失败，请稍后重试。')
@@ -424,7 +424,7 @@ async function submitConfirmReceipt() {
     actionSuccessMessage.value = ''
 
     const message = await confirmBuyerOrderReceipt(detail.value.orderId)
-    actionSuccessMessage.value = message || 'Confirm-receipt request submitted.'
+    actionSuccessMessage.value = message || '确认收货请求已提交。'
     await loadDetail()
   } catch (error: unknown) {
     actionErrorMessage.value = readErrorMessage(error, '订单操作失败，请稍后重试。')
@@ -528,7 +528,7 @@ async function submitDisputeInitiate() {
     disputeSuccessMessage.value = ''
 
     const message = await initiateBuyerAfterSaleDispute(afterSaleId, { content })
-    disputeSuccessMessage.value = message || 'Dispute request submitted.'
+    disputeSuccessMessage.value = message || '争议申请已提交。'
   } catch (error: unknown) {
     disputeErrorMessage.value = readErrorMessage(error, '争议提交失败，请稍后重试。')
     disputeSuccessMessage.value = ''
