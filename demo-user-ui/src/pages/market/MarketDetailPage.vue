@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { ChevronLeft, Loader2, MessageSquareMore, ShieldAlert } from 'lucide-vue-next'
 import {
   createEmptyReviewPage,
@@ -10,6 +10,8 @@ import {
 } from '@/api/market'
 import { createReview } from '@/api/review'
 import { favoriteProduct, getFavoriteStatus, unfavoriteProduct } from '@/api/favorite'
+import { addCartItem } from '@/api/cart'
+import { useCartStore } from '@/stores/cart'
 import FavoriteToggleButton from '@/pages/market/components/FavoriteToggleButton.vue'
 import ProductImageGallery from '@/pages/market/components/ProductImageGallery.vue'
 import ProductReviewList from '@/pages/market/components/ProductReviewList.vue'
@@ -42,6 +44,27 @@ const reportSubmitting = ref(false)
 const reportError = ref('')
 const reportSuccessMessage = ref('')
 const reportForm = reactive({ reportType: 'misleading_desc', description: '', evidenceUrlsText: '' })
+
+const cartStore = useCartStore()
+const cartAdding = ref(false)
+const cartMessage = ref('')
+const cartErrorMessage = ref('')
+const cartErrorRef = ref<HTMLElement | null>(null)
+
+/**
+ * 加入购物车按钮可用性：
+ * 已登录 + 商品已加载 + 非本人商品 + 当前无加入请求。
+ * 商品详情接口只返回在售商品，因此无需再判断 on_sale；
+ * 已售/下架/审核中/已删除的商品不会出现在该详情页。
+ */
+const canAddToCart = computed(() => {
+  return Boolean(
+    productId.value !== null &&
+      detail.value &&
+      !isOwnProduct.value &&
+      !cartAdding.value,
+  )
+})
 
 const reportTypeOptions = [
   { value: 'misleading_desc', label: '描述与实物不符' },
@@ -131,6 +154,9 @@ function resetRouteState() {
   reportForm.reportType = 'misleading_desc'
   reportForm.description = ''
   reportForm.evidenceUrlsText = ''
+  cartAdding.value = false
+  cartMessage.value = ''
+  cartErrorMessage.value = ''
 }
 
 async function loadDetail(id: number, sequence: number) {
@@ -197,6 +223,35 @@ function startCheckout() {
     return
   }
   void router.push(`/checkout/${productId.value}`)
+}
+
+/**
+ * 加入购物车（幂等）。
+ *
+ * 1) 请求期间按钮 disabled 并显示“加入中...”，防快速双击 / Enter 双触发；
+ * 2) 成功后刷新角标并给出明确反馈，不跳离商品详情；
+ * 3) 失败展示后端真实错误，按钮恢复，不自动重试，错误区域获得焦点。
+ */
+async function addToCart() {
+  const id = productId.value
+  if (id === null || !detail.value || isOwnProduct.value || cartAdding.value) {
+    return
+  }
+
+  cartAdding.value = true
+  cartMessage.value = ''
+  cartErrorMessage.value = ''
+  try {
+    await addCartItem({ productId: id })
+    cartMessage.value = '已加入购物车'
+    cartStore.refreshCount(currentUser.value?.id ?? null).catch(() => {})
+  } catch (error) {
+    cartErrorMessage.value = error instanceof Error && error.message ? error.message : '加入购物车失败，请稍后重试'
+    await nextTick()
+    cartErrorRef.value?.focus()
+  } finally {
+    cartAdding.value = false
+  }
 }
 
 async function toggleFavorite() {
@@ -373,8 +428,32 @@ watch(productId, () => {
             <div v-if="favoriteStatusSyncError" class="notice-banner notice-banner-warning mt-5">{{ favoriteStatusSyncError }}</div>
             <div class="mt-6 flex flex-wrap items-center gap-3">
               <button class="btn-primary" type="button" :disabled="isOwnProduct" @click="startCheckout">立即购买</button>
+              <button
+                class="btn-default"
+                type="button"
+                :disabled="!canAddToCart"
+                :aria-busy="cartAdding"
+                @click="addToCart"
+              >
+                <Loader2 v-if="cartAdding" class="h-4 w-4 animate-spin" aria-hidden="true" />
+                {{ cartAdding ? '加入中...' : '加入购物车' }}
+              </button>
               <p v-if="isOwnProduct" class="text-[13px] text-amber-700">不能购买自己发布的商品</p>
             </div>
+            <div
+              v-if="cartMessage"
+              class="notice-banner notice-banner-success mt-4"
+              role="status"
+              aria-live="polite"
+            >{{ cartMessage }}</div>
+            <div
+              v-if="cartErrorMessage"
+              ref="cartErrorRef"
+              class="notice-banner notice-banner-danger mt-4"
+              role="alert"
+              aria-live="assertive"
+              tabindex="-1"
+            >{{ cartErrorMessage }}</div>
             <div class="mt-8 border-t border-gray-100 pt-6">
               <h2 class="text-[15px] font-semibold text-gray-900">商品描述</h2>
               <p class="mt-3 whitespace-pre-line break-words text-[14px] leading-7 text-gray-700">{{ detail.description || '该商品暂未提供详细描述。' }}</p>

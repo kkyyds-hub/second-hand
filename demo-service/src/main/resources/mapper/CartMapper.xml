@@ -29,6 +29,42 @@
     </select>
 
     <!--
+      单个购物车项联表查询（加入/幂等返回时回读完整展示字段）。
+      口径与 listCartItems 一致，确保 sellerNickname 等字段完整。
+    -->
+    <select id="selectByUserAndProduct" resultType="com.demo.dto.cart.CartItemRow">
+        SELECT
+            c.id            AS cartItemId,
+            c.product_id    AS productId,
+            p.title         AS title,
+            p.images        AS images,
+            p.price         AS price,
+            p.owner_id      AS sellerId,
+            u.nickname      AS sellerNickname,
+            p.status        AS productStatus,
+            p.is_deleted    AS productDeleted,
+            c.create_time   AS createTime
+        FROM cart_items c
+        LEFT JOIN products p ON p.id = c.product_id
+        LEFT JOIN users u ON u.id = p.owner_id
+        WHERE c.user_id = #{userId}
+          AND c.product_id = #{productId}
+        LIMIT 1
+    </select>
+
+    <!--
+      对当前用户行加行锁（FOR UPDATE），作为购物车容量校验的数据库级串行化点。
+      并发加入不同商品时，锁住同一 users 行使容量检查串行执行，
+      保证 50 项上限在并发下仍然成立。用户不存在返回 null。
+    -->
+    <select id="selectUserIdForUpdate" resultType="java.lang.Long">
+        SELECT id
+        FROM users
+        WHERE id = #{userId}
+        FOR UPDATE
+    </select>
+
+    <!--
       立即购买成功后幂等删除购物车项：
       存在则删除，不存在返回 0，不报错。
     -->

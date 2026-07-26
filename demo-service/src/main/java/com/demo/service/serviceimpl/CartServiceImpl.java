@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -50,6 +51,9 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
 
     /** 购物车总量上限。 */
     private static final int CART_MAX_SIZE = 50;
+
+    /** 单次批量删除去重后上限。 */
+    private static final int BATCH_DELETE_MAX_SIZE = 50;
 
     /** 单次批量结算去重后上限。 */
     private static final int CHECKOUT_MAX_SIZE = 20;
@@ -96,6 +100,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public CartItemVO add(Long userId, AddCartItemRequest request) {
         Long productId = request.getProductId();
 
@@ -111,46 +116,51 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
             throw new BusinessException("不能购买自己发布的商品");
         }
 
-        // 2) 幂等：已存在则直接返回已有购物车项。
-        CartItem existing = getOne(new LambdaQueryWrapper<CartItem>()
-                .eq(CartItem::getUserId, userId)
-                .eq(CartItem::getProductId, productId)
-                .last("LIMIT 1"));
-        if (existing != null) {
+        // 2) 幂等快路径：已存在则直接回读完整项返回。
+        CartItemRow existingRow = baseMapper.selectByUserAndProduct(userId, productId);
+        if (existingRow != null) {
             log.info("购物车项已存在，幂等返回：userId={}, productId={}, cartItemId={}",
-                    userId, productId, existing.getId());
-            return buildItemVOFromProduct(existing.getId(), existing.getCreateTime(), product, userId);
+                    userId, productId, existingRow.getCartItemId());
+            return toItemVO(existingRow, userId);
         }
 
-        // 3) 总量上限校验（仅对新增生效）。
+        // 3) 数据库级串行化点：锁定当前用户行，使并发加入不同商品时容量检查串行执行。
+        //    用户行不存在（理论上不会，因为当前用户已登录）时给出明确错误。
+        Long lockedUserId = baseMapper.selectUserIdForUpdate(userId);
+        if (lockedUserId == null) {
+            throw new BusinessException("用户不存在或会话已失效");
+        }
+
+        // 4) 获得锁后重新检查：是否已存在相同商品（并发插入）、当前真实数量、是否达到上限。
+        CartItemRow recheckRow = baseMapper.selectByUserAndProduct(userId, productId);
+        if (recheckRow != null) {
+            log.info("加锁后命中已存在购物车项，幂等返回：userId={}, productId={}, cartItemId={}",
+                    userId, productId, recheckRow.getCartItemId());
+            return toItemVO(recheckRow, userId);
+        }
+
         long currentCount = count(new LambdaQueryWrapper<CartItem>()
                 .eq(CartItem::getUserId, userId));
         if (currentCount >= CART_MAX_SIZE) {
             throw new BusinessException("购物车已达上限（最多 " + CART_MAX_SIZE + " 项）");
         }
 
-        // 4) 插入；唯一索引作为最终并发保护。
+        // 5) 插入；唯一索引继续承担同商品并发的最终保护。
         CartItem item = new CartItem();
         item.setUserId(userId);
         item.setProductId(productId);
         try {
             save(item);
         } catch (DuplicateKeyException e) {
-            // 并发下已插入：幂等当成功，回查已有行。
-            CartItem concurrent = getOne(new LambdaQueryWrapper<CartItem>()
-                    .eq(CartItem::getUserId, userId)
-                    .eq(CartItem::getProductId, productId)
-                    .last("LIMIT 1"));
-            if (concurrent != null) {
-                log.info("并发加入命中唯一索引，幂等返回：userId={}, productId={}, cartItemId={}",
-                        userId, productId, concurrent.getId());
-                return buildItemVOFromProduct(concurrent.getId(), concurrent.getCreateTime(), product, userId);
-            }
-            return buildItemVOFromProduct(null, null, product, userId);
+            // 并发下已插入：幂等当成功，回读完整项返回。
+            log.info("并发加入命中唯一索引，幂等返回：userId={}, productId={}", userId, productId);
+            return readCompleteItem(userId, productId, product);
         }
 
         log.info("加入购物车成功：userId={}, productId={}, cartItemId={}", userId, productId, item.getId());
-        return buildItemVOFromProduct(item.getId(), item.getCreateTime(), product, userId);
+
+        // 6) 回读完整展示字段（含 sellerNickname），不返回半成品。
+        return readCompleteItem(userId, productId, product);
     }
 
     @Override
@@ -169,7 +179,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
 
     @Override
     public int batchDelete(Long userId, BatchDeleteCartItemsRequest request) {
-        // 去重（保持无意义，删除按集合即可）。
+        // 去重并保留原顺序；DTO 已保证元素非 null 且 >0，这里再做一次防御性过滤。
         Set<Long> ids = new LinkedHashSet<>();
         for (Long id : request.getCartItemIds()) {
             if (id != null && id > 0) {
@@ -178,6 +188,10 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
         }
         if (ids.isEmpty()) {
             return 0;
+        }
+        // 去重后的有效数量上限校验。
+        if (ids.size() > BATCH_DELETE_MAX_SIZE) {
+            throw new BusinessException("单次最多删除 " + BATCH_DELETE_MAX_SIZE + " 项");
         }
         int rows = baseMapper.delete(new LambdaQueryWrapper<CartItem>()
                 .in(CartItem::getId, ids)
@@ -313,6 +327,21 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, CartItem> implement
         vo.setAvailable(reason == null);
         vo.setUnavailableReason(reason);
         return vo;
+    }
+
+    /**
+     * 回读完整购物车项 VO。
+     *
+     * 正常情况下联表查询能返回含 sellerNickname 的完整行；
+     * 极端时序下行缺失时，退化为基于商品实体的兜底 VO，保证不返回 null。
+     */
+    private CartItemVO readCompleteItem(Long userId, Long productId, Product product) {
+        CartItemRow row = baseMapper.selectByUserAndProduct(userId, productId);
+        if (row != null) {
+            return toItemVO(row, userId);
+        }
+        log.warn("回读购物车项为空，退化为商品兜底 VO：userId={}, productId={}", userId, productId);
+        return buildItemVOFromProduct(null, null, product, userId);
     }
 
     /**

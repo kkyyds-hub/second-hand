@@ -222,6 +222,16 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'cart',
+          name: 'CartPage',
+          component: () => import('@/pages/cart/CartPage.vue'),
+          /**
+           * P3-CART-B：购物车页面，必须登录后访问。
+           * 承接列表、多选、删除、批量删除、地址选择与批量结算闭环。
+           */
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'reviews/mine',
           name: 'MyReviews',
           component: () => import('@/pages/market/MyReviewsPage.vue'),

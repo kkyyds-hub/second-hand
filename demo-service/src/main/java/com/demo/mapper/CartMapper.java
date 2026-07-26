@@ -26,6 +26,23 @@ public interface CartMapper extends BaseMapper<CartItem> {
     List<CartItemRow> listCartItems(@Param("userId") Long userId);
 
     /**
+     * 查询单个购物车项并联表商品与卖家信息。
+     *
+     * 用于加入/幂等返回时回读完整展示字段（含 sellerNickname），
+     * 避免返回只有 ID 的半成品结果。
+     */
+    CartItemRow selectByUserAndProduct(@Param("userId") Long userId,
+                                       @Param("productId") Long productId);
+
+    /**
+     * 对当前用户行加行锁（FOR UPDATE），作为购物车容量校验的数据库级串行化点。
+     *
+     * 并发加入不同商品时，先锁住同一 users 行的事务串行执行容量检查，
+     * 保证 50 项上限在并发下仍然成立。返回用户 ID；用户不存在时返回 null。
+     */
+    Long selectUserIdForUpdate(@Param("userId") Long userId);
+
+    /**
      * 立即购买成功后，幂等删除当前用户对指定商品的购物车项。
      * 存在则删除，不存在返回 0，不报错。
      */

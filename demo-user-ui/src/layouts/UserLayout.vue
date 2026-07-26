@@ -14,6 +14,7 @@ import {
   PackagePlus,
   PackageSearch,
   ShieldCheck,
+  ShoppingCart,
   Store,
   UserRound,
   X,
@@ -24,15 +25,19 @@ import {
   getUserPrimaryContact,
   isSellerUser,
   readCurrentUser,
+  readUserToken,
   type UserProfile,
 } from '@/utils/request'
 import { USER_APP_TITLE, USER_BRAND_MARK, USER_BRAND_SUBTITLE } from '@/utils/brand'
+import { useCartStore } from '@/stores/cart'
 
 type NavigationItem = {
   to: string
   label: string
   icon: typeof House
   active: (path: string) => boolean
+  /** 角标文案（空字符串表示不显示）。 */
+  badge?: string
 }
 
 const router = useRouter()
@@ -41,12 +46,39 @@ const profileMenuOpen = ref(false)
 const mobileMenuOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
 const currentUser = ref<UserProfile | null>(readCurrentUser())
+const cartStore = useCartStore()
 
 const appTitle = USER_APP_TITLE
 const isSeller = computed(() => isSellerUser(currentUser.value))
 const displayName = computed(() => getUserDisplayName(currentUser.value))
 const primaryContact = computed(() => getUserPrimaryContact(currentUser.value))
 const userInitial = computed(() => displayName.value.trim().charAt(0).toUpperCase() || '我')
+
+/**
+ * 购物车角标文案：0 不显示；1–99 显示真实数量；超过 99 显示 99+。
+ * 角标显示 total（失效商品仍存在于购物车）。
+ */
+const cartBadgeText = computed(() => {
+  const total = cartStore.total
+  if (total <= 0) {
+    return ''
+  }
+  return total > 99 ? '99+' : String(total)
+})
+
+/**
+ * 刷新购物车角标数量。仅在已登录时拉取；失败静默（保留旧值，避免角标抖动）。
+ */
+const refreshCartBadge = () => {
+  if (!readUserToken()) {
+    cartStore.reset()
+    return
+  }
+  const owner = currentUser.value?.id ?? null
+  cartStore.refreshCount(owner).catch(() => {
+    /* 角标刷新失败不打扰用户，保留旧值 */
+  })
+}
 
 const isExact = (target: string) => (path: string) => path === target
 const isRouteGroup = (target: string) => (path: string) => path === target || path.startsWith(`${target}/`)
@@ -55,6 +87,7 @@ const desktopNavigation = computed<NavigationItem[]>(() => {
   const items: NavigationItem[] = [
     { to: '/', label: '首页', icon: House, active: isExact('/') },
     { to: '/market', label: '逛市场', icon: Store, active: isRouteGroup('/market') },
+    { to: '/cart', label: '购物车', icon: ShoppingCart, active: isRouteGroup('/cart'), badge: cartBadgeText.value },
     { to: '/favorites', label: '收藏', icon: Heart, active: isRouteGroup('/favorites') },
     { to: '/orders/buyer', label: '我的订单', icon: PackageSearch, active: (path) => isRouteGroup('/orders/buyer')(path) || isRouteGroup('/orders/seller')(path) },
   ]
@@ -70,6 +103,7 @@ const mobileNavigation = computed<NavigationItem[]>(() => {
   const items: NavigationItem[] = [
     { to: '/', label: '首页', icon: House, active: isExact('/') },
     { to: '/market', label: '市场', icon: Store, active: isRouteGroup('/market') },
+    { to: '/cart', label: '购物车', icon: ShoppingCart, active: isRouteGroup('/cart'), badge: cartBadgeText.value },
     isSeller.value
       ? { to: '/seller/products/new', label: '发布', icon: PackagePlus, active: isRouteGroup('/seller/products') }
       : { to: '/favorites', label: '收藏', icon: Heart, active: isRouteGroup('/favorites') },
@@ -110,6 +144,7 @@ const closeMenus = () => {
 
 const quickLogout = async () => {
   clearUserSession()
+  cartStore.reset()
   closeMenus()
   await router.replace('/login')
 }
@@ -117,6 +152,7 @@ const quickLogout = async () => {
 const handleStorageSync = (event: StorageEvent) => {
   if (event.key === null || ['user_profile', 'user_token', 'authentication'].includes(event.key)) {
     syncCurrentUser()
+    refreshCartBadge()
   }
 }
 
@@ -136,12 +172,14 @@ watch(
   () => route.fullPath,
   () => {
     syncCurrentUser()
+    refreshCartBadge()
     closeMenus()
   },
 )
 
 onMounted(() => {
   syncCurrentUser()
+  refreshCartBadge()
   window.addEventListener('storage', handleStorageSync)
   document.addEventListener('pointerdown', handleDocumentPointerDown)
   document.addEventListener('keydown', handleKeydown)
@@ -174,7 +212,12 @@ onUnmounted(() => {
             class="site-nav-link"
             :class="item.active(route.path) ? 'site-nav-link-active' : ''"
           >
-            {{ item.label }}
+            <span>{{ item.label }}</span>
+            <span
+              v-if="item.badge"
+              class="cart-badge ml-1.5"
+              :aria-label="`购物车 ${item.badge} 件`"
+            >{{ item.badge }}</span>
           </router-link>
         </nav>
 
@@ -290,7 +333,14 @@ onUnmounted(() => {
         :class="item.active(route.path) ? 'mobile-bottom-link-active' : ''"
         @click="closeMenus"
       >
-        <component :is="item.icon" class="h-5 w-5" aria-hidden="true" />
+        <span class="relative inline-flex">
+          <component :is="item.icon" class="h-5 w-5" aria-hidden="true" />
+          <span
+            v-if="item.badge"
+            class="cart-badge cart-badge-mobile"
+            :aria-label="`购物车 ${item.badge} 件`"
+          >{{ item.badge }}</span>
+        </span>
         <span>{{ item.label }}</span>
       </router-link>
     </nav>
@@ -306,5 +356,26 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.3rem;
+  border-radius: 9999px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cart-badge-mobile {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.5rem;
 }
 </style>
