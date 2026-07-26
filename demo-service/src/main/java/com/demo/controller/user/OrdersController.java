@@ -15,10 +15,12 @@ import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.OrderLogisticsVO;
 import com.demo.vo.order.SellerOrderSummary;
+import com.demo.exception.BusinessException;
 import com.demo.vo.payment.MockPaymentSimulationVO;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +36,14 @@ import javax.validation.constraints.Min;
 @Api(tags = "用户订单接口")
 @Slf4j
 public class OrdersController {
+
+    /**
+     * mock 支付演示端点开关。
+     * 默认 false：生产 / 默认启动均不可外部调用 /pay/mock。
+     * 仅当配置 payment.mock.endpoint-enabled=true 时才放行。
+     */
+    @Value("${payment.mock.endpoint-enabled:false}")
+    private boolean mockEndpointEnabled;
 
     @Autowired
     private OrderService orderService;
@@ -150,7 +160,10 @@ public class OrdersController {
      */
     @PostMapping("/{orderId}/pay/mock")
     public Result<MockPaymentSimulationVO> simulatePay(@PathVariable Long orderId,
-                                                       @RequestParam(value = "scenario", defaultValue = "SUCCESS") String scenario) {
+                                                       @RequestParam(value = "scenario", required = false) String scenario) {
+        if (!mockEndpointEnabled) {
+            throw new BusinessException("mock 支付演示入口未启用");
+        }
         log.info("买家模拟支付回调: orderId={}, scenario={}", orderId, scenario);
         Long currentUserId = BaseContext.getCurrentId();
         MockPaymentSimulationVO result = orderService.simulateMockPayment(orderId, currentUserId, scenario);

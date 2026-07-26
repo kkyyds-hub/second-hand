@@ -750,7 +750,7 @@ public class OrderServiceImpl implements OrderService {
 
         private static MockPaymentScenario fromRaw(String raw) {
             if (raw == null || raw.trim().isEmpty()) {
-                return SUCCESS;
+                throw new BusinessException("mock 支付场景不能为空");
             }
             try {
                 return MockPaymentScenario.valueOf(raw.trim().toUpperCase());

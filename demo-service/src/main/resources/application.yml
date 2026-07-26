@@ -163,6 +163,7 @@ payment:
   mock:
     channel: mock
     sign: day20-mock-sign
+    endpoint-enabled: false
 
 # P4-S4 Outbox 发布与监控参数
 outbox:
