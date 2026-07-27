@@ -116,28 +116,56 @@ class AdminAuditIntegrationTest {
         // First arbitration should succeed
         Result<String> first = adminAfterSaleController.arbitrate(afterSaleId, request);
         assertNotNull(first);
+        assertEquals(1, first.getCode());
 
-        // Second arbitration should either succeed idempotently or throw BusinessException
-        // (depending on state machine - but must NOT produce duplicate side effects)
+        // Record state after first arbitration
+        String firstStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM after_sales WHERE id = ?", String.class, afterSaleId);
+        String firstRemark = jdbcTemplate.queryForObject(
+                "SELECT platform_remark FROM after_sales WHERE id = ?", String.class, afterSaleId);
+        assertNotNull(firstStatus);
+        assertNotNull(firstRemark);
+
+        // Record side-effect counts that actually exist:
+        // - Arbitration writes to after_sales only (no audit log, no outbox, no refund task)
+        //   Verify there's exactly 1 relevant after_sales record in CLOSED state
+        Integer initialAfterSaleCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM after_sales WHERE id = ? AND status = 'CLOSED'",
+                Integer.class, afterSaleId);
+        assertEquals(1, initialAfterSaleCount,
+                "After first arbitration, after_sales should be CLOSED");
+
+        // Second arbitration must be rejected (status is no longer DISPUTED)
         ArbitrateRequest duplicateRequest = new ArbitrateRequest();
         duplicateRequest.setApproved(true);
         duplicateRequest.setRemark(PREFIX + " duplicate");
 
+        BusinessException thrown = null;
         try {
-            Result<String> second = adminAfterSaleController.arbitrate(afterSaleId, duplicateRequest);
-            // If it succeeds, verify no duplicate audit records
-            if (second != null) {
-                Integer auditCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(*) FROM product_status_audit_log WHERE biz_id = ?",
-                        Integer.class, afterSaleId);
-                // Should have at most 1 meaningful audit entry from arbitration
-                assertTrue(auditCount == null || auditCount <= 2,
-                        "Should not have duplicate audit records");
-            }
+            adminAfterSaleController.arbitrate(afterSaleId, duplicateRequest);
         } catch (BusinessException e) {
-            // Expected: already processed
-            assertNotNull(e.getMessage());
+            thrown = e;
         }
+        assertNotNull(thrown, "Second arbitration must throw BusinessException");
+        assertEquals("售后状态不允许裁决", thrown.getMessage());
+
+        // Verify no duplicate side effects after second attempt
+        String secondStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM after_sales WHERE id = ?", String.class, afterSaleId);
+        String secondRemark = jdbcTemplate.queryForObject(
+                "SELECT platform_remark FROM after_sales WHERE id = ?", String.class, afterSaleId);
+
+        // Status must not have changed
+        assertEquals(firstStatus, secondStatus, "Status must not change on duplicate arbitration");
+        // Platform remark must not have been overwritten
+        assertEquals(firstRemark, secondRemark, "Platform remark must not be overwritten");
+
+        // No additional side effect: still exactly 1 CLOSED record
+        Integer finalAfterSaleCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM after_sales WHERE id = ? AND status = 'CLOSED'",
+                Integer.class, afterSaleId);
+        assertEquals(1, finalAfterSaleCount,
+                "No additional CLOSED record should be created");
     }
 
     @Test

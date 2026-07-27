@@ -114,6 +114,20 @@ const buildFallbackDisputeQueue = (tickets?: AuditTicketItem[]) => {
     .map(mapAuditTicketToDisputeItem)
 }
 
+/**
+ * 将后端旧版推测值转为中性兜底文案，避免滚动发布窗口期间出现：
+ * - "正常"（旧版在缺失 product/price 时返回）
+ *
+ * 注意：不映射"刚刚"，因为真实创建不到 1 分钟的商品会合法返回"刚刚"。
+ * 时间缺失的"刚刚"应由后端修复（null → 时间未知），不由前端粗暴替换。
+ */
+const normalizeLegacySpeculativeValue = (field: string, value: string): string => {
+  if (field === 'risk' && value === '正常') {
+    return '风险未提供'
+  }
+  return value
+}
+
 const normalizeReviewQueue = (reviewQueue?: ReviewItemPayload[]): ReviewItem[] => {
   if (!Array.isArray(reviewQueue)) {
     return []
@@ -128,7 +142,7 @@ const normalizeReviewQueue = (reviewQueue?: ReviewItemPayload[]): ReviewItem[] =
     type: item.type?.trim() || '未分类',
     price: item.price?.trim() || '—',
     time: item.time?.trim() || '时间未知',
-    risk: item.risk?.trim() || '风险未提供',
+    risk: normalizeLegacySpeculativeValue('risk', item.risk?.trim() || '风险未提供'),
   }))
 }
 

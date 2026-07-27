@@ -107,7 +107,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         gmvMetric.setTitle("今日成交额(GMV)");
         gmvMetric.setValue(formatCurrency(gmv));
         gmvMetric.setTrend(formatTrendPercent(gmv, previousGmv));
-        gmvMetric.setIsUp(gmv.compareTo(previousGmv) >= 0);
+        gmvMetric.setIsUp(gmv != null && previousGmv != null ? gmv.compareTo(previousGmv) >= 0 : true);
         gmvMetric.setSubtext("今日成交订单 " + orderCount + " 单");
 
         AdminDashboardOverviewVO.MetricItem orderMetric = new AdminDashboardOverviewVO.MetricItem();
@@ -238,19 +238,34 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return resolveUserDisplayName(owner, product.getOwnerId());
     }
 
-    private String inferProductRisk(Product product) {
+    /**
+     * 首页轻量风险推断（package-private 便于测试）。
+     *
+     * 规则：
+     * - product 为 null 或 product.price 为 null → 风险未提供
+     * - 真实价格 50000 及以上 → 高风险
+     * - 真实价格 10000 及以上 → 中风险
+     * - 真实价格低于 10000 → 普通
+     *
+     * 注意：不再使用"正常"作为缺失数据的兜底值。
+     */
+    String inferProductRisk(Product product) {
         if (product == null) {
-            return "正常";
+            return "风险未提供";
         }
 
-        BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+        if (product.getPrice() == null) {
+            return "风险未提供";
+        }
+
+        BigDecimal price = product.getPrice();
         if (price.compareTo(new BigDecimal("50000")) >= 0) {
             return "高风险";
         }
         if (price.compareTo(new BigDecimal("10000")) >= 0) {
             return "中风险";
         }
-        return "正常";
+        return "普通";
     }
 
     private String buildDisputeUserLabel(AfterSale afterSale) {
@@ -264,9 +279,20 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return "买家 " + buyerName + " vs 卖家 " + sellerName;
     }
 
-    private String inferDisputeLevel(AfterSale afterSale) {
+    /**
+     * 纠纷风险等级推断（package-private 便于测试）。
+     *
+     * 规则：
+     * - afterSale 为 null 或 updateTime 为 null → 风险未提供
+     * - 距更新时间 24 小时以上 → 紧急
+     * - 距更新时间 6 小时以上 → 中风险
+     * - 距更新时间 6 小时以内 → 待处理
+     *
+     * 注意：不再使用"中风险"作为缺失数据的兜底值。
+     */
+    String inferDisputeLevel(AfterSale afterSale) {
         if (afterSale == null || afterSale.getUpdateTime() == null) {
-            return "中风险";
+            return "风险未提供";
         }
 
         long hours = Duration.between(afterSale.getUpdateTime(), LocalDateTime.now()).toHours();
@@ -340,9 +366,16 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         }
     }
 
+    /**
+     * 将统计返回值安全转为 BigDecimal。
+     *
+     * 与旧版不同：value 为 null 时返回 null（而非 BigDecimal.ZERO），
+     * 以便区分"统计接口未提供数据"和"真实数值 0"。
+     * 解析失败时同样返回 null，不影响其他指标。
+     */
     private BigDecimal asBigDecimal(Object value) {
         if (value == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         if (value instanceof BigDecimal bigDecimal) {
             return bigDecimal;
@@ -351,27 +384,49 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             return new BigDecimal(String.valueOf(value));
         } catch (Exception ex) {
             log.warn("Dashboard cast to BigDecimal failed, value={}", value);
-            return BigDecimal.ZERO;
+            return null;
         }
     }
 
+    /**
+     * 金额格式化。
+     *
+     * - amount 为 null → 金额未知（区分"统计未提供"和"真实 0"）
+     * - 绝对值 ≥ 10000 → ¥X.X 万
+     * - 否则 → ¥X.XX
+     */
     private String formatCurrency(BigDecimal amount) {
-        BigDecimal safeAmount = amount == null ? BigDecimal.ZERO : amount;
-        if (safeAmount.abs().compareTo(new BigDecimal("10000")) >= 0) {
-            BigDecimal wan = safeAmount.divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP);
+        if (amount == null) {
+            return "金额未知";
+        }
+        if (amount.abs().compareTo(new BigDecimal("10000")) >= 0) {
+            BigDecimal wan = amount.divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP);
             return "¥" + wan.stripTrailingZeros().toPlainString() + "万";
         }
-        return "¥" + safeAmount.stripTrailingZeros().toPlainString();
+        return "¥" + amount.stripTrailingZeros().toPlainString();
     }
 
-    private String formatRelativeTime(LocalDateTime time) {
+    /**
+     * 相对时间格式化（package-private 便于测试）。
+     *
+     * 规则：
+     * - time 为 null → 时间未知
+     * - time 在未来 → 时间异常
+     * - 不到 1 分钟 → 刚刚
+     * - 不到 1 小时 → N 分钟前
+     * - 不到 24 小时 → N 小时前
+     * - 其他 → MM-dd HH:mm
+     *
+     * 注意：不再使用"刚刚"作为缺失/异常数据的兜底值。
+     */
+    String formatRelativeTime(LocalDateTime time) {
         if (time == null) {
-            return "刚刚";
+            return "时间未知";
         }
 
         Duration duration = Duration.between(time, LocalDateTime.now());
         if (duration.isNegative()) {
-            return "刚刚";
+            return "时间异常";
         }
 
         long minutes = duration.toMinutes();
