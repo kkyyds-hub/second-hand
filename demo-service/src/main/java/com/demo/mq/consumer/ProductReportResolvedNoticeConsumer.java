@@ -15,97 +15,65 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Day16 - 举报工单处理结果通知消费者。
- * 使用 MqConsumeGuard 统一幂等抢占。
- */
 @Slf4j
 @Component
 public class ProductReportResolvedNoticeConsumer {
 
-    private static final String CONSUMER_NAME = "ProductReportResolvedNoticeConsumer";
-
-    @Autowired
-    private MqConsumeGuard consumeGuard;
-
-    @Autowired
-    private SystemNoticeService systemNoticeService;
-
-    @Autowired
-    private ProductNoticeContentBuilder noticeContentBuilder;
-
-    @Value("${product.notice.report-resolved-enabled:true}")
-    private boolean reportResolvedNoticeEnabled;
+    private static final String NAME = "ProductReportResolvedNoticeConsumer";
+    @Autowired private MqConsumeGuard guard;
+    @Autowired private SystemNoticeService noticeService;
+    @Autowired private ProductNoticeContentBuilder contentBuilder;
+    @Value("${product.notice.report-resolved-enabled:true}") private boolean enabled;
 
     @RabbitListener(queues = "${demo.rabbitmq.queue.product-report-resolved-notice}")
-    public void onMessage(EventMessage<ProductReportResolvedPayload> message,
-                          Channel channel,
-                          Message amqpMessage) throws Exception {
+    public void onMessage(EventMessage<ProductReportResolvedPayload> envelope, Channel channel, Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-        if (message == null || message.getPayload() == null) {
-            log.warn("举报结果通知消息体为空，ACK 丢弃。");
+        if (envelope == null || envelope.getPayload() == null || isEmpty(envelope.getEventId())) {
             channel.basicAck(tag, false);
             return;
         }
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("举报结果通知缺少 eventId，ACK 丢弃。");
-            channel.basicAck(tag, false);
-            return;
-        }
-        if (!ProductEventType.PRODUCT_REPORT_RESOLVED.getCode().equals(message.getEventType())) {
-            log.warn("举报结果通知事件类型不匹配：eventType={}，ACK 丢弃。", message.getEventType());
+        if (!ProductEventType.PRODUCT_REPORT_RESOLVED.getCode().equals(envelope.getEventType())) {
             channel.basicAck(tag, false);
             return;
         }
 
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
-        Long logId = ar.logId();
-
+        MqConsumeGuard.AcquireResult ar = guard.acquire(NAME, envelope.getEventId());
+        String lease = ar.leaseToken();
         switch (ar.type()) {
-            case ALREADY_COMPLETED:
-                channel.basicAck(tag, false);
-                return;
-            case IN_PROGRESS_RECENT:
-                channel.basicNack(tag, false, true);
-                return;
-            case ACQUIRED_NEW:
-            case RECOVERED_STALE:
-            case RETRYABLE_FAILED:
-                break;
+            case ALREADY_COMPLETED: channel.basicAck(tag, false); return;
+            case IN_PROGRESS_RECENT: case UNKNOWN_STATE_RETRY: channel.basicNack(tag, false, true); return;
+            case ACQUIRED_NEW: case RECOVERED_STALE: case RETRYABLE_FAILED: break;
         }
 
         try {
-            ProductReportResolvedPayload payload = message.getPayload();
-            if (payload.getReporterId() == null || payload.getProductId() == null) {
-                consumeGuard.markSuccess(logId);
+            ProductReportResolvedPayload p = envelope.getPayload();
+            if (p.getReporterId() == null || p.getProductId() == null) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
-            if (!reportResolvedNoticeEnabled) {
-                log.info("举报结果通知开关关闭，跳过发送：eventId={}", message.getEventId());
-                consumeGuard.markSuccess(logId);
+            if (!enabled) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
+            String content = contentBuilder.buildReportResolvedNotice(p);
+            noticeService.sendNotice(p.getReporterId(), "SYS-PRODUCT-REPORT-RESOLVED-" + envelope.getEventId(), content);
 
-            String content = noticeContentBuilder.buildReportResolvedNotice(payload);
-            systemNoticeService.sendNotice(
-                    payload.getReporterId(),
-                    "SYS-PRODUCT-REPORT-RESOLVED-" + message.getEventId(),
-                    content);
-
-            consumeGuard.markSuccess(logId);
-            channel.basicAck(tag, false);
-
+            guard.markSuccess(ar.logId(), lease);
+            ackSafely(channel, tag, NAME, envelope.getEventId());
         } catch (BusinessException ex) {
-            consumeGuard.markSuccess(logId);
-            log.warn("举报结果通知业务异常，ACK。msg={}, err={}", message, ex.getMessage());
+            guard.markSuccess(ar.logId(), lease);
+            log.warn("REPORT_RESOLVED business ex eventId={}", envelope.getEventId(), ex);
             channel.basicAck(tag, false);
         } catch (Exception ex) {
-            consumeGuard.markFailure(logId);
-            log.error("举报结果通知处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            guard.markFailure(ar.logId(), lease, ex.getMessage());
+            log.error("REPORT_RESOLVED fail eventId={}", envelope.getEventId(), ex);
             channel.basicNack(tag, false, false);
         }
     }
+
+    private void ackSafely(Channel c, long t, String n, String e) { try { c.basicAck(t, false); } catch (Exception ex) { log.warn("{} ACK fail eventId={}", n, e, ex); } }
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
 }

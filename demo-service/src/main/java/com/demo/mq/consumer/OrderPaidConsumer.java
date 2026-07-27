@@ -18,67 +18,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Day14 - 订单已支付消费者。
- *
- * 职责：
- * 1) 监听 order.fulfillment.queue（绑定 order.paid）
- * 2) 使用 MqConsumeGuard 统一幂等抢占
- * 3) 发送“提醒卖家发货”站内消息
- * 4) 手工 ACK / NACK
- */
 @Slf4j
 @Component
 public class OrderPaidConsumer {
 
-    @Autowired
-    private OrderMapper orderMapper;
-
-    @Autowired
-    private MessageService messageService;
-
-    @Autowired
-    private OrderShipReminderTaskService shipReminderTaskService;
-
-    @Autowired
-    private MqConsumeGuard consumeGuard;
+    @Autowired private OrderMapper orderMapper;
+    @Autowired private MessageService messageService;
+    @Autowired private OrderShipReminderTaskService shipReminderTaskService;
+    @Autowired private MqConsumeGuard guard;
 
     @Value("${order.notice.paid-notify-seller-enabled:true}")
     private boolean paidNotifySellerEnabled;
 
-    private static final String CONSUMER_NAME = "OrderPaidConsumer";
+    private static final String NAME = "OrderPaidConsumer";
 
     @RabbitListener(queues = "${demo.rabbitmq.queue.order-fulfillment}")
-    public void onMessage(EventMessage<OrderPaidPayload> message,
-                          Channel channel,
-                          Message amqpMessage) throws Exception {
+    public void onMessage(EventMessage<OrderPaidPayload> envelope,
+                          Channel channel, Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-        // 兜底
-        if (message == null || message.getPayload() == null) {
-            log.warn("ORDER_PAID 消息体为空，ACK 丢弃。");
-            channel.basicAck(tag, false);
-            return;
-        }
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("ORDER_PAID 缺少 eventId，ACK 丢弃。");
+        if (envelope == null || envelope.getPayload() == null || isEmpty(envelope.getEventId())) {
             channel.basicAck(tag, false);
             return;
         }
 
-        // 统一幂等抢占
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
-        Long logId = ar.logId();
+        MqConsumeGuard.AcquireResult ar = guard.acquire(NAME, envelope.getEventId());
+        String lease = ar.leaseToken();
 
         switch (ar.type()) {
             case ALREADY_COMPLETED:
                 channel.basicAck(tag, false);
                 return;
-
             case IN_PROGRESS_RECENT:
+            case UNKNOWN_STATE_RETRY:
                 channel.basicNack(tag, false, true);
                 return;
-
             case ACQUIRED_NEW:
             case RECOVERED_STALE:
             case RETRYABLE_FAILED:
@@ -86,47 +60,41 @@ public class OrderPaidConsumer {
         }
 
         try {
-            OrderPaidPayload payload = message.getPayload();
-            Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
-            if (order == null) {
-                log.warn("ORDER_PAID 订单不存在，orderId={}", payload.getOrderId());
-                consumeGuard.markSuccess(logId);
+            OrderPaidPayload p = envelope.getPayload();
+            Order order = orderMapper.selectOrderBasicById(p.getOrderId());
+            if (order == null || OrderStatus.fromDbValue(order.getStatus()) != OrderStatus.PAID) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
-
-            OrderStatus status = OrderStatus.fromDbValue(order.getStatus());
-            if (status != OrderStatus.PAID) {
-                log.info("ORDER_PAID 跳过：当前状态={}, orderId={}", status, order.getId());
-                consumeGuard.markSuccess(logId);
-                channel.basicAck(tag, false);
-                return;
-            }
-
             if (paidNotifySellerEnabled) {
                 SendMessageRequest req = new SendMessageRequest();
                 req.setToUserId(order.getSellerId());
-                req.setClientMsgId("SYS-PAY-" + message.getEventId());
-                req.setContent("订单已付款，请尽快发货。订单号：" + payload.getOrderNo());
-                messageService.sendMessage(order.getId(), payload.getBuyerId(), req);
+                req.setClientMsgId("SYS-PAY-" + envelope.getEventId());
+                req.setContent("订单已付款，请尽快发货。订单号：" + p.getOrderNo());
+                messageService.sendMessage(order.getId(), p.getBuyerId(), req);
             }
-
             shipReminderTaskService.createReminderTasksForPaidOrder(
-                    order.getId(), order.getSellerId(), payload.getPayTime());
+                    order.getId(), order.getSellerId(), p.getPayTime());
+            log.info("ORDER_PAID done orderId={}", order.getId());
 
-            log.info("ORDER_PAID 处理完成：orderId={}", order.getId());
-
-            consumeGuard.markSuccess(logId);
-            channel.basicAck(tag, false);
-
+            guard.markSuccess(ar.logId(), lease);
+            ackSafely(channel, tag, "ORDER_PAID", envelope.getEventId());
         } catch (BusinessException ex) {
-            consumeGuard.markSuccess(logId);
-            log.warn("ORDER_PAID 业务异常，ACK。msg={}, err={}", message, ex.getMessage());
+            guard.markSuccess(ar.logId(), lease);
+            log.warn("ORDER_PAID business ex eventId={} err={}", envelope.getEventId(), ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
-            consumeGuard.markFailure(logId);
-            log.error("ORDER_PAID 处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            guard.markFailure(ar.logId(), lease, ex.getMessage());
+            log.error("ORDER_PAID fail eventId={}", envelope.getEventId(), ex);
             channel.basicNack(tag, false, false);
         }
     }
+
+    private void ackSafely(Channel channel, long tag, String consumer, String eventId) {
+        try { channel.basicAck(tag, false); }
+        catch (Exception ex) { log.warn("{} ACK failed eventId={} (state=OK preserved)", consumer, eventId, ex); }
+    }
+
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
 }

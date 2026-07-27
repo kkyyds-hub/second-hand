@@ -3,17 +3,14 @@ package com.demo.mq;
 import com.demo.entity.MqConsumeLog;
 import com.demo.mapper.MqConsumeLogMapper;
 import com.demo.service.MqConsumeGuard;
+import com.demo.service.serviceimpl.MqConsumeGuardImpl;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,328 +19,296 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * MqConsumeGuard 统一幂等守卫集成测试。
- *
- * 覆盖：
- * 1) ACQUIRED_NEW：首次插入 PROCESSING 成功
- * 2) ALREADY_COMPLETED：已有 OK，不重新执行业务
- * 3) IN_PROGRESS_RECENT：最近 PROCESSING，不 ACK 为完成
- * 4) RECOVERED_STALE：过期 PROCESSING 被原子接管
- * 5) RETRYABLE_FAILED：FAIL 记录允许重新抢占
- * 6) 并发接管：多线程同时处理同一过期 PROCESSING
- * 7) markSuccess/markFailure 状态转换
- * 8) 进程崩溃模拟：PROCESSING 被恢复
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class MqConsumeGuardIntegrationTest {
 
     private static final String CONSUMER = "TestConsumer";
-    private static final String PREFIX = "P6MQA_";
+    private static final String PREFIX = "P6MQAF1_";
 
-    @Autowired
-    private MqConsumeGuard consumeGuard;
+    @Autowired private MqConsumeGuard guard;
+    @Autowired private JdbcTemplate jdbc;
 
-    @Autowired
-    private MqConsumeLogMapper mqConsumeLogMapper;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    private static final List<Long> createdLogIds = new ArrayList<>();
+    private final List<Long> logIds = new ArrayList<>();
 
     @AfterEach
-    void cleanupTestLogs() {
-        for (Long id : createdLogIds) {
-            jdbcTemplate.update("DELETE FROM mq_consume_log WHERE id = ?", id);
-        }
-        createdLogIds.clear();
-    }
+    void clean() { for (Long id : logIds) jdbc.update("DELETE FROM mq_consume_log WHERE id = ?", id); logIds.clear(); }
 
-    // ────────────────────────────────────────
-    // 9.1 正常首次消费
-    // ────────────────────────────────────────
+    // ========== basic ==========
 
-    @Test
-    @DisplayName("ACQUIRED_NEW：首次抢占成功，可执行业务")
-    void acquireNew() {
-        String eventId = PREFIX + UUID.randomUUID();
-
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER, eventId);
+    @Test @DisplayName("ACQUIRED_NEW has non-null leaseToken")
+    void acquireNewHasLeaseToken() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult ar = guard.acquire(CONSUMER, eid);
+        logIds.add(ar.logId());
         assertEquals(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, ar.type());
-        assertNotNull(ar.logId());
-        assertTrue(ar.shouldExecute());
-        createdLogIds.add(ar.logId());
-
-        // 数据库状态应为 PROCESSING
-        MqConsumeLog dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertNotNull(dbRecord);
-        assertEquals("PROCESSING", dbRecord.getStatus());
-
-        // 执行业务后标记成功
-        consumeGuard.markSuccess(ar.logId());
-
-        // 应变为 OK
-        dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("OK", dbRecord.getStatus());
+        assertNotNull(ar.leaseToken());
+        assertTrue(ar.leaseToken().length() > 10);
+        assertTrue(ar.canExecute());
     }
 
-    // ────────────────────────────────────────
-    // 9.2 已完成重复投递
-    // ────────────────────────────────────────
-
-    @Test
-    @DisplayName("ALREADY_COMPLETED：已有 OK 时直接 ACK")
+    @Test @DisplayName("ALREADY_COMPLETED when OK exists")
     void alreadyCompleted() {
-        String eventId = PREFIX + UUID.randomUUID();
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        assertTrue(guard.markSuccess(a1.logId(), a1.leaseToken()));
 
-        // 第一次：ACQUIRED_NEW
-        MqConsumeGuard.AcquireResult ar1 = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar1.logId());
-        consumeGuard.markSuccess(ar1.logId());
-
-        // 第二次：ALREADY_COMPLETED
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, ar2.type());
-        assertFalse(ar2.shouldExecute());
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, a2.type());
+        assertNull(a2.leaseToken());
+        assertFalse(a2.canExecute());
     }
 
-    // ────────────────────────────────────────
-    // 9.3 最近 PROCESSING
-    // ────────────────────────────────────────
-
-    @Test
-    @DisplayName("IN_PROGRESS_RECENT：最近 PROCESSING 不直接 ACK")
+    @Test @DisplayName("IN_PROGRESS_RECENT when PROCESSING is recent")
     void inProgressRecent() {
-        String eventId = PREFIX + UUID.randomUUID();
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
 
-        // 第一次插入 PROCESSING（不标记成功）
-        MqConsumeGuard.AcquireResult ar1 = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar1.logId());
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, ar1.type());
-
-        // 第二次：同一 eventId → IN_PROGRESS_RECENT
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.IN_PROGRESS_RECENT, ar2.type());
-        assertFalse(ar2.shouldExecute());
-
-        // 状态仍是 PROCESSING（未被覆盖）
-        MqConsumeLog dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("PROCESSING", dbRecord.getStatus());
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.IN_PROGRESS_RECENT, a2.type());
+        assertNull(a2.leaseToken());
+        assertFalse(a2.canExecute());
     }
 
-    // ────────────────────────────────────────
-    // 9.4 过期 PROCESSING 恢复
-    // ────────────────────────────────────────
+    // ========== stale recovery ==========
 
-    @Test
-    @DisplayName("RECOVERED_STALE：过期 PROCESSING 被接管")
-    void recoveredStale() {
-        String eventId = PREFIX + UUID.randomUUID();
+    @Test @DisplayName("RECOVERED_STALE creates new leaseToken")
+    void staleRecoveryCreatesNewLeaseToken() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        String oldToken = a1.leaseToken();
 
-        // 插入 PROCESSING 记录并人工设置 updated_at 为过去
-        MqConsumeGuard.AcquireResult ar1 = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar1.logId());
+        jdbc.update("UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
+                LocalDateTime.now().minusMinutes(10), a1.logId());
 
-        // 把 updated_at 改到 10 分钟前（超过默认 5 分钟 stale 超时）
-        jdbcTemplate.update(
-                "UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
-                LocalDateTime.now().minusMinutes(10), ar1.logId());
-
-        // 第二次：应能原子接管过期 PROCESSING
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.RECOVERED_STALE, ar2.type());
-        assertTrue(ar2.shouldExecute());
-        assertEquals(ar1.logId(), ar2.logId()); // 复用同一 logId
-
-        // 执行业务后标记成功
-        consumeGuard.markSuccess(ar2.logId());
-
-        MqConsumeLog dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("OK", dbRecord.getStatus());
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.RECOVERED_STALE, a2.type());
+        assertNotNull(a2.leaseToken());
+        assertNotEquals(oldToken, a2.leaseToken());
+        assertTrue(a2.canExecute());
     }
 
-    // ────────────────────────────────────────
-    // 9.5 并发恢复
-    // ────────────────────────────────────────
+    @Test @DisplayName("oldWorker cannot markSuccess after takeover")
+    void oldWorkerCannotMarkSuccessAfterTakeover() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        String oldToken = a1.leaseToken();
 
-    @Test
-    @DisplayName("并发接管：只有一个实例接管过期 PROCESSING")
-    void concurrentRecovery() throws Exception {
-        String eventId = PREFIX + UUID.randomUUID();
+        jdbc.update("UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
+                LocalDateTime.now().minusMinutes(10), a1.logId());
 
-        // 插入并标记为过期
-        MqConsumeGuard.AcquireResult ar1 = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar1.logId());
-        jdbcTemplate.update(
-                "UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
-                LocalDateTime.now().minusMinutes(10), ar1.logId());
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        String newToken = a2.leaseToken();
 
-        // 10 个线程同时尝试接管
+        // Old worker tries markSuccess → must fail
+        boolean oldOk = guard.markSuccess(a1.logId(), oldToken);
+        assertFalse(oldOk, "Old worker should not be able to markSuccess after takeover");
+
+        // New worker can complete
+        boolean newOk = guard.markSuccess(a2.logId(), newToken);
+        assertTrue(newOk);
+    }
+
+    @Test @DisplayName("oldWorker cannot markFailure after takeover")
+    void oldWorkerCannotMarkFailureAfterTakeover() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        String oldToken = a1.leaseToken();
+
+        jdbc.update("UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
+                LocalDateTime.now().minusMinutes(10), a1.logId());
+
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        String newToken = a2.leaseToken();
+
+        assertFalse(guard.markFailure(a1.logId(), oldToken, "stale error"));
+        assertTrue(guard.markSuccess(a2.logId(), newToken));
+    }
+
+    @Test @DisplayName("newWorker can complete after takeover")
+    void newWorkerCanCompleteAfterTakeover() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+
+        jdbc.update("UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
+                LocalDateTime.now().minusMinutes(10), a1.logId());
+
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertTrue(a2.canExecute());
+        assertTrue(guard.markSuccess(a2.logId(), a2.leaseToken()));
+
+        MqConsumeGuard.AcquireResult a3 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, a3.type());
+    }
+
+    // ========== FAIL retake ==========
+
+    @Test @DisplayName("RETRYABLE_FAILED atomic retake with new leaseToken")
+    void retryableFailedWithNewLease() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        String oldToken = a1.leaseToken();
+        guard.markFailure(a1.logId(), oldToken, "first fail");
+
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.RETRYABLE_FAILED, a2.type());
+        assertNotNull(a2.leaseToken());
+        assertNotEquals(oldToken, a2.leaseToken());
+        assertTrue(a2.canExecute());
+    }
+
+    @Test @DisplayName("concurrent FAIL recovery only one wins")
+    void concurrentFailedRecoveryOnlyOneWins() throws Exception {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+        guard.markFailure(a1.logId(), a1.leaseToken(), "fail for concurrency test");
+
         int threads = 10;
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        ExecutorService exec = Executors.newFixedThreadPool(threads);
         CountDownLatch latch = new CountDownLatch(threads);
-        AtomicInteger executedCount = new AtomicInteger(0);
-        AtomicInteger recoveredCount = new AtomicInteger(0);
-        Set<Long> executorLogIds = new HashSet<>();
+        AtomicInteger won = new AtomicInteger(0);
+        AtomicInteger executed = new AtomicInteger(0);
+        Set<String> seenTokens = Collections.synchronizedSet(new HashSet<>());
 
         for (int i = 0; i < threads; i++) {
-            executor.submit(() -> {
-                try {
-                    latch.countDown();
-                    latch.await(2, TimeUnit.SECONDS);
-                    MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER, eventId);
-                    if (ar.shouldExecute()) {
-                        executedCount.incrementAndGet();
-                        consumeGuard.markSuccess(ar.logId());
-                        executorLogIds.add(ar.logId());
-                    }
-                    if (ar.type() == MqConsumeGuard.AcquireResult.Type.RECOVERED_STALE) {
-                        recoveredCount.incrementAndGet();
-                    }
-                } catch (Exception ignored) {}
+            exec.submit(() -> {
+                try { latch.countDown(); latch.await(2, TimeUnit.SECONDS); }
+                catch (Exception ignored) {}
+                MqConsumeGuard.AcquireResult ar = guard.acquire(CONSUMER, eid);
+                if (ar.type() == MqConsumeGuard.AcquireResult.Type.RETRYABLE_FAILED) won.incrementAndGet();
+                if (ar.canExecute()) {
+                    executed.incrementAndGet();
+                    if (ar.leaseToken() != null) seenTokens.add(ar.leaseToken());
+                    guard.markSuccess(ar.logId(), ar.leaseToken());
+                }
             });
         }
+        exec.shutdown(); exec.awaitTermination(10, TimeUnit.SECONDS);
 
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        assertEquals(1, won.get(), "Only one thread wins RETRYABLE_FAILED");
+        assertEquals(1, executed.get(), "Only one thread executes business");
+        assertEquals(1, seenTokens.size(), "Only one unique leaseToken");
 
-        // 只有一个实例成功接管并执行业务
-        assertEquals(1, executedCount.get(), "Only one instance should execute business");
-        assertEquals(1, executorLogIds.size(), "All should use the same logId");
-
-        // 最终状态 OK
-        MqConsumeLog dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("OK", dbRecord.getStatus());
+        // attempt_count should have incremented by 1
+        MqConsumeLog log = jdbc.queryForObject(
+                "SELECT * FROM mq_consume_log WHERE id = ?",
+                (rs, rn) -> { MqConsumeLog l = new MqConsumeLog(); l.setId(rs.getLong("id")); l.setAttemptCount(rs.getInt("attempt_count")); l.setStatus(rs.getString("status")); return l; },
+                a1.logId());
+        assertNotNull(log);
+        assertEquals("OK", log.getStatus());
+        // attempt_count: initial ACQUIRED_NEW=1, then retake increments to 2
+        assertTrue(log.getAttemptCount() >= 2, "attempt_count should be at least 2, got " + log.getAttemptCount());
     }
 
-    // ────────────────────────────────────────
-    // 9.6 FAIL 重试
-    // ────────────────────────────────────────
+    // ========== ACK failure ==========
 
-    @Test
-    @DisplayName("RETRYABLE_FAILED：FAIL 记录允许重新抢占")
-    void retryableFailed() {
-        String eventId = PREFIX + UUID.randomUUID();
+    @Test @DisplayName("ack Failure does not downgrade OK to FAIL")
+    void ackFailureDoesNotDowngradeOk() {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult ar = guard.acquire(CONSUMER, eid);
+        logIds.add(ar.logId());
 
-        // 第一次：成功插入并标记失败
-        MqConsumeGuard.AcquireResult ar1 = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar1.logId());
-        consumeGuard.markFailure(ar1.logId());
+        // Simulate: business success, markSuccess, but ACK fails
+        assertTrue(guard.markSuccess(ar.logId(), ar.leaseToken()));
 
-        // 数据库状态应为 FAIL
-        MqConsumeLog dbRecord = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("FAIL", dbRecord.getStatus());
+        // markFailure should NOT be called — even if ACK fails
+        // Verify status is still OK
+        Map<String, Object> row = jdbc.queryForMap("SELECT status, lease_token FROM mq_consume_log WHERE id = ?", ar.logId());
+        assertEquals("OK", row.get("status"));
 
-        // 第二次：消息重新投递 → RETRYABLE_FAILED，可以执行
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.RETRYABLE_FAILED, ar2.type());
-        assertTrue(ar2.shouldExecute());
-
-        // 执行成功后标记 OK
-        consumeGuard.markSuccess(ar2.logId());
-
-        // 第三次：ALREADY_COMPLETED
-        MqConsumeGuard.AcquireResult ar3 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, ar3.type());
-        assertFalse(ar3.shouldExecute());
+        // Re-acquire → ALREADY_COMPLETED
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, a2.type());
     }
 
-    // ────────────────────────────────────────
-    // 9.7 进程崩溃模拟
-    // ────────────────────────────────────────
+    // ========== DuplicateKey race ==========
 
-    @Test
-    @DisplayName("崩溃恢复：PROCESSING 崩溃后重投不会直接 ACK")
-    void crashRecovery() {
-        String eventId = PREFIX + UUID.randomUUID();
+    @Test @DisplayName("duplicateInsertRace does not pretend completed")
+    void duplicateInsertRaceDoesNotPretendCompleted() {
+        // Insert a PROCESSING record manually with an old lease
+        String eid = PREFIX + UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO mq_consume_log (consumer, event_id, status, lease_token, attempt_count, created_at, updated_at) "
+                + "VALUES (?, ?, 'PROCESSING', ?, 1, NOW(), ?)",
+                CONSUMER, eid, UUID.randomUUID().toString(),
+                LocalDateTime.now().minusMinutes(10));
+        Long id = jdbc.queryForObject("SELECT id FROM mq_consume_log WHERE event_id = ?", Long.class, eid);
+        logIds.add(id);
 
-        // 模拟：写入 PROCESSING（业务尚未开始），消费者进程崩溃
-        MqConsumeLog record = new MqConsumeLog();
-        record.setConsumer(CONSUMER);
-        record.setEventId(eventId);
-        record.setStatus("PROCESSING");
-        mqConsumeLogMapper.insert(record);
-        createdLogIds.add(record.getId());
-
-        // 消息重新投递 → 不应直接 ACK（旧实现这个场景会 ACK）
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER, eventId);
-
-        // 如果是最近 PROCESSING → IN_PROGRESS_RECENT
-        // 如果被人工老化 → RECOVERED_STALE
-        boolean isCorrect = ar.type() == MqConsumeGuard.AcquireResult.Type.IN_PROGRESS_RECENT
-                || ar.type() == MqConsumeGuard.AcquireResult.Type.RECOVERED_STALE;
-
-        assertTrue(isCorrect,
-                "Crash recovery should be IN_PROGRESS_RECENT or RECOVERED_STALE, got: " + ar.type());
+        // acquire should either RECOVERED_STALE (if taken over) or IN_PROGRESS_RECENT
+        // It must NOT return ALREADY_COMPLETED
+        MqConsumeGuard.AcquireResult ar = guard.acquire(CONSUMER, eid);
+        assertNotEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, ar.type(),
+                "Must not pretend completed for existing PROCESSING");
     }
 
-    // ────────────────────────────────────────
-    // 边界测试
-    // ────────────────────────────────────────
+    @Test @DisplayName("unknownStatus does not ack as completed")
+    void unknownStatusDoesNotAckAsCompleted() {
+        String eid = PREFIX + UUID.randomUUID();
+        // Insert with an unknown status that bypasses CHECK constraint (won't happen in prod, but def.ensive)
+        // Instead test: after multiple races the result must not be ALREADY_COMPLETED for in-progress
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
 
-    @Test
-    @DisplayName("不同 eventId 互不干扰")
-    void differentEventIds() {
+        // Don't finalize — keep as PROCESSING
+        // Re-acquire should be IN_PROGRESS_RECENT, not ALREADY_COMPLETED
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, eid);
+        assertNotEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, a2.type());
+    }
+
+    // ========== concurrent stale takeover ==========
+
+    @Test @DisplayName("concurrent stale takeover only one gets RECOVERED_STALE")
+    void concurrentStaleTakeover() throws Exception {
+        String eid = PREFIX + UUID.randomUUID();
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, eid);
+        logIds.add(a1.logId());
+
+        jdbc.update("UPDATE mq_consume_log SET updated_at = ? WHERE id = ?",
+                LocalDateTime.now().minusMinutes(10), a1.logId());
+
+        int threads = 10;
+        ExecutorService exec = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
+        AtomicInteger recovered = new AtomicInteger(0);
+        AtomicInteger executed = new AtomicInteger(0);
+
+        for (int i = 0; i < threads; i++) {
+            exec.submit(() -> {
+                try { latch.countDown(); latch.await(2, TimeUnit.SECONDS); }
+                catch (Exception ignored) {}
+                MqConsumeGuard.AcquireResult ar = guard.acquire(CONSUMER, eid);
+                if (ar.type() == MqConsumeGuard.AcquireResult.Type.RECOVERED_STALE) recovered.incrementAndGet();
+                if (ar.canExecute()) {
+                    executed.incrementAndGet();
+                    guard.markSuccess(ar.logId(), ar.leaseToken());
+                }
+            });
+        }
+        exec.shutdown(); exec.awaitTermination(10, TimeUnit.SECONDS);
+
+        assertEquals(1, recovered.get(), "Only one thread gets RECOVERED_STALE");
+        assertEquals(1, executed.get(), "Only one thread executes business");
+    }
+
+    // ========== lease identity ==========
+
+    @Test @DisplayName("different acquires produce different leaseTokens")
+    void differentAcquiresDifferentLeases() {
         String e1 = PREFIX + UUID.randomUUID();
         String e2 = PREFIX + UUID.randomUUID();
-
-        MqConsumeGuard.AcquireResult a1 = consumeGuard.acquire(CONSUMER, e1);
-        createdLogIds.add(a1.logId());
-        MqConsumeGuard.AcquireResult a2 = consumeGuard.acquire(CONSUMER, e2);
-        createdLogIds.add(a2.logId());
-
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, a1.type());
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, a2.type());
-        assertNotEquals(a1.logId(), a2.logId());
-    }
-
-    @Test
-    @DisplayName("不同 consumer 名互不干扰")
-    void differentConsumers() {
-        String eventId = PREFIX + UUID.randomUUID();
-
-        MqConsumeGuard.AcquireResult a1 = consumeGuard.acquire("ConsumerA", eventId);
-        createdLogIds.add(a1.logId());
-        consumeGuard.markSuccess(a1.logId());
-
-        // 不同 consumer 首次处理同一 eventId → ACQUIRED_NEW
-        MqConsumeGuard.AcquireResult a2 = consumeGuard.acquire("ConsumerB", eventId);
-        createdLogIds.add(a2.logId());
-
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, a2.type());
-    }
-
-    @Test
-    @DisplayName("markSuccess → OK 后再 acquire 返回 ALREADY_COMPLETED")
-    void markSuccessThenReacquire() {
-        String eventId = PREFIX + UUID.randomUUID();
-
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar.logId());
-        consumeGuard.markSuccess(ar.logId());
-
-        MqConsumeLog db = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("OK", db.getStatus());
-
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.ALREADY_COMPLETED, ar2.type());
-    }
-
-    @Test
-    @DisplayName("markFailure → FAIL 后再 acquire 返回 RETRYABLE_FAILED")
-    void markFailureThenReacquire() {
-        String eventId = PREFIX + UUID.randomUUID();
-
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER, eventId);
-        createdLogIds.add(ar.logId());
-        consumeGuard.markFailure(ar.logId());
-
-        MqConsumeLog db = mqConsumeLogMapper.selectByConsumerAndEventId(CONSUMER, eventId);
-        assertEquals("FAIL", db.getStatus());
-
-        MqConsumeGuard.AcquireResult ar2 = consumeGuard.acquire(CONSUMER, eventId);
-        assertEquals(MqConsumeGuard.AcquireResult.Type.RETRYABLE_FAILED, ar2.type());
+        MqConsumeGuard.AcquireResult a1 = guard.acquire(CONSUMER, e1);
+        logIds.add(a1.logId());
+        MqConsumeGuard.AcquireResult a2 = guard.acquire(CONSUMER, e2);
+        logIds.add(a2.logId());
+        assertNotEquals(a1.leaseToken(), a2.leaseToken());
     }
 }

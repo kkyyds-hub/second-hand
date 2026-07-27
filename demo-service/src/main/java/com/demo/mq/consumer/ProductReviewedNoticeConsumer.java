@@ -15,97 +15,65 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Day16 - 商品审核结果通知消费者。
- * 使用 MqConsumeGuard 统一幂等抢占。
- */
 @Slf4j
 @Component
 public class ProductReviewedNoticeConsumer {
 
-    private static final String CONSUMER_NAME = "ProductReviewedNoticeConsumer";
-
-    @Autowired
-    private MqConsumeGuard consumeGuard;
-
-    @Autowired
-    private SystemNoticeService systemNoticeService;
-
-    @Autowired
-    private ProductNoticeContentBuilder noticeContentBuilder;
-
-    @Value("${product.notice.reviewed-enabled:true}")
-    private boolean reviewedNoticeEnabled;
+    private static final String NAME = "ProductReviewedNoticeConsumer";
+    @Autowired private MqConsumeGuard guard;
+    @Autowired private SystemNoticeService noticeService;
+    @Autowired private ProductNoticeContentBuilder contentBuilder;
+    @Value("${product.notice.reviewed-enabled:true}") private boolean enabled;
 
     @RabbitListener(queues = "${demo.rabbitmq.queue.product-reviewed-notice}")
-    public void onMessage(EventMessage<ProductReviewedPayload> message,
-                          Channel channel,
-                          Message amqpMessage) throws Exception {
+    public void onMessage(EventMessage<ProductReviewedPayload> envelope, Channel channel, Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-        if (message == null || message.getPayload() == null) {
-            log.warn("商品审核通知消息体为空，ACK 丢弃。");
+        if (envelope == null || envelope.getPayload() == null || isEmpty(envelope.getEventId())) {
             channel.basicAck(tag, false);
             return;
         }
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("商品审核通知缺少 eventId，ACK 丢弃。");
-            channel.basicAck(tag, false);
-            return;
-        }
-        if (!ProductEventType.PRODUCT_REVIEWED.getCode().equals(message.getEventType())) {
-            log.warn("商品审核通知事件类型不匹配：eventType={}，ACK 丢弃。", message.getEventType());
+        if (!ProductEventType.PRODUCT_REVIEWED.getCode().equals(envelope.getEventType())) {
             channel.basicAck(tag, false);
             return;
         }
 
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
-        Long logId = ar.logId();
-
+        MqConsumeGuard.AcquireResult ar = guard.acquire(NAME, envelope.getEventId());
+        String lease = ar.leaseToken();
         switch (ar.type()) {
-            case ALREADY_COMPLETED:
-                channel.basicAck(tag, false);
-                return;
-            case IN_PROGRESS_RECENT:
-                channel.basicNack(tag, false, true);
-                return;
-            case ACQUIRED_NEW:
-            case RECOVERED_STALE:
-            case RETRYABLE_FAILED:
-                break;
+            case ALREADY_COMPLETED: channel.basicAck(tag, false); return;
+            case IN_PROGRESS_RECENT: case UNKNOWN_STATE_RETRY: channel.basicNack(tag, false, true); return;
+            case ACQUIRED_NEW: case RECOVERED_STALE: case RETRYABLE_FAILED: break;
         }
 
         try {
-            ProductReviewedPayload payload = message.getPayload();
-            if (payload.getOwnerId() == null || payload.getProductId() == null) {
-                consumeGuard.markSuccess(logId);
+            ProductReviewedPayload p = envelope.getPayload();
+            if (p.getOwnerId() == null || p.getProductId() == null) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
-            if (!reviewedNoticeEnabled) {
-                log.info("商品审核通知开关关闭，跳过发送：eventId={}", message.getEventId());
-                consumeGuard.markSuccess(logId);
+            if (!enabled) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
+            String content = contentBuilder.buildReviewedNotice(p);
+            noticeService.sendNotice(p.getOwnerId(), "SYS-PRODUCT-REVIEWED-" + envelope.getEventId(), content);
 
-            String content = noticeContentBuilder.buildReviewedNotice(payload);
-            systemNoticeService.sendNotice(
-                    payload.getOwnerId(),
-                    "SYS-PRODUCT-REVIEWED-" + message.getEventId(),
-                    content);
-
-            consumeGuard.markSuccess(logId);
-            channel.basicAck(tag, false);
-
+            guard.markSuccess(ar.logId(), lease);
+            ackSafely(channel, tag, NAME, envelope.getEventId());
         } catch (BusinessException ex) {
-            consumeGuard.markSuccess(logId);
-            log.warn("商品审核通知业务异常，ACK。msg={}, err={}", message, ex.getMessage());
+            guard.markSuccess(ar.logId(), lease);
+            log.warn("PRODUCT_REVIEWED business ex eventId={}", envelope.getEventId(), ex);
             channel.basicAck(tag, false);
         } catch (Exception ex) {
-            consumeGuard.markFailure(logId);
-            log.error("商品审核通知处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            guard.markFailure(ar.logId(), lease, ex.getMessage());
+            log.error("PRODUCT_REVIEWED fail eventId={}", envelope.getEventId(), ex);
             channel.basicNack(tag, false, false);
         }
     }
+
+    private void ackSafely(Channel c, long t, String n, String e) { try { c.basicAck(t, false); } catch (Exception ex) { log.warn("{} ACK fail eventId={}", n, e, ex); } }
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
 }

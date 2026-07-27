@@ -13,102 +13,61 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * Day14 - 库存更新消费者。
- * 使用 MqConsumeGuard 统一幂等抢占。
- *
- * P5-S1 保护：若订单已取消则跳过，避免历史消息覆盖当前业务真相。
- */
 @Slf4j
 @Component
 public class InventoryUpdateConsumer {
 
-    @Autowired
-    private OrderMapper orderMapper;
-
-    @Autowired
-    private MqConsumeGuard consumeGuard;
-
-    private static final String CONSUMER_NAME = "InventoryUpdateConsumer";
+    @Autowired private OrderMapper orderMapper;
+    @Autowired private MqConsumeGuard guard;
+    private static final String NAME = "InventoryUpdateConsumer";
 
     @RabbitListener(queues = "${demo.rabbitmq.queue.inventory-update}")
-    public void onMessage(EventMessage<OrderCreatedPayload> message,
-                          Channel channel,
-                          Message amqpMessage) throws Exception {
+    public void onMessage(EventMessage<OrderCreatedPayload> envelope, Channel channel, Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-        if (message == null || message.getPayload() == null) {
-            log.warn("库存更新消息体为空，ACK 丢弃。");
-            channel.basicAck(tag, false);
-            return;
-        }
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("库存更新消息缺少 eventId，ACK 丢弃。");
+        if (envelope == null || envelope.getPayload() == null || isEmpty(envelope.getEventId())) {
             channel.basicAck(tag, false);
             return;
         }
 
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
-        Long logId = ar.logId();
+        MqConsumeGuard.AcquireResult ar = guard.acquire(NAME, envelope.getEventId());
+        String lease = ar.leaseToken();
 
         switch (ar.type()) {
-            case ALREADY_COMPLETED:
-                channel.basicAck(tag, false);
-                return;
-            case IN_PROGRESS_RECENT:
-                channel.basicNack(tag, false, true);
-                return;
-            case ACQUIRED_NEW:
-            case RECOVERED_STALE:
-            case RETRYABLE_FAILED:
-                break;
+            case ALREADY_COMPLETED: channel.basicAck(tag, false); return;
+            case IN_PROGRESS_RECENT: case UNKNOWN_STATE_RETRY: channel.basicNack(tag, false, true); return;
+            case ACQUIRED_NEW: case RECOVERED_STALE: case RETRYABLE_FAILED: break;
         }
 
         try {
-            OrderCreatedPayload payload = message.getPayload();
-
-            if (payload.getProductId() == null) {
-                log.warn("库存更新消息缺少 productId，ACK 丢弃。");
-                consumeGuard.markSuccess(logId);
+            OrderCreatedPayload p = envelope.getPayload();
+            if (p.getProductId() == null) {
+                guard.markSuccess(ar.logId(), lease);
                 channel.basicAck(tag, false);
                 return;
             }
-
-            if (payload.getOrderId() != null) {
-                Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
-                if (order == null) {
-                    log.warn("库存更新跳过：orderId={} 不存在，eventId={}", payload.getOrderId(), message.getEventId());
-                    consumeGuard.markSuccess(logId);
-                    channel.basicAck(tag, false);
-                    return;
-                }
-                OrderStatus orderStatus = OrderStatus.fromDbValue(order.getStatus());
-                if (orderStatus == null) {
-                    log.warn("库存更新跳过：orderId={} 状态异常，status={}", payload.getOrderId(), order.getStatus());
-                    consumeGuard.markSuccess(logId);
-                    channel.basicAck(tag, false);
-                    return;
-                }
-                if (orderStatus == OrderStatus.CANCELLED) {
-                    log.info("库存更新跳过：orderId={} 已取消，productId={}, eventId={}",
-                            payload.getOrderId(), payload.getProductId(), message.getEventId());
-                    consumeGuard.markSuccess(logId);
+            if (p.getOrderId() != null) {
+                Order order = orderMapper.selectOrderBasicById(p.getOrderId());
+                if (order == null || OrderStatus.fromDbValue(order.getStatus()) == OrderStatus.CANCELLED) {
+                    log.info("INVENTORY skip orderId={} status={}", p.getOrderId(),
+                            order != null ? order.getStatus() : "null");
+                    guard.markSuccess(ar.logId(), lease);
                     channel.basicAck(tag, false);
                     return;
                 }
             }
+            int rows = orderMapper.markProductSoldIfOnSale(p.getProductId());
+            log.info("INVENTORY done productId={} rows={}", p.getProductId(), rows);
 
-            int rows = orderMapper.markProductSoldIfOnSale(payload.getProductId());
-
-            log.info("库存更新处理完成：productId={}, updatedRows={}", payload.getProductId(), rows);
-
-            consumeGuard.markSuccess(logId);
-            channel.basicAck(tag, false);
-
+            guard.markSuccess(ar.logId(), lease);
+            ackSafely(channel, tag, NAME, envelope.getEventId());
         } catch (Exception ex) {
-            consumeGuard.markFailure(logId);
-            log.error("库存更新处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            guard.markFailure(ar.logId(), lease, ex.getMessage());
+            log.error("INVENTORY fail eventId={}", envelope.getEventId(), ex);
             channel.basicNack(tag, false, false);
         }
     }
+
+    private void ackSafely(Channel c, long t, String n, String e) { try { c.basicAck(t, false); } catch (Exception ex) { log.warn("{} ACK fail eventId={}", n, e, ex); } }
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
 }

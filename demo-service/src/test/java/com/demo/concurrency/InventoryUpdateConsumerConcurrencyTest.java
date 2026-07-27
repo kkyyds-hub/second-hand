@@ -9,7 +9,6 @@ import com.demo.mapper.OrderMapper;
 import com.demo.mq.consumer.InventoryUpdateConsumer;
 import com.demo.service.MqConsumeGuard;
 import com.rabbitmq.client.Channel;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,111 +19,65 @@ import org.springframework.amqp.core.MessageProperties;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Day19 P5-S1：库存更新消费者并发回写兜底回归。
- *
- * 这组测试专门验证本次修复的两个核心语义：
- * 1) 如果 `ORDER_CREATED` 消息到达时，订单已经进入 `cancelled`，
- *    消费者必须跳过 `markProductSoldIfOnSale`，避免把已释放的商品重新打回 `sold`；
- * 2) 如果订单仍处于有效态（例如 `pending`），消费者仍应按原设计继续执行库存回写，
- *    证明本次保护没有误伤正常链路。
- */
 @ExtendWith(MockitoExtension.class)
 class InventoryUpdateConsumerConcurrencyTest {
 
-    @Mock
-    private OrderMapper orderMapper;
-    @Mock
-    private MqConsumeLogMapper mqConsumeLogMapper;
-    @Mock
-    private MqConsumeGuard consumeGuard;
-    @Mock
-    private Channel channel;
+    @Mock private OrderMapper orderMapper;
+    @Mock private MqConsumeLogMapper mqConsumeLogMapper;
+    @Mock private MqConsumeGuard guard;
+    @Mock private Channel channel;
+    @InjectMocks private InventoryUpdateConsumer consumer;
 
-    @InjectMocks
-    private InventoryUpdateConsumer consumer;
+    private static final String TEST_LEASE = "test-lease-token";
 
-    @BeforeEach
-    void setUp() {
-        // Default: ACQUIRED_NEW with logId=1
-        when(consumeGuard.acquire(anyString(), anyString()))
-                .thenReturn(new MqConsumeGuard.AcquireResult(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, 1L));
+    private void stubAcquiredNew() {
+        when(guard.acquire(anyString(), anyString()))
+                .thenReturn(new MqConsumeGuard.AcquireResult(
+                        MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, 1L, TEST_LEASE));
     }
 
     @Test
     void shouldSkipMarkSoldWhenOrderAlreadyCancelled() throws Exception {
-        // 构造一个"历史上的订单创建事件"：
-        // 该消息本身合法，但它到达消费者时，订单已经被别的链路取消。
-        EventMessage<OrderCreatedPayload> message = buildMessage("evt-cancelled", 90001L, 80001L);
-        Message amqpMessage = buildAmqpMessage(11L);
-        Order order = new Order();
-        order.setId(90001L);
-        order.setStatus("cancelled");
-
+        stubAcquiredNew();
+        EventMessage<OrderCreatedPayload> msg = buildMsg("evt-cancelled", 90001L, 80001L);
+        Message amqp = buildAmqp(11L);
+        Order order = new Order(); order.setId(90001L); order.setStatus("cancelled");
         when(orderMapper.selectOrderBasicById(90001L)).thenReturn(order);
 
-        consumer.onMessage(message, channel, amqpMessage);
+        consumer.onMessage(msg, channel, amqp);
 
-        // 断言重点：
-        // 1) 不再回写商品为 sold；
-        // 2) 消息被视为"已正确处理"，因此记录 OK 并 ACK；
         verify(orderMapper, never()).markProductSoldIfOnSale(any());
-        verify(consumeGuard).markSuccess(1L);
+        verify(guard).markSuccess(1L, TEST_LEASE);
         verify(channel).basicAck(11L, false);
     }
 
     @Test
     void shouldMarkSoldWhenOrderStillActive() throws Exception {
-        // 构造一个正常场景：消息到达时订单仍然有效，消费者应继续按旧语义推进库存状态。
-        EventMessage<OrderCreatedPayload> message = buildMessage("evt-pending", 90002L, 80002L);
-        Message amqpMessage = buildAmqpMessage(12L);
-        Order order = new Order();
-        order.setId(90002L);
-        order.setStatus("pending");
-
+        stubAcquiredNew();
+        EventMessage<OrderCreatedPayload> msg = buildMsg("evt-pending", 90002L, 80002L);
+        Message amqp = buildAmqp(12L);
+        Order order = new Order(); order.setId(90002L); order.setStatus("pending");
         when(orderMapper.selectOrderBasicById(90002L)).thenReturn(order);
         when(orderMapper.markProductSoldIfOnSale(80002L)).thenReturn(1);
 
-        consumer.onMessage(message, channel, amqpMessage);
+        consumer.onMessage(msg, channel, amqp);
 
-        // 断言重点：
-        // 本次修复只拦截"订单已取消"的异常回写，不影响正常的库存异步更新链路。
         verify(orderMapper).markProductSoldIfOnSale(80002L);
-        verify(consumeGuard).markSuccess(1L);
+        verify(guard).markSuccess(1L, TEST_LEASE);
         verify(channel).basicAck(12L, false);
     }
 
-    /**
-     * 构造最小可用的库存更新消息。
-     *
-     * 测试里只关心 `eventId / orderId / productId` 三个字段，
-     * 其余字段不是本次保护逻辑的决策条件，因此保持最小输入即可。
-     */
-    private EventMessage<OrderCreatedPayload> buildMessage(String eventId, Long orderId, Long productId) {
-        OrderCreatedPayload payload = new OrderCreatedPayload();
-        payload.setOrderId(orderId);
-        payload.setProductId(productId);
-
-        EventMessage<OrderCreatedPayload> message = new EventMessage<>();
-        message.setEventId(eventId);
-        message.setPayload(payload);
-        return message;
+    private EventMessage<OrderCreatedPayload> buildMsg(String eid, Long oid, Long pid) {
+        OrderCreatedPayload p = new OrderCreatedPayload(); p.setOrderId(oid); p.setProductId(pid);
+        EventMessage<OrderCreatedPayload> m = new EventMessage<>(); m.setEventId(eid); m.setPayload(p);
+        return m;
     }
-
-    /**
-     * 构造带 deliveryTag 的 AMQP 原生消息。
-     *
-     * `InventoryUpdateConsumer` 会使用 deliveryTag 做 `basicAck/basicNack`，
-     * 因此测试需要显式提供一个可验证的 tag。
-     */
-    private Message buildAmqpMessage(long deliveryTag) {
-        MessageProperties properties = new MessageProperties();
-        properties.setDeliveryTag(deliveryTag);
-        return new Message(new byte[0], properties);
+    private Message buildAmqp(long tag) {
+        MessageProperties mp = new MessageProperties(); mp.setDeliveryTag(tag);
+        return new Message(new byte[0], mp);
     }
 }

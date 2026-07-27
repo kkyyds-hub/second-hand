@@ -1,65 +1,64 @@
 package com.demo.service;
 
-import com.demo.entity.MqConsumeLog;
-
 /**
- * 统一 MQ 消费幂等守卫。
+ * 统一 MQ 消费幂等守卫（P6-MQ-A-F1 租约栅栏版）。
  *
- * 语义：
- * - ACQUIRED_NEW:          首次插入 PROCESSING 成功，当前实例执行业务
- * - ALREADY_COMPLETED:     已有 OK 记录，消息已完成处理，直接 ACK
- * - IN_PROGRESS_RECENT:    已有最近 PROCESSING（其他实例正在处理），NACK + requeue
- * - RECOVERED_STALE:       过期 PROCESSING 被当前实例原子接管，继续执行业务
- * - RETRYABLE_FAILED:      已有 FAIL 记录，尝试重新抢占执行业务
+ * 每个成功抢占返回不可伪造的 leaseToken（UUID）。
+ * markSuccess / markFailure 必须通过 leaseToken 验证所有权。
+ *
+ * 状态与所有权：
+ * - PROCESSING + lease_token = 当前执行者持有租约
+ * - OK + lease_token = 最近完成者（仅用于审计）
+ * - FAIL + lease_token = 最近失败者（仅用于审计）
+ *
+ * 执行类型（canExecute = true，leaseToken 非空）：
+ * - ACQUIRED_NEW
+ * - RECOVERED_STALE
+ * - RETRYABLE_FAILED
+ *
+ * 非执行类型（canExecute = false，leaseToken 为空）：
+ * - ALREADY_COMPLETED
+ * - IN_PROGRESS_RECENT
+ * - UNKNOWN_STATE_RETRY（失败关闭，不可 ACK）
  */
 public interface MqConsumeGuard {
 
-    /**
-     * 尝试为当前消息获取消费权。
-     *
-     * @param consumer 消费者名称（幂等键的一部分）
-     * @param eventId  事件唯一 ID（幂等键的一部分）
-     * @return 获取结果，包含 logId 和结果类型
-     */
     AcquireResult acquire(String consumer, String eventId);
 
-    /**
-     * 标记消费成功（业务完成）。
-     */
-    void markSuccess(Long logId);
+    /** 租约验证成功 → OK。返回 true 表示成功设置，false 表示租约已失效。 */
+    boolean markSuccess(Long logId, String leaseToken);
 
-    /**
-     * 标记消费失败（系统异常，后续可重试）。
-     */
-    void markFailure(Long logId);
+    /** 租约验证失败 → FAIL。返回 true 表示成功设置，false 表示租约已失效。 */
+    boolean markFailure(Long logId, String leaseToken, String error);
 
-    /**
-     * 获取结果。
-     */
     class AcquireResult {
         private final Type type;
         private final Long logId;
+        private final String leaseToken;
 
-        public AcquireResult(Type type, Long logId) {
-            this.type = type;
-            this.logId = logId;
+        public AcquireResult(Type type, Long logId, String leaseToken) {
+            this.type = type; this.logId = logId; this.leaseToken = leaseToken;
         }
-
         public Type type() { return type; }
         public Long logId() { return logId; }
-
-        public boolean shouldExecute() {
-            return type == Type.ACQUIRED_NEW
-                || type == Type.RECOVERED_STALE
-                || type == Type.RETRYABLE_FAILED;
+        public String leaseToken() { return leaseToken; }
+        public boolean canExecute() {
+            return type == Type.ACQUIRED_NEW || type == Type.RECOVERED_STALE || type == Type.RETRYABLE_FAILED;
         }
 
         public enum Type {
+            /** 首次抢占成功，当前实例执行业务 */
             ACQUIRED_NEW,
+            /** 已有 OK 记录，直接 ACK */
             ALREADY_COMPLETED,
+            /** 最近 PROCESSING，NACK + requeue，不执行业务 */
             IN_PROGRESS_RECENT,
+            /** 过期 PROCESSING 被原子接管 */
             RECOVERED_STALE,
+            /** FAIL 记录被原子重新抢占 */
             RETRYABLE_FAILED,
+            /** 未知状态，失败关闭，抛出异常让消息 NACK */
+            UNKNOWN_STATE_RETRY,
         }
     }
 }

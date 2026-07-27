@@ -4,50 +4,52 @@ import com.demo.entity.MqConsumeLog;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
+
 /**
- * Day14 - MQ 消费幂等日志 Mapper
+ * MQ 消费幂等日志 Mapper。
  *
- * 作用：记录“某个消费者是否已经处理过某条事件”
+ * P6-MQ-A-F1：新增租约令牌、尝试次数和条件状态更新方法。
  */
 @Mapper
 public interface MqConsumeLogMapper {
 
-    /**
-     * 根据 consumer + eventId 查询
-     *
-     * @param consumer 消费者标识
-     * @param eventId  事件 ID
-     * @return 已存在的消费记录（null 表示未消费）
-     */
+    /** 根据 consumer + eventId 查询 */
     MqConsumeLog selectByConsumerAndEventId(@Param("consumer") String consumer,
                                             @Param("eventId") String eventId);
 
-    /**
-     * 插入一条消费日志
-     *
-     * @param log 日志实体
-     * @return 插入行数
-     */
+    /** 插入消费日志（含 lease_token 和 attempt_count） */
     int insert(MqConsumeLog log);
 
     /**
-     * 更新消费状态（可选）
-     *
-     * @param id     主键
-     * @param status 新状态
-     * @return 更新行数
+     * 租约验证成功：status='PROCESSING' + lease_token 匹配 → OK。
+     * @return 1 = 成功，0 = 租约不匹配（已被接管）
      */
-    int updateStatus(@Param("id") Long id,
-                     @Param("status") String status);
+    int markSuccess(@Param("id") Long id,
+                    @Param("leaseToken") String leaseToken);
 
     /**
-     * 条件更新：原子接管过期 PROCESSING 记录。
-     *
-     * 仅当 id + status='PROCESSING' + updated_at < staleBefore 时更新。
-     * 返回 1 表示当前线程成功接管，可执行业务。
-     * 返回 0 表示已被其他线程接管或状态已变化。
+     * 租约验证失败：status='PROCESSING' + lease_token 匹配 → FAIL + last_error。
+     * @return 1 = 成功，0 = 租约不匹配
      */
-    int updateStatusIfStale(@Param("id") Long id,
-                            @Param("staleBefore") java.time.LocalDateTime staleBefore,
-                            @Param("targetStatus") String targetStatus);
+    int markFailure(@Param("id") Long id,
+                    @Param("leaseToken") String leaseToken,
+                    @Param("error") String error);
+
+    /**
+     * 原子接管过期 PROCESSING：需要 status='PROCESSING' + lease_token 匹配 + updated_at 过期。
+     * 成功后写入新 leaseToken，attempt_count +1。
+     * @return 1 = 接管成功，0 = 已被抢占
+     */
+    int updateStatusIfStaleAndLeaseToken(@Param("id") Long id,
+                                          @Param("observedLeaseToken") String observedLeaseToken,
+                                          @Param("staleBefore") LocalDateTime staleBefore,
+                                          @Param("newLeaseToken") String newLeaseToken);
+
+    /**
+     * 原子重新抢占 FAIL：status='FAIL' → PROCESSING + 新租约。
+     * @return 1 = 抢占成功，0 = 已被其他人抢占
+     */
+    int retakeFailedLease(@Param("id") Long id,
+                          @Param("newLeaseToken") String newLeaseToken);
 }

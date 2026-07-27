@@ -14,76 +14,51 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
-/**
- * Day14 - 订单超时消费者（执行关单逻辑）。
- */
 @Slf4j
 @Component
 public class OrderTimeoutConsumer {
 
-    @Autowired
-    private OrderTimeoutService orderTimeoutService;
-
-    @Autowired
-    private MqConsumeGuard consumeGuard;
-
-    private static final String CONSUMER_NAME = "OrderTimeoutConsumer";
+    @Autowired private OrderTimeoutService orderTimeoutService;
+    @Autowired private MqConsumeGuard guard;
+    private static final String NAME = "OrderTimeoutConsumer";
 
     @RabbitListener(queues = "${demo.rabbitmq.queue.order-timeout}")
-    public void onMessage(EventMessage<OrderTimeoutPayload> message,
-                          Channel channel,
-                          Message amqpMessage) throws Exception {
+    public void onMessage(EventMessage<OrderTimeoutPayload> envelope, Channel channel, Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-        if (message == null || message.getPayload() == null) {
-            log.warn("ORDER_TIMEOUT 消息体为空，ACK 丢弃。");
-            channel.basicAck(tag, false);
-            return;
-        }
-        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-            log.warn("ORDER_TIMEOUT 缺少 eventId，ACK 丢弃。");
+        if (envelope == null || envelope.getPayload() == null || isEmpty(envelope.getEventId())) {
             channel.basicAck(tag, false);
             return;
         }
 
-        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
-        Long logId = ar.logId();
+        MqConsumeGuard.AcquireResult ar = guard.acquire(NAME, envelope.getEventId());
+        String lease = ar.leaseToken();
 
         switch (ar.type()) {
-            case ALREADY_COMPLETED:
-                channel.basicAck(tag, false);
-                return;
-            case IN_PROGRESS_RECENT:
-                channel.basicNack(tag, false, true);
-                return;
-            case ACQUIRED_NEW:
-            case RECOVERED_STALE:
-            case RETRYABLE_FAILED:
-                break;
+            case ALREADY_COMPLETED: channel.basicAck(tag, false); return;
+            case IN_PROGRESS_RECENT: case UNKNOWN_STATE_RETRY: channel.basicNack(tag, false, true); return;
+            case ACQUIRED_NEW: case RECOVERED_STALE: case RETRYABLE_FAILED: break;
         }
 
         try {
-            OrderTimeoutPayload payload = message.getPayload();
-            LocalDateTime deadline = payload.getTimeoutAt() != null
-                    ? payload.getTimeoutAt()
-                    : LocalDateTime.now();
+            OrderTimeoutPayload p = envelope.getPayload();
+            LocalDateTime deadline = p.getTimeoutAt() != null ? p.getTimeoutAt() : LocalDateTime.now();
+            boolean closed = orderTimeoutService.closeTimeoutOrderAndRelease(p.getOrderId(), deadline);
+            log.info("ORDER_TIMEOUT done orderId={} closed={}", p.getOrderId(), closed);
 
-            boolean closed = orderTimeoutService.closeTimeoutOrderAndRelease(
-                    payload.getOrderId(), deadline);
-
-            log.info("ORDER_TIMEOUT 处理完成：orderId={}, closed={}", payload.getOrderId(), closed);
-
-            consumeGuard.markSuccess(logId);
-            channel.basicAck(tag, false);
-
+            guard.markSuccess(ar.logId(), lease);
+            ackSafely(channel, tag, "ORDER_TIMEOUT", envelope.getEventId());
         } catch (BusinessException ex) {
-            consumeGuard.markSuccess(logId);
-            log.warn("ORDER_TIMEOUT 业务异常，ACK。msg={}, err={}", message, ex.getMessage());
+            guard.markSuccess(ar.logId(), lease);
+            log.warn("ORDER_TIMEOUT business ex eventId={}", envelope.getEventId(), ex);
             channel.basicAck(tag, false);
         } catch (Exception ex) {
-            consumeGuard.markFailure(logId);
-            log.error("ORDER_TIMEOUT 处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            guard.markFailure(ar.logId(), lease, ex.getMessage());
+            log.error("ORDER_TIMEOUT fail eventId={}", envelope.getEventId(), ex);
             channel.basicNack(tag, false, false);
         }
     }
+
+    private void ackSafely(Channel c, long t, String name, String eid) { try { c.basicAck(t, false); } catch (Exception ex) { log.warn("{} ACK fail eventId={}", name, eid, ex); } }
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
 }
