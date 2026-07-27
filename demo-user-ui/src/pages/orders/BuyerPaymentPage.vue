@@ -24,6 +24,7 @@ const rechecking = ref(false)
 const payErrorMessage = ref('')
 const paySuccessMessage = ref('')
 const payStatusPendingSync = ref(false)
+const productImageFailed = ref(false)
 
 const loadErrorRef = ref<HTMLElement | null>(null)
 const payErrorRef = ref<HTMLElement | null>(null)
@@ -154,6 +155,7 @@ function resetRouteState() {
   payErrorMessage.value = ''
   paySuccessMessage.value = ''
   payStatusPendingSync.value = false
+  productImageFailed.value = false
 }
 
 async function focusLoadError(sequence: number, expectedOrderId: number) {
@@ -374,6 +376,7 @@ onBeforeUnmount(() => {
         </section>
 
         <template v-else>
+          <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section class="section-panel">
             <div class="section-header">
               <div>
@@ -386,12 +389,13 @@ onBeforeUnmount(() => {
               <div class="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
                 <div>
                   <img
-                    v-if="productImage"
+                    v-if="productImage && !productImageFailed"
                     :src="productImage"
                     :alt="detail.productTitle || '订单商品'"
-                    class="h-[200px] w-full rounded-2xl border border-gray-200/80 object-cover"
+                    class="h-[200px] w-full rounded-md border border-gray-200/80 object-cover"
+                    @error="productImageFailed = true"
                   />
-                  <div v-else class="empty-state min-h-[200px] rounded-2xl border border-dashed border-gray-200 bg-gray-50">
+                  <div v-else class="empty-state min-h-[200px] rounded-md border border-dashed border-gray-200 bg-gray-50">
                     <PackageSearch class="empty-state-icon" />
                     <p class="empty-state-title">暂无商品图片</p>
                   </div>
@@ -425,7 +429,7 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
-          <section class="section-panel">
+          <aside class="lg:sticky lg:top-24 lg:self-start"><section class="section-panel">
             <div class="section-header">
               <div>
                 <h2 class="section-heading">支付订单</h2>
@@ -483,6 +487,10 @@ onBeforeUnmount(() => {
                   <span>{{ paySuccessMessage }}</span>
                 </div>
 
+                <div class="rounded-md border border-stone-200 bg-stone-50 p-4">
+                  <p class="text-[12px] font-medium text-gray-500">应付金额</p>
+                  <p class="font-numeric mt-1 text-[28px] font-bold text-gray-950">¥ {{ detail.totalAmount.toFixed(2) }}</p>
+                </div>
                 <div class="flex flex-wrap items-center gap-3">
                   <button
                     class="btn-primary"
@@ -494,13 +502,12 @@ onBeforeUnmount(() => {
                     <Loader2 v-if="paying" class="h-4 w-4 animate-spin" />
                     <span>{{ paying ? '正在支付' : '确认支付' }}</span>
                   </button>
-                  <span class="text-[12px] text-gray-500">
-                    应付金额：<span class="font-numeric text-[14px] font-semibold text-gray-900">¥ {{ detail.totalAmount.toFixed(2) }}</span>
-                  </span>
+                  <span class="text-[12px] text-gray-500">状态以订单详情重新读取结果为准</span>
                 </div>
               </template>
             </div>
-          </section>
+          </section></aside>
+          </div>
         </template>
       </template>
     </template>

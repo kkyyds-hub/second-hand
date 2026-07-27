@@ -14,6 +14,8 @@ import { getBuyerOrderList } from '@/api/orders'
 import { getMyAddressList, type UserAddressItem } from '@/api/address'
 import { useCartStore } from '@/stores/cart'
 import { readCurrentUser } from '@/utils/request'
+import CommerceAddressOption from '@/components/commerce/CommerceAddressOption.vue'
+import cartEmptyImage from '@/assets/commerce/cart-empty.webp'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -40,6 +42,8 @@ const checkoutError = ref('')
 const checkoutUnknown = ref(false)
 const checkoutResult = ref<CartCheckoutResult | null>(null)
 const selectLimitNotice = ref('')
+const cartEmptyImageFailed = ref(false)
+const cartImageFailedIds = ref<Set<string>>(new Set())
 
 /**
  * 结算结果需重新核对锁。
@@ -64,6 +68,22 @@ const currentUserId = computed(() => readCurrentUser()?.id ?? null)
 
 const availableItems = computed(() => items.value.filter((item) => item.available && item.cartItemId !== null))
 const unavailableItems = computed(() => items.value.filter((item) => !item.available))
+const availableSellerGroups = computed(() => {
+  const groups = new Map<string, { sellerId: number | null; sellerNickname: string; items: CartItem[] }>()
+  for (const item of availableItems.value) {
+    const sellerId = typeof item.sellerId === 'number' && Number.isSafeInteger(item.sellerId) && item.sellerId > 0
+      ? item.sellerId
+      : null
+    const key = sellerId === null ? `unknown-${item.sellerNickname || 'seller'}` : `seller-${sellerId}`
+    const current = groups.get(key)
+    if (current) {
+      current.items.push(item)
+    } else {
+      groups.set(key, { sellerId, sellerNickname: item.sellerNickname || '未知卖家', items: [item] })
+    }
+  }
+  return [...groups.values()]
+})
 
 const selectedItems = computed(() => {
   const set = new Set(selectedIds.value)
@@ -129,6 +149,27 @@ watch([selectAllIndeterminate, selectAllChecked], () => {
 
 function formatPrice(value: number) {
   return (Number.isFinite(value) ? value : 0).toFixed(2)
+}
+
+function cartImageKey(item: CartItem) {
+  return String(item.cartItemId ?? item.productId ?? item.title)
+}
+
+function markCartImageFailed(item: CartItem) {
+  const next = new Set(cartImageFailedIds.value)
+  next.add(cartImageKey(item))
+  cartImageFailedIds.value = next
+}
+
+function canLinkSeller(sellerId: number | null) {
+  return typeof sellerId === 'number' && Number.isSafeInteger(sellerId) && sellerId > 0
+}
+
+function canLinkProduct(item: CartItem) {
+  return typeof item.productId === 'number'
+    && Number.isSafeInteger(item.productId)
+    && item.productId > 0
+    && item.productStatus !== 'deleted'
 }
 
 /** 判断是否为网络/超时类错误（结果未知）。 */
@@ -418,8 +459,15 @@ onMounted(() => {
     </div>
 
     <!-- 空购物车 -->
-    <div v-else-if="items.length === 0" class="empty-state section-panel">
-      <span class="empty-state-icon"><ShoppingCart class="h-8 w-8" aria-hidden="true" /></span>
+    <div v-else-if="items.length === 0" class="empty-state section-panel px-5 py-8 sm:px-8">
+      <img
+        v-if="!cartEmptyImageFailed"
+        :src="cartEmptyImage"
+        alt="空购物车"
+        class="cart-empty-image"
+        @error="cartEmptyImageFailed = true"
+      />
+      <span v-else class="empty-state-icon"><ShoppingCart class="h-8 w-8" aria-hidden="true" /></span>
       <p class="empty-state-title">购物车还是空的</p>
       <p class="empty-state-text">去挑几件心仪的闲置好物吧。</p>
       <router-link class="btn-primary mt-4 inline-flex" to="/market">去逛市场</router-link>
@@ -466,13 +514,19 @@ onMounted(() => {
 
           <p v-if="selectLimitNotice" class="notice-banner notice-banner-warning" role="status">{{ selectLimitNotice }}</p>
 
-          <ul class="space-y-3">
-            <li
-              v-for="item in items"
-              :key="item.cartItemId ?? item.productId ?? item.title"
-              class="section-panel relative overflow-hidden"
-              :class="item.available ? '' : 'opacity-80'"
-            >
+          <div v-for="group in availableSellerGroups" :key="group.sellerId ?? group.sellerNickname" class="section-panel overflow-hidden">
+            <div class="commerce-seller-group-header">
+              <div class="min-w-0">
+                <router-link v-if="canLinkSeller(group.sellerId)" :to="`/shop/${group.sellerId}`" class="commerce-seller-link">
+                  {{ group.sellerNickname }}
+                </router-link>
+                <p v-else class="truncate text-[14px] font-semibold text-gray-800">{{ group.sellerNickname }}</p>
+                <p class="mt-0.5 text-[12px] text-gray-500">{{ group.items.length }} 件待结算商品</p>
+              </div>
+              <span class="chip chip-success">可结算</span>
+            </div>
+            <ul class="divide-y divide-stone-100">
+              <li v-for="item in group.items" :key="item.cartItemId ?? item.productId ?? item.title" class="relative">
               <div class="flex gap-3 p-4 sm:gap-4">
                 <input
                   type="checkbox"
@@ -483,8 +537,8 @@ onMounted(() => {
                   @change="toggleSelect(item.cartItemId, item.available)"
                 />
 
-                <div class="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 sm:h-20 sm:w-20">
-                  <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover" loading="lazy" />
+                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 sm:h-24 sm:w-24">
+                  <img v-if="item.coverUrl && !cartImageFailedIds.has(cartImageKey(item))" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover" loading="lazy" @error="markCartImageFailed(item)" />
                   <div v-else class="flex h-full w-full items-center justify-center text-gray-300">
                     <ShoppingCart class="h-6 w-6" aria-hidden="true" />
                   </div>
@@ -494,14 +548,12 @@ onMounted(() => {
                   <div class="flex flex-wrap items-start justify-between gap-2">
                     <div class="min-w-0">
                       <router-link
-                        v-if="item.productId !== null && item.productStatus !== 'deleted'"
+                        v-if="canLinkProduct(item)"
                         :to="`/market/${item.productId}`"
                         class="block truncate text-[15px] font-semibold text-gray-900 hover:text-blue-700"
                       >{{ item.title }}</router-link>
                       <p v-else class="truncate text-[15px] font-semibold text-gray-400">{{ item.title }}</p>
-                      <p class="mt-0.5 truncate text-[12px] text-gray-500">
-                        卖家：{{ item.sellerNickname || '未知卖家' }}
-                      </p>
+                      <p class="mt-0.5 text-[12px] text-gray-500">加入于 {{ item.createTime || '时间待确认' }}</p>
                     </div>
                     <p class="font-numeric shrink-0 text-[16px] font-bold text-gray-950">¥ {{ formatPrice(item.price) }}</p>
                   </div>
@@ -511,9 +563,8 @@ onMounted(() => {
                       {{ item.available ? '可结算' : item.unavailableReason || '不可结算' }}
                     </span>
                     <span class="chip chip-muted">数量 1</span>
-                    <span v-if="item.createTime" class="text-gray-400">加入于 {{ item.createTime }}</span>
                     <router-link
-                      v-if="item.productId !== null && item.productStatus !== 'deleted'"
+                      v-if="canLinkProduct(item)"
                       :to="`/market/${item.productId}`"
                       class="text-blue-700 hover:underline"
                     >查看商品</router-link>
@@ -545,14 +596,32 @@ onMounted(() => {
                 </div>
               </div>
 
-              <!-- 失效遮罩（不仅用颜色表达） -->
-              <div
-                v-if="!item.available"
-                class="pointer-events-none absolute inset-0 bg-gray-50/60"
-                aria-hidden="true"
-              ></div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+          </div>
+
+          <section v-if="unavailableItems.length > 0" class="section-panel overflow-hidden">
+            <div class="commerce-seller-group-header bg-stone-50">
+              <div><h2 class="text-[14px] font-semibold text-gray-800">失效商品</h2><p class="mt-0.5 text-[12px] text-gray-500">不可结算，但仍可删除</p></div>
+              <span class="chip chip-warning">{{ unavailableItems.length }} 件</span>
+            </div>
+            <ul class="divide-y divide-stone-100">
+              <li v-for="item in unavailableItems" :key="item.cartItemId ?? item.productId ?? item.title" class="relative opacity-80">
+                <div class="flex gap-3 p-4 sm:gap-4">
+                  <input type="checkbox" class="checkbox-standard mt-1 shrink-0" :disabled="true" :aria-label="`商品 ${item.title} 不可结算`" />
+                  <div class="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 sm:h-24 sm:w-24">
+                    <img v-if="item.coverUrl && !cartImageFailedIds.has(cartImageKey(item))" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover" loading="lazy" @error="markCartImageFailed(item)" />
+                    <div v-else class="flex h-full w-full items-center justify-center text-gray-300"><ShoppingCart class="h-6 w-6" aria-hidden="true" /></div>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-start justify-between gap-2"><p class="break-words text-[15px] font-semibold text-gray-700">{{ item.title }}</p><p class="font-numeric shrink-0 text-[16px] font-bold text-gray-700">¥ {{ formatPrice(item.price) }}</p></div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px]"><span class="chip chip-warning">{{ item.unavailableReason || '不可结算' }}</span><span class="text-gray-400">加入于 {{ item.createTime || '时间待确认' }}</span></div>
+                    <div class="mt-3 flex items-center gap-2"><template v-if="confirmDeleteId === item.cartItemId"><button class="btn-danger" type="button" :disabled="singleDeleteSubmitting || interactionLocked" @click="removeSingle(item.cartItemId)">确认删除</button><button class="btn-default" type="button" :disabled="singleDeleteSubmitting" @click="confirmDeleteId = null">取消</button></template><button v-else class="btn-default" type="button" :disabled="interactionLocked" :aria-label="`删除商品 ${item.title}`" @click="confirmDeleteId = item.cartItemId"><Trash2 class="h-4 w-4" aria-hidden="true" />删除</button></div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </section>
         </section>
 
         <!-- 右侧 / 底部：地址 + 结算摘要 -->
@@ -575,30 +644,15 @@ onMounted(() => {
               <fieldset v-else :disabled="interactionLocked">
                 <legend class="sr-only">选择收货地址</legend>
                 <div class="space-y-2">
-                  <label
+                  <CommerceAddressOption
                     v-for="address in addresses"
                     :key="address.id ?? address.fullAddress"
-                    class="flex cursor-pointer gap-2 rounded-md border p-3 transition"
-                    :class="address.id === selectedAddressId ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'"
-                  >
-                    <input
-                      v-if="address.id !== null"
-                      type="radio"
-                      name="cart-address"
-                      class="mt-1"
-                      :value="address.id"
-                      :checked="address.id === selectedAddressId"
-                      @change="selectedAddressId = address.id"
-                    />
-                    <span class="min-w-0">
-                      <span class="flex flex-wrap items-center gap-2">
-                        <span class="text-[13px] font-semibold text-gray-900">{{ address.receiverName }}</span>
-                        <span class="text-[12px] text-gray-500">{{ address.mobile }}</span>
-                        <span v-if="address.isDefault" class="chip chip-accent">默认</span>
-                      </span>
-                      <span class="mt-1 block break-words text-[12px] leading-5 text-gray-600">{{ address.fullAddress }}</span>
-                    </span>
-                  </label>
+                    :model-value="selectedAddressId"
+                    name="cart-address"
+                    :address="address"
+                    :disabled="interactionLocked"
+                    @update:model-value="selectedAddressId = $event"
+                  />
                 </div>
               </fieldset>
             </div>
@@ -619,7 +673,7 @@ onMounted(() => {
               </p>
 
               <button
-                class="btn-primary w-full"
+                class="btn-primary hidden w-full lg:inline-flex"
                 type="button"
                 :disabled="!canCheckout"
                 @click="submitCheckout"
@@ -705,12 +759,24 @@ onMounted(() => {
           </div>
         </div>
       </section>
+
+      <div class="commerce-mobile-action-bar lg:hidden" aria-label="购物车结算操作">
+        <div class="min-w-0"><p class="text-[12px] text-gray-500">已选 {{ selectedCount }} 件</p><p class="font-numeric truncate text-[18px] font-bold text-gray-950">¥ {{ formatPrice(selectedTotalAmount) }}</p></div>
+        <button class="btn-primary shrink-0" type="button" :disabled="!canCheckout" @click="submitCheckout"><Loader2 v-if="checkoutSubmitting" class="h-4 w-4 animate-spin" aria-hidden="true" />{{ checkoutReconcileRequired ? '结果待核对' : checkoutSubmitting ? '正在提交' : '提交结算' }}</button>
+      </div>
     </template>
   </div>
 </template>
 
 <style scoped>
 .cart-page {
-  padding-bottom: 1rem;
+  padding-bottom: 6.75rem;
 }
+
+.cart-empty-image { max-width: min(30rem, 100%); margin-bottom: 1rem; border-radius: 0.5rem; }
+.commerce-seller-group-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.875rem 1rem; border-bottom: 1px solid #f3eee8; }
+.commerce-seller-link { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--commerce-brand-strong); font-size: 0.875rem; font-weight: 600; }
+.commerce-mobile-action-bar { position: fixed; z-index: 30; right: 0.75rem; bottom: calc(4.75rem + env(safe-area-inset-bottom)); left: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border: 1px solid var(--commerce-border); border-radius: 0.5rem; background: rgba(255, 255, 255, 0.97); padding: 0.75rem 0.875rem; box-shadow: var(--commerce-shadow-overlay); }
+
+@media (min-width: 1024px) { .cart-page { padding-bottom: 1rem; } }
 </style>
