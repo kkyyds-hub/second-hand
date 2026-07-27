@@ -25,6 +25,4 @@ public class SellerShopProductDTO {
     private String status;
     /** 商品创建时间。 */
     private LocalDateTime createTime;
-    /** 售出时间（仅已售商品可能有值）。 */
-    private LocalDateTime soldTime;
 }

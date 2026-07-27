@@ -27,5 +27,6 @@ public class SellerShopProductQueryDTO {
     private Integer pageSize = 12;
 
     /** 排除指定商品 ID（用于"该卖家的其他商品"场景）。 */
+    @Min(1)
     private Long excludeProductId;
 }

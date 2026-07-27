@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Loader2,
   Package,
   PackagePlus,
   RefreshCw,
@@ -24,7 +25,8 @@ import {
 
 const route = useRoute()
 
-let requestSequence = 0
+let shopRequestSequence = 0
+let productRequestSequence = 0
 
 const profileLoading = ref(false)
 const productsLoading = ref(false)
@@ -52,6 +54,7 @@ const hasPrevPage = computed(() => currentPage.value > 1)
 const hasNextPage = computed(() => currentPage.value < totalPages.value)
 const tabOnSaleLabel = computed(() => `正在出售 ${profile.value.onSaleCount}`)
 const tabSoldLabel = computed(() => `已经售出 ${profile.value.soldCount}`)
+const isRetrying = ref(false)
 
 const displayStats = computed(() => {
   const formatDate = (dateStr: string | null) => {
@@ -69,13 +72,6 @@ const displayStats = computed(() => {
   ]
 })
 
-function resetState() {
-  profile.value = createEmptyShopProfile()
-  productsPage.value = createEmptyShopProductPage()
-  profileError.value = ''
-  productsError.value = ''
-}
-
 async function loadProfile(sequence: number) {
   const id = sellerId.value
   if (id === null) return
@@ -83,14 +79,14 @@ async function loadProfile(sequence: number) {
   profileError.value = ''
   try {
     const result = await getSellerShop(id)
-    if (sequence !== requestSequence) return
+    if (sequence !== shopRequestSequence) return
     profile.value = result
     document.title = `${result.shopName}`
   } catch (error) {
-    if (sequence !== requestSequence) return
+    if (sequence !== shopRequestSequence) return
     profileError.value = error instanceof Error && error.message ? error.message : '小店资料暂时无法加载，请稍后重试。'
   } finally {
-    if (sequence === requestSequence) profileLoading.value = false
+    if (sequence === shopRequestSequence) profileLoading.value = false
   }
 }
 
@@ -105,44 +101,86 @@ async function loadProducts(sequence: number) {
       page: currentPage.value,
       pageSize,
     })
-    if (sequence !== requestSequence) return
+    if (sequence !== productRequestSequence) return
     productsPage.value = result
   } catch {
-    if (sequence !== requestSequence) return
+    if (sequence !== productRequestSequence) return
     productsError.value = '商品列表暂时无法加载，请稍后重试。'
   } finally {
-    if (sequence === requestSequence) productsLoading.value = false
+    if (sequence === productRequestSequence) productsLoading.value = false
   }
 }
 
-async function loadAll() {
-  const sequence = ++requestSequence
-  resetState()
+function onSellerIdChange() {
+  // Increment BOTH sequences so old shop AND product responses are fully discarded
+  const shopSeq = ++shopRequestSequence
+  ++productRequestSequence
+
+  // Reset tab, page, and clear all old data
+  activeTab.value = 'on_sale'
+  currentPage.value = 1
+  profile.value = createEmptyShopProfile()
+  productsPage.value = createEmptyShopProductPage()
+  profileError.value = ''
+  productsError.value = ''
+  profileLoading.value = false
+  productsLoading.value = false
+
   if (sellerId.value === null) return
-  await loadProfile(sequence)
-  if (sequence === requestSequence) await loadProducts(sequence)
+
+  // Load profile first, then default products
+  loadProfile(shopSeq).then(() => {
+    if (shopSeq === shopRequestSequence) {
+      void loadProducts(++productRequestSequence)
+    }
+  })
 }
 
 function switchTab(tab: 'on_sale' | 'sold') {
   if (activeTab.value === tab) return
   activeTab.value = tab
   currentPage.value = 1
-  void loadProducts(requestSequence)
+  void loadProducts(++productRequestSequence)
 }
 
 function changePage(page: number) {
   if (page < 1 || page > totalPages.value || page === currentPage.value) return
   currentPage.value = page
-  void loadProducts(requestSequence)
+  void loadProducts(++productRequestSequence)
 }
 
 function reloadProducts() {
-  void loadProducts(requestSequence)
+  void loadProducts(++productRequestSequence)
 }
 
-watch(sellerId, () => { void loadAll() }, { immediate: true })
+function retryLoadAll() {
+  isRetrying.value = true
+  const shopSeq = ++shopRequestSequence
+  ++productRequestSequence
 
-onBeforeUnmount(() => { ++requestSequence })
+  activeTab.value = 'on_sale'
+  currentPage.value = 1
+  profile.value = createEmptyShopProfile()
+  productsPage.value = createEmptyShopProductPage()
+  profileError.value = ''
+  productsError.value = ''
+
+  if (sellerId.value === null) {
+    isRetrying.value = false
+    return
+  }
+
+  loadProfile(shopSeq).then(() => {
+    isRetrying.value = false
+    if (shopSeq === shopRequestSequence) {
+      void loadProducts(++productRequestSequence)
+    }
+  })
+}
+
+watch(sellerId, () => { onSellerIdChange() }, { immediate: true })
+
+onBeforeUnmount(() => { ++shopRequestSequence; ++productRequestSequence })
 </script>
 
 <template>
@@ -165,13 +203,17 @@ onBeforeUnmount(() => { ++requestSequence })
       <router-link class="btn-primary mt-5" to="/market">返回市场</router-link>
     </section>
 
-    <!-- Error state -->
+    <!-- Error state with retry -->
     <section v-else-if="profileError" class="empty-state min-h-[340px]">
       <ShieldAlert class="empty-state-icon text-red-400" aria-hidden="true" />
       <p class="empty-state-title">{{ profileError }}</p>
-      <p class="empty-state-text">该小店当前不可访问，你可以浏览其他内容。</p>
+      <p class="empty-state-text">请检查网络后重试，或先浏览其他内容。</p>
       <div class="mt-5 flex flex-wrap justify-center gap-3">
-        <router-link class="btn-primary" to="/market">返回市场</router-link>
+        <button class="btn-primary" type="button" :disabled="isRetrying" @click="retryLoadAll">
+          <Loader2 v-if="isRetrying" class="h-4 w-4 animate-spin" aria-hidden="true" />
+          {{ isRetrying ? '加载中...' : '重新加载' }}
+        </button>
+        <router-link class="btn-default" to="/market">返回市场</router-link>
       </div>
     </section>
 

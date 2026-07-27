@@ -153,10 +153,6 @@ public class SellerShopServiceImpl implements SellerShopService {
         dto.setCategoryName(product.getCategory());
         dto.setStatus(product.getStatus());
         dto.setCreateTime(product.getCreateTime());
-        // soldTime: 已售商品使用 updateTime 作为近似售出时间
-        if ("sold".equals(product.getStatus())) {
-            dto.setSoldTime(product.getUpdateTime());
-        }
         return dto;
     }
 

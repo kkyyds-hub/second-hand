@@ -22,7 +22,6 @@ export interface SellerShopProduct {
   categoryName: string
   status: string
   createTime: string
-  soldTime: string | null
 }
 
 export interface SellerShopProductPage {
@@ -165,7 +164,6 @@ function normalizeShopProduct(payload: unknown): SellerShopProduct {
     categoryName: readFirstText(source.categoryName),
     status: readFirstText(source.status) || 'on_sale',
     createTime: readFirstText(source.createTime),
-    soldTime: readFirstNullableText(source.soldTime),
   }
 }
 

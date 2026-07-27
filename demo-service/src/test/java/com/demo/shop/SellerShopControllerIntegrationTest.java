@@ -9,12 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.jdbc.JdbcTestUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,31 +56,23 @@ class SellerShopControllerIntegrationTest {
     @BeforeAll
     static void setUp(@Autowired JdbcTemplate jdbcTemplate,
                       @Value("${demo.jwt.user-secret-key}") String userSecret) {
-        // Pre-clean: remove any leftover data from previous test runs
         cleanTestData(jdbcTemplate);
 
         long now = System.currentTimeMillis();
 
-        // Create seller A
         sellerAId = createUser(jdbcTemplate, PREFIX + "sellerA", PREFIX + "sellerA_nick",
                 "active", 1, 0, 120);
-        // Create seller B
         sellerBId = createUser(jdbcTemplate, PREFIX + "sellerB", PREFIX + "sellerB_nick",
                 "active", 1, 0, 110);
-        // Create buyer
         buyerId = createUser(jdbcTemplate, PREFIX + "buyer", PREFIX + "buyer_nick",
                 "active", 0, 0, 100);
-        // Create non-seller
         nonSellerId = createUser(jdbcTemplate, PREFIX + "nonseller", PREFIX + "nonseller_nick",
                 "active", 0, 0, 100);
-        // Create banned seller
         bannedSellerId = createUser(jdbcTemplate, PREFIX + "banned", PREFIX + "banned_nick",
                 "banned", 1, 0, 100);
-        // Create deleted seller (will be marked deleted)
         deletedSellerId = createUser(jdbcTemplate, PREFIX + "deleted", PREFIX + "deleted_nick",
                 "active", 1, 1, 100);
 
-        // Products for seller A
         String images = "https://example.com/img.jpg";
         sellerAProduct1Id = createProduct(jdbcTemplate, "商品A1", sellerAId, "on_sale", images, 0);
         sellerAProduct2Id = createProduct(jdbcTemplate, "商品A2", sellerAId, "on_sale", images, 0);
@@ -92,23 +80,18 @@ class SellerShopControllerIntegrationTest {
         sellerAProductSoldId = createProduct(jdbcTemplate, "商品A-已售", sellerAId, "sold", images, 0);
         sellerAProductUnderReviewId = createProduct(jdbcTemplate, "商品A-审核中", sellerAId, "under_review", images, 0);
         sellerAProductOffShelfId = createProduct(jdbcTemplate, "商品A-下架", sellerAId, "off_shelf", images, 0);
-        // Soft-deleted product for seller A
         createProduct(jdbcTemplate, "商品A-已删", sellerAId, "on_sale", images, 1);
 
-        // Product for seller B
         sellerBProductId = createProduct(jdbcTemplate, "商品B1", sellerBId, "on_sale", images, 0);
 
-        // Create a completed order for seller A
         createCompletedOrder(jdbcTemplate, buyerId, sellerAId, sellerAProductSoldId);
 
-        // Tokens
         sellerAToken = generateToken(userSecret, sellerAId, now);
         buyerToken = generateToken(userSecret, buyerId, now);
     }
 
     @AfterAll
     static void tearDown(@Autowired JdbcTemplate jdbcTemplate) {
-        // Delete in FK-safe order
         jdbcTemplate.update("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE order_no LIKE ?)", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM after_sale_evidences WHERE after_sale_id IN (SELECT id FROM after_sales WHERE order_id IN (SELECT id FROM orders WHERE order_no LIKE ?))", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM after_sales WHERE order_id IN (SELECT id FROM orders WHERE order_no LIKE ?)", PREFIX + "%");
@@ -128,9 +111,9 @@ class SellerShopControllerIntegrationTest {
         jdbcTemplate.update("DELETE FROM users WHERE id IN (?, ?, ?, ?, ?, ?)", sellerAId, sellerBId, buyerId, nonSellerId, bannedSellerId, deletedSellerId);
     }
 
-    // ──────────────────────────────────────────────
-    // 19.1 Shop profile
-    // ──────────────────────────────────────────────
+    // ========================================
+    // Shop profile tests
+    // ========================================
 
     @Test
     @Order(1)
@@ -151,6 +134,9 @@ class SellerShopControllerIntegrationTest {
         assertTrue(((Number) data.get("soldCount")).intValue() >= 1);
         assertTrue(((Number) data.get("completedOrderCount")).intValue() >= 1);
         assertEquals(false, data.get("isCurrentUser"));
+        // soldTime must never appear in response
+        String raw = getWithTokenRaw("/user/shops/" + sellerAId + "/products?status=sold&page=1&pageSize=10", buyerToken).getBody();
+        assertFalse(Objects.requireNonNull(raw).contains("\"soldTime\""), "soldTime must not appear in response");
     }
 
     @Test
@@ -164,7 +150,7 @@ class SellerShopControllerIntegrationTest {
 
     @Test
     @Order(3)
-    @DisplayName("不存在卖家 → 卖家不存在")
+    @DisplayName("不存在卖家 -> 卖家不存在")
     void nonExistentSeller() {
         ResponseEntity<Map> response = getWithToken("/user/shops/999999", buyerToken, Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -175,7 +161,7 @@ class SellerShopControllerIntegrationTest {
 
     @Test
     @Order(4)
-    @DisplayName("普通非卖家 → 尚未开通小店")
+    @DisplayName("普通非卖家 -> 尚未开通小店")
     void nonSellerUser() {
         ResponseEntity<Map> response = getWithToken("/user/shops/" + nonSellerId, buyerToken, Map.class);
         Map<String, Object> body = Objects.requireNonNull(response.getBody());
@@ -185,7 +171,7 @@ class SellerShopControllerIntegrationTest {
 
     @Test
     @Order(5)
-    @DisplayName("禁用卖家 → 小店暂不可访问")
+    @DisplayName("禁用卖家 -> 小店暂不可访问")
     void bannedSeller() {
         ResponseEntity<Map> response = getWithToken("/user/shops/" + bannedSellerId, buyerToken, Map.class);
         Map<String, Object> body = Objects.requireNonNull(response.getBody());
@@ -195,7 +181,7 @@ class SellerShopControllerIntegrationTest {
 
     @Test
     @Order(6)
-    @DisplayName("软删除卖家 → 小店已不存在")
+    @DisplayName("软删除卖家 -> 小店已不存在")
     void deletedSeller() {
         ResponseEntity<Map> response = getWithToken("/user/shops/" + deletedSellerId, buyerToken, Map.class);
         Map<String, Object> body = Objects.requireNonNull(response.getBody());
@@ -203,9 +189,9 @@ class SellerShopControllerIntegrationTest {
         assertTrue(((String) body.get("msg")).contains("已不存在"));
     }
 
-    // ──────────────────────────────────────────────
-    // 19.2 Multi-product attribution
-    // ──────────────────────────────────────────────
+    // ========================================
+    // Multi-product attribution
+    // ========================================
 
     @Test
     @Order(10)
@@ -218,7 +204,6 @@ class SellerShopControllerIntegrationTest {
         List<Map<String, Object>> list = (List<Map<String, Object>>) data.get("list");
         assertFalse(list.isEmpty());
         for (Map<String, Object> item : list) {
-            // All products should be from seller A - verified by endpoint path
             assertEquals("on_sale", item.get("status"));
         }
     }
@@ -238,9 +223,9 @@ class SellerShopControllerIntegrationTest {
         }
     }
 
-    // ──────────────────────────────────────────────
-    // 19.3 Status isolation
-    // ──────────────────────────────────────────────
+    // ========================================
+    // Status isolation
+    // ========================================
 
     @Test
     @Order(12)
@@ -274,9 +259,9 @@ class SellerShopControllerIntegrationTest {
         }
     }
 
-    // ──────────────────────────────────────────────
-    // 19.4 Pagination
-    // ──────────────────────────────────────────────
+    // ========================================
+    // Pagination
+    // ========================================
 
     @Test
     @Order(14)
@@ -293,12 +278,46 @@ class SellerShopControllerIntegrationTest {
         assertTrue(((Number) data.get("total")).intValue() >= 3);
     }
 
-    // ──────────────────────────────────────────────
-    // 19.6 Other products
-    // ──────────────────────────────────────────────
-
     @Test
     @Order(15)
+    @DisplayName("分页第二页无重复商品")
+    void paginationSecondPageHasNoDuplicateProducts() {
+        // page1
+        ResponseEntity<Map> resp1 = getWithToken(
+                "/user/shops/" + sellerAId + "/products?status=on_sale&page=1&pageSize=2",
+                buyerToken, Map.class);
+        Map<String, Object> data1 = (Map<String, Object>) Objects.requireNonNull(resp1.getBody()).get("data");
+        List<Map<String, Object>> page1 = (List<Map<String, Object>>) data1.get("list");
+        int total = ((Number) data1.get("total")).intValue();
+
+        // page2
+        ResponseEntity<Map> resp2 = getWithToken(
+                "/user/shops/" + sellerAId + "/products?status=on_sale&page=2&pageSize=2",
+                buyerToken, Map.class);
+        Map<String, Object> data2 = (Map<String, Object>) Objects.requireNonNull(resp2.getBody()).get("data");
+        List<Map<String, Object>> page2 = (List<Map<String, Object>>) data2.get("list");
+
+        // No overlap between page1 and page2
+        Set<Long> page1Ids = new HashSet<>();
+        for (Map<String, Object> item : page1) {
+            page1Ids.add(((Number) item.get("productId")).longValue());
+        }
+        for (Map<String, Object> item : page2) {
+            Long id = ((Number) item.get("productId")).longValue();
+            assertFalse(page1Ids.contains(id), "Product " + id + " appears on both pages");
+        }
+
+        // Combined count matches total expectation
+        int combinedSize = page1.size() + page2.size();
+        assertTrue(combinedSize <= total, "Combined pages should not exceed total");
+    }
+
+    // ========================================
+    // Other products exclusion
+    // ========================================
+
+    @Test
+    @Order(16)
     @DisplayName("其他商品：排除当前商品，limit生效")
     void otherProductsExclusion() {
         ResponseEntity<Map> response = getWithToken(
@@ -313,9 +332,27 @@ class SellerShopControllerIntegrationTest {
         assertTrue(list.size() <= 6);
     }
 
-    // ──────────────────────────────────────────────
-    // 19.7 Privacy
-    // ──────────────────────────────────────────────
+    // ========================================
+    // soldProductResponseHasNoFakeSoldTime
+    // ========================================
+
+    @Test
+    @Order(17)
+    @DisplayName("已售商品响应不含soldTime字段")
+    void soldProductResponseHasNoFakeSoldTime() {
+        ResponseEntity<Map> response = getWithToken(
+                "/user/shops/" + sellerAId + "/products?status=sold&page=1&pageSize=10",
+                buyerToken, Map.class);
+        Map<String, Object> data = (Map<String, Object>) Objects.requireNonNull(response.getBody()).get("data");
+        List<Map<String, Object>> list = (List<Map<String, Object>>) data.get("list");
+        for (Map<String, Object> item : list) {
+            assertNull(item.get("soldTime"), "soldTime field must not be present: " + item);
+        }
+    }
+
+    // ========================================
+    // Privacy
+    // ========================================
 
     @Test
     @Order(20)
@@ -323,22 +360,20 @@ class SellerShopControllerIntegrationTest {
     void privacyFields() {
         ResponseEntity<String> response = getWithTokenRaw("/user/shops/" + sellerAId, sellerAToken);
         String body = Objects.requireNonNull(response.getBody());
-        // Field-level assertion: response data should not contain these keys
         assertFalse(body.contains("\"mobile\""), "Should not expose mobile");
         assertFalse(body.contains("\"email\""), "Should not expose email");
         assertFalse(body.contains("\"password\""), "Should not expose password");
     }
 
-    // ──────────────────────────────────────────────
-    // 19.8 Invalid params
-    // ──────────────────────────────────────────────
+    // ========================================
+    // Invalid params
+    // ========================================
 
     @Test
     @Order(30)
     @DisplayName("非法参数：sellerId=0")
     void invalidSellerIdZero() {
         ResponseEntity<Map> response = getWithToken("/user/shops/0", buyerToken, Map.class);
-        // @Min(1) validation may return 400, or the service returns 200 with code=0
         assertTrue(
             response.getStatusCode() == HttpStatus.BAD_REQUEST ||
             (response.getStatusCode() == HttpStatus.OK && response.getBody() != null &&
@@ -349,6 +384,19 @@ class SellerShopControllerIntegrationTest {
 
     @Test
     @Order(31)
+    @DisplayName("非法参数：negative sellerId")
+    void negativeSellerIdIsRejected() {
+        ResponseEntity<Map> response = getWithToken("/user/shops/-1", buyerToken, Map.class);
+        assertTrue(
+            response.getStatusCode() == HttpStatus.BAD_REQUEST ||
+            (response.getStatusCode() == HttpStatus.OK && response.getBody() != null &&
+             ((Number) response.getBody().get("code")).intValue() == 0),
+            "Expected 400 or 200 with code=0 for negative sellerId, got " + response.getStatusCode()
+        );
+    }
+
+    @Test
+    @Order(32)
     @DisplayName("非法参数：非法status")
     void invalidStatus() {
         ResponseEntity<Map> response = getWithToken(
@@ -359,28 +407,61 @@ class SellerShopControllerIntegrationTest {
     }
 
     @Test
-    @Order(32)
-    @DisplayName("非法参数：pageSize > 24")
-    void invalidPageSize() {
+    @Order(33)
+    @DisplayName("非法参数：pageSize超过最大值")
+    void pageSizeAboveMaximumIsRejected() {
         ResponseEntity<Map> response = getWithToken(
                 "/user/shops/" + sellerAId + "/products?pageSize=100",
                 buyerToken, Map.class);
-        // Max pageSize enforced
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Map<String, Object> body = Objects.requireNonNull(response.getBody());
+        // @Max(24) should reject
+        assertTrue(
+            response.getStatusCode() == HttpStatus.BAD_REQUEST ||
+            ((Number) body.get("code")).intValue() == 0,
+            "Expected 400 or code=0 for pageSize > 24"
+        );
     }
 
-    // ──────────────────────────────────────────────
+    @Test
+    @Order(34)
+    @DisplayName("非法参数：excludeProductId=0 被拒绝")
+    void zeroExcludeProductIdIsRejected() {
+        ResponseEntity<Map> response = getWithToken(
+                "/user/shops/" + sellerAId + "/products?excludeProductId=0",
+                buyerToken, Map.class);
+        assertTrue(
+            response.getStatusCode() == HttpStatus.BAD_REQUEST ||
+            (response.getStatusCode() == HttpStatus.OK && response.getBody() != null &&
+             ((Number) response.getBody().get("code")).intValue() == 0),
+            "Expected 400 or code=0 for excludeProductId=0"
+        );
+    }
+
+    @Test
+    @Order(35)
+    @DisplayName("非法参数：excludeProductId=-1 被拒绝")
+    void negativeExcludeProductIdIsRejected() {
+        ResponseEntity<Map> response = getWithToken(
+                "/user/shops/" + sellerAId + "/products?excludeProductId=-1",
+                buyerToken, Map.class);
+        assertTrue(
+            response.getStatusCode() == HttpStatus.BAD_REQUEST ||
+            (response.getStatusCode() == HttpStatus.OK && response.getBody() != null &&
+             ((Number) response.getBody().get("code")).intValue() == 0),
+            "Expected 400 or code=0 for excludeProductId=-1"
+        );
+    }
+
+    // ========================================
     // Helpers
-    // ──────────────────────────────────────────────
+    // ========================================
 
     private static void cleanTestData(JdbcTemplate jt) {
-        // First find and delete all P5SHOPA_ users
         List<Long> userIds = jt.queryForList(
             "SELECT id FROM users WHERE username LIKE ?", Long.class, PREFIX + "%"
         );
         if (userIds.isEmpty()) return;
 
-        // Delete dependent records first
         for (Long uid : userIds) {
             jt.update("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE buyer_id = ? OR seller_id = ?)", uid, uid);
             jt.update("DELETE FROM order_items WHERE product_id IN (SELECT id FROM products WHERE owner_id = ?)", uid);
@@ -399,7 +480,6 @@ class SellerShopControllerIntegrationTest {
             jt.update("DELETE FROM user_violations WHERE user_id = ?", uid);
             jt.update("DELETE FROM user_bans WHERE user_id = ?", uid);
             jt.update("DELETE FROM user_oauth_bind WHERE user_id = ?", uid);
-            jt.update("DELETE FROM message_outbox WHERE biz_id = ?", String.valueOf(uid));
         }
         jt.update("DELETE FROM users WHERE username LIKE ?", PREFIX + "%");
     }
@@ -410,8 +490,7 @@ class SellerShopControllerIntegrationTest {
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'lv3', NOW(), NOW())",
                 username, "pass", PREFIX + "1380000" + username.substring(PREFIX.length()),
                 nickname, status, isSeller, isDeleted, creditScore);
-        Long id = jt.queryForObject("SELECT id FROM users WHERE username = ?", Long.class, username);
-        return id;
+        return jt.queryForObject("SELECT id FROM users WHERE username = ?", Long.class, username);
     }
 
     private static Long createProduct(JdbcTemplate jt, String title, Long ownerId,
