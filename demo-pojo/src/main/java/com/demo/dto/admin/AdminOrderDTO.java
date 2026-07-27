@@ -18,8 +18,17 @@ public class AdminOrderDTO {
 
     /** 买家用户 ID。 */
     private Long buyerId;
+    private String buyerNickname;
+    private String buyerMobile;
     /** 卖家用户 ID。 */
     private Long sellerId;
+    private String sellerNickname;
+    private String sellerMobile;
+
+    private Long productId;
+    private String productTitle;
+    private String productThumbnail;
+    private Long flagCount;
 
     /** 字段：totalAmount。 */
     private BigDecimal totalAmount;

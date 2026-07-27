@@ -23,6 +23,8 @@ public class AdminOrderQueryDTO {
 
     /** 状态。 */
     private String status;
+    /** 订单号、买卖双方昵称/手机号或商品标题关键字。 */
+    private String keyword;
     /** 时间字段。 */
     private LocalDateTime startTime;
     /** 时间字段。 */

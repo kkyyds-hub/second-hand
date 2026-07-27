@@ -2,8 +2,11 @@ package com.demo.controller.admin;
 
 import com.demo.context.BaseContext;
 import com.demo.dto.admin.AdminOrderDTO;
+import com.demo.dto.admin.AdminOrderDetailDTO;
 import com.demo.dto.admin.AdminOrderQueryDTO;
 import com.demo.dto.admin.OrderFlagRequest;
+import com.demo.dto.admin.OrderFlagType;
+import com.demo.dto.admin.AdminOrderFlagDTO;
 import com.demo.entity.OrderFlag;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderFlagMapper;
@@ -64,6 +67,7 @@ public class AdminOrderController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime,
             @RequestParam(defaultValue = "createTime") String sortField,
@@ -73,11 +77,16 @@ public class AdminOrderController {
         query.setPage(page == null || page < 1 ? 1 : page);
         query.setPageSize(pageSize == null || pageSize < 1 ? 10 : Math.min(pageSize, 100));
         query.setStatus(status);
+        query.setKeyword(normalizeKeyword(keyword));
         // Day18 P3-S2：排序参数统一做“白名单 + 方向枚举”校验后再入查询对象。
         query.setSortField(InputSecurityGuard.normalizeSortField(sortField, ORDER_SORT_FIELD_WHITELIST, "createTime"));
         query.setSortOrder(InputSecurityGuard.normalizeSortOrder(sortOrder, "desc"));
         query.setStartTime(parseDateTime(startTime));
         query.setEndTime(parseDateTime(endTime));
+        if (query.getStartTime() != null && query.getEndTime() != null
+                && query.getStartTime().isAfter(query.getEndTime())) {
+            throw new BusinessException("开始时间不能晚于结束时间");
+        }
 
         PageHelper.startPage(query.getPage(), query.getPageSize());
         List<AdminOrderDTO> list = orderMapper.listAdminOrders(query);
@@ -92,6 +101,35 @@ public class AdminOrderController {
     }
 
     /**
+     * 查询管理员可见的订单聚合详情。
+     * GET /admin/orders/{orderId}
+     */
+    @GetMapping("/{orderId}")
+    public Result<AdminOrderDetailDTO> getOrderDetail(
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId) {
+        AdminOrderDetailDTO detail = orderMapper.getAdminOrderDetail(orderId);
+        if (detail == null) {
+            throw new BusinessException("订单不存在");
+        }
+        detail.setItems(orderMapper.listAdminOrderItems(orderId));
+        detail.setFlags(orderFlagMapper.listByOrderId(orderId));
+        return Result.success(detail);
+    }
+
+    /**
+     * 查询订单标记历史。
+     * GET /admin/orders/{orderId}/flags
+     */
+    @GetMapping("/{orderId}/flags")
+    public Result<List<AdminOrderFlagDTO>> listOrderFlags(
+            @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId) {
+        if (orderMapper.getAdminOrderDetail(orderId) == null) {
+            throw new BusinessException("订单不存在");
+        }
+        return Result.success(orderFlagMapper.listByOrderId(orderId));
+    }
+
+    /**
      * 给订单打标记。
      * POST /admin/orders/{orderId}/flags
      */
@@ -99,8 +137,17 @@ public class AdminOrderController {
     public Result<String> flagOrder(
             @PathVariable @Min(value = 1, message = "订单 ID 必须大于0") Long orderId,
             @Validated @RequestBody OrderFlagRequest request) {
+        if (orderMapper.getAdminOrderDetail(orderId) == null) {
+            throw new BusinessException("订单不存在");
+        }
         // Day18 P3-S2：标记类型/备注属于可回显文本，统一经过纯文本守卫后再落库。
-        String safeType = InputSecurityGuard.normalizePlainText(request.getType(), "标记类型", 32, true);
+        String safeType;
+        try {
+            safeType = OrderFlagType.fromRequestType(
+                    InputSecurityGuard.normalizePlainText(request.getType(), "标记类型", 32, true)).name();
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("不支持的订单标记类型");
+        }
         String safeRemark = InputSecurityGuard.normalizePlainText(request.getRemark(), "备注", 200, false);
         log.info("管理员标记异常订单: orderId={}, type={}", orderId, safeType);
 
@@ -127,6 +174,13 @@ public class AdminOrderController {
         return Result.success("标记成功");
     }
 
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return null;
+        }
+        return InputSecurityGuard.normalizePlainText(keyword, "关键字", 64, true);
+    }
+
     /**
      * 解析日期时间字符串（支持 ISO 和 yyyy-MM-dd HH:mm:ss）。
      */
@@ -147,4 +201,3 @@ public class AdminOrderController {
         }
     }
 }
-

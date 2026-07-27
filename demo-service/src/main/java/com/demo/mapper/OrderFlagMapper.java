@@ -1,8 +1,11 @@
 package com.demo.mapper;
 
 import com.demo.entity.OrderFlag;
+import com.demo.dto.admin.AdminOrderFlagDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * Day13 Step7 - 订单异常标记 Mapper
@@ -19,4 +22,9 @@ public interface OrderFlagMapper {
      * 根据订单 ID和类型查询标记（幂等检查）
      */
     OrderFlag selectByOrderIdAndType(@Param("orderId") Long orderId, @Param("type") String type);
+
+    /**
+     * 按创建时间倒序查询管理端订单标记历史。
+     */
+    List<AdminOrderFlagDTO> listByOrderId(@Param("orderId") Long orderId);
 }

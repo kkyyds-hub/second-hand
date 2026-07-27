@@ -7,6 +7,8 @@ import com.demo.dto.statistics.OrderGmvStatsDTO;
 import com.demo.entity.Order;
 import com.demo.entity.OrderItem;
 import com.demo.dto.admin.AdminOrderDTO;
+import com.demo.dto.admin.AdminOrderDetailDTO;
+import com.demo.dto.admin.AdminOrderItemDTO;
 import com.demo.vo.order.BuyerOrderSummary;
 import com.demo.vo.order.OrderDetail;
 import com.demo.vo.order.SellerOrderSummary;
@@ -40,6 +42,16 @@ public interface OrderMapper {
      * 管理端分页查询订单列表。
      */
     List<AdminOrderDTO> listAdminOrders(@Param("query") AdminOrderQueryDTO query);
+
+    /**
+     * 管理端订单详情，不复用买卖双方可见性查询。
+     */
+    AdminOrderDetailDTO getAdminOrderDetail(@Param("orderId") Long orderId);
+
+    /**
+     * 管理端订单详情中的全部订单项。
+     */
+    List<AdminOrderItemDTO> listAdminOrderItems(@Param("orderId") Long orderId);
 
     /**
      * 查询订单详情（买家或卖家可见）。

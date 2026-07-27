@@ -11,9 +11,7 @@ import javax.validation.constraints.Size;
 @Data
 public class OrderFlagRequest {
 
-    /**
-     * 标记类型：suspicious / refund_risk / other
-     */
+    /** 管理端固定标记类型，实际枚举校验由控制器执行。 */
     @NotBlank(message = "标记类型不能为空")
     @Size(max = 32, message = "标记类型长度不能超过32")
     private String type;

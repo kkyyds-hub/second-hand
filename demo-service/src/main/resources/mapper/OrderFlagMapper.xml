@@ -22,4 +22,18 @@
         LIMIT 1
     </select>
 
+    <select id="listByOrderId" resultType="com.demo.dto.admin.AdminOrderFlagDTO">
+        SELECT
+            f.id,
+            f.type,
+            f.remark,
+            f.created_by AS createdBy,
+            u.nickname AS createdByNickname,
+            f.create_time AS createTime
+        FROM order_flags f
+        LEFT JOIN users u ON u.id = f.created_by
+        WHERE f.order_id = #{orderId}
+        ORDER BY f.create_time DESC, f.id DESC
+    </select>
+
 </mapper>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   AlertOctagon,
   AlertTriangle,
@@ -19,6 +20,8 @@ import {
   type AuditStats,
   type AuditTicketItem,
 } from '@/api/audit'
+
+const route = useRoute()
 
 /**
  * 页面基础状态。
@@ -40,7 +43,7 @@ const summary = ref<AuditStats>({
 /**
  * 筛选条件。
  */
-const searchQuery = ref('')
+const searchQuery = ref(typeof route.query.orderId === 'string' ? route.query.orderId : '')
 const selectedType = ref('ALL')
 const selectedStatus = ref('ALL')
 const selectedRisk = ref('ALL')
@@ -118,6 +121,13 @@ watch([searchQuery, selectedType, selectedStatus, selectedRisk], () => {
 
 onMounted(() => {
   fetchData()
+})
+
+watch(() => route.query.orderId, (orderId) => {
+  const value = typeof orderId === 'string' ? orderId : ''
+  if (value !== searchQuery.value) {
+    searchQuery.value = value
+  }
 })
 
 /**

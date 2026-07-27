@@ -35,6 +35,11 @@ const router = createRouter({
           component: () => import('@/pages/products/ProductReview.vue'),
         },
         {
+          path: 'orders',
+          name: 'AdminOrderList',
+          component: () => import('@/pages/orders/OrderList.vue'),
+        },
+        {
           path: 'settings',
           name: 'SystemSettings',
           component: () => import('@/pages/settings/SystemSettings.vue'),

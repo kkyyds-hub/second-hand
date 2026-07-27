@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Users, ShoppingBag, ShieldAlert, Settings, Bell, ChevronDown, Menu, Search, HelpCircle, LogOut, Wrench } from 'lucide-vue-next'
+import { LayoutDashboard, Users, ShoppingBag, ReceiptText, ShieldAlert, Settings, Bell, ChevronDown, Menu, Search, HelpCircle, LogOut, Wrench } from 'lucide-vue-next'
 import { clearAdminToken } from '@/utils/request'
 
 const route = useRoute()
@@ -26,6 +26,7 @@ const menuGroups = [
     items: [
       { name: '用户与商家', path: '/users', icon: Users },
       { name: '商品审核', path: '/products', icon: ShoppingBag },
+      { name: '订单管理', path: '/orders', icon: ReceiptText },
     ]
   },
   {

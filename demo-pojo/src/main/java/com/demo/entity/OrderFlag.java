@@ -22,9 +22,7 @@ public class OrderFlag {
     /** 订单 ID。 */
     private Long orderId;
 
-    /**
-     * 标记类型：suspicious / refund_risk / other
-     */
+    /** 管理端订单风险标记类型。 */
     private String type;
 
     /**
