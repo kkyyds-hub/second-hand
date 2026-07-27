@@ -84,7 +84,7 @@ const buildAuditTicketMeta = (ticket: AuditTicketItem) => {
   }
 
   const typeLabel = typeLabelMap[ticket.type] || '审计工单'
-  const statusLabel = statusLabelMap[ticket.status] || '处理中'
+  const statusLabel = statusLabelMap[ticket.status] || '未知状态'
   return `${typeLabel} · ${statusLabel}`
 }
 
@@ -96,10 +96,10 @@ const shortenText = (value?: string, maxLength = 28) => {
 
 const mapAuditTicketToDisputeItem = (ticket: AuditTicketItem): DisputeItem => ({
   id: ticket.id,
-  reason: ticket.title?.trim() || '高优工单待处理',
-  target: ticket.target?.trim() || '待确认处理对象',
+  reason: ticket.title?.trim() || '—',
+  target: ticket.target?.trim() || '—',
   user: shortenText(ticket.description, 24) || buildAuditTicketMeta(ticket),
-  level: ticket.riskLevel === 'HIGH' ? '紧急' : '中风险',
+  level: ticket.riskLevel === 'HIGH' ? '紧急' : '—',
 })
 
 const buildFallbackDisputeQueue = (tickets?: AuditTicketItem[]) => {
@@ -126,9 +126,9 @@ const normalizeReviewQueue = (reviewQueue?: ReviewItemPayload[]): ReviewItem[] =
     // 这里继续兼容旧 user 字段，避免前后端部署窗口不一致时首页卖家列突然变空。
     sellerName: item.sellerName?.trim() || item.user?.trim() || '未知卖家',
     type: item.type?.trim() || '未分类',
-    price: item.price?.trim() || '¥0',
-    time: item.time?.trim() || '刚刚',
-    risk: item.risk?.trim() || '正常',
+    price: item.price?.trim() || '—',
+    time: item.time?.trim() || '时间未知',
+    risk: item.risk?.trim() || '风险未提供',
   }))
 }
 
