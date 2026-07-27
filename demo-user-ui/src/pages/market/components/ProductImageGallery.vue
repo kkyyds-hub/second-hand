@@ -85,15 +85,16 @@ function handleImageError(url: string) {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.75rem;
-  background: rgb(249 250 251);
+  border: 1px solid var(--commerce-border);
+  border-radius: var(--commerce-radius-md);
+  background: #f4eee7;
 }
 
 .product-gallery-main-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transition: opacity var(--commerce-duration) var(--commerce-ease);
 }
 
 .product-gallery-placeholder {
@@ -101,7 +102,7 @@ function handleImageError(url: string) {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: rgb(156 163 175);
+  color: var(--commerce-muted);
   font-size: 0.875rem;
 }
 
@@ -109,33 +110,52 @@ function handleImageError(url: string) {
   display: flex;
   gap: 0.625rem;
   overflow-x: auto;
-  padding-bottom: 0.125rem;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #d6c9bd transparent;
+}
+
+.product-gallery-thumbnails::-webkit-scrollbar {
+  height: 5px;
+}
+
+.product-gallery-thumbnails::-webkit-scrollbar-thumb {
+  background: #d6c9bd;
+  border-radius: 999px;
 }
 
 .product-gallery-thumbnail {
-  flex: 0 0 4.25rem;
-  width: 4.25rem;
-  height: 4.25rem;
+  flex: 0 0 4.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
   overflow: hidden;
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  border-radius: var(--commerce-radius-sm);
   background: white;
-  padding: 0.125rem;
+  padding: 0.1875rem;
+  cursor: pointer;
+  transition: border-color var(--commerce-duration) var(--commerce-ease), transform var(--commerce-duration) var(--commerce-ease);
 }
 
 .product-gallery-thumbnail:hover {
-  border-color: rgb(156 163 175);
+  border-color: #dfc8b7;
+  transform: translateY(-1px);
 }
 
 .product-gallery-thumbnail-active {
-  border-color: rgb(37 99 235);
-  box-shadow: 0 0 0 2px rgb(219 234 254);
+  border-color: var(--commerce-brand);
+  box-shadow: 0 0 0 2px var(--commerce-brand-soft);
+}
+
+.product-gallery-thumbnail:focus-visible {
+  outline: 2px solid var(--commerce-brand);
+  outline-offset: 2px;
 }
 
 .product-gallery-thumbnail img {
   width: 100%;
   height: 100%;
-  border-radius: 0.375rem;
+  border-radius: 0.25rem;
   object-fit: cover;
 }
 </style>

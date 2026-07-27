@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { Box, ChevronLeft, ChevronRight, Heart, Loader2, Search, SlidersHorizontal } from 'lucide-vue-next'
+import { Box, ChevronLeft, ChevronRight, Heart, Loader2, Search, SlidersHorizontal, X } from 'lucide-vue-next'
 import { useRoute, useRouter, type LocationQuery } from 'vue-router'
 import { createEmptyProductPage, getMarketProductList, type MarketProductListQuery, type MarketProductSummary } from '@/api/market'
 import { favoriteProduct, getFavoriteStatus, unfavoriteProduct } from '@/api/favorite'
 import MarketplaceProductCard from '@/pages/market/components/MarketplaceProductCard.vue'
+import marketEmptyImage from '@/assets/commerce/market-empty.webp'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_PAGE_SIZE = 12
@@ -20,6 +21,7 @@ const routeValidationMessage = ref('')
 const submittingFavoriteId = ref<number | null>(null)
 const pageData = ref(createEmptyProductPage())
 const favoriteMap = ref<Record<number, boolean>>({})
+const emptyImageFailed = ref(false)
 let requestSequence = 0
 
 interface MarketFilterDraft {
@@ -55,6 +57,25 @@ const totalPages = computed(() => Math.max(1, Math.ceil(pageData.value.total / a
 const hasEmptyState = computed(() => !loading.value && hasLoadedOnce.value && !errorMessage.value && list.value.length === 0)
 const hasPrevPage = computed(() => appliedFilters.value.page > 1)
 const hasNextPage = computed(() => appliedFilters.value.page < totalPages.value)
+
+/** Applied filter tags derived from current route query */
+const appliedFilterTags = computed(() => {
+  const tags: { label: string; clearKey: string }[] = []
+  const f = appliedFilters.value
+  if (f.keyword) {
+    tags.push({ label: `关键词：${f.keyword}`, clearKey: 'keyword' })
+  }
+  if (f.minPrice !== null && f.maxPrice !== null) {
+    tags.push({ label: `价格：¥${f.minPrice}–¥${f.maxPrice}`, clearKey: 'price' })
+  } else if (f.minPrice !== null) {
+    tags.push({ label: `最低价：¥${f.minPrice}`, clearKey: 'minPrice' })
+  } else if (f.maxPrice !== null) {
+    tags.push({ label: `最高价：¥${f.maxPrice}`, clearKey: 'maxPrice' })
+  }
+  return tags
+})
+
+const hasActiveFilters = computed(() => appliedFilterTags.value.length > 0)
 
 function readQueryText(value: LocationQuery[string] | undefined) {
   const rawValue = Array.isArray(value) ? value[0] : value
@@ -248,6 +269,23 @@ function resetFilters() {
   router.push({ path: '/market' })
 }
 
+/** Clear a single filter tag via route update */
+function clearFilterTag(clearKey: string) {
+  const f = { ...appliedFilters.value }
+  if (clearKey === 'keyword') {
+    f.keyword = ''
+  } else if (clearKey === 'price') {
+    f.minPrice = null
+    f.maxPrice = null
+  } else if (clearKey === 'minPrice') {
+    f.minPrice = null
+  } else if (clearKey === 'maxPrice') {
+    f.maxPrice = null
+  }
+  f.page = DEFAULT_PAGE
+  router.push({ path: '/market', query: buildRouteQuery(f) })
+}
+
 function changePage(nextPage: number) {
   if (nextPage < 1 || nextPage > totalPages.value || nextPage === appliedFilters.value.page) {
     return
@@ -321,6 +359,7 @@ watch(
 
 <template>
   <div class="page-body market-page">
+    <!-- Page header -->
     <section class="market-page-header">
       <div>
         <p class="page-kicker">市场</p>
@@ -333,6 +372,7 @@ watch(
       </router-link>
     </section>
 
+    <!-- Filter panel -->
     <section class="market-filter-panel" aria-label="商品筛选">
       <form class="market-filter-form" @submit.prevent="submitFilters">
         <div class="market-keyword-field">
@@ -362,8 +402,26 @@ watch(
         </div>
       </form>
       <p v-if="validationMessage" class="market-validation-message" role="alert">{{ validationMessage }}</p>
+
+      <!-- Applied filter tags -->
+      <div v-if="hasActiveFilters" class="market-applied-tags" aria-label="已应用的筛选条件">
+        <span class="market-applied-tags-label">当前条件</span>
+        <button
+          v-for="tag in appliedFilterTags"
+          :key="tag.clearKey"
+          class="market-filter-tag"
+          type="button"
+          :aria-label="`清除筛选：${tag.label}`"
+          @click="clearFilterTag(tag.clearKey)"
+        >
+          <span>{{ tag.label }}</span>
+          <X class="h-3 w-3" aria-hidden="true" />
+        </button>
+        <button class="market-filter-tag-clear-all" type="button" @click="resetFilters">清除全部</button>
+      </div>
     </section>
 
+    <!-- Error banner -->
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
       <div class="flex-1">
@@ -381,15 +439,22 @@ watch(
       <span>{{ actionErrorMessage }}</span>
     </section>
 
+    <!-- Results section -->
     <section class="market-results" aria-labelledby="market-results-heading">
       <div class="market-results-header">
         <div>
           <h2 id="market-results-heading" class="section-heading">全部商品</h2>
-          <p class="section-subtitle">共 {{ pageData.total }} 件商品</p>
+          <p class="section-subtitle">
+            共 {{ pageData.total }} 件商品
+            <template v-if="hasLoadedOnce && !errorMessage">
+              · 第 {{ appliedFilters.page }} / {{ totalPages }} 页 · 每页 {{ appliedFilters.pageSize }} 件
+            </template>
+          </p>
         </div>
         <span class="chip chip-muted font-numeric">第 {{ appliedFilters.page }} / {{ totalPages }} 页</span>
       </div>
 
+      <!-- Loading skeleton -->
       <div v-if="loading && !hasLoadedOnce" class="market-product-grid" aria-label="商品加载中">
         <div v-for="item in appliedFilters.pageSize" :key="item" class="product-card product-card-skeleton" aria-hidden="true">
           <div class="product-card-skeleton-media"></div>
@@ -400,12 +465,28 @@ watch(
           </div>
         </div>
       </div>
-      <div v-else-if="hasEmptyState" class="empty-state market-empty-state">
-        <Box class="empty-state-icon" />
-        <p class="empty-state-title">当前条件下没有商品</p>
-        <p class="empty-state-text">可以放宽关键词或价格区间，再试一次。</p>
-        <button class="btn-default mt-5" type="button" @click="resetFilters">重置筛选</button>
+
+      <!-- Empty state with illustration -->
+      <div v-else-if="hasEmptyState" class="market-empty-illustration">
+        <div class="market-empty-image-wrap">
+          <img
+            v-if="!emptyImageFailed"
+            :src="marketEmptyImage"
+            alt="空收纳箱和展示架，表示当前条件下没有商品"
+            class="market-empty-image"
+            @error="emptyImageFailed = true"
+          />
+          <Box v-else class="market-empty-fallback-icon" aria-hidden="true" />
+        </div>
+        <p class="market-empty-title">当前条件下没有商品</p>
+        <p class="market-empty-desc">可以放宽关键词或价格区间，再试一次。</p>
+        <div class="market-empty-actions">
+          <button class="btn-primary" type="button" @click="resetFilters">重置筛选</button>
+          <router-link class="btn-default" to="/market">返回全部商品</router-link>
+        </div>
       </div>
+
+      <!-- Product grid -->
       <div v-else-if="!errorMessage" class="market-product-grid">
         <MarketplaceProductCard
           v-for="product in list"
@@ -419,6 +500,7 @@ watch(
         />
       </div>
 
+      <!-- Pagination -->
       <div v-if="!errorMessage && !hasEmptyState && hasLoadedOnce" class="pagination-bar">
         <p class="inline-meta">显示 {{ pageData.total === 0 ? 0 : (appliedFilters.page - 1) * appliedFilters.pageSize + 1 }} 到 {{ Math.min(appliedFilters.page * appliedFilters.pageSize, pageData.total) }} 条</p>
         <div class="flex gap-2">

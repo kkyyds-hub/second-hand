@@ -10,6 +10,9 @@ export type CommerceProductCardData = {
   price: number
   categoryName: string
   shortDescription?: string
+  sellerName?: string
+  soldCount?: number
+  stock?: number
 }
 
 export type ProductCardVariant = 'standard' | 'compact' | 'sold'
@@ -36,6 +39,7 @@ const emit = defineEmits<{
 
 const imageFailed = ref(false)
 const isNavigable = computed(() => typeof props.product.id === 'number' && props.product.id > 0 && props.variant !== 'sold')
+const showSoldCount = computed(() => typeof props.product.soldCount === 'number' && props.product.soldCount > 0)
 
 watch(
   () => props.product.coverUrl,
@@ -77,12 +81,17 @@ watch(
       </router-link>
       <h3 v-else class="product-card-title" :title="product.title">{{ product.title }}</h3>
       <p class="product-card-price font-numeric">¥ {{ product.price.toFixed(2) }}</p>
-      <div v-if="product.categoryName" class="product-card-meta">
-        <span>{{ product.categoryName }}</span>
+      <div v-if="product.categoryName || product.sellerName || showSoldCount" class="product-card-meta">
+        <span v-if="product.categoryName">{{ product.categoryName }}</span>
+        <span v-if="product.sellerName">{{ product.sellerName }}</span>
+        <span v-if="showSoldCount">已售 {{ product.soldCount }}</span>
       </div>
       <p v-if="variant === 'standard' && product.shortDescription" class="product-card-summary">{{ product.shortDescription }}</p>
       <router-link v-if="isNavigable && variant === 'standard'" class="product-card-detail-link" :to="`/market/${product.id}`">查看详情</router-link>
     </div>
+
+    <!-- Stretched link: makes the entire card clickable for navigable cards -->
+    <router-link v-if="isNavigable" :to="`/market/${product.id}`" class="product-card-stretched-link" :aria-label="`查看 ${product.title}`" tabindex="-1"></router-link>
   </article>
 </template>
 
@@ -94,5 +103,19 @@ watch(
 
 .product-card-media > div {
   height: 100%;
+}
+
+.product-card-stretched-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Keep interactive elements above the stretched link */
+.product-card-favorite,
+.product-card-detail-link,
+.product-card-title-link {
+  position: relative;
+  z-index: 2;
 }
 </style>

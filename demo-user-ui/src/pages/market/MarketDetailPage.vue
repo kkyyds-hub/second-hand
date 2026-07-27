@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight, Loader2, MessageSquareMore, ShieldAlert, User } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Heart, Loader2, MessageSquareMore, ShieldAlert, ShoppingCart, User } from 'lucide-vue-next'
 import {
   createEmptyReviewPage,
   getMarketProductDetail,
@@ -298,7 +298,7 @@ function startCheckout() {
 /**
  * 加入购物车（幂等）。
  *
- * 1) 请求期间按钮 disabled 并显示“加入中...”，防快速双击 / Enter 双触发；
+ * 1) 请求期间按钮 disabled 并显示"加入中..."，防快速双击 / Enter 双触发；
  * 2) 成功后刷新角标并给出明确反馈，不跳离商品详情；
  * 3) 失败展示后端真实错误，按钮恢复，不自动重试，错误区域获得焦点。
  */
@@ -441,8 +441,8 @@ watch(productId, () => {
 
 <template>
   <main class="page-body market-detail-page">
-    <nav class="flex items-center gap-2 text-[13px] text-gray-500" aria-label="面包屑">
-      <router-link class="inline-flex items-center gap-1 font-medium text-gray-600 hover:text-blue-700" to="/market">
+    <nav class="detail-breadcrumb" aria-label="面包屑">
+      <router-link class="detail-breadcrumb-link" to="/market">
         <ChevronLeft class="h-4 w-4" />
         返回市场
       </router-link>
@@ -481,35 +481,53 @@ watch(productId, () => {
       </section>
 
       <template v-else>
+        <!-- Hero: gallery + purchase info -->
         <section class="market-detail-hero">
-          <ProductImageGallery :product-title="detail.title" :image-urls="detail.imageUrls" />
-          <div class="min-w-0 py-1">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-              <div class="min-w-0">
-                <span class="chip chip-accent">{{ detail.categoryName || '未分类' }}</span>
-                <h1 class="mt-4 break-words text-[28px] font-bold leading-tight text-gray-950 sm:text-[34px]">{{ detail.title }}</h1>
-              </div>
+          <!-- Left: image gallery -->
+          <div class="detail-hero-gallery">
+            <ProductImageGallery :product-title="detail.title" :image-urls="detail.imageUrls" />
+          </div>
+
+          <!-- Right: product info (sticky on desktop) -->
+          <div class="detail-hero-info">
+            <div class="detail-info-header">
+              <span class="chip chip-accent">{{ detail.categoryName || '未分类' }}</span>
               <FavoriteToggleButton :active="favoriteStatus" :loading="favoriteLoading" @toggle="toggleFavorite" />
             </div>
-            <p class="mt-6 font-numeric text-[36px] font-bold leading-none text-gray-950 sm:text-[42px]">¥ {{ detail.price.toFixed(2) }}</p>
-            <p v-if="detail.createTime" class="mt-3 text-[13px] text-gray-500">发布于 {{ detail.createTime }}</p>
-            <div v-if="favoriteSuccessMessage" class="notice-banner notice-banner-success mt-5">{{ favoriteSuccessMessage }}</div>
-            <div v-if="favoriteErrorMessage" class="notice-banner notice-banner-danger mt-5">{{ favoriteErrorMessage }}</div>
-            <div v-if="favoriteStatusSyncError" class="notice-banner notice-banner-warning mt-5">{{ favoriteStatusSyncError }}</div>
-            <div class="mt-6 flex flex-wrap items-center gap-3">
-              <button class="btn-primary" type="button" :disabled="isOwnProduct" @click="startCheckout">立即购买</button>
+
+            <h1 class="detail-product-title">{{ detail.title }}</h1>
+
+            <div class="detail-price-block">
+              <span class="detail-price-symbol">¥</span>
+              <span class="detail-price-value font-numeric">{{ detail.price.toFixed(2) }}</span>
+            </div>
+
+            <p v-if="detail.createTime" class="detail-publish-time">发布于 {{ detail.createTime }}</p>
+
+            <!-- Feedback banners -->
+            <div v-if="favoriteSuccessMessage" class="notice-banner notice-banner-success mt-4">{{ favoriteSuccessMessage }}</div>
+            <div v-if="favoriteErrorMessage" class="notice-banner notice-banner-danger mt-4">{{ favoriteErrorMessage }}</div>
+            <div v-if="favoriteStatusSyncError" class="notice-banner notice-banner-warning mt-4">{{ favoriteStatusSyncError }}</div>
+
+            <!-- Desktop action buttons (hidden on mobile, shown via fixed bar) -->
+            <div class="detail-action-buttons">
+              <button class="btn-primary detail-btn-buy" type="button" :disabled="isOwnProduct" @click="startCheckout">
+                立即购买
+              </button>
               <button
-                class="btn-default"
+                class="btn-default detail-btn-cart"
                 type="button"
                 :disabled="!canAddToCart"
                 :aria-busy="cartAdding"
                 @click="addToCart"
               >
                 <Loader2 v-if="cartAdding" class="h-4 w-4 animate-spin" aria-hidden="true" />
+                <ShoppingCart v-else class="h-4 w-4" aria-hidden="true" />
                 {{ cartAdding ? '加入中...' : '加入购物车' }}
               </button>
-              <p v-if="isOwnProduct" class="text-[13px] text-amber-700">不能购买自己发布的商品</p>
             </div>
+            <p v-if="isOwnProduct" class="detail-own-product-note">不能购买自己发布的商品</p>
+
             <div
               v-if="cartMessage"
               class="notice-banner notice-banner-success mt-4"
@@ -524,19 +542,15 @@ watch(productId, () => {
               aria-live="assertive"
               tabindex="-1"
             >{{ cartErrorMessage }}</div>
-            <div class="mt-8 border-t border-gray-100 pt-6">
-              <h2 class="text-[15px] font-semibold text-gray-900">商品描述</h2>
-              <p class="mt-3 whitespace-pre-line break-words text-[14px] leading-7 text-gray-700">{{ detail.description || '该商品暂未提供详细描述。' }}</p>
-            </div>
 
             <!-- Seller card -->
-            <div class="mt-6 border-t border-gray-100 pt-6">
+            <div class="detail-seller-card">
               <template v-if="sellerProfileLoading">
                 <div class="flex items-center gap-3 animate-pulse">
-                  <div class="h-10 w-10 rounded-full bg-gray-200"></div>
-                  <div class="space-y-1.5">
-                    <div class="h-4 w-24 rounded bg-gray-200"></div>
-                    <div class="h-3 w-32 rounded bg-gray-100"></div>
+                  <div class="h-11 w-11 rounded-full bg-gray-200"></div>
+                  <div class="space-y-1.5 flex-1">
+                    <div class="h-4 w-28 rounded bg-gray-200"></div>
+                    <div class="h-3 w-40 rounded bg-gray-100"></div>
                   </div>
                 </div>
               </template>
@@ -546,27 +560,25 @@ watch(productId, () => {
               <template v-else-if="sellerProfile.sellerId != null">
                 <router-link
                   :to="`/shop/${sellerProfile.sellerId}`"
-                  class="flex items-center gap-3 group rounded-lg p-2 -m-2 hover:bg-gray-50 transition-colors"
+                  class="detail-seller-link"
                 >
-                  <div v-if="sellerProfile.avatarUrl" class="h-10 w-10 rounded-full overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-                    <img :src="sellerProfile.avatarUrl" alt="" class="h-full w-full object-cover" />
+                  <div v-if="sellerProfile.avatarUrl" class="detail-seller-avatar">
+                    <img :src="sellerProfile.avatarUrl" alt="" />
                   </div>
-                  <div v-else class="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <div v-else class="detail-seller-avatar detail-seller-avatar-placeholder">
                     <User class="h-5 w-5 text-blue-500" aria-hidden="true" />
                   </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-[14px] font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
-                      {{ sellerProfile.shopName }}
-                    </p>
-                    <p class="text-[12px] text-gray-500">
+                  <div class="detail-seller-info">
+                    <p class="detail-seller-name">{{ sellerProfile.shopName }}</p>
+                    <p class="detail-seller-meta">
                       {{ sellerProfile.nickname }}
-                      <span v-if="sellerProfile.creditScore != null" class="ml-2">信用 {{ sellerProfile.creditScore }}</span>
-                      <span class="ml-2">已成交 {{ sellerProfile.completedOrderCount }} 单</span>
-                      <span class="ml-2">在售 {{ sellerProfile.onSaleCount }} 件</span>
+                      <span v-if="sellerProfile.creditScore != null" class="detail-seller-stat">信用 {{ sellerProfile.creditScore }}</span>
+                      <span class="detail-seller-stat">已成交 {{ sellerProfile.completedOrderCount }} 单</span>
+                      <span class="detail-seller-stat">在售 {{ sellerProfile.onSaleCount }} 件</span>
                     </p>
                   </div>
-                  <span class="text-[13px] font-medium text-blue-600 group-hover:text-blue-800 shrink-0 flex items-center gap-1">
-                    查看小店
+                  <span class="detail-seller-enter">
+                    进入小店
                     <ChevronRight class="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </router-link>
@@ -576,8 +588,18 @@ watch(productId, () => {
           </div>
         </section>
 
+        <!-- Product description -->
+        <section class="section-panel detail-description-panel">
+          <div class="section-header">
+            <h2 class="section-heading">商品描述</h2>
+          </div>
+          <div class="section-body">
+            <p class="detail-description-text">{{ detail.description || '该商品暂未提供详细描述。' }}</p>
+          </div>
+        </section>
+
         <!-- Other products from this seller -->
-        <section v-if="otherProductsPage.list.length && !otherProductsLoading" class="section-panel mt-6">
+        <section v-if="otherProductsPage.list.length && !otherProductsLoading" class="section-panel">
           <div class="section-header">
             <div>
               <h2 class="section-heading">该卖家的其他商品</h2>
@@ -683,6 +705,40 @@ watch(productId, () => {
             </div>
           </form>
         </section>
+
+        <!-- Mobile fixed purchase bar -->
+        <div class="detail-mobile-bar" aria-label="商品操作">
+          <button
+            class="detail-mobile-bar-fav"
+            type="button"
+            :disabled="favoriteLoading"
+            :aria-label="favoriteStatus ? '取消收藏' : '收藏'"
+            @click="toggleFavorite"
+          >
+            <Loader2 v-if="favoriteLoading" class="h-5 w-5 animate-spin" />
+            <Heart v-else class="h-5 w-5" :class="favoriteStatus ? 'fill-current text-red-500' : ''" />
+            <span>{{ favoriteStatus ? '已收藏' : '收藏' }}</span>
+          </button>
+          <button
+            class="detail-mobile-bar-cart"
+            type="button"
+            :disabled="!canAddToCart"
+            :aria-busy="cartAdding"
+            @click="addToCart"
+          >
+            <Loader2 v-if="cartAdding" class="h-4 w-4 animate-spin" aria-hidden="true" />
+            <ShoppingCart v-else class="h-4 w-4" aria-hidden="true" />
+            {{ cartAdding ? '加入中...' : '加入购物车' }}
+          </button>
+          <button
+            class="detail-mobile-bar-buy"
+            type="button"
+            :disabled="isOwnProduct"
+            @click="startCheckout"
+          >
+            立即购买
+          </button>
+        </div>
       </template>
     </template>
   </main>
@@ -694,32 +750,368 @@ watch(productId, () => {
   padding-inline: 1rem;
 }
 
+.detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 13px;
+  color: rgb(107 114 128);
+}
+
+.detail-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  color: rgb(75 85 99);
+  transition: color var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-breadcrumb-link:hover {
+  color: var(--commerce-brand-strong);
+}
+
+/* ── Hero layout ── */
 .market-detail-hero,
 .market-detail-skeleton {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .market-detail-hero {
-  padding: 1.25rem;
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--commerce-border);
+  border-radius: var(--commerce-radius-md);
   background: white;
+  box-shadow: var(--commerce-shadow-card);
 }
 
 .market-detail-skeleton > div:first-child {
   aspect-ratio: 1 / 1;
 }
 
+.detail-hero-gallery {
+  min-width: 0;
+}
+
+.detail-hero-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detail-info-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.detail-product-title {
+  margin-top: 0.75rem;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--commerce-text);
+  word-break: break-word;
+}
+
+.detail-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 0.125rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--commerce-radius-sm);
+  background: var(--commerce-brand-soft);
+}
+
+.detail-price-symbol {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--commerce-price);
+}
+
+.detail-price-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--commerce-price);
+}
+
+.detail-publish-time {
+  margin-top: 0.5rem;
+  font-size: 12px;
+  color: var(--commerce-muted);
+}
+
+.detail-action-buttons {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.detail-btn-buy {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.detail-btn-cart {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.detail-own-product-note {
+  margin-top: 0.5rem;
+  font-size: 13px;
+  color: rgb(180 83 9);
+}
+
+/* ── Seller card ── */
+.detail-seller-card {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(243 244 246);
+}
+
+.detail-seller-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  margin: -0.625rem;
+  border-radius: var(--commerce-radius-md);
+  transition: background var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-seller-link:hover {
+  background: rgb(249 250 251);
+}
+
+.detail-seller-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgb(243 244 246);
+  background: rgb(249 250 251);
+  flex-shrink: 0;
+}
+
+.detail-seller-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-seller-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--commerce-brand-soft);
+}
+
+.detail-seller-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.detail-seller-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--commerce-text);
+  transition: color var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-seller-link:hover .detail-seller-name {
+  color: var(--commerce-brand-strong);
+}
+
+.detail-seller-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.125rem;
+  font-size: 12px;
+  color: var(--commerce-muted);
+}
+
+.detail-seller-stat {
+  white-space: nowrap;
+}
+
+.detail-seller-enter {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--commerce-brand);
+  transition: color var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-seller-link:hover .detail-seller-enter {
+  color: var(--commerce-brand-strong);
+}
+
+/* ── Description panel ── */
+.detail-description-panel {
+  margin-top: 0;
+}
+
+.detail-description-text {
+  white-space: pre-line;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.75;
+  color: rgb(55 65 81);
+}
+
+/* ── Mobile fixed purchase bar ── */
+.detail-mobile-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  z-index: 35;
+  padding: 0.625rem 1rem;
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--commerce-border);
+  box-shadow: 0 -4px 16px rgba(63, 45, 29, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.detail-mobile-bar-fav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-width: 3.25rem;
+  padding: 0.375rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--commerce-muted);
+  font-size: 10px;
+  cursor: pointer;
+  transition: color var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-mobile-bar-fav:hover {
+  color: var(--commerce-text);
+}
+
+.detail-mobile-bar-fav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detail-mobile-bar-cart {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.5rem;
+  border: 1px solid var(--commerce-brand);
+  border-radius: var(--commerce-radius-sm);
+  background: white;
+  color: var(--commerce-brand);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-mobile-bar-cart:hover:not(:disabled) {
+  background: var(--commerce-brand-soft);
+}
+
+.detail-mobile-bar-cart:disabled {
+  border-color: rgb(209 213 219);
+  color: rgb(156 163 175);
+  cursor: not-allowed;
+}
+
+.detail-mobile-bar-buy {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  border: none;
+  border-radius: var(--commerce-radius-sm);
+  background: var(--commerce-brand);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--commerce-duration) var(--commerce-ease);
+}
+
+.detail-mobile-bar-buy:hover:not(:disabled) {
+  background: var(--commerce-brand-strong);
+}
+
+.detail-mobile-bar-buy:disabled {
+  background: rgb(209 213 219);
+  cursor: not-allowed;
+}
+
+/* ── Desktop layout ── */
 @media (min-width: 1024px) {
   .market-detail-hero,
   .market-detail-skeleton {
     grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+    gap: 2.5rem;
   }
 
   .market-detail-hero {
-    padding: 2rem;
+    padding: 1.75rem;
+  }
+
+  .detail-hero-info {
+    position: sticky;
+    top: 5rem;
+    align-self: start;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+  }
+
+  .detail-product-title {
+    font-size: 28px;
+  }
+
+  .detail-price-value {
+    font-size: 38px;
+  }
+
+  .detail-action-buttons {
+    display: flex;
+  }
+
+  .detail-mobile-bar {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .detail-product-title {
+    font-size: 30px;
+  }
+}
+
+/* Mobile: add bottom padding for the fixed bar + bottom nav */
+@media (max-width: 1023px) {
+  .market-detail-page {
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom));
   }
 }
 </style>

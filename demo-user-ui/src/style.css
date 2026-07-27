@@ -1036,6 +1036,126 @@
     background: var(--commerce-brand-soft);
     color: var(--commerce-brand-strong);
   }
+
+  /* ── Applied filter tags (market list) ── */
+  .market-applied-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--commerce-border);
+  }
+
+  .market-applied-tags-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--commerce-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .market-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border: 1px solid #ffc9b1;
+    border-radius: 999px;
+    background: var(--commerce-brand-soft);
+    color: var(--commerce-brand-strong);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--commerce-duration) var(--commerce-ease), border-color var(--commerce-duration) var(--commerce-ease);
+  }
+
+  .market-filter-tag:hover {
+    background: #ffe2d4;
+    border-color: var(--commerce-brand);
+  }
+
+  .market-filter-tag-clear-all {
+    border: none;
+    background: transparent;
+    color: var(--commerce-muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    transition: color var(--commerce-duration) var(--commerce-ease);
+  }
+
+  .market-filter-tag-clear-all:hover {
+    color: var(--commerce-brand-strong);
+  }
+
+  /* ── Market empty illustration ── */
+  .market-empty-illustration {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.5rem 1.25rem 3rem;
+  }
+
+  .market-empty-image-wrap {
+    width: 100%;
+    max-width: 30rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .market-empty-image {
+    width: 100%;
+    height: auto;
+    max-height: 15rem;
+    object-fit: contain;
+    border-radius: var(--commerce-radius-md);
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .market-empty-fallback-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto;
+    color: #d6c9bd;
+  }
+
+  .market-empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--commerce-text);
+  }
+
+  .market-empty-desc {
+    margin-top: 0.5rem;
+    max-width: 26rem;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--commerce-muted);
+  }
+
+  .market-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .market-empty-image-wrap {
+      max-width: 32rem;
+    }
+
+    .market-empty-image {
+      max-height: 17rem;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
