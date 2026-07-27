@@ -379,7 +379,7 @@ watch(
           <label class="form-label" for="market-keyword">搜索商品</label>
           <div class="relative">
             <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
-            <input id="market-keyword" v-model="draft.keyword" class="input-standard !pl-10" type="search" maxlength="40" placeholder="商品名称、品牌或描述" @keydown.enter.prevent="submitFilters" />
+            <input id="market-keyword" v-model="draft.keyword" class="input-standard !pl-10" type="search" maxlength="40" placeholder="商品名称或描述" @keydown.enter.prevent="submitFilters" />
           </div>
         </div>
         <div class="market-price-fields">

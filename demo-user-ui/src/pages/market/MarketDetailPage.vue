@@ -492,7 +492,9 @@ watch(productId, () => {
           <div class="detail-hero-info">
             <div class="detail-info-header">
               <span class="chip chip-accent">{{ detail.categoryName || '未分类' }}</span>
-              <FavoriteToggleButton :active="favoriteStatus" :loading="favoriteLoading" @toggle="toggleFavorite" />
+              <span class="detail-desktop-favorite">
+                <FavoriteToggleButton :active="favoriteStatus" :loading="favoriteLoading" @toggle="toggleFavorite" />
+              </span>
             </div>
 
             <h1 class="detail-product-title">{{ detail.title }}</h1>
@@ -1065,8 +1067,16 @@ watch(productId, () => {
   cursor: not-allowed;
 }
 
+/* ── Responsive favorite dedup ── */
+.detail-desktop-favorite {
+  display: none;
+}
+
 /* ── Desktop layout ── */
 @media (min-width: 1024px) {
+  .detail-desktop-favorite {
+    display: contents;
+  }
   .market-detail-hero,
   .market-detail-skeleton {
     grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
