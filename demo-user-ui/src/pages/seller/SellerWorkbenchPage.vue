@@ -9,6 +9,7 @@ import {
   PackagePlus,
   RefreshCw,
   ShoppingBag,
+  Store,
 } from 'lucide-vue-next'
 import { createEmptySellerSummary, getSellerSummary, type SellerSummary } from '@/api/seller'
 import { getUserDisplayName, isSellerUser, readCurrentUser } from '@/utils/request'
@@ -89,6 +90,10 @@ onMounted(() => {
             <span>发布闲置</span>
           </router-link>
           <router-link class="btn-default" to="/seller/products">管理商品</router-link>
+          <router-link class="btn-default" :to="currentUser?.id != null ? `/shop/${currentUser.id}` : ''">
+            <Store class="h-4 w-4" aria-hidden="true" />
+            查看我的小店
+          </router-link>
           <router-link class="btn-default" to="/orders/seller">查看卖家订单</router-link>
         </div>
       </div>
@@ -187,6 +192,10 @@ onMounted(() => {
             <router-link class="link-card" to="/seller/products">
               <p class="link-card-title">管理我的商品</p>
               <p class="link-card-desc">查看商品状态，编辑信息并处理明确的状态操作。</p>
+            </router-link>
+            <router-link class="link-card" :to="currentUser?.id != null ? `/shop/${currentUser.id}` : ''">
+              <p class="link-card-title">查看我的小店</p>
+              <p class="link-card-desc">预览买家看到的公开小店页面与在售商品。</p>
             </router-link>
             <router-link class="link-card" to="/orders/seller">
               <p class="link-card-title">查看卖家订单</p>

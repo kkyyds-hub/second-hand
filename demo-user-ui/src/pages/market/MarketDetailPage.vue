@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { ChevronLeft, Loader2, MessageSquareMore, ShieldAlert } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Loader2, MessageSquareMore, Package, ShieldAlert, User } from 'lucide-vue-next'
 import {
   createEmptyReviewPage,
   getMarketProductDetail,
@@ -17,6 +17,14 @@ import ProductImageGallery from '@/pages/market/components/ProductImageGallery.v
 import ProductReviewList from '@/pages/market/components/ProductReviewList.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { readCurrentUser } from '@/utils/request'
+import {
+  createEmptyShopProfile,
+  createEmptyShopProductPage,
+  getSellerShop,
+  getSellerOtherProducts,
+  type SellerShopProductPage,
+  type SellerShopProfile,
+} from '@/api/sellerShop'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,6 +58,14 @@ const cartAdding = ref(false)
 const cartMessage = ref('')
 const cartErrorMessage = ref('')
 const cartErrorRef = ref<HTMLElement | null>(null)
+
+// Seller shop state
+const sellerProfile = ref<SellerShopProfile>(createEmptyShopProfile())
+const sellerProfileLoading = ref(false)
+const sellerProfileError = ref('')
+const otherProductsPage = ref<SellerShopProductPage>(createEmptyShopProductPage())
+const otherProductsLoading = ref(false)
+const otherProductsError = ref('')
 
 /**
  * 加入购物车按钮可用性：
@@ -157,6 +173,12 @@ function resetRouteState() {
   cartAdding.value = false
   cartMessage.value = ''
   cartErrorMessage.value = ''
+  sellerProfile.value = createEmptyShopProfile()
+  sellerProfileLoading.value = false
+  sellerProfileError.value = ''
+  otherProductsPage.value = createEmptyShopProductPage()
+  otherProductsLoading.value = false
+  otherProductsError.value = ''
 }
 
 async function loadDetail(id: number, sequence: number) {
@@ -212,10 +234,47 @@ async function loadProduct() {
   if (id === null) return
   await Promise.all([loadDetail(id, sequence), loadFavoriteStatus(id, sequence)])
   if (sequence === requestSequence) await loadReviews(id, sequence)
+  // Load seller info and other products after product detail
+  if (sequence === requestSequence && detail.value?.ownerId != null) {
+    await Promise.all([
+      loadSellerProfile(detail.value.ownerId, sequence),
+      loadOtherProducts(detail.value.ownerId, id, sequence),
+    ])
+  }
 }
 
 async function reloadDetail() {
   await loadProduct()
+}
+
+async function loadSellerProfile(ownerId: number, sequence: number) {
+  sellerProfileLoading.value = true
+  sellerProfileError.value = ''
+  try {
+    const result = await getSellerShop(ownerId)
+    if (sequence !== requestSequence) return
+    sellerProfile.value = result
+  } catch {
+    if (sequence !== requestSequence) return
+    sellerProfileError.value = '卖家信息暂时无法加载'
+  } finally {
+    if (sequence === requestSequence) sellerProfileLoading.value = false
+  }
+}
+
+async function loadOtherProducts(ownerId: number, excludeId: number, sequence: number) {
+  otherProductsLoading.value = true
+  otherProductsError.value = ''
+  try {
+    const result = await getSellerOtherProducts(ownerId, excludeId, 6)
+    if (sequence !== requestSequence) return
+    otherProductsPage.value = result
+  } catch {
+    if (sequence !== requestSequence) return
+    otherProductsError.value = ''
+  } finally {
+    if (sequence === requestSequence) otherProductsLoading.value = false
+  }
 }
 
 function startCheckout() {
@@ -457,6 +516,82 @@ watch(productId, () => {
             <div class="mt-8 border-t border-gray-100 pt-6">
               <h2 class="text-[15px] font-semibold text-gray-900">商品描述</h2>
               <p class="mt-3 whitespace-pre-line break-words text-[14px] leading-7 text-gray-700">{{ detail.description || '该商品暂未提供详细描述。' }}</p>
+            </div>
+
+            <!-- Seller card -->
+            <div class="mt-6 border-t border-gray-100 pt-6">
+              <template v-if="sellerProfileLoading">
+                <div class="flex items-center gap-3 animate-pulse">
+                  <div class="h-10 w-10 rounded-full bg-gray-200"></div>
+                  <div class="space-y-1.5">
+                    <div class="h-4 w-24 rounded bg-gray-200"></div>
+                    <div class="h-3 w-32 rounded bg-gray-100"></div>
+                  </div>
+                </div>
+              </template>
+              <template v-else-if="sellerProfileError">
+                <p class="text-[13px] text-gray-500">卖家信息暂时无法加载</p>
+              </template>
+              <template v-else-if="sellerProfile.sellerId != null">
+                <router-link
+                  :to="`/shop/${sellerProfile.sellerId}`"
+                  class="flex items-center gap-3 group rounded-lg p-2 -m-2 hover:bg-gray-50 transition-colors"
+                >
+                  <div v-if="sellerProfile.avatarUrl" class="h-10 w-10 rounded-full overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+                    <img :src="sellerProfile.avatarUrl" alt="" class="h-full w-full object-cover" />
+                  </div>
+                  <div v-else class="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                    <User class="h-5 w-5 text-blue-500" aria-hidden="true" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[14px] font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                      {{ sellerProfile.shopName }}
+                    </p>
+                    <p class="text-[12px] text-gray-500">
+                      {{ sellerProfile.nickname }}
+                      <span v-if="sellerProfile.creditScore != null" class="ml-2">信用 {{ sellerProfile.creditScore }}</span>
+                      <span class="ml-2">已成交 {{ sellerProfile.completedOrderCount }} 单</span>
+                      <span class="ml-2">在售 {{ sellerProfile.onSaleCount }} 件</span>
+                    </p>
+                  </div>
+                  <span class="text-[13px] font-medium text-blue-600 group-hover:text-blue-800 shrink-0 flex items-center gap-1">
+                    查看小店
+                    <ChevronRight class="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                </router-link>
+                <p v-if="isOwnProduct && sellerProfile.isCurrentUser" class="mt-2 text-[12px] text-blue-700">这是你的商品</p>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <!-- Other products from this seller -->
+        <section v-if="otherProductsPage.list.length && !otherProductsLoading" class="section-panel mt-6">
+          <div class="section-header">
+            <div>
+              <h2 class="section-heading">该卖家的其他商品</h2>
+              <p class="section-subtitle">共 {{ otherProductsPage.total }} 件在售</p>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="grid gap-3 grid-cols-2 md:grid-cols-3">
+              <router-link
+                v-for="(item, idx) in otherProductsPage.list"
+                :key="item.productId ?? `other-${idx}`"
+                :to="item.productId !== null ? `/market/${item.productId}` : ''"
+                class="block rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-sm transition-shadow"
+              >
+                <div class="aspect-square bg-gray-50 overflow-hidden">
+                  <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover" loading="lazy" />
+                  <div v-else class="h-full w-full flex items-center justify-center bg-gray-100">
+                    <Package class="h-6 w-6 text-gray-400" aria-hidden="true" />
+                  </div>
+                </div>
+                <div class="p-2.5">
+                  <p class="text-[13px] font-semibold text-gray-900 line-clamp-2 break-words leading-snug">{{ item.title }}</p>
+                  <p class="mt-1 text-[15px] font-bold text-gray-950 font-numeric">¥ {{ item.price.toFixed(2) }}</p>
+                </div>
+              </router-link>
             </div>
           </div>
         </section>

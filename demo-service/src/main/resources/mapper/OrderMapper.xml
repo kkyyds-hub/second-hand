@@ -574,7 +574,7 @@
       <!--
       Step6-3：发货超时关单（paid -> cancelled）
       业务语义：
-      - 仅处理“已支付且超过发货截止时间”的订单
+      - 仅处理"已支付且超过发货截止时间"的订单
       - 取消原因固定为 ship_timeout
       - 通过条件更新保证并发安全（rows=1 才算真正成功）
     -->
@@ -589,6 +589,15 @@
           AND status = #{OS_PAID}
           AND pay_time IS NOT NULL
           AND pay_time <![CDATA[ <= ]]> #{deadline}
-    </update>    
+    </update>
+
+    <!-- 统计卖家已完成订单数量 -->
+    <select id="countCompletedBySellerId" resultType="java.lang.Long">
+        <include refid="bindStatus"/>
+        SELECT COUNT(*)
+        FROM orders
+        WHERE seller_id = #{sellerId}
+          AND status = #{OS_COMPLETED}
+    </select>
 
 </mapper>

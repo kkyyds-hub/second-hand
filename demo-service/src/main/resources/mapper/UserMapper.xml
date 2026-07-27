@@ -48,6 +48,10 @@
         SELECT * FROM users WHERE id = #{userId} AND is_deleted = 0 LIMIT 1
     </select>
 
+    <select id="selectByIdIncludeDeleted" resultType="com.demo.entity.User">
+        SELECT * FROM users WHERE id = #{userId} LIMIT 1
+    </select>
+
     <select id="selectByIds" resultType="com.demo.entity.User">
         SELECT * FROM users
         WHERE is_deleted = 0

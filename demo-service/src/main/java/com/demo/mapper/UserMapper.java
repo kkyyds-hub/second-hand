@@ -97,6 +97,11 @@ public interface UserMapper {
                      @Param("creditUpdatedAt") LocalDateTime creditUpdatedAt);
 
     /**
+     * 按用户 ID 查询用户（含已删除），用于判断用户是否曾存在。
+     */
+    User selectByIdIncludeDeleted(@Param("userId") Long userId);
+
+    /**
      * Day13 Step7 - 用户导出（全部用户）
      */
     List<User> exportAllUsers(@Param("keyword") String keyword,

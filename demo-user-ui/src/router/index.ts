@@ -80,6 +80,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: 'shop/:sellerId',
+          name: 'SellerShop',
+          component: () => import('@/pages/shop/SellerShopPage.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
           path: 'seller',
           name: 'SellerWorkbench',
           component: () => import('@/pages/seller/SellerWorkbenchPage.vue'),

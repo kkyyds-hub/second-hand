@@ -149,7 +149,7 @@
     </update>
 
     <!-- 后台：待审核商品列表（动态筛选）
-         规则：不传 status 时默认只查 under_review，符合“待审核”语义 -->
+         规则：不传 status 时默认只查 under_review，符合"待审核"语义 -->
     <select id="getPendingApprovalProducts" resultType="com.demo.entity.Product">
         <include refid="bindProductStatus"/>
         SELECT
@@ -318,6 +318,32 @@
         FROM products
         WHERE status = #{status}
           AND DATE(create_time) = #{date}
+          AND is_deleted = 0
+    </select>
+
+    <!-- 分页查询卖家小店公开商品（按状态筛选，可排除指定商品） -->
+    <select id="getSellerShopProducts" resultType="com.demo.entity.Product">
+        SELECT <include refid="productColumns"/>
+        FROM products
+        WHERE owner_id = #{sellerId}
+          AND is_deleted = 0
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+          <if test="excludeProductId != null">
+              AND id != #{excludeProductId}
+          </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 统计卖家小店的在售与已售商品数量 -->
+    <select id="getSellerShopStats" resultType="com.demo.dto.user.SellerShopStatsDTO">
+        <include refid="bindProductStatus"/>
+        SELECT
+            CAST(COALESCE(SUM(CASE WHEN status = #{PS_ON_SALE} THEN 1 ELSE 0 END), 0) AS SIGNED) AS onSaleCount,
+            CAST(COALESCE(SUM(CASE WHEN status = #{PS_SOLD} THEN 1 ELSE 0 END), 0) AS SIGNED) AS soldCount
+        FROM products
+        WHERE owner_id = #{sellerId}
           AND is_deleted = 0
     </select>
 

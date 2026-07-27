@@ -167,7 +167,7 @@ public interface OrderMapper {
     OrderGmvStatsDTO countOrderAndGMVByDate(@Param("date") java.time.LocalDate date);
 
     /**
-     * day15：关闭“已支付但超时未发货”订单（paid -> cancelled）
+     * day15：关闭"已支付但超时未发货"订单（paid -> cancelled）
      *
      * 条件更新口径（非常关键）：
      * 1) 订单当前状态必须是 paid
@@ -180,5 +180,10 @@ public interface OrderMapper {
      */
     int closeShipTimeoutOrder(@Param("orderId") Long orderId,
                               @Param("deadline") LocalDateTime deadline);
+
+    /**
+     * Count completed orders for a seller.
+     */
+    Long countCompletedBySellerId(@Param("sellerId") Long sellerId);
 
 }

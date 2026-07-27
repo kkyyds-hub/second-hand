@@ -141,4 +141,16 @@ public interface ProductMapper {
     long countByStatusAndDate(@Param("status") String status,
                               @Param("date") java.time.LocalDate date);
 
+    /**
+     * 分页查询卖家小店的公开商品（按状态筛选，可排除指定商品）。
+     */
+    List<Product> getSellerShopProducts(@Param("sellerId") Long sellerId,
+                                        @Param("status") String status,
+                                        @Param("excludeProductId") Long excludeProductId);
+
+    /**
+     * 统计卖家小店的在售与已售商品数量。
+     */
+    com.demo.dto.user.SellerShopStatsDTO getSellerShopStats(@Param("sellerId") Long sellerId);
+
 }

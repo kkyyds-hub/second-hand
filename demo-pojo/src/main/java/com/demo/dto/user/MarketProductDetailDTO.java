@@ -28,4 +28,6 @@ public class MarketProductDetailDTO {
     private Long ownerId;
     /** 商品创建时间。 */
     private LocalDateTime createTime;
+    /** 卖家小店摘要（安全字段，不含敏感信息）。 */
+    private SellerShopProfileDTO sellerSummary;
 }
