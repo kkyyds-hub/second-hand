@@ -1,0 +1,175 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SECONDHAND_MYSQL_ROOT_PASSWORD:?set SECONDHAND_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${SECONDHAND_MYSQL_DATABASE:?set SECONDHAND_MYSQL_DATABASE}
+      MYSQL_USER: ${SECONDHAND_MYSQL_USER:?set SECONDHAND_MYSQL_USER}
+      MYSQL_PASSWORD: ${SECONDHAND_MYSQL_PASSWORD:?set SECONDHAND_MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/production/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: &json-logs
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SECONDHAND_REDIS_PASSWORD:?set SECONDHAND_REDIS_PASSWORD}"]
+    volumes: [redis-data:/data]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    environment:
+      REDIS_PASSWORD: ${SECONDHAND_REDIS_PASSWORD:?set SECONDHAND_REDIS_PASSWORD}
+    logging: *json-logs
+
+  mongodb:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${SECONDHAND_MONGO_ROOT_USER:?set SECONDHAND_MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${SECONDHAND_MONGO_ROOT_PASSWORD:?set SECONDHAND_MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${SECONDHAND_MONGO_DATABASE:?set SECONDHAND_MONGO_DATABASE}
+    volumes: [mongodb-data:/data/db]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *json-logs
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${SECONDHAND_RABBITMQ_USER:?set SECONDHAND_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${SECONDHAND_RABBITMQ_PASSWORD:?set SECONDHAND_RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${SECONDHAND_RABBITMQ_VHOST:?set SECONDHAND_RABBITMQ_VHOST}
+    ports: ["127.0.0.1:15672:15672"]
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *json-logs
+
+  migration:
+    image: mysql:8.4
+    restart: "no"
+    depends_on:
+      mysql: {condition: service_healthy}
+    environment:
+      MYSQL_PWD: ${SECONDHAND_MYSQL_PASSWORD:?set SECONDHAND_MYSQL_PASSWORD}
+    volumes:
+      - ./database/migrations:/migrations:ro
+    networks: [internal]
+    command: ["sh", "-ec", "mysql -h mysql -u ${SECONDHAND_MYSQL_USER} ${SECONDHAND_MYSQL_DATABASE} < /migrations/20260727_p6_mq_consume_log_processing.sql"]
+    logging: *json-logs
+
+  backend:
+    build:
+      context: .
+      dockerfile: demo-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: ${SECONDHAND_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+      SECONDHAND_MYSQL_HOST: mysql
+      SECONDHAND_MYSQL_DATABASE: ${SECONDHAND_MYSQL_DATABASE}
+      SECONDHAND_MYSQL_USER: ${SECONDHAND_MYSQL_USER}
+      SECONDHAND_MYSQL_PASSWORD: ${SECONDHAND_MYSQL_PASSWORD}
+      SECONDHAND_REDIS_HOST: redis
+      SECONDHAND_REDIS_PASSWORD: ${SECONDHAND_REDIS_PASSWORD}
+      SECONDHAND_MONGO_URI: mongodb://${SECONDHAND_MONGO_ROOT_USER}:${SECONDHAND_MONGO_ROOT_PASSWORD}@mongodb:27017/${SECONDHAND_MONGO_DATABASE}?authSource=admin
+      SECONDHAND_MONGO_ROOT_PASSWORD: ${SECONDHAND_MONGO_ROOT_PASSWORD}
+      SECONDHAND_RABBITMQ_HOST: rabbitmq
+      SECONDHAND_RABBITMQ_USER: ${SECONDHAND_RABBITMQ_USER}
+      SECONDHAND_RABBITMQ_PASSWORD: ${SECONDHAND_RABBITMQ_PASSWORD}
+      SECONDHAND_RABBITMQ_VHOST: ${SECONDHAND_RABBITMQ_VHOST}
+      SECONDHAND_JWT_ADMIN_SECRET: ${SECONDHAND_JWT_ADMIN_SECRET:?set SECONDHAND_JWT_ADMIN_SECRET}
+      SECONDHAND_JWT_USER_SECRET: ${SECONDHAND_JWT_USER_SECRET:?set SECONDHAND_JWT_USER_SECRET}
+      SECONDHAND_UPLOAD_SIGN_SECRET: ${SECONDHAND_UPLOAD_SIGN_SECRET:?set SECONDHAND_UPLOAD_SIGN_SECRET}
+      SECONDHAND_PAYMENT_MOCK_SIGN: ${SECONDHAND_PAYMENT_MOCK_SIGN:?set SECONDHAND_PAYMENT_MOCK_SIGN}
+      SECONDHAND_PAYMENT_MODE: ${SECONDHAND_PAYMENT_MODE:-mock}
+      SECONDHAND_PAYMENT_ENDPOINT_ENABLED: ${SECONDHAND_PAYMENT_ENDPOINT_ENABLED:-false}
+      SECONDHAND_PUBLIC_URL: ${SECONDHAND_PUBLIC_URL:?set SECONDHAND_PUBLIC_URL}
+      SECONDHAND_MAIL_HOST: ${SECONDHAND_MAIL_HOST:?set SECONDHAND_MAIL_HOST}
+      SECONDHAND_MAIL_PORT: ${SECONDHAND_MAIL_PORT:-587}
+      SECONDHAND_MAIL_USERNAME: ${SECONDHAND_MAIL_USERNAME:?set SECONDHAND_MAIL_USERNAME}
+      SECONDHAND_MAIL_PASSWORD: ${SECONDHAND_MAIL_PASSWORD:?set SECONDHAND_MAIL_PASSWORD}
+    volumes: [uploads-data:/data/uploads]
+    networks: [internal]
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongodb: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      migration: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz | grep -q '\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *json-logs
+
+  user-web:
+    build:
+      context: ./demo-user-ui
+      args: {VITE_API_BASE_URL: /api}
+    restart: unless-stopped
+    ports: ["80:80"]
+    networks: [internal]
+    depends_on: {backend: {condition: service_healthy}}
+    logging: *json-logs
+
+  admin-web:
+    build:
+      context: ./demo-admin-ui
+      args: {VITE_API_BASE_URL: /api, VITE_USE_MOCK: "false"}
+    restart: unless-stopped
+    ports: ["8081:80"]
+    networks: [internal]
+    depends_on: {backend: {condition: service_healthy}}
+    logging: *json-logs
+
+  demo-seed:
+    image: mysql:8.4
+    profiles: [demo]
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    environment:
+      MYSQL_PWD: ${SECONDHAND_MYSQL_PASSWORD}
+    volumes: [./database/production/90_demo_seed.sql:/seed.sql:ro]
+    networks: [internal]
+    command: ["sh", "-ec", "test \"${SECONDHAND_DEMO_SEED_ENABLED:-false}\" = true; mysql -h mysql -u ${SECONDHAND_MYSQL_USER} ${SECONDHAND_MYSQL_DATABASE} < /seed.sql"]
+    logging: *json-logs
+
+networks:
+  internal: {internal: true}
+
+volumes:
+  mysql-data:
+  redis-data:
+  mongodb-data:
+  rabbitmq-data:
+  uploads-data:

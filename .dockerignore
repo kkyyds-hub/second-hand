@@ -1,0 +1,13 @@
+.git
+.env*
+**/node_modules
+**/target
+**/dist
+logs
+uploads
+demo-service/uploads
+docs/verification
+docs/superpowers
+*.docx
+*.pdf
+tools

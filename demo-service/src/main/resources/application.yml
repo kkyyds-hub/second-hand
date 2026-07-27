@@ -2,10 +2,8 @@ server:
   port: 8080
 
 spring:
-  mail:
-    username: 1194921820@qq.com
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   main:
     allow-circular-references: true
   datasource:
@@ -59,10 +57,10 @@ logging:
 # 应用自定义配置
 demo:
   jwt:
-    admin-secret-key: ${DEMO_JWT_ADMIN_SECRET:dev-admin-secret-change-me}
+    admin-secret-key: ${DEMO_JWT_ADMIN_SECRET}
     admin-token-name: token
     admin-ttl: 7200000
-    user-secret-key: ${DEMO_JWT_USER_SECRET:dev-user-secret-change-me}
+    user-secret-key: ${DEMO_JWT_USER_SECRET}
     user-token-name: authentication
     user-ttl: 7200000
 

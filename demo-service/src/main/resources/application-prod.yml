@@ -1,0 +1,72 @@
+spring:
+  mail:
+    host: ${SECONDHAND_MAIL_HOST}
+    port: ${SECONDHAND_MAIL_PORT:587}
+    username: ${SECONDHAND_MAIL_USERNAME}
+    password: ${SECONDHAND_MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+  redis:
+    password: ${SECONDHAND_REDIS_PASSWORD}
+
+demo:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: ${SECONDHAND_MYSQL_HOST}
+    port: ${SECONDHAND_MYSQL_PORT:3306}
+    database: ${SECONDHAND_MYSQL_DATABASE}
+    username: ${SECONDHAND_MYSQL_USER}
+    password: ${SECONDHAND_MYSQL_PASSWORD}
+  redis:
+    host: ${SECONDHAND_REDIS_HOST}
+    port: ${SECONDHAND_REDIS_PORT:6379}
+    database: ${SECONDHAND_REDIS_DATABASE:0}
+    enabled: true
+  mongodb:
+    uri: ${SECONDHAND_MONGO_URI}
+  rabbitmq:
+    host: ${SECONDHAND_RABBITMQ_HOST}
+    port: ${SECONDHAND_RABBITMQ_PORT:5672}
+    username: ${SECONDHAND_RABBITMQ_USER}
+    password: ${SECONDHAND_RABBITMQ_PASSWORD}
+    virtual-host: ${SECONDHAND_RABBITMQ_VHOST}
+    prefetch: ${SECONDHAND_RABBITMQ_PREFETCH:20}
+  jwt:
+    admin-secret-key: ${SECONDHAND_JWT_ADMIN_SECRET}
+    user-secret-key: ${SECONDHAND_JWT_USER_SECRET}
+  auth:
+    sms:
+      provider: mock
+      mock:
+        enabled: true
+        log-code: false
+    email:
+      provider: smtp
+      register-code-required: true
+      activation-ttl-hours: ${SECONDHAND_EMAIL_ACTIVATION_TTL_HOURS:24}
+      activation-base-url: ${SECONDHAND_PUBLIC_URL}
+      mock:
+        enabled: false
+        store-preview: false
+        log-activation-url: false
+
+avatar-storage:
+  provider: local-file-storage
+  upload-config-ttl-seconds: 300
+  max-file-size-bytes: 2097152
+  public-url-prefix: /uploads
+  upload-sign-secret: ${SECONDHAND_UPLOAD_SIGN_SECRET}
+  local:
+    root-dir: /data/uploads
+    avatar-dir: avatars
+
+payment:
+  mock:
+    channel: ${SECONDHAND_PAYMENT_MODE:mock}
+    sign: ${SECONDHAND_PAYMENT_MOCK_SIGN}
+    endpoint-enabled: ${SECONDHAND_PAYMENT_ENDPOINT_ENABLED:false}
+
+logging:
+  level:
+    com.demo.mapper: info

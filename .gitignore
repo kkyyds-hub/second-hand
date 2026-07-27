@@ -39,6 +39,7 @@ build/
 
 ### Local IDE / workspace ###
 .idea/
+.env.production
 
 ### Local debug / scratch outputs ###
 _Tmp*

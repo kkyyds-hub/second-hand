@@ -1,4 +1,7 @@
 ﻿demo:
+  jwt:
+    admin-secret-key: ${DEMO_JWT_ADMIN_SECRET:dev-admin-secret-change-me}
+    user-secret-key: ${DEMO_JWT_USER_SECRET:dev-user-secret-change-me}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     host: ${DEMO_MYSQL_HOST:127.0.0.1}
@@ -92,3 +95,7 @@ avatar-storage:
 logging:
   level:
     com.demo.mapper: debug
+
+spring:
+  mail:
+    username: ${DEMO_MAIL_USERNAME:1194921820@qq.com}
