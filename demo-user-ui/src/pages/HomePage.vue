@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { ArrowRight, Box, CirclePlus, Heart, PackageSearch, RefreshCw, Search, ShoppingBag, Store } from 'lucide-vue-next'
-import { useRouter } from 'vue-router'
+import { ArrowRight, Box, CirclePlus, RefreshCw, ShoppingBag } from 'lucide-vue-next'
 import homeHeroImage from '@/assets/commerce/home-hero.webp'
 import { createEmptyProductPage, getMarketProductList } from '@/api/market'
 import MarketplaceProductCard from '@/pages/market/components/MarketplaceProductCard.vue'
 import { isSellerUser, readCurrentUser } from '@/utils/request'
 
-const router = useRouter()
 const currentUser = readCurrentUser()
 const sellerEnabled = computed(() => isSellerUser(currentUser))
 const loading = ref(false)
 const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
-const searchKeyword = ref('')
 const heroImageFailed = ref(false)
 const pageData = ref(createEmptyProductPage())
 let isActive = true
@@ -33,7 +30,7 @@ async function loadProducts() {
   try {
     loading.value = true
     errorMessage.value = ''
-    const payload = await getMarketProductList({ page: 1, pageSize: 8 })
+    const payload = await getMarketProductList({ page: 1, pageSize: 9 })
     if (isActive) {
       pageData.value = payload
     }
@@ -47,11 +44,6 @@ async function loadProducts() {
       hasLoadedOnce.value = true
     }
   }
-}
-
-function submitSearch() {
-  const keyword = searchKeyword.value.trim()
-  router.push({ path: '/market', query: keyword ? { keyword } : {} })
 }
 
 onMounted(loadProducts)
@@ -89,40 +81,7 @@ onBeforeUnmount(() => {
           </router-link>
         </div>
       </div>
-      <form class="home-search" @submit.prevent="submitSearch">
-        <label class="sr-only" for="home-search">搜索商品</label>
-        <Search class="home-search-icon" aria-hidden="true" />
-        <input
-          id="home-search"
-          v-model="searchKeyword"
-          class="home-search-input"
-          type="search"
-          maxlength="40"
-          placeholder="搜索你正在寻找的闲置好物"
-          @keydown.enter.prevent="submitSearch"
-        />
-        <button class="btn-primary home-search-button" type="submit">搜索商品</button>
-      </form>
     </section>
-
-    <nav class="home-quick-links" :class="{ 'home-quick-links-seller': sellerEnabled }" aria-label="常用入口">
-      <router-link class="home-quick-link" to="/market">
-        <Store class="h-5 w-5" />
-        <span>逛市场</span>
-      </router-link>
-      <router-link class="home-quick-link" to="/favorites">
-        <Heart class="h-5 w-5" />
-        <span>我的收藏</span>
-      </router-link>
-      <router-link class="home-quick-link" to="/orders/buyer">
-        <PackageSearch class="h-5 w-5" />
-        <span>我的订单</span>
-      </router-link>
-      <router-link v-if="sellerEnabled" class="home-quick-link" to="/seller">
-        <CirclePlus class="h-5 w-5" />
-        <span>卖家中心</span>
-      </router-link>
-    </nav>
 
     <section class="home-products-section" aria-labelledby="home-products-heading">
       <div class="home-section-heading">
@@ -132,13 +91,13 @@ onBeforeUnmount(() => {
           <p class="section-subtitle">看看刚刚进入市场的实用好物。</p>
         </div>
         <router-link class="home-text-link" to="/market">
-          <span>浏览全部商品</span>
+          <span>查看更多</span>
           <ArrowRight class="h-4 w-4" />
         </router-link>
       </div>
 
-      <div v-if="loading && !hasLoadedOnce" class="market-product-grid" aria-label="商品加载中">
-        <div v-for="item in 8" :key="item" class="product-card product-card-skeleton" aria-hidden="true">
+      <div v-if="loading && !hasLoadedOnce" class="home-product-grid" aria-label="商品加载中">
+        <div v-for="item in 9" :key="item" class="product-card product-card-skeleton" aria-hidden="true">
           <div class="product-card-skeleton-media"></div>
           <div class="product-card-body gap-3">
             <div class="skeleton-line w-3/4"></div>
@@ -171,16 +130,9 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <div v-else class="market-product-grid">
+      <div v-else class="home-product-grid">
         <MarketplaceProductCard v-for="product in pageData.list" :key="product.id ?? product.title" :product="product" variant="standard" />
       </div>
-    </section>
-
-    <section class="home-trust-grid" aria-label="平台能力">
-      <div class="home-trust-item"><strong>浏览与搜索</strong><span>按关键词和价格筛选在售商品。</span></div>
-      <div class="home-trust-item"><strong>收藏与购物车</strong><span>把关注的商品留在当前账户中。</span></div>
-      <div class="home-trust-item"><strong>订单与评价</strong><span>在订单和商品详情中查看实际进度。</span></div>
-      <div class="home-trust-item"><strong>卖家发布</strong><span>卖家账户可管理并发布自己的闲置。</span></div>
     </section>
 
     <section v-if="sellerEnabled" class="home-seller-callout">
