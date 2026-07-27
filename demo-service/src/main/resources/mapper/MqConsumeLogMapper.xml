@@ -4,96 +4,69 @@
 <mapper namespace="com.demo.mapper.MqConsumeLogMapper">
 
     <sql id="consumeLogColumns">
-        id,
-        consumer,
-        event_id   AS eventId,
-        status,
-        lease_token AS leaseToken,
-        attempt_count AS attemptCount,
-        last_error AS lastError,
-        created_at AS createdAt,
-        updated_at AS updatedAt
+        id, consumer, event_id AS eventId, status,
+        lease_token AS leaseToken, attempt_count AS attemptCount,
+        last_error AS lastError, created_at AS createdAt, updated_at AS updatedAt
     </sql>
 
-    <!-- 根据 consumer + eventId 查询（幂等判断） -->
     <select id="selectByConsumerAndEventId" resultType="com.demo.entity.MqConsumeLog">
         SELECT <include refid="consumeLogColumns"/>
         FROM mq_consume_log
-        WHERE consumer = #{consumer}
-          AND event_id = #{eventId}
+        WHERE consumer = #{consumer} AND event_id = #{eventId}
         LIMIT 1
     </select>
 
-    <!-- 插入消费日志（含租约令牌和尝试次数） -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO mq_consume_log (
-            consumer,
-            event_id,
-            status,
-            lease_token,
-            attempt_count,
-            created_at,
-            updated_at
-        ) VALUES (
-            #{consumer},
-            #{eventId},
-            #{status},
-            #{leaseToken},
-            #{attemptCount},
-            NOW(),
-            NOW()
-        )
+        INSERT INTO mq_consume_log (consumer, event_id, status, lease_token, attempt_count, created_at, updated_at)
+        VALUES (#{consumer}, #{eventId}, #{status}, #{leaseToken}, #{attemptCount}, NOW(), NOW())
     </insert>
 
-    <!-- markSuccess: 仅当 status='PROCESSING' 且 lease_token 匹配时更新为 OK -->
+    <!-- markSuccess: 租约验证 + 清空 last_error -->
     <update id="markSuccess">
         UPDATE mq_consume_log
-        SET status = 'OK',
-            updated_at = NOW()
-        WHERE id = #{id}
-          AND status = 'PROCESSING'
-          AND lease_token = #{leaseToken}
+        SET status = 'OK', last_error = NULL, updated_at = NOW()
+        WHERE id = #{id} AND status = 'PROCESSING' AND lease_token = #{leaseToken}
     </update>
 
-    <!-- markFailure: 仅当 status='PROCESSING' 且 lease_token 匹配时更新为 FAIL -->
+    <!-- markFailure: 租约验证失败 → FAIL + error -->
     <update id="markFailure">
         UPDATE mq_consume_log
-        SET status = 'FAIL',
-            last_error = #{error},
-            updated_at = NOW()
-        WHERE id = #{id}
-          AND status = 'PROCESSING'
-          AND lease_token = #{leaseToken}
+        SET status = 'FAIL', last_error = #{error}, updated_at = NOW()
+        WHERE id = #{id} AND status = 'PROCESSING' AND lease_token = #{leaseToken}
     </update>
 
     <!--
-     原子接管过期 PROCESSING 记录。
-     仅当 id + status='PROCESSING' + lease_token 匹配 + updated_at 过期时更新。
-     rows=1 → 接管成功；rows=0 → 被其他线程抢先。
+     原子接管过期 PROCESSING。
+     动态处理 lease_token IS NULL 和 lease_token = value 两种情况。
+     接管成功写入新 leaseToken，attempt_count +1，清空旧 last_error。
     -->
     <update id="updateStatusIfStaleAndLeaseToken">
         UPDATE mq_consume_log
         SET lease_token = #{newLeaseToken},
             attempt_count = attempt_count + 1,
+            last_error = NULL,
             updated_at = NOW()
         WHERE id = #{id}
           AND status = 'PROCESSING'
-          AND lease_token = #{observedLeaseToken}
+          <choose>
+            <when test="observedLeaseToken == null">
+              AND lease_token IS NULL
+            </when>
+            <otherwise>
+              AND lease_token = #{observedLeaseToken}
+            </otherwise>
+          </choose>
           AND updated_at &lt; #{staleBefore}
     </update>
 
-    <!--
-     原子重新抢占 FAIL 记录。
-     仅当 id + status='FAIL' 时原子改回 PROCESSING + 新租约。
-     rows=1 → 抢占成功；rows=0 → 已被其他线程抢占或状态已变。
-    -->
+    <!-- 原子重新抢占 FAIL：清空旧错误，写新租约 -->
     <update id="retakeFailedLease">
         UPDATE mq_consume_log
         SET status = 'PROCESSING',
             lease_token = #{newLeaseToken},
             attempt_count = attempt_count + 1,
+            last_error = NULL,
             updated_at = NOW()
-        WHERE id = #{id}
-          AND status = 'FAIL'
+        WHERE id = #{id} AND status = 'FAIL'
     </update>
 </mapper>

@@ -1,7 +1,6 @@
 package com.demo.service.serviceimpl;
 
 import com.demo.entity.MqConsumeLog;
-import com.demo.exception.BusinessException;
 import com.demo.mapper.MqConsumeLogMapper;
 import com.demo.service.MqConsumeGuard;
 import lombok.extern.slf4j.Slf4j;
@@ -18,21 +17,19 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * 统一 MQ 消费幂等守卫实现（租约栅栏版）。
+ * P6-MQ-A-F2 统一 MQ 消费幂等守卫（统一有界解析循环版）。
  *
- * 关键改进（P6-MQ-A-F1）：
- * 1) lease_token：每次抢占生成 UUID，markSuccess/markFailure 验证租约
- * 2) attempt_count：每次成功抢占 +1
- * 3) FAIL 重抢占：原子 UPDATE WHERE status='FAIL'，非简单 updateStatus
- * 4) stale 接管：原子 UPDATE WHERE lease_token 匹配 + updated_at 过期
- * 5) DuplicateKey 二次竞争：有界重查，不倒向 ALREADY_COMPLETED
- * 6) 未知状态：失败关闭 → UNKNOWN_STATE_RETRY
+ * 变更：
+ * - DuplicateKey 后统一走 resolveWithRetry(maxAttempts) 有界循环
+ * - 抢占失败/重查为空后不再返回 ALREADY_COMPLETED，回到循环下一轮
+ * - NULL lease_token 支持（遗留数据兼容）
+ * - markSuccess/retake 清空 last_error
  */
 @Slf4j
 @Service
 public class MqConsumeGuardImpl implements MqConsumeGuard {
 
-    private static final int DUPLICATE_MAX_RETRIES = 3;
+    private static final int MAX_RESOLVE_ATTEMPTS = 5;
 
     @Autowired
     private MqConsumeLogMapper mapper;
@@ -43,7 +40,6 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     public AcquireResult acquire(String consumer, String eventId) {
-        // 1) 首次抢占
         String leaseToken = UUID.randomUUID().toString();
         MqConsumeLog record = new MqConsumeLog();
         record.setConsumer(consumer);
@@ -58,50 +54,39 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
                     consumer, eventId, record.getId(), tokenPreview(leaseToken));
             return new AcquireResult(AcquireResult.Type.ACQUIRED_NEW, record.getId(), leaseToken);
         } catch (DuplicateKeyException e) {
-            return handleDuplicate(consumer, eventId);
+            return resolveWithRetry(consumer, eventId, MAX_RESOLVE_ATTEMPTS);
         }
     }
 
-    private AcquireResult handleDuplicate(String consumer, String eventId) {
-        for (int attempt = 0; attempt < DUPLICATE_MAX_RETRIES; attempt++) {
-            MqConsumeLog existing = mapper.selectByConsumerAndEventId(consumer, eventId);
-            if (existing != null) {
-                return routeByStatus(consumer, eventId, existing);
-            }
-            // 记录被并发删除 → 重新插入
-            String token = UUID.randomUUID().toString();
-            MqConsumeLog retry = new MqConsumeLog();
-            retry.setConsumer(consumer);
-            retry.setEventId(eventId);
-            retry.setStatus("PROCESSING");
-            retry.setLeaseToken(token);
-            retry.setAttemptCount(1);
-            try {
-                mapper.insert(retry);
-                log.info("MqConsumeGuard ACQUIRED_NEW (retry) consumer={} eventId={}", consumer, eventId);
-                return new AcquireResult(AcquireResult.Type.ACQUIRED_NEW, retry.getId(), token);
-            } catch (DuplicateKeyException ignored) {
-                // 极短让步后继续循环
-                sleepQuietly(10);
-            }
+    /**
+     * 统一有界解析循环。
+     * 每轮：查询 → 路由 → 可能抢占 → 抢占失败回到下一轮重新查询。
+     * 超过最大次数抛出可重试系统异常。
+     */
+    private AcquireResult resolveWithRetry(String consumer, String eventId, int remaining) {
+        if (remaining <= 0) {
+            throw new RuntimeException(
+                    "MqConsumeGuard: resolution exhausted for " + consumer + "/" + eventId);
         }
-        // 最终兜底：抛系统异常，让消息 NACK
-        throw new RuntimeException("MqConsumeGuard: duplicate key race unresolved for " + consumer + "/" + eventId);
-    }
 
-    private AcquireResult routeByStatus(String consumer, String eventId, MqConsumeLog existing) {
-        String status = safeStatus(existing);
+        // 1) 查询
+        MqConsumeLog existing = mapper.selectByConsumerAndEventId(consumer, eventId);
+        if (existing == null) {
+            return reinsertOrRetry(consumer, eventId, remaining);
+        }
 
+        // 2) 路由
+        String status = existing.getStatus() == null ? "" : existing.getStatus().trim();
         switch (status) {
             case "OK":
                 log.info("MqConsumeGuard ALREADY_COMPLETED {}/{}", consumer, eventId);
                 return new AcquireResult(AcquireResult.Type.ALREADY_COMPLETED, existing.getId(), null);
 
             case "FAIL":
-                return tryRetakeFailed(consumer, eventId, existing);
+                return tryRetakeFailed(consumer, eventId, existing, remaining);
 
             case "PROCESSING":
-                return handleProcessing(consumer, eventId, existing);
+                return tryHandleProcessing(consumer, eventId, existing, remaining);
 
             default:
                 log.warn("MqConsumeGuard UNKNOWN_STATE_RETRY status={} {}/{}",
@@ -110,7 +95,25 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
         }
     }
 
-    private AcquireResult tryRetakeFailed(String consumer, String eventId, MqConsumeLog existing) {
+    private AcquireResult reinsertOrRetry(String consumer, String eventId, int remaining) {
+        String token = UUID.randomUUID().toString();
+        MqConsumeLog retry = new MqConsumeLog();
+        retry.setConsumer(consumer);
+        retry.setEventId(eventId);
+        retry.setStatus("PROCESSING");
+        retry.setLeaseToken(token);
+        retry.setAttemptCount(1);
+        try {
+            mapper.insert(retry);
+            log.info("MqConsumeGuard ACQUIRED_NEW (reinsert) consumer={} eventId={}", consumer, eventId);
+            return new AcquireResult(AcquireResult.Type.ACQUIRED_NEW, retry.getId(), token);
+        } catch (DuplicateKeyException ignored) {
+            return resolveWithRetry(consumer, eventId, remaining - 1);
+        }
+    }
+
+    private AcquireResult tryRetakeFailed(String consumer, String eventId,
+                                           MqConsumeLog existing, int remaining) {
         String newToken = UUID.randomUUID().toString();
         int rows = mapper.retakeFailedLease(existing.getId(), newToken);
         if (rows == 1) {
@@ -118,39 +121,23 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
                     consumer, eventId, existing.getId(), tokenPreview(newToken));
             return new AcquireResult(AcquireResult.Type.RETRYABLE_FAILED, existing.getId(), newToken);
         }
-        // 抢占失败 → 重新分流
-        log.info("MqConsumeGuard FAIL retake conflict, re-querying {}/{}", consumer, eventId);
-        MqConsumeLog latest = mapper.selectByConsumerAndEventId(consumer, eventId);
-        if (latest == null) {
-            // 已删除 → 重新插入
-            String token = UUID.randomUUID().toString();
-            MqConsumeLog retry = new MqConsumeLog();
-            retry.setConsumer(consumer);
-            retry.setEventId(eventId);
-            retry.setStatus("PROCESSING");
-            retry.setLeaseToken(token);
-            retry.setAttemptCount(1);
-            try {
-                mapper.insert(retry);
-                return new AcquireResult(AcquireResult.Type.ACQUIRED_NEW, retry.getId(), token);
-            } catch (DuplicateKeyException ignored) {
-                return new AcquireResult(AcquireResult.Type.ALREADY_COMPLETED, null, null);
-            }
-        }
-        return routeByStatus(consumer, eventId, latest);
+        // rows=0 → 被其他线程抢先，下一轮重新查询分流
+        return resolveWithRetry(consumer, eventId, remaining - 1);
     }
 
-    private AcquireResult handleProcessing(String consumer, String eventId, MqConsumeLog existing) {
+    private AcquireResult tryHandleProcessing(String consumer, String eventId,
+                                               MqConsumeLog existing, int remaining) {
         LocalDateTime staleBefore = LocalDateTime.now().minus(Duration.ofSeconds(processingStaleSeconds));
         if (existing.getUpdatedAt() != null && existing.getUpdatedAt().isBefore(staleBefore)) {
-            return tryStaleTakeover(consumer, eventId, existing, staleBefore);
+            return tryStaleTakeover(consumer, eventId, existing, staleBefore, remaining);
         }
         log.info("MqConsumeGuard IN_PROGRESS_RECENT {}/{}", consumer, eventId);
         return new AcquireResult(AcquireResult.Type.IN_PROGRESS_RECENT, existing.getId(), null);
     }
 
     private AcquireResult tryStaleTakeover(String consumer, String eventId,
-                                            MqConsumeLog existing, LocalDateTime staleBefore) {
+                                            MqConsumeLog existing, LocalDateTime staleBefore,
+                                            int remaining) {
         String newToken = UUID.randomUUID().toString();
         String observedToken = existing.getLeaseToken();
         int rows = mapper.updateStatusIfStaleAndLeaseToken(
@@ -160,25 +147,8 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
                     consumer, eventId, existing.getId(), tokenPreview(newToken));
             return new AcquireResult(AcquireResult.Type.RECOVERED_STALE, existing.getId(), newToken);
         }
-        log.info("MqConsumeGuard stale takeover conflict, re-querying {}/{}", consumer, eventId);
-        MqConsumeLog latest = mapper.selectByConsumerAndEventId(consumer, eventId);
-        if (latest == null) {
-            // 已删除 → 重新插入
-            String token = UUID.randomUUID().toString();
-            MqConsumeLog retry = new MqConsumeLog();
-            retry.setConsumer(consumer);
-            retry.setEventId(eventId);
-            retry.setStatus("PROCESSING");
-            retry.setLeaseToken(token);
-            retry.setAttemptCount(1);
-            try {
-                mapper.insert(retry);
-                return new AcquireResult(AcquireResult.Type.ACQUIRED_NEW, retry.getId(), token);
-            } catch (DuplicateKeyException ignored) {
-                return new AcquireResult(AcquireResult.Type.ALREADY_COMPLETED, null, null);
-            }
-        }
-        return routeByStatus(consumer, eventId, latest);
+        // rows=0 → 被其他线程抢先，下一轮重新查询分流
+        return resolveWithRetry(consumer, eventId, remaining - 1);
     }
 
     @Override
@@ -206,16 +176,8 @@ public class MqConsumeGuardImpl implements MqConsumeGuard {
         return false;
     }
 
-    private static String safeStatus(MqConsumeLog e) {
-        return e.getStatus() == null ? "" : e.getStatus().trim();
-    }
-
     private static String tokenPreview(String token) {
         if (token == null) return "null";
         return token.length() > 8 ? token.substring(0, 8) + "..." : token;
-    }
-
-    private static void sleepQuietly(long millis) {
-        try { Thread.sleep(millis); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 }
