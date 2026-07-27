@@ -8,10 +8,8 @@ import com.demo.enumeration.OrderStatus;
 import com.demo.exception.BusinessException;
 import com.demo.mapper.OrderMapper;
 import com.demo.service.MessageService;
+import com.demo.service.MqConsumeGuard;
 import com.demo.service.OrderShipReminderTaskService;
-import com.demo.entity.MqConsumeLog;
-import com.demo.mapper.MqConsumeLogMapper;
-import org.springframework.dao.DuplicateKeyException;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -21,151 +19,114 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Day14 - 订单已支付消费者
- * <p>
+ * Day14 - 订单已支付消费者。
+ *
  * 职责：
  * 1) 监听 order.fulfillment.queue（绑定 order.paid）
- * 2) 校验订单状态
- * 3) 发送“提醒卖家发货”的站内消息
- * 4) 手动 ACK / NACK
+ * 2) 使用 MqConsumeGuard 统一幂等抢占
+ * 3) 发送“提醒卖家发货”站内消息
+ * 4) 手工 ACK / NACK
  */
 @Slf4j
 @Component
 public class OrderPaidConsumer {
 
-    /**
-     * 订单查询（用于校验订单状态、拿 sellerId）
-     */
     @Autowired
     private OrderMapper orderMapper;
 
-    /**
-     * 站内消息服务（通知卖家发货）
-     */
     @Autowired
     private MessageService messageService;
 
-    /**
-     * 发货提醒任务服务（支付成功后预生成 H24/H6/H1 提醒任务）。
-     */
     @Autowired
     private OrderShipReminderTaskService shipReminderTaskService;
 
     @Autowired
-    private MqConsumeLogMapper mqConsumeLogMapper;
+    private MqConsumeGuard consumeGuard;
 
-    /**
-     * Step8 通知联动开关：是否发送“支付成功提醒卖家发货”站内信。
-     * 注意：关闭该开关不会影响后续 H24/H6/H1 提醒任务预生成。
-     */
     @Value("${order.notice.paid-notify-seller-enabled:true}")
     private boolean paidNotifySellerEnabled;
 
-    /** 幂等标识：消费者名称 */
     private static final String CONSUMER_NAME = "OrderPaidConsumer";
 
-    /**
-     * 消费订单支付消息
-     *
-     * @param message     统一事件信封（包含 OrderPaidPayload）
-     * @param channel     RabbitMQ 原生通道（用于 ACK/NACK）
-     * @param amqpMessage 原生消息（用于 deliveryTag）
-     */
     @RabbitListener(queues = "${demo.rabbitmq.queue.order-fulfillment}")
-public void onMessage(EventMessage<OrderPaidPayload> message,
-                      Channel channel,
-                      Message amqpMessage) throws Exception {
-    long tag = amqpMessage.getMessageProperties().getDeliveryTag();
-    MqConsumeLog logRecord = null;
+    public void onMessage(EventMessage<OrderPaidPayload> message,
+                          Channel channel,
+                          Message amqpMessage) throws Exception {
+        long tag = amqpMessage.getMessageProperties().getDeliveryTag();
+
+        // 兜底
+        if (message == null || message.getPayload() == null) {
+            log.warn("ORDER_PAID 消息体为空，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
+            log.warn("ORDER_PAID 缺少 eventId，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+
+        // 统一幂等抢占
+        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
+        Long logId = ar.logId();
+
+        switch (ar.type()) {
+            case ALREADY_COMPLETED:
+                channel.basicAck(tag, false);
+                return;
+
+            case IN_PROGRESS_RECENT:
+                channel.basicNack(tag, false, true);
+                return;
+
+            case ACQUIRED_NEW:
+            case RECOVERED_STALE:
+            case RETRYABLE_FAILED:
+                break;
+        }
 
         try {
-            // 0) 兜底：空消息直接 ACK
-            if (message == null || message.getPayload() == null) {
-                log.warn("ORDER_PAID 消息体为空，ACK 丢弃。");
+            OrderPaidPayload payload = message.getPayload();
+            Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
+            if (order == null) {
+                log.warn("ORDER_PAID 订单不存在，orderId={}", payload.getOrderId());
+                consumeGuard.markSuccess(logId);
                 channel.basicAck(tag, false);
                 return;
             }
 
-            // 1) eventId 必须存在（幂等关键字段）
-            if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("ORDER_PAID 缺少 eventId，ACK 丢弃。");
+            OrderStatus status = OrderStatus.fromDbValue(order.getStatus());
+            if (status != OrderStatus.PAID) {
+                log.info("ORDER_PAID 跳过：当前状态={}, orderId={}", status, order.getId());
+                consumeGuard.markSuccess(logId);
                 channel.basicAck(tag, false);
                 return;
             }
 
-        // 2) 幂等抢占：先插入一条消费记录（状态=PROCESSING）
-        logRecord = new MqConsumeLog();
-        logRecord.setConsumer(CONSUMER_NAME);
-        logRecord.setEventId(message.getEventId());
-        logRecord.setStatus("PROCESSING");
+            if (paidNotifySellerEnabled) {
+                SendMessageRequest req = new SendMessageRequest();
+                req.setToUserId(order.getSellerId());
+                req.setClientMsgId("SYS-PAY-" + message.getEventId());
+                req.setContent("订单已付款，请尽快发货。订单号：" + payload.getOrderNo());
+                messageService.sendMessage(order.getId(), payload.getBuyerId(), req);
+            }
 
-        try {
-            mqConsumeLogMapper.insert(logRecord);
-        } catch (DuplicateKeyException e) {
-            // 已经处理过该消息 → 直接 ACK
-            log.info("幂等命中：consumer=OrderPaidConsumer, eventId={}", message.getEventId());
+            shipReminderTaskService.createReminderTasksForPaidOrder(
+                    order.getId(), order.getSellerId(), payload.getPayTime());
+
+            log.info("ORDER_PAID 处理完成：orderId={}", order.getId());
+
+            consumeGuard.markSuccess(logId);
             channel.basicAck(tag, false);
-            return;
-        }
 
-        // 3) 正常业务处理
-        OrderPaidPayload payload = message.getPayload();
-        Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
-        if (order == null) {
-            log.warn("ORDER_PAID 订单不存在，orderId={}", payload.getOrderId());
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+        } catch (BusinessException ex) {
+            consumeGuard.markSuccess(logId);
+            log.warn("ORDER_PAID 业务异常，ACK。msg={}, err={}", message, ex.getMessage());
             channel.basicAck(tag, false);
-            return;
+        } catch (Exception ex) {
+            consumeGuard.markFailure(logId);
+            log.error("ORDER_PAID 处理失败，NACK 进入 DLQ。msg={}", message, ex);
+            channel.basicNack(tag, false, false);
         }
-
-        // 只处理 PAID 状态
-        OrderStatus status = OrderStatus.fromDbValue(order.getStatus());
-        if (status != OrderStatus.PAID) {
-            log.info("ORDER_PAID 跳过处理：当前状态={}, orderId={}", status, order.getId());
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-            channel.basicAck(tag, false);
-            return;
-        }
-
-        // 4) 发货流程启动：给卖家发站内消息（可通过配置开关关闭）
-        if (paidNotifySellerEnabled) {
-            SendMessageRequest req = new SendMessageRequest();
-            req.setToUserId(order.getSellerId());
-            req.setClientMsgId("SYS-PAY-" + message.getEventId());
-            req.setContent("订单已付款，请尽快发货。订单号：" + payload.getOrderNo());
-            messageService.sendMessage(order.getId(), payload.getBuyerId(), req);
-        }
-
-        // 4.1 预生成三档发货超时提醒任务（幂等插入，不会重复建任务）
-        // 说明：后续由定时 Job 扫描任务表，在 H24/H6/H1 时间点发系统提醒。
-        shipReminderTaskService.createReminderTasksForPaidOrder(
-                order.getId(),
-                order.getSellerId(),
-                payload.getPayTime()
-        );
-
-        log.info("ORDER_PAID 处理完成：已通知卖家，orderId={}", order.getId());
-
-        // 5) 标记消费成功 + ACK
-        mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-        channel.basicAck(tag, false);
-
-    } catch (BusinessException ex) {
-        // 业务异常：不需要重试，标记 OK + ACK
-        if (logRecord != null && logRecord.getId() != null) {
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-        }
-        log.warn("ORDER_PAID 业务异常，ACK 丢弃。msg={}, err={}", message, ex.getMessage());
-        channel.basicAck(tag, false);
-
-    } catch (Exception ex) {
-        // 系统异常：标记 FAIL + NACK 进入 DLQ
-        if (logRecord != null && logRecord.getId() != null) {
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
-        }
-        log.error("ORDER_PAID 处理失败，NACK 进入 DLQ。msg={}", message, ex);
-        channel.basicNack(tag, false, false);
     }
-}
-
 }

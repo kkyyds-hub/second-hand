@@ -1,11 +1,9 @@
 package com.demo.mq.consumer;
 
-import com.demo.entity.MqConsumeLog;
-import com.demo.exception.BusinessException;
-import com.demo.mapper.MqConsumeLogMapper;
-import org.springframework.dao.DuplicateKeyException;
 import com.demo.dto.mq.EventMessage;
 import com.demo.dto.mq.OrderTimeoutPayload;
+import com.demo.exception.BusinessException;
+import com.demo.service.MqConsumeGuard;
 import com.demo.service.OrderTimeoutService;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -17,107 +15,75 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 /**
- * Day14 - 订单超时消费者（执行关单逻辑）
- *
- * 职责：
- * 1) 监听 order.timeout.queue
- * 2) 解析消息载荷（订单 ID、超时时间等）
- * 3) 调用业务服务完成“超时关单 + 释放商品 + 影响信用分”
- * 4) 手动 ACK / NACK（避免消息丢失或无限重试）
+ * Day14 - 订单超时消费者（执行关单逻辑）。
  */
 @Slf4j
 @Component
 public class OrderTimeoutConsumer {
 
-    /** 超时关单业务服务（已有实现：OrderTimeoutServiceImpl） */
     @Autowired
     private OrderTimeoutService orderTimeoutService;
 
     @Autowired
-    private MqConsumeLogMapper mqConsumeLogMapper;
+    private MqConsumeGuard consumeGuard;
 
-    /** 幂等标识：消费者名称 */
     private static final String CONSUMER_NAME = "OrderTimeoutConsumer";
 
-
-    /**
-     * 监听订单超时队列
-     *
-     * @param message     统一事件信封（包含 OrderTimeoutPayload）
-     * @param channel     RabbitMQ 原生通道（用于手动 ACK/NACK）
-     * @param amqpMessage RabbitMQ 原生消息（用于获取 deliveryTag）
-     */
     @RabbitListener(queues = "${demo.rabbitmq.queue.order-timeout}")
     public void onMessage(EventMessage<OrderTimeoutPayload> message,
                           Channel channel,
                           Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
-        MqConsumeLog logRecord = null;
-    
+
+        if (message == null || message.getPayload() == null) {
+            log.warn("ORDER_TIMEOUT 消息体为空，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
+            log.warn("ORDER_TIMEOUT 缺少 eventId，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+
+        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
+        Long logId = ar.logId();
+
+        switch (ar.type()) {
+            case ALREADY_COMPLETED:
+                channel.basicAck(tag, false);
+                return;
+            case IN_PROGRESS_RECENT:
+                channel.basicNack(tag, false, true);
+                return;
+            case ACQUIRED_NEW:
+            case RECOVERED_STALE:
+            case RETRYABLE_FAILED:
+                break;
+        }
+
         try {
-            // 0) 兜底：空消息直接 ACK
-            if (message == null || message.getPayload() == null) {
-                log.warn("ORDER_TIMEOUT 消息体为空，ACK 丢弃。");
-                channel.basicAck(tag, false);
-                return;
-            }
-    
-            // 1) eventId 必须存在（幂等关键字段）
-            if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("ORDER_TIMEOUT 缺少 eventId，ACK 丢弃。");
-                channel.basicAck(tag, false);
-                return;
-            }
-    
-            // 2) 幂等抢占：先插入一条消费记录（状态=PROCESSING）
-            logRecord = new MqConsumeLog();
-            logRecord.setConsumer(CONSUMER_NAME);
-            logRecord.setEventId(message.getEventId());
-            logRecord.setStatus("PROCESSING");
-    
-            try {
-                mqConsumeLogMapper.insert(logRecord);
-            } catch (DuplicateKeyException e) {
-                // 已经处理过该消息 → 直接 ACK
-                log.info("幂等命中：consumer=OrderTimeoutConsumer, eventId={}", message.getEventId());
-                channel.basicAck(tag, false);
-                return;
-            }
-    
-            // 3) 正常业务处理
             OrderTimeoutPayload payload = message.getPayload();
             LocalDateTime deadline = payload.getTimeoutAt() != null
                     ? payload.getTimeoutAt()
                     : LocalDateTime.now();
-    
+
             boolean closed = orderTimeoutService.closeTimeoutOrderAndRelease(
-                    payload.getOrderId(), deadline
-            );
-    
+                    payload.getOrderId(), deadline);
+
             log.info("ORDER_TIMEOUT 处理完成：orderId={}, closed={}", payload.getOrderId(), closed);
-    
-            // 4) 标记消费成功（OK）
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-    
-            // 5) ACK
+
+            consumeGuard.markSuccess(logId);
             channel.basicAck(tag, false);
-    
+
         } catch (BusinessException ex) {
-            // 业务异常：不需要重试，标记 OK + ACK
-            if (logRecord != null && logRecord.getId() != null) {
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-            }
-            log.warn("ORDER_TIMEOUT 业务异常，ACK 丢弃。msg={}, err={}", message, ex.getMessage());
+            consumeGuard.markSuccess(logId);
+            log.warn("ORDER_TIMEOUT 业务异常，ACK。msg={}, err={}", message, ex.getMessage());
             channel.basicAck(tag, false);
-    
         } catch (Exception ex) {
-            // 系统异常：标记 FAIL + NACK 进入 DLQ
-            if (logRecord != null && logRecord.getId() != null) {
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
-            }
-            log.error("ORDER_TIMEOUT 处理失败，NACK 进入 DLQ。message={}", message, ex);
+            consumeGuard.markFailure(logId);
+            log.error("ORDER_TIMEOUT 处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
     }
-    
 }

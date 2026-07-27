@@ -43,4 +43,18 @@
         WHERE id = #{id}
     </update>
 
+    <!--
+     原子接管过期 PROCESSING 记录。
+     只更新 id + status='PROCESSING' + updated_at < staleBefore 的行。
+     返回 1 = 接管成功；0 = 已被其他实例接管或状态已变。
+    -->
+    <update id="updateStatusIfStale">
+        UPDATE mq_consume_log
+        SET status = #{targetStatus},
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND status = 'PROCESSING'
+          AND updated_at &lt; #{staleBefore}
+    </update>
+
 </mapper>

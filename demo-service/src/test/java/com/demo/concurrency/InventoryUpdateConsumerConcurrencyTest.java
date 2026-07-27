@@ -7,7 +7,9 @@ import com.demo.entity.Order;
 import com.demo.mapper.MqConsumeLogMapper;
 import com.demo.mapper.OrderMapper;
 import com.demo.mq.consumer.InventoryUpdateConsumer;
+import com.demo.service.MqConsumeGuard;
 import com.rabbitmq.client.Channel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +19,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,14 +42,23 @@ class InventoryUpdateConsumerConcurrencyTest {
     @Mock
     private MqConsumeLogMapper mqConsumeLogMapper;
     @Mock
+    private MqConsumeGuard consumeGuard;
+    @Mock
     private Channel channel;
 
     @InjectMocks
     private InventoryUpdateConsumer consumer;
 
+    @BeforeEach
+    void setUp() {
+        // Default: ACQUIRED_NEW with logId=1
+        when(consumeGuard.acquire(anyString(), anyString()))
+                .thenReturn(new MqConsumeGuard.AcquireResult(MqConsumeGuard.AcquireResult.Type.ACQUIRED_NEW, 1L));
+    }
+
     @Test
     void shouldSkipMarkSoldWhenOrderAlreadyCancelled() throws Exception {
-        // 构造一个“历史上的订单创建事件”：
+        // 构造一个"历史上的订单创建事件"：
         // 该消息本身合法，但它到达消费者时，订单已经被别的链路取消。
         EventMessage<OrderCreatedPayload> message = buildMessage("evt-cancelled", 90001L, 80001L);
         Message amqpMessage = buildAmqpMessage(11L);
@@ -54,21 +66,15 @@ class InventoryUpdateConsumerConcurrencyTest {
         order.setId(90001L);
         order.setStatus("cancelled");
 
-        doAnswer(invocation -> {
-            MqConsumeLog log = invocation.getArgument(0);
-            log.setId(101L);
-            return 1;
-        }).when(mqConsumeLogMapper).insert(any(MqConsumeLog.class));
         when(orderMapper.selectOrderBasicById(90001L)).thenReturn(order);
 
         consumer.onMessage(message, channel, amqpMessage);
 
         // 断言重点：
         // 1) 不再回写商品为 sold；
-        // 2) 消息被视为“已正确处理”，因此记录 OK 并 ACK；
-        // 3) 这说明我们处理的是“过时消息”，而不是“异常消息”。
+        // 2) 消息被视为"已正确处理"，因此记录 OK 并 ACK；
         verify(orderMapper, never()).markProductSoldIfOnSale(any());
-        verify(mqConsumeLogMapper).updateStatus(101L, "OK");
+        verify(consumeGuard).markSuccess(1L);
         verify(channel).basicAck(11L, false);
     }
 
@@ -81,20 +87,15 @@ class InventoryUpdateConsumerConcurrencyTest {
         order.setId(90002L);
         order.setStatus("pending");
 
-        doAnswer(invocation -> {
-            MqConsumeLog log = invocation.getArgument(0);
-            log.setId(102L);
-            return 1;
-        }).when(mqConsumeLogMapper).insert(any(MqConsumeLog.class));
         when(orderMapper.selectOrderBasicById(90002L)).thenReturn(order);
         when(orderMapper.markProductSoldIfOnSale(80002L)).thenReturn(1);
 
         consumer.onMessage(message, channel, amqpMessage);
 
         // 断言重点：
-        // 本次修复只拦截“订单已取消”的异常回写，不影响正常的库存异步更新链路。
+        // 本次修复只拦截"订单已取消"的异常回写，不影响正常的库存异步更新链路。
         verify(orderMapper).markProductSoldIfOnSale(80002L);
-        verify(mqConsumeLogMapper).updateStatus(102L, "OK");
+        verify(consumeGuard).markSuccess(1L);
         verify(channel).basicAck(12L, false);
     }
 

@@ -39,4 +39,15 @@ public interface MqConsumeLogMapper {
      */
     int updateStatus(@Param("id") Long id,
                      @Param("status") String status);
+
+    /**
+     * 条件更新：原子接管过期 PROCESSING 记录。
+     *
+     * 仅当 id + status='PROCESSING' + updated_at < staleBefore 时更新。
+     * 返回 1 表示当前线程成功接管，可执行业务。
+     * 返回 0 表示已被其他线程接管或状态已变化。
+     */
+    int updateStatusIfStale(@Param("id") Long id,
+                            @Param("staleBefore") java.time.LocalDateTime staleBefore,
+                            @Param("targetStatus") String targetStatus);
 }

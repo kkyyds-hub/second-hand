@@ -3,131 +3,107 @@ package com.demo.mq.consumer;
 import com.demo.dto.message.SendMessageRequest;
 import com.demo.dto.mq.EventMessage;
 import com.demo.dto.mq.OrderStatusChangedPayload;
-import com.demo.entity.MqConsumeLog;
 import com.demo.entity.Order;
 import com.demo.enumeration.OrderStatus;
 import com.demo.exception.BusinessException;
-import com.demo.mapper.MqConsumeLogMapper;
 import com.demo.mapper.OrderMapper;
 import com.demo.service.MessageService;
+import com.demo.service.MqConsumeGuard;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 /**
- * Day14 - 订单状态变更消费者
- *
- * 职责：
- * 1) 监听 order.status.sync.queue
- * 2) 校验订单存在与状态合法
- * 3) 给对方发送站内消息（提醒发货/确认收货）
- * 4) 手动 ACK / NACK
+ * Day14 - 订单状态变更消费者。
+ * 使用 MqConsumeGuard 统一幂等抢占。
  */
 @Slf4j
 @Component
 public class OrderStatusChangedConsumer {
 
-    /** 订单查询（用于拿 buyerId/sellerId） */
     @Autowired
     private OrderMapper orderMapper;
 
-    /** 站内消息服务（通知对方） */
     @Autowired
     private MessageService messageService;
 
     @Autowired
-    private MqConsumeLogMapper mqConsumeLogMapper;
+    private MqConsumeGuard consumeGuard;
 
-    /**
-     * Step8 通知联动开关：是否发送“订单状态变更通知”（如发货成功通知买家）。
-     */
     @Value("${order.notice.status-changed-enabled:true}")
     private boolean statusChangedNoticeEnabled;
 
-    /** 幂等标识：消费者名称 */
     private static final String CONSUMER_NAME = "OrderStatusChangedConsumer";
 
-    /**
-     * 消费订单状态变更消息
-     *
-     * @param message     统一事件信封（包含 OrderStatusChangedPayload）
-     * @param channel     RabbitMQ 通道（用于 ACK/NACK）
-     * @param amqpMessage 原生消息（用于 deliveryTag）
-     */
     @RabbitListener(queues = "${demo.rabbitmq.queue.order-status-sync}")
     public void onMessage(EventMessage<OrderStatusChangedPayload> message,
                           Channel channel,
                           Message amqpMessage) throws Exception {
         long tag = amqpMessage.getMessageProperties().getDeliveryTag();
-        MqConsumeLog logRecord = null;
+
+        if (message == null || message.getPayload() == null) {
+            log.warn("ORDER_STATUS_CHANGED 消息体为空，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+        if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
+            log.warn("ORDER_STATUS_CHANGED 缺少 eventId，ACK 丢弃。");
+            channel.basicAck(tag, false);
+            return;
+        }
+
+        MqConsumeGuard.AcquireResult ar = consumeGuard.acquire(CONSUMER_NAME, message.getEventId());
+        Long logId = ar.logId();
+
+        switch (ar.type()) {
+            case ALREADY_COMPLETED:
+                channel.basicAck(tag, false);
+                return;
+            case IN_PROGRESS_RECENT:
+                channel.basicNack(tag, false, true);
+                return;
+            case ACQUIRED_NEW:
+            case RECOVERED_STALE:
+            case RETRYABLE_FAILED:
+                break;
+        }
+
         try {
-            // 1) 兜底：空消息直接 ACK
-            if (message == null || message.getPayload() == null) {
-                log.warn("ORDER_STATUS_CHANGED 消息体为空，ACK 丢弃。");
-                channel.basicAck(tag, false);
-                return;
-            }
-
-            // 1.1) eventId 必须存在（幂等关键字段）
-            if (message.getEventId() == null || message.getEventId().trim().isEmpty()) {
-                log.warn("ORDER_STATUS_CHANGED 缺少 eventId，ACK 丢弃。");
-                channel.basicAck(tag, false);
-                return;
-            }
-
-            // 2) 幂等抢占：先插入一条消费记录（状态=PROCESSING）
-            logRecord = new MqConsumeLog();
-            logRecord.setConsumer(CONSUMER_NAME);
-            logRecord.setEventId(message.getEventId());
-            logRecord.setStatus("PROCESSING");
-            try {
-                mqConsumeLogMapper.insert(logRecord);
-            } catch (DuplicateKeyException e) {
-                // 已经处理过该消息 → 直接 ACK
-                log.info("幂等命中：consumer=OrderStatusChangedConsumer, eventId={}", message.getEventId());
-                channel.basicAck(tag, false);
-                return;
-            }
-
             OrderStatusChangedPayload payload = message.getPayload();
 
-            // 2) 查询订单
             Order order = orderMapper.selectOrderBasicById(payload.getOrderId());
             if (order == null) {
                 log.warn("ORDER_STATUS_CHANGED 订单不存在，orderId={}", payload.getOrderId());
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                consumeGuard.markSuccess(logId);
                 channel.basicAck(tag, false);
                 return;
             }
 
-            // 3) 判断变更后的状态
             OrderStatus newStatus = OrderStatus.fromDbValue(payload.getNewStatus());
             if (newStatus == null) {
                 log.warn("ORDER_STATUS_CHANGED 状态非法，orderId={}, status={}",
                         payload.getOrderId(), payload.getNewStatus());
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                consumeGuard.markSuccess(logId);
                 channel.basicAck(tag, false);
                 return;
             }
 
-            // 4) 计算消息接收方（对方）
             Long operatorId = payload.getOperatorId();
             if (operatorId == null) {
                 log.warn("ORDER_STATUS_CHANGED operatorId 为空，orderId={}", payload.getOrderId());
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+                consumeGuard.markSuccess(logId);
                 channel.basicAck(tag, false);
                 return;
             }
-            Long toUserId = operatorId != null && operatorId.equals(order.getBuyerId())
+
+            Long toUserId = operatorId.equals(order.getBuyerId())
                     ? order.getSellerId()
                     : order.getBuyerId();
 
-            // 5) 发送站内消息（可通过配置开关关闭）
             if (statusChangedNoticeEnabled) {
                 String content;
                 if (newStatus == OrderStatus.SHIPPED) {
@@ -148,22 +124,15 @@ public class OrderStatusChangedConsumer {
             log.info("ORDER_STATUS_CHANGED 处理完成：orderId={}, newStatus={}",
                     order.getId(), payload.getNewStatus());
 
-            // 7) 处理成功：标记 OK + ACK
-            mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
+            consumeGuard.markSuccess(logId);
             channel.basicAck(tag, false);
+
         } catch (BusinessException ex) {
-            // 业务异常一般无需重试，ACK 丢弃
-            if (logRecord != null && logRecord.getId() != null) {
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "OK");
-            }
-            log.warn("ORDER_STATUS_CHANGED 业务异常，ACK 丢弃。msg={}, err={}",
-                    message, ex.getMessage());
+            consumeGuard.markSuccess(logId);
+            log.warn("ORDER_STATUS_CHANGED 业务异常，ACK。msg={}, err={}", message, ex.getMessage());
             channel.basicAck(tag, false);
         } catch (Exception ex) {
-            // 系统异常：NACK 进入 DLQ
-            if (logRecord != null && logRecord.getId() != null) {
-                mqConsumeLogMapper.updateStatus(logRecord.getId(), "FAIL");
-            }
+            consumeGuard.markFailure(logId);
             log.error("ORDER_STATUS_CHANGED 处理失败，NACK 进入 DLQ。msg={}", message, ex);
             channel.basicNack(tag, false, false);
         }
