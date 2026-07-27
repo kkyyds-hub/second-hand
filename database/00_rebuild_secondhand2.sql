@@ -515,7 +515,7 @@ CREATE TABLE `mq_consume_log` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_consumer_event` (`consumer`, `event_id`),
   INDEX `idx_event` (`event_id`),
-  CONSTRAINT `chk_consume_log_status` CHECK (`status` IN ('OK', 'FAIL'))
+  CONSTRAINT `chk_consume_log_status` CHECK (`status` IN ('OK', 'FAIL', 'PROCESSING'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 START TRANSACTION;
