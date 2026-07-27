@@ -14,7 +14,7 @@ compose=(docker compose -f "$root/compose.production.yml" --env-file "$env_file"
 stamp="$(date +%Y%m%d-%H%M%S)"
 
 set -a; source "$env_file"; set +a
-"${compose[@]}" exec -T mysql sh -ec 'exec mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --events "$MYSQL_DATABASE"' > "$target/mysql-$stamp.sql"
+"${compose[@]}" exec -T mysql sh -ec 'exec mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --events --no-tablespaces "$MYSQL_DATABASE"' > "$target/mysql-$stamp.sql"
 "${compose[@]}" exec -T mongodb sh -ec 'mongodump --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --db "$MONGO_INITDB_DATABASE" --archive' > "$target/mongo-$stamp.archive"
 "${compose[@]}" cp backend:/data/uploads "$target/uploads-$stamp"
 chmod 600 "$target/mysql-$stamp.sql" "$target/mongo-$stamp.archive"
