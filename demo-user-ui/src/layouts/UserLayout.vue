@@ -47,6 +47,7 @@ const mobileMenuOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
 const currentUser = ref<UserProfile | null>(readCurrentUser())
 const cartStore = useCartStore()
+const globalSearchKeyword = ref('')
 
 const appTitle = USER_APP_TITLE
 const isSeller = computed(() => isSellerUser(currentUser.value))
@@ -87,9 +88,6 @@ const desktopNavigation = computed<NavigationItem[]>(() => {
   const items: NavigationItem[] = [
     { to: '/', label: '首页', icon: House, active: isExact('/') },
     { to: '/market', label: '逛市场', icon: Store, active: isRouteGroup('/market') },
-    { to: '/cart', label: '购物车', icon: ShoppingCart, active: isRouteGroup('/cart'), badge: cartBadgeText.value },
-    { to: '/favorites', label: '收藏', icon: Heart, active: isRouteGroup('/favorites') },
-    { to: '/orders/buyer', label: '我的订单', icon: PackageSearch, active: (path) => isRouteGroup('/orders/buyer')(path) || isRouteGroup('/orders/seller')(path) },
   ]
 
   if (isSeller.value) {
@@ -103,7 +101,6 @@ const mobileNavigation = computed<NavigationItem[]>(() => {
   const items: NavigationItem[] = [
     { to: '/', label: '首页', icon: House, active: isExact('/') },
     { to: '/market', label: '市场', icon: Store, active: isRouteGroup('/market') },
-    { to: '/cart', label: '购物车', icon: ShoppingCart, active: isRouteGroup('/cart'), badge: cartBadgeText.value },
     isSeller.value
       ? { to: '/seller/products/new', label: '发布', icon: PackagePlus, active: isRouteGroup('/seller/products') }
       : { to: '/favorites', label: '收藏', icon: Heart, active: isRouteGroup('/favorites') },
@@ -140,6 +137,11 @@ const syncCurrentUser = () => {
 const closeMenus = () => {
   profileMenuOpen.value = false
   mobileMenuOpen.value = false
+}
+
+const submitGlobalSearch = () => {
+  const keyword = globalSearchKeyword.value.trim()
+  void router.push({ path: '/market', query: keyword ? { keyword } : {} })
 }
 
 const quickLogout = async () => {
@@ -195,7 +197,14 @@ onUnmounted(() => {
 <template>
   <div class="page-shell text-gray-800">
     <header class="user-site-header">
-      <div class="site-container flex h-[68px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div class="commerce-utility-row">
+        <div class="commerce-utility-inner">
+          <span>发现仍在流转的好物</span>
+          <span>浏览、收藏、下单与发布均使用当前账户</span>
+        </div>
+      </div>
+
+      <div class="commerce-header-main">
         <router-link class="flex shrink-0 items-center gap-2.5" to="/" aria-label="返回首页">
           <span class="brand-mark h-9 w-9 text-[14px]">{{ USER_BRAND_MARK }}</span>
           <span class="hidden min-w-0 sm:block">
@@ -204,24 +213,47 @@ onUnmounted(() => {
           </span>
         </router-link>
 
-        <nav class="hidden items-center gap-1 lg:flex" aria-label="主导航">
-          <router-link
-            v-for="item in desktopNavigation"
-            :key="item.to"
-            :to="item.to"
-            class="site-nav-link"
-            :class="item.active(route.path) ? 'site-nav-link-active' : ''"
-          >
-            <span>{{ item.label }}</span>
-            <span
-              v-if="item.badge"
-              class="cart-badge ml-1.5"
-              :aria-label="`购物车 ${item.badge} 件`"
-            >{{ item.badge }}</span>
-          </router-link>
-        </nav>
+        <form class="commerce-global-search" role="search" @submit.prevent="submitGlobalSearch">
+          <label class="sr-only" for="global-market-search">搜索商品</label>
+          <input
+            id="global-market-search"
+            v-model="globalSearchKeyword"
+            type="search"
+            maxlength="40"
+            placeholder="搜索商品名称或描述"
+          />
+          <button type="submit">搜索</button>
+        </form>
 
-        <div class="hidden items-center gap-3 lg:flex">
+        <div class="hidden items-center gap-1 lg:flex" aria-label="常用功能">
+          <router-link
+            class="commerce-top-action"
+            :class="isRouteGroup('/favorites')(route.path) ? 'commerce-top-action-active' : ''"
+            to="/favorites"
+          >
+            <Heart class="h-4 w-4" aria-hidden="true" />
+            <span>收藏</span>
+          </router-link>
+          <router-link
+            class="commerce-top-action"
+            :class="isRouteGroup('/cart')(route.path) ? 'commerce-top-action-active' : ''"
+            to="/cart"
+          >
+            <ShoppingCart class="h-4 w-4" aria-hidden="true" />
+            <span>购物车</span>
+            <span v-if="cartBadgeText" class="commerce-cart-badge" :aria-label="`购物车 ${cartBadgeText} 件`">{{ cartBadgeText }}</span>
+          </router-link>
+          <router-link
+            class="commerce-top-action"
+            :class="(isRouteGroup('/orders/buyer')(route.path) || isRouteGroup('/orders/seller')(route.path)) ? 'commerce-top-action-active' : ''"
+            to="/orders/buyer"
+          >
+            <PackageSearch class="h-4 w-4" aria-hidden="true" />
+            <span>订单</span>
+          </router-link>
+        </div>
+
+        <div class="hidden items-center gap-2 lg:flex">
           <router-link v-if="isSeller" class="btn-primary" to="/seller/products/new">
             <PackagePlus class="h-4 w-4" aria-hidden="true" />
             <span>发布闲置</span>
@@ -270,17 +302,37 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <button
-          class="icon-button lg:hidden"
-          type="button"
-          :aria-label="mobileMenuOpen ? '关闭菜单' : '打开菜单'"
-          :aria-expanded="mobileMenuOpen"
-          @click="mobileMenuOpen = !mobileMenuOpen; profileMenuOpen = false"
-        >
-          <X v-if="mobileMenuOpen" class="h-5 w-5" aria-hidden="true" />
-          <Menu v-else class="h-5 w-5" aria-hidden="true" />
-        </button>
+        <div class="flex items-center gap-2 lg:hidden">
+          <router-link class="commerce-mobile-cart" to="/cart" aria-label="购物车">
+            <ShoppingCart class="h-5 w-5" aria-hidden="true" />
+            <span v-if="cartBadgeText" class="commerce-cart-badge" :aria-label="`购物车 ${cartBadgeText} 件`">{{ cartBadgeText }}</span>
+          </router-link>
+          <button
+            class="icon-button"
+            type="button"
+            :aria-label="mobileMenuOpen ? '关闭菜单' : '打开菜单'"
+            :aria-expanded="mobileMenuOpen"
+            @click="mobileMenuOpen = !mobileMenuOpen; profileMenuOpen = false"
+          >
+            <X v-if="mobileMenuOpen" class="h-5 w-5" aria-hidden="true" />
+            <Menu v-else class="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
       </div>
+
+      <nav class="commerce-primary-nav" aria-label="主导航">
+        <div class="commerce-primary-nav-inner">
+          <router-link
+            v-for="item in desktopNavigation"
+            :key="item.to"
+            :to="item.to"
+            class="site-nav-link"
+            :class="item.active(route.path) ? 'site-nav-link-active' : ''"
+          >
+            <span>{{ item.label }}</span>
+          </router-link>
+        </div>
+      </nav>
 
       <transition name="fade">
         <div v-if="mobileMenuOpen" class="border-t border-gray-200 bg-white lg:hidden">
@@ -324,6 +376,13 @@ onUnmounted(() => {
       </div>
     </main>
 
+    <footer class="commerce-footer">
+      <div class="commerce-footer-inner">
+        <p>{{ appTitle }}为用户提供商品浏览、收藏、购物车、订单与卖家发布入口。</p>
+        <p>商品信息与交易状态以页面实际展示为准。</p>
+      </div>
+    </footer>
+
     <nav class="mobile-bottom-nav lg:hidden" aria-label="移动端主导航">
       <router-link
         v-for="item in mobileNavigation"
@@ -358,24 +417,4 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.cart-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.125rem;
-  height: 1.125rem;
-  padding: 0 0.3rem;
-  border-radius: 9999px;
-  background-color: #ef4444;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.cart-badge-mobile {
-  position: absolute;
-  top: -0.375rem;
-  right: -0.5rem;
-}
 </style>

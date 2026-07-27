@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight, Loader2, MessageSquareMore, Package, ShieldAlert, User } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Loader2, MessageSquareMore, ShieldAlert, User } from 'lucide-vue-next'
 import {
   createEmptyReviewPage,
   getMarketProductDetail,
@@ -15,6 +15,7 @@ import { useCartStore } from '@/stores/cart'
 import FavoriteToggleButton from '@/pages/market/components/FavoriteToggleButton.vue'
 import ProductImageGallery from '@/pages/market/components/ProductImageGallery.vue'
 import ProductReviewList from '@/pages/market/components/ProductReviewList.vue'
+import MarketplaceProductCard, { type CommerceProductCardData } from '@/pages/market/components/MarketplaceProductCard.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { readCurrentUser } from '@/utils/request'
 import {
@@ -66,6 +67,16 @@ const sellerProfileError = ref('')
 const otherProductsPage = ref<SellerShopProductPage>(createEmptyShopProductPage())
 const otherProductsLoading = ref(false)
 const otherProductsError = ref('')
+
+function toCommerceProduct(item: SellerShopProductPage['list'][number]): CommerceProductCardData {
+  return {
+    id: item.productId,
+    title: item.title,
+    coverUrl: item.coverUrl,
+    price: item.price,
+    categoryName: item.categoryName,
+  }
+}
 
 /**
  * 加入购物车按钮可用性：
@@ -574,24 +585,13 @@ watch(productId, () => {
             </div>
           </div>
           <div class="section-body">
-            <div class="grid gap-3 grid-cols-2 md:grid-cols-3">
-              <router-link
+            <div class="market-product-grid market-product-grid-compact">
+              <MarketplaceProductCard
                 v-for="(item, idx) in otherProductsPage.list"
                 :key="item.productId ?? `other-${idx}`"
-                :to="item.productId !== null ? `/market/${item.productId}` : ''"
-                class="block rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-sm transition-shadow"
-              >
-                <div class="aspect-square bg-gray-50 overflow-hidden">
-                  <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover" loading="lazy" />
-                  <div v-else class="h-full w-full flex items-center justify-center bg-gray-100">
-                    <Package class="h-6 w-6 text-gray-400" aria-hidden="true" />
-                  </div>
-                </div>
-                <div class="p-2.5">
-                  <p class="text-[13px] font-semibold text-gray-900 line-clamp-2 break-words leading-snug">{{ item.title }}</p>
-                  <p class="mt-1 text-[15px] font-bold text-gray-950 font-numeric">¥ {{ item.price.toFixed(2) }}</p>
-                </div>
-              </router-link>
+                :product="toCommerceProduct(item)"
+                variant="compact"
+              />
             </div>
           </div>
         </section>

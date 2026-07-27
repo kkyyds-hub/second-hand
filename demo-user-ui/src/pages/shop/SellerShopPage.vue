@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import {
   ChevronLeft,
   ChevronRight,
-  Clock,
   Loader2,
   Package,
   PackagePlus,
@@ -22,6 +21,7 @@ import {
   type SellerShopProductPage,
   type SellerShopProfile,
 } from '@/api/sellerShop'
+import MarketplaceProductCard, { type CommerceProductCardData } from '@/pages/market/components/MarketplaceProductCard.vue'
 
 const route = useRoute()
 
@@ -55,6 +55,16 @@ const hasNextPage = computed(() => currentPage.value < totalPages.value)
 const tabOnSaleLabel = computed(() => `正在出售 ${profile.value.onSaleCount}`)
 const tabSoldLabel = computed(() => `已经售出 ${profile.value.soldCount}`)
 const isRetrying = ref(false)
+
+function toCommerceProduct(item: SellerShopProductPage['list'][number]): CommerceProductCardData {
+  return {
+    id: item.productId,
+    title: item.title,
+    coverUrl: item.coverUrl,
+    price: item.price,
+    categoryName: item.categoryName,
+  }
+}
 
 const displayStats = computed(() => {
   const formatDate = (dateStr: string | null) => {
@@ -358,64 +368,13 @@ onBeforeUnmount(() => { ++shopRequestSequence; ++productRequestSequence })
 
       <!-- Product grid -->
       <section v-else class="mt-4">
-        <div class="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          <article
+        <div class="market-product-grid">
+          <MarketplaceProductCard
             v-for="(item, idx) in productsPage.list"
             :key="item.productId ?? `prod-${idx}`"
-            class="shop-product-card"
-          >
-            <router-link
-              v-if="item.productId !== null && activeTab === 'on_sale'"
-              :to="`/market/${item.productId}`"
-              class="block"
-            >
-              <div class="shop-product-image">
-                <img
-                  v-if="item.coverUrl"
-                  :src="item.coverUrl"
-                  :alt="item.title"
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                <div v-else class="h-full w-full flex items-center justify-center bg-gray-100">
-                  <Package class="h-8 w-8 text-gray-400" aria-hidden="true" />
-                </div>
-              </div>
-              <div class="shop-product-body">
-                <h3 class="shop-product-title">{{ item.title }}</h3>
-                <p class="shop-product-price">¥ {{ item.price.toFixed(2) }}</p>
-                <div class="shop-product-meta">
-                  <span>{{ item.categoryName || '未分类' }}</span>
-                  <span v-if="item.createTime" class="text-gray-400">
-                    <Clock class="inline h-3 w-3 mr-0.5" aria-hidden="true" />{{ item.createTime.slice(0, 10) }}
-                  </span>
-                </div>
-              </div>
-            </router-link>
-            <!-- Sold card: non-clickable -->
-            <div v-else class="block">
-              <div class="shop-product-image relative">
-                <img
-                  v-if="item.coverUrl"
-                  :src="item.coverUrl"
-                  :alt="item.title"
-                  class="h-full w-full object-cover opacity-75"
-                  loading="lazy"
-                />
-                <div v-else class="h-full w-full flex items-center justify-center bg-gray-100">
-                  <Package class="h-8 w-8 text-gray-400" aria-hidden="true" />
-                </div>
-                <span v-if="activeTab === 'sold'" class="absolute top-2 right-2 chip chip-neutral text-[11px] bg-white/90">已售出</span>
-              </div>
-              <div class="shop-product-body">
-                <h3 class="shop-product-title">{{ item.title }}</h3>
-                <p class="shop-product-price text-gray-400">¥ {{ item.price.toFixed(2) }}</p>
-                <div class="shop-product-meta">
-                  <span>{{ item.categoryName || '未分类' }}</span>
-                </div>
-              </div>
-            </div>
-          </article>
+            :product="toCommerceProduct(item)"
+            :variant="activeTab === 'sold' ? 'sold' : 'standard'"
+          />
         </div>
 
         <!-- Pagination -->
@@ -477,55 +436,4 @@ onBeforeUnmount(() => { ++shopRequestSequence; ++productRequestSequence })
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* Product card */
-.shop-product-card {
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.75rem;
-  background: white;
-  overflow: hidden;
-  transition: box-shadow 0.15s;
-}
-.shop-product-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.shop-product-image {
-  aspect-ratio: 1 / 1;
-  background: rgb(249 250 251);
-  overflow: hidden;
-}
-
-.shop-product-body {
-  padding: 0.75rem;
-}
-
-.shop-product-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgb(17 24 39);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-word;
-}
-
-.shop-product-price {
-  margin-top: 0.5rem;
-  font-size: 18px;
-  font-weight: 700;
-  color: rgb(17 24 39);
-  font-variant-numeric: tabular-nums;
-}
-
-.shop-product-meta {
-  margin-top: 0.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 12px;
-  color: rgb(107 114 128);
-}
 </style>

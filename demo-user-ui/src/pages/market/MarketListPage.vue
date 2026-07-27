@@ -414,6 +414,7 @@ watch(
           :favorited="product.id !== null ? Boolean(favoriteMap[product.id]) : false"
           :favorite-loading="product.id !== null && submittingFavoriteId === product.id"
           :show-favorite="true"
+          variant="standard"
           @toggle-favorite="handleToggleFavorite(product)"
         />
       </div>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { ArrowRight, Box, CirclePlus, Heart, RefreshCw, Search, ShoppingBag } from 'lucide-vue-next'
+import { ArrowRight, Box, CirclePlus, Heart, PackageSearch, RefreshCw, Search, ShoppingBag, Store } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import homeHeroImage from '@/assets/commerce/home-hero.webp'
 import { createEmptyProductPage, getMarketProductList } from '@/api/market'
 import MarketplaceProductCard from '@/pages/market/components/MarketplaceProductCard.vue'
 import { isSellerUser, readCurrentUser } from '@/utils/request'
@@ -13,6 +14,7 @@ const loading = ref(false)
 const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
 const searchKeyword = ref('')
+const heroImageFailed = ref(false)
 const pageData = ref(createEmptyProductPage())
 let isActive = true
 
@@ -62,6 +64,14 @@ onBeforeUnmount(() => {
 <template>
   <div class="page-body home-page">
     <section class="home-hero">
+      <img
+        v-if="!heroImageFailed"
+        :src="homeHeroImage"
+        alt="相机、耳机和生活好物组成的闲置市集场景"
+        class="home-hero-image"
+        @error="heroImageFailed = true"
+      />
+      <div v-else class="home-hero-art" aria-hidden="true"></div>
       <div class="home-hero-content">
         <div class="home-hero-copy">
           <p class="page-kicker">二手市场</p>
@@ -94,6 +104,25 @@ onBeforeUnmount(() => {
         <button class="btn-primary home-search-button" type="submit">搜索商品</button>
       </form>
     </section>
+
+    <nav class="home-quick-links" :class="{ 'home-quick-links-seller': sellerEnabled }" aria-label="常用入口">
+      <router-link class="home-quick-link" to="/market">
+        <Store class="h-5 w-5" />
+        <span>逛市场</span>
+      </router-link>
+      <router-link class="home-quick-link" to="/favorites">
+        <Heart class="h-5 w-5" />
+        <span>我的收藏</span>
+      </router-link>
+      <router-link class="home-quick-link" to="/orders/buyer">
+        <PackageSearch class="h-5 w-5" />
+        <span>我的订单</span>
+      </router-link>
+      <router-link v-if="sellerEnabled" class="home-quick-link" to="/seller">
+        <CirclePlus class="h-5 w-5" />
+        <span>卖家中心</span>
+      </router-link>
+    </nav>
 
     <section class="home-products-section" aria-labelledby="home-products-heading">
       <div class="home-section-heading">
@@ -143,23 +172,27 @@ onBeforeUnmount(() => {
       </section>
 
       <div v-else class="market-product-grid">
-        <MarketplaceProductCard v-for="product in pageData.list" :key="product.id ?? product.title" :product="product" />
+        <MarketplaceProductCard v-for="product in pageData.list" :key="product.id ?? product.title" :product="product" variant="standard" />
       </div>
     </section>
 
-    <nav class="home-quick-links" aria-label="常用入口">
-      <router-link class="home-quick-link" to="/favorites">
-        <Heart class="h-5 w-5" />
-        <span>我的收藏</span>
+    <section class="home-trust-grid" aria-label="平台能力">
+      <div class="home-trust-item"><strong>浏览与搜索</strong><span>按关键词和价格筛选在售商品。</span></div>
+      <div class="home-trust-item"><strong>收藏与购物车</strong><span>把关注的商品留在当前账户中。</span></div>
+      <div class="home-trust-item"><strong>订单与评价</strong><span>在订单和商品详情中查看实际进度。</span></div>
+      <div class="home-trust-item"><strong>卖家发布</strong><span>卖家账户可管理并发布自己的闲置。</span></div>
+    </section>
+
+    <section v-if="sellerEnabled" class="home-seller-callout">
+      <div>
+        <p class="page-kicker">卖家服务</p>
+        <h2 class="section-heading">让闲置继续被使用</h2>
+        <p class="section-subtitle">卖家可在个人中心管理商品，并发布自己的闲置。</p>
+      </div>
+      <router-link class="btn-primary" to="/seller/products/new">
+        <CirclePlus class="h-4 w-4" />
+        <span>发布闲置</span>
       </router-link>
-      <router-link class="home-quick-link" to="/orders/buyer">
-        <ShoppingBag class="h-5 w-5" />
-        <span>我的订单</span>
-      </router-link>
-      <router-link v-if="sellerEnabled" class="home-quick-link" to="/seller">
-        <CirclePlus class="h-5 w-5" />
-        <span>卖家中心</span>
-      </router-link>
-    </nav>
+    </section>
   </div>
 </template>
