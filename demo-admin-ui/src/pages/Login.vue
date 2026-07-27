@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ShieldCheck, Activity, Users, Lock, Loader2 } from 'lucide-vue-next'
 import { login } from '@/api/auth'
-import { saveAdminToken } from '@/utils/request'
+import { saveAdminToken, saveAdminUser } from '@/utils/request'
 
 const router = useRouter()
 
@@ -43,6 +43,7 @@ const handleLogin = async () => {
     if (res && res.token) {
       // 复用 request.ts 中的 token 存储逻辑
       saveAdminToken(res.token)
+      saveAdminUser(res.user)
       // 跳转到首页
       router.push('/')
     } else {
@@ -88,7 +89,7 @@ const handleLogin = async () => {
           </h1>
           
           <p class="text-[13px] text-gray-500 mb-12 leading-relaxed">
-            为平台运营人员提供全链路的数据监控、用户管理、商品审核与风控仲裁能力，保障平台生态健康运转。
+            提供账号与用户治理、商品审核、订单治理、纠纷处理和运行任务的业务入口。
           </p>
 
           <!-- 系统能力说明 -->
@@ -98,8 +99,8 @@ const handleLogin = async () => {
                 <Activity class="w-4 h-4" />
               </div>
               <div>
-                <h3 class="text-[14px] text-gray-900 font-medium mb-1">实时大盘监控</h3>
-                <p class="text-[13px] text-gray-500">核心业务指标秒级更新，异常波动智能预警</p>
+                <h3 class="text-[14px] text-gray-900 font-medium mb-1">实时快照</h3>
+                <p class="text-[13px] text-gray-500">数据以工作台当前请求结果为准</p>
               </div>
             </div>
             <div class="flex items-start space-x-4">
@@ -107,8 +108,8 @@ const handleLogin = async () => {
                 <ShieldCheck class="w-4 h-4" />
               </div>
               <div>
-                <h3 class="text-[14px] text-gray-900 font-medium mb-1">智能风控拦截</h3>
-                <p class="text-[13px] text-gray-500">多维度安全策略，自动识别并阻断高危交易</p>
+                <h3 class="text-[14px] text-gray-900 font-medium mb-1">纠纷与违规处理</h3>
+                <p class="text-[13px] text-gray-500">提供当前工单的查看与处理入口</p>
               </div>
             </div>
             <div class="flex items-start space-x-4">
@@ -116,8 +117,8 @@ const handleLogin = async () => {
                 <Users class="w-4 h-4" />
               </div>
               <div>
-                <h3 class="text-[14px] text-gray-900 font-medium mb-1">全景用户画像</h3>
-                <p class="text-[13px] text-gray-500">深度洞察用户行为，精准定位违规账号</p>
+                <h3 class="text-[14px] text-gray-900 font-medium mb-1">用户与商家治理</h3>
+                <p class="text-[13px] text-gray-500">提供用户资料、信用与账号操作入口</p>
               </div>
             </div>
           </div>

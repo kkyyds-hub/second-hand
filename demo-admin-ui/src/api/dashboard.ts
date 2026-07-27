@@ -1,6 +1,4 @@
 import request from '../utils/request'
-import { isMockEnabled } from '@/mock/config'
-import { mockFetchDashboardData } from '@/mock/dashboard'
 import { getAuditOverview, type AuditTicketItem } from '@/api/audit'
 
 /**
@@ -146,10 +144,6 @@ const normalizeDashboardData = (overview: DashboardDataPayload): DashboardData =
  * 而是改成直接请求后端聚合好的总览接口。
  */
 export async function fetchDashboardData(date?: string): Promise<DashboardData> {
-  if (isMockEnabled()) {
-    return normalizeDashboardData(await mockFetchDashboardData())
-  }
-
   const overview = normalizeDashboardData(await (request({
     url: '/admin/dashboard/overview',
     method: 'get',

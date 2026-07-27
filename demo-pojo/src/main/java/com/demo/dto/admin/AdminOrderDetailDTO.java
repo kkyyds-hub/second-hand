@@ -24,9 +24,11 @@ public class AdminOrderDetailDTO {
     private Long buyerId;
     private String buyerNickname;
     private String buyerMobile;
+    private Boolean buyerDeleted;
     private Long sellerId;
     private String sellerNickname;
     private String sellerMobile;
+    private Boolean sellerDeleted;
     private String shippingAddress;
     private String shippingCompany;
     private String trackingNo;

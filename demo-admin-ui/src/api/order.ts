@@ -9,9 +9,11 @@ export interface AdminOrderItem {
   buyerId: number
   buyerNickname: string
   buyerMobile: string
+  buyerDeleted?: boolean
   sellerId: number
   sellerNickname: string
   sellerMobile: string
+  sellerDeleted?: boolean
   productId: number | null
   productTitle: string | null
   productThumbnail: string | null

@@ -268,10 +268,10 @@ const getStatusBadgeClass = (status: string) => {
           <div class="flex flex-wrap items-center gap-4 text-[12px] text-gray-500">
             <span class="flex items-center gap-1.5">
               <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
-              当前处理节奏稳定
+              处理建议：高风险工单优先
             </span>
             <span class="h-3 w-px bg-gray-300"></span>
-            <span>当前焦点：高风险举报与平台强介入纠纷</span>
+            <span>操作说明：按风险等级和工单状态筛选</span>
             <span class="h-3 w-px bg-gray-300"></span>
             <span>处置节奏：高风险优先，普通工单顺序推进</span>
           </div>
@@ -279,7 +279,7 @@ const getStatusBadgeClass = (status: string) => {
 
         <div class="flex flex-wrap items-center gap-3">
           <div class="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-[12px] text-rose-700">
-            今日重点：优先闭环高风险工单，避免处理超时
+            处理建议：优先跟进高风险工单
           </div>
           <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[12px] text-gray-600">
             信息汇总：平台纠纷与风险概览

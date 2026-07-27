@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Users, ShoppingBag, ReceiptText, ShieldAlert, Settings, Bell, ChevronDown, Menu, Search, HelpCircle, LogOut, Wrench } from 'lucide-vue-next'
-import { clearAdminToken } from '@/utils/request'
+import { LayoutDashboard, Users, ShoppingBag, ReceiptText, ShieldAlert, Settings, ChevronDown, Menu, LogOut, Wrench } from 'lucide-vue-next'
+import { clearAdminToken, readAdminUser } from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapsed = ref(false)
 const userMenuOpen = ref(false)
+const adminUser = readAdminUser()
+const adminName = computed(() => adminUser?.nickname || adminUser?.name || adminUser?.username || '管理员')
+const adminSubtitle = computed(() => adminUser?.email || adminUser?.username || '已登录')
+const adminInitial = computed(() => adminName.value.trim().charAt(0).toUpperCase() || '管')
 
 /**
  * 侧边导航尽量配置化，后续 review 菜单结构时优先看这里：
@@ -144,7 +148,7 @@ const quickLogout = () => {
           <!-- Line 1: Environment -->
           <div class="flex items-center gap-2 text-[11px] text-gray-500">
             <span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
-            <span class="font-medium tracking-wide">Production · Real API</span>
+            <span class="font-medium tracking-wide">运营管理后台</span>
           </div>
           
           <!-- Line 2: Workspace Context -->
@@ -156,13 +160,13 @@ const quickLogout = () => {
           <!-- Line 3: Status -->
           <div class="flex items-center gap-2 text-[11px] text-gray-500">
             <span class="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded border border-gray-200/80 leading-none shrink-0">状态</span>
-            <span class="truncate">核心链路正常</span>
+            <span class="truncate">接口状态以当前页面为准</span>
           </div>
         </div>
         
         <!-- Collapsed State: Minimal Visual Hint -->
         <div v-else class="flex flex-col items-center justify-center h-full">
-          <div class="w-2 h-2 rounded-full bg-green-500" title="Production · 核心链路正常"></div>
+          <div class="w-2 h-2 rounded-full bg-gray-400" title="运营管理后台"></div>
         </div>
       </div>
     </aside>
@@ -176,45 +180,17 @@ const quickLogout = () => {
             <Menu class="w-[18px] h-[18px]" />
           </button>
           
-          <!-- Search Bar & Quick Status -->
-          <div class="hidden md:flex items-center bg-white border border-gray-200/80 rounded-lg px-3 py-1.5 w-80 focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-900/5 transition-all shadow-sm">
-            <Search class="w-4 h-4 text-gray-400 mr-2 shrink-0" />
-            <input type="text" placeholder="搜索..." class="bg-transparent border-none outline-none text-[13px] w-full text-gray-700 placeholder-gray-400">
-            <div class="flex items-center gap-1 ml-2">
-              <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-sans font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded">⌘</kbd>
-              <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-sans font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded">K</kbd>
-            </div>
-          </div>
-          
-          <div class="hidden lg:flex items-center space-x-5 text-[12px] font-medium text-gray-500 ml-4 px-4 border-l border-gray-200/80">
-            <div class="flex items-center gap-1.5 cursor-pointer hover:text-gray-800 transition-colors">
-              <span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span> 待审 <span class="font-numeric text-gray-700">182</span>
-            </div>
-            <div class="flex items-center gap-1.5 cursor-pointer hover:text-gray-800 transition-colors">
-              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> 纠纷 <span class="font-numeric text-gray-700">12</span>
-            </div>
-          </div>
         </div>
         
         <div class="flex items-center space-x-3">
-          <button class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100">
-            <HelpCircle class="w-[18px] h-[18px]" />
-          </button>
-          <button class="relative text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100">
-            <Bell class="w-[18px] h-[18px]" />
-            <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
-          </button>
-          
-          <div class="w-px h-4 bg-gray-200 mx-1"></div>
-          
           <!-- User Dropdown -->
           <div class="relative" @click.stop>
             <button
               class="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded-lg transition-colors"
               @click="userMenuOpen = !userMenuOpen"
             >
-              <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" class="w-6 h-6 rounded-full bg-gray-200 border border-gray-200" />
-              <span class="text-[13px] text-gray-700 font-medium hidden sm:block">Admin</span>
+              <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-[11px] font-semibold text-gray-700">{{ adminInitial }}</span>
+              <span class="text-[13px] text-gray-700 font-medium hidden sm:block">{{ adminName }}</span>
               <ChevronDown class="w-3.5 h-3.5 text-gray-400 hidden sm:block" />
             </button>
 
@@ -224,8 +200,8 @@ const quickLogout = () => {
                 class="absolute right-0 mt-2 w-48 rounded-xl border border-gray-200/80 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] py-1.5 z-[60]"
               >
                 <div class="px-3 py-2 border-b border-gray-100 mb-1">
-                  <p class="text-[13px] font-medium text-gray-900">Admin User</p>
-                  <p class="text-[11px] text-gray-500 truncate">admin@kkplatform.com</p>
+                  <p class="text-[13px] font-medium text-gray-900">{{ adminName }}</p>
+                  <p class="text-[11px] text-gray-500 truncate">{{ adminSubtitle }}</p>
                 </div>
                 <button
                   class="w-full text-left px-3 py-1.5 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"

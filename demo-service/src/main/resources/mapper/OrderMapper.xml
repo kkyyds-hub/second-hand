@@ -192,11 +192,13 @@
             o.id            AS orderId,
             o.order_no      AS orderNo,
             o.buyer_id      AS buyerId,
-            bu.nickname     AS buyerNickname,
-            bu.mobile       AS buyerMobile,
+            CASE WHEN bu.is_deleted = 0 THEN bu.nickname ELSE NULL END AS buyerNickname,
+            CASE WHEN bu.is_deleted = 0 THEN bu.mobile ELSE NULL END AS buyerMobile,
+            CASE WHEN bu.id IS NULL THEN 0 ELSE bu.is_deleted END AS buyerDeleted,
             o.seller_id     AS sellerId,
-            su.nickname     AS sellerNickname,
-            su.mobile       AS sellerMobile,
+            CASE WHEN su.is_deleted = 0 THEN su.nickname ELSE NULL END AS sellerNickname,
+            CASE WHEN su.is_deleted = 0 THEN su.mobile ELSE NULL END AS sellerMobile,
+            CASE WHEN su.id IS NULL THEN 0 ELSE su.is_deleted END AS sellerDeleted,
             (SELECT oi.product_id FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS productId,
             (SELECT p.title FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS productTitle,
             (SELECT SUBSTRING_INDEX(p.images, ',', 1) FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1) AS productThumbnail,
@@ -212,8 +214,8 @@
             o.cancel_time   AS cancelTime,
             o.cancel_reason AS cancelReason
         FROM orders o
-        JOIN users bu ON bu.id = o.buyer_id AND bu.is_deleted = 0
-        JOIN users su ON su.id = o.seller_id AND su.is_deleted = 0
+        LEFT JOIN users bu ON bu.id = o.buyer_id
+        LEFT JOIN users su ON su.id = o.seller_id
         WHERE 1=1
         <if test="query.status != null and query.status != ''">
             AND o.status = #{query.status}
@@ -227,10 +229,14 @@
         <if test="query.keyword != null and query.keyword != ''">
             AND (
                 o.order_no LIKE CONCAT('%', #{query.keyword}, '%')
-                OR bu.nickname LIKE CONCAT('%', #{query.keyword}, '%')
-                OR bu.mobile LIKE CONCAT('%', #{query.keyword}, '%')
-                OR su.nickname LIKE CONCAT('%', #{query.keyword}, '%')
-                OR su.mobile LIKE CONCAT('%', #{query.keyword}, '%')
+                OR (bu.is_deleted = 0 AND (
+                    bu.nickname LIKE CONCAT('%', #{query.keyword}, '%')
+                    OR bu.mobile LIKE CONCAT('%', #{query.keyword}, '%')
+                ))
+                OR (su.is_deleted = 0 AND (
+                    su.nickname LIKE CONCAT('%', #{query.keyword}, '%')
+                    OR su.mobile LIKE CONCAT('%', #{query.keyword}, '%')
+                ))
                 OR EXISTS (
                     SELECT 1 FROM order_items oi
                     JOIN products p ON p.id = oi.product_id
@@ -275,11 +281,13 @@
             o.cancel_time AS cancelTime,
             o.cancel_reason AS cancelReason,
             o.buyer_id AS buyerId,
-            bu.nickname AS buyerNickname,
-            bu.mobile AS buyerMobile,
+            CASE WHEN bu.is_deleted = 0 THEN bu.nickname ELSE NULL END AS buyerNickname,
+            CASE WHEN bu.is_deleted = 0 THEN bu.mobile ELSE NULL END AS buyerMobile,
+            CASE WHEN bu.id IS NULL THEN 0 ELSE bu.is_deleted END AS buyerDeleted,
             o.seller_id AS sellerId,
-            su.nickname AS sellerNickname,
-            su.mobile AS sellerMobile,
+            CASE WHEN su.is_deleted = 0 THEN su.nickname ELSE NULL END AS sellerNickname,
+            CASE WHEN su.is_deleted = 0 THEN su.mobile ELSE NULL END AS sellerMobile,
+            CASE WHEN su.id IS NULL THEN 0 ELSE su.is_deleted END AS sellerDeleted,
             o.shipping_address AS shippingAddress,
             o.shipping_company AS shippingCompany,
             o.tracking_no AS trackingNo,
@@ -289,8 +297,8 @@
             af.reason AS afterSaleReason,
             af.platform_remark AS afterSalePlatformRemark
         FROM orders o
-        JOIN users bu ON bu.id = o.buyer_id AND bu.is_deleted = 0
-        JOIN users su ON su.id = o.seller_id AND su.is_deleted = 0
+        LEFT JOIN users bu ON bu.id = o.buyer_id
+        LEFT JOIN users su ON su.id = o.seller_id
         LEFT JOIN after_sales af ON af.order_id = o.id
         WHERE o.id = #{orderId}
         LIMIT 1

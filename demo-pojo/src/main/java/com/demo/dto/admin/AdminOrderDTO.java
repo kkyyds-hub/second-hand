@@ -20,10 +20,14 @@ public class AdminOrderDTO {
     private Long buyerId;
     private String buyerNickname;
     private String buyerMobile;
+    /** 买家是否已软删除。 */
+    private Boolean buyerDeleted;
     /** 卖家用户 ID。 */
     private Long sellerId;
     private String sellerNickname;
     private String sellerMobile;
+    /** 卖家是否已软删除。 */
+    private Boolean sellerDeleted;
 
     private Long productId;
     private String productTitle;

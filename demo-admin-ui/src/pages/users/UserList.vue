@@ -77,6 +77,7 @@ const totalPages = computed(() => {
   const pages = Math.ceil(totalCount.value / pageSize.value)
   return Math.max(1, pages || 1)
 })
+const currentPageWarningCount = computed(() => users.value.filter((user) => user.status === '预警').length)
 
 const pageNumbers = computed(() => {
   const total = totalPages.value
@@ -344,7 +345,7 @@ const getRoleBadgeClass = (role: string) => {
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 text-[12px] text-orange-700 bg-orange-50 px-3 py-1.5 rounded-md border border-orange-100 mr-2">
             <AlertTriangle class="w-3.5 h-3.5" />
-            <span>预警账户: <span class="font-numeric font-bold">14</span></span>
+            <span>当前页预警: <span class="font-numeric font-bold">{{ currentPageWarningCount }}</span></span>
           </div>
           <button @click="handleExport" class="btn-default gap-2 text-[13px] py-2 px-4">导出明细</button>
           <button @click="isModalOpen = true" class="btn-primary gap-2 text-[13px] py-2 px-4">
@@ -389,7 +390,7 @@ const getRoleBadgeClass = (role: string) => {
       <div class="filter-actions">
         <span class="status-chip status-chip-warning hidden sm:inline-flex">
           <AlertTriangle class="h-3.5 w-3.5" />
-          重点关注 14 个预警账号
+          当前页预警 {{ currentPageWarningCount }} 个
         </span>
         <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2 text-[12px] text-gray-500">
           <Filter class="h-3.5 w-3.5 text-gray-400" />

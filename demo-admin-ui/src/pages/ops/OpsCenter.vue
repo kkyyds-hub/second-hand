@@ -107,11 +107,11 @@ const runtimeStatusText = computed(() => {
   if (runtimeUnavailableSources.value.length > 0) {
     return hasAnyRuntimeSuccess.value
       ? `运行概览待补齐 ${formatCount(runtimeUnavailableSources.value.length)} 项`
-      : '运行概览待刷新'
+      : '运行概览暂未同步'
   }
   if (runtimeSnapshot.value.outboxFail > 0) return `失败消息 ${formatCount(runtimeSnapshot.value.outboxFail)} 条待处理`
   if (pendingWorkTotal.value > 0) return `当前待处理 ${formatCount(pendingWorkTotal.value)} 项`
-  return '当前运行平稳'
+  return '运行概览已同步'
 })
 
 const priorityFocus = computed(() => {
@@ -127,8 +127,8 @@ const priorityFocus = computed(() => {
 
 const runtimeSyncBadgeText = computed(() => {
   if (runtimeLoading.value) return '同步中'
-  if (runtimeUnavailableSources.value.length > 0) return hasAnyRuntimeSuccess.value ? '部分同步' : '待刷新'
-  return '已刷新'
+  if (runtimeUnavailableSources.value.length > 0) return hasAnyRuntimeSuccess.value ? '部分同步' : '暂未同步'
+  return '已同步'
 })
 
 const runtimeErrorTone = computed(() =>
@@ -139,7 +139,7 @@ const runtimeErrorTitle = computed(() => runtimeNotice.value?.title || '运行�
 const runtimeErrorMessage = computed(() => runtimeNotice.value?.message || '')
 
 const topViolationText = computed(() =>
-  isRuntimeSourceAvailable('violationStatistics') ? runtimeSnapshot.value.topViolationType : '待刷新',
+  isRuntimeSourceAvailable('violationStatistics') ? runtimeSnapshot.value.topViolationType : '暂未同步',
 )
 
 const topViolationCountText = computed(() =>
@@ -156,15 +156,15 @@ const overviewCards = computed(() => [
     label: '发货超时任务',
     value: formatRuntimeMetric(runtimeSnapshot.value.shipTimeoutTotal, 'shipTimeoutTasks'),
     hint: !isRuntimeSourceAvailable('shipTimeoutTasks')
-      ? '运行概览待刷新'
+      ? '运行概览暂未同步'
       : runtimeSnapshot.value.shipTimeoutTotal > 0
         ? '建议优先处理积压订单'
         : '当前暂无积压',
     statusLabel: !isRuntimeSourceAvailable('shipTimeoutTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.shipTimeoutTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('shipTimeoutTasks')
         ? 'status-chip-neutral'
@@ -181,15 +181,15 @@ const overviewCards = computed(() => [
     label: '退款任务',
     value: formatRuntimeMetric(runtimeSnapshot.value.refundTotal, 'refundTasks'),
     hint: !isRuntimeSourceAvailable('refundTasks')
-      ? '运行概览待刷新'
+      ? '运行概览暂未同步'
       : runtimeSnapshot.value.refundTotal > 0
         ? '建议尽快跟进售后队列'
         : '当前暂无退款积压',
     statusLabel: !isRuntimeSourceAvailable('refundTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.refundTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('refundTasks')
         ? 'status-chip-neutral'
@@ -206,15 +206,15 @@ const overviewCards = computed(() => [
     label: '发货提醒任务',
     value: formatRuntimeMetric(runtimeSnapshot.value.shipReminderTotal, 'shipReminderTasks'),
     hint: !isRuntimeSourceAvailable('shipReminderTasks')
-      ? '运行概览待刷新'
+      ? '运行概览暂未同步'
       : runtimeSnapshot.value.shipReminderTotal > 0
         ? '提醒队列待继续触达'
         : '当前提醒队列空闲',
     statusLabel: !isRuntimeSourceAvailable('shipReminderTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.shipReminderTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('shipReminderTasks')
         ? 'status-chip-neutral'
@@ -231,15 +231,15 @@ const overviewCards = computed(() => [
     label: '消息已发送',
     value: formatRuntimeMetric(runtimeSnapshot.value.outboxSent, 'outboxMetrics'),
     hint: !isRuntimeSourceAvailable('outboxMetrics')
-      ? '运行概览待刷新'
+      ? '运行概览暂未同步'
       : runtimeSnapshot.value.outboxSent > 0
         ? '消息链路持续输出中'
         : '等待新的发送结果',
     statusLabel: !isRuntimeSourceAvailable('outboxMetrics')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.outboxSent > 0
         ? '已输出'
-        : '空闲',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('outboxMetrics')
         ? 'status-chip-neutral'
@@ -265,18 +265,18 @@ const opsActionCards = computed(() => [
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.outboxNew, 'outboxMetrics'),
     metaText:
       !isRuntimeSourceAvailable('outboxMetrics')
-        ? '运行概览待刷新，执行前请先确认当前消息状态'
+        ? '运行概览暂未同步，执行前请先确认当前消息状态'
         : runtimeSnapshot.value.outboxFail > 0
         ? `失败消息 ${formatCount(runtimeSnapshot.value.outboxFail)} 条，建议优先处理`
-        : '当前消息链路稳定，可按需执行补发',
+        : '当前没有待发送或失败消息，可按需执行补发',
     accentClass: 'border-blue-200 bg-blue-50/80 text-blue-700',
     statusLabel: !isRuntimeSourceAvailable('outboxMetrics')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.outboxFail > 0
         ? '优先关注'
         : runtimeSnapshot.value.outboxNew > 0
           ? '可执行'
-          : '稳定',
+          : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('outboxMetrics')
         ? 'status-chip-neutral'
@@ -302,16 +302,16 @@ const opsActionCards = computed(() => [
     pendingValue: runtimeSnapshot.value.shipTimeoutTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.shipTimeoutTotal, 'shipTimeoutTasks'),
     metaText: !isRuntimeSourceAvailable('shipTimeoutTasks')
-      ? '运行概览待刷新，执行前请先确认当前任务状态'
+      ? '运行概览暂未同步，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.shipTimeoutTotal > 0
         ? '当前仍有未完成超时任务；run-once 仅会处理本轮到期批次'
         : '当前暂无未完成超时任务',
     accentClass: 'border-orange-200 bg-orange-50/80 text-orange-700',
     statusLabel: !isRuntimeSourceAvailable('shipTimeoutTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.shipTimeoutTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('shipTimeoutTasks')
         ? 'status-chip-neutral'
@@ -336,16 +336,16 @@ const opsActionCards = computed(() => [
     pendingValue: runtimeSnapshot.value.refundTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.refundTotal, 'refundTasks'),
     metaText: !isRuntimeSourceAvailable('refundTasks')
-      ? '运行概览待刷新，执行前请先确认当前任务状态'
+      ? '运行概览暂未同步，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.refundTotal > 0
         ? '当前仍有可执行 / 失败待重试退款任务'
         : '当前退款队列空闲',
     accentClass: 'border-red-200 bg-red-50/80 text-red-700',
     statusLabel: !isRuntimeSourceAvailable('refundTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.refundTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('refundTasks')
         ? 'status-chip-neutral'
@@ -368,16 +368,16 @@ const opsActionCards = computed(() => [
     pendingValue: runtimeSnapshot.value.shipReminderTotal,
     pendingValueText: formatRuntimeMetric(runtimeSnapshot.value.shipReminderTotal, 'shipReminderTasks'),
     metaText: !isRuntimeSourceAvailable('shipReminderTasks')
-      ? '运行概览待刷新，执行前请先确认当前任务状态'
+      ? '运行概览暂未同步，执行前请先确认当前任务状态'
       : runtimeSnapshot.value.shipReminderTotal > 0
         ? '当前仍有未完成提醒任务；run-once 仅会处理本轮到期批次'
         : '当前提醒队列空闲',
     accentClass: 'border-emerald-200 bg-emerald-50/80 text-emerald-700',
     statusLabel: !isRuntimeSourceAvailable('shipReminderTasks')
-      ? '待刷新'
+      ? '暂未同步'
       : runtimeSnapshot.value.shipReminderTotal > 0
         ? '待处理'
-        : '稳定',
+        : '已同步',
     statusClass:
       !isRuntimeSourceAvailable('shipReminderTasks')
         ? 'status-chip-neutral'
@@ -510,7 +510,7 @@ onMounted(() => {
               {{ priorityFocus }}
             </span>
           </div>
-          <p class="text-[14px] text-gray-500">统一查看运行指标并执行一次性运维动作。</p>
+        <p class="text-[14px] text-gray-500">查看当前页面同步到的运行指标，并执行一次性运维动作。</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -617,7 +617,7 @@ onMounted(() => {
             </div>
 
             <div class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <p class="text-[12px] text-gray-400">当前焦点</p>
+              <p class="text-[12px] text-gray-400">处理建议</p>
               <p class="mt-2 text-[14px] font-medium text-white/90">{{ priorityFocus }}</p>
             </div>
           </div>

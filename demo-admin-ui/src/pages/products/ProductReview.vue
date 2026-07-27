@@ -258,14 +258,10 @@ const handleForceOffShelf = async () => {
           </p>
 
           <div class="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-gray-500">
-            <span class="status-chip status-chip-success">当前审核链路正常</span>
-            <span class="flex items-center gap-1.5">
-              <Clock class="h-3.5 w-3.5" />
-              平均审核时效 12 分钟
-            </span>
+            <span class="status-chip" :class="listError ? 'status-chip-warning' : 'status-chip-muted'">{{ listError ? '审核队列暂未同步' : '审核队列已加载' }}</span>
             <span class="flex items-center gap-1.5">
               <ShieldAlert class="h-3.5 w-3.5" />
-              重点关注高价数码、奢品与潮鞋
+              审核提示：高价数码、奢品与潮鞋需要人工复核
             </span>
           </div>
         </div>

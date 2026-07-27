@@ -31,6 +31,7 @@ export interface ApiResult<T> {
  * 用更明确的 key 名更不容易混淆。
  */
 const ADMIN_TOKEN_KEY = 'admin_token'
+const ADMIN_USER_KEY = 'admin_user'
 
 /**
  * 这是为了兼容旧代码保留的 token key 列表。
@@ -87,6 +88,33 @@ export function saveAdminToken(token: string) {
   localStorage.setItem('token', token)
 }
 
+export interface StoredAdminUser {
+  id?: number
+  username?: string
+  nickname?: string
+  name?: string
+  email?: string
+  avatar?: string
+}
+
+export function saveAdminUser(user?: StoredAdminUser | null) {
+  if (!user) {
+    localStorage.removeItem(ADMIN_USER_KEY)
+    return
+  }
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user))
+}
+
+export function readAdminUser(): StoredAdminUser | null {
+  const raw = localStorage.getItem(ADMIN_USER_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as StoredAdminUser
+  } catch {
+    return null
+  }
+}
+
 /**
  * 清空管理端 token。
  *
@@ -102,6 +130,7 @@ export function clearAdminToken() {
   localStorage.removeItem('jwt_token')
   // 删除兼容使用的 key。
   localStorage.removeItem('token')
+  localStorage.removeItem(ADMIN_USER_KEY)
 }
 
 /**
