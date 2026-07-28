@@ -66,20 +66,25 @@ const selectAllCheckboxRef = ref<HTMLInputElement | null>(null)
 
 const currentUserId = computed(() => readCurrentUser()?.id ?? null)
 
-const availableItems = computed(() => items.value.filter((item) => item.available && item.cartItemId !== null))
-const unavailableItems = computed(() => items.value.filter((item) => !item.available))
+function isValidCartItemId(value: number | null): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
+const availableItems = computed(() => items.value.filter((item) => item.available === true && isValidCartItemId(item.cartItemId)))
+const unavailableItems = computed(() => items.value.filter((item) => !item.available || !isValidCartItemId(item.cartItemId)))
 const availableSellerGroups = computed(() => {
-  const groups = new Map<string, { sellerId: number | null; sellerNickname: string; items: CartItem[] }>()
+  const groups = new Map<string, { key: string; sellerId: number | null; sellerNickname: string; items: CartItem[] }>()
   for (const item of availableItems.value) {
     const sellerId = typeof item.sellerId === 'number' && Number.isSafeInteger(item.sellerId) && item.sellerId > 0
       ? item.sellerId
       : null
-    const key = sellerId === null ? `unknown-${item.sellerNickname || 'seller'}` : `seller-${sellerId}`
+    // 无法确认 sellerId 的记录不能只按昵称合并，避免把不同卖家误认成同一分组。
+    const key = sellerId === null ? `unknown-${item.cartItemId}` : `seller-${sellerId}`
     const current = groups.get(key)
     if (current) {
       current.items.push(item)
     } else {
-      groups.set(key, { sellerId, sellerNickname: item.sellerNickname || '未知卖家', items: [item] })
+      groups.set(key, { key, sellerId, sellerNickname: item.sellerNickname || '未知卖家', items: [item] })
     }
   }
   return [...groups.values()]
@@ -228,7 +233,7 @@ async function reloadAll() {
 }
 
 function toggleSelect(cartItemId: number | null, available: boolean) {
-  if (cartItemId === null || !available || interactionLocked.value) return
+  if (!isValidCartItemId(cartItemId) || !available || interactionLocked.value) return
   const index = selectedIds.value.indexOf(cartItemId)
   if (index >= 0) {
     selectedIds.value.splice(index, 1)
@@ -296,7 +301,7 @@ function deleteSelected() {
 }
 
 function clearUnavailable() {
-  const ids = unavailableItems.value.map((item) => item.cartItemId).filter((id): id is number => id !== null)
+  const ids = unavailableItems.value.map((item) => item.cartItemId).filter((id): id is number => isValidCartItemId(id))
   void runBatchDelete(ids)
 }
 
@@ -514,7 +519,7 @@ onMounted(() => {
 
           <p v-if="selectLimitNotice" class="notice-banner notice-banner-warning" role="status">{{ selectLimitNotice }}</p>
 
-          <div v-for="group in availableSellerGroups" :key="group.sellerId ?? group.sellerNickname" class="section-panel overflow-hidden">
+          <div v-for="group in availableSellerGroups" :key="group.key" class="section-panel overflow-hidden">
             <div class="commerce-seller-group-header">
               <div class="min-w-0">
                 <router-link v-if="canLinkSeller(group.sellerId)" :to="`/shop/${group.sellerId}`" class="commerce-seller-link">
