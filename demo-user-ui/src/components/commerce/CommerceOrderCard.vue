@@ -17,13 +17,22 @@ const props = defineProps<{
   createTime: string
   shippingCompany: string
   trackingNo: string
-  detailPath: string | null
-  primaryLabel: string
+  primaryLabel?: string
   primaryPath?: string | null
+  secondaryLabel?: string
+  secondaryPath?: string | null
+  statusText?: string
 }>()
 
 const imageFailed = ref(false)
 const totalAmount = computed(() => props.dealPrice * props.quantity)
+const hasPrimaryAction = computed(() => Boolean(
+  props.primaryLabel
+    && props.primaryPath
+    && props.primaryPath !== props.secondaryPath,
+))
+const hasSecondaryAction = computed(() => Boolean(props.secondaryLabel && props.secondaryPath))
+const hasActions = computed(() => Boolean(props.statusText || hasPrimaryAction.value || hasSecondaryAction.value))
 
 watch(() => props.productThumbnail, () => {
   imageFailed.value = false
@@ -66,10 +75,10 @@ function statusClass() {
         <strong>¥ {{ totalAmount.toFixed(2) }}</strong>
       </div>
     </div>
-    <footer class="commerce-order-card-actions">
-      <router-link v-if="primaryPath" class="btn-primary !h-9 px-3" :to="primaryPath">{{ primaryLabel }}</router-link>
-      <span v-else class="text-[13px] text-stone-500">{{ primaryLabel }}</span>
-      <router-link v-if="detailPath" class="btn-default !h-9 px-3" :to="detailPath">查看详情</router-link>
+    <footer v-if="hasActions" class="commerce-order-card-actions">
+      <span v-if="statusText" class="text-[13px] text-stone-500">{{ statusText }}</span>
+      <router-link v-if="hasPrimaryAction" class="btn-primary !h-9 px-3" :to="primaryPath!">{{ primaryLabel }}</router-link>
+      <router-link v-if="hasSecondaryAction" class="btn-default !h-9 px-3" :to="secondaryPath!">{{ secondaryLabel }}</router-link>
     </footer>
   </article>
 </template>

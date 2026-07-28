@@ -23,6 +23,14 @@ const currentFilterLabel = computed(() => statusOptions.find((item) => item.valu
 
 function readErrorMessage(error: unknown) { return error instanceof Error && error.message.trim() ? error.message : '买家订单列表加载失败，请稍后重试。' }
 function isValidOrderId(value: number | null) { return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 }
+function readOrderActions(item: BuyerOrderSummary) {
+  const detailPath = isValidOrderId(item.orderId) ? `/orders/buyer/${item.orderId}` : null
+  if (!detailPath) return {}
+  if (item.status === 'pending') return { primaryLabel: '去支付', primaryPath: `${detailPath}/pay`, secondaryLabel: '查看详情', secondaryPath: detailPath }
+  if (item.status === 'paid') return { statusText: '等待卖家发货', secondaryLabel: '查看详情', secondaryPath: detailPath }
+  if (item.status === 'shipped') return { primaryLabel: '查看物流与收货', primaryPath: detailPath }
+  return { secondaryLabel: '查看详情', secondaryPath: detailPath }
+}
 function changeStatus(status: string) { if (filters.status !== status) { filters.status = status; pagination.page = 1; void loadList() } }
 async function loadList() {
   if (loading.value) return
@@ -51,7 +59,7 @@ onMounted(() => { void loadList() })
     <section class="mt-6 space-y-4">
       <div v-if="loading && !hasLoadedOnce" class="empty-state section-panel min-h-[320px]"><Loader2 class="empty-state-icon animate-spin text-orange-600" /><p class="empty-state-title">正在加载订单</p></div>
       <div v-else-if="hasEmptyState" class="empty-state section-panel min-h-[360px]"><img v-if="!emptyImageFailed" :src="ordersEmptyImage" alt="暂无订单" class="orders-empty-image" @error="emptyImageFailed = true" /><PackageSearch v-else class="empty-state-icon" /><p class="empty-state-title">{{ filters.status ? '当前状态下暂无订单' : '还没有买家订单' }}</p><p class="empty-state-text">{{ filters.status ? '可以查看全部订单，了解其他交易进度。' : '可以先去市场挑选商品。' }}</p><router-link v-if="!filters.status" class="btn-primary mt-4 inline-flex" to="/market">去逛市场</router-link><button v-else class="btn-default mt-4" type="button" @click="changeStatus('')">查看全部订单</button></div>
-      <template v-else><CommerceOrderCard v-for="item in list" :key="item.orderId ?? item.orderNo" :order-id="item.orderId" :order-no="item.orderNo" :status="item.status" :status-label="item.statusLabel" :product-id="item.productId" :product-title="item.productTitle" :product-thumbnail="item.productThumbnail" counterpart-label="卖家" :counterpart-name="item.sellerNickname" :deal-price="item.dealPrice" :quantity="item.quantity" :create-time="item.createTime" :shipping-company="item.shippingCompany" :tracking-no="item.trackingNo" :detail-path="isValidOrderId(item.orderId) ? `/orders/buyer/${item.orderId}` : null" :primary-label="item.status === 'pending' ? '去支付' : item.status === 'shipped' ? '查看详情' : '查看详情'" :primary-path="item.status === 'pending' && isValidOrderId(item.orderId) ? `/orders/buyer/${item.orderId}/pay` : isValidOrderId(item.orderId) ? `/orders/buyer/${item.orderId}` : null" />
+      <template v-else><CommerceOrderCard v-for="item in list" :key="item.orderId ?? item.orderNo" :order-id="item.orderId" :order-no="item.orderNo" :status="item.status" :status-label="item.statusLabel" :product-id="item.productId" :product-title="item.productTitle" :product-thumbnail="item.productThumbnail" counterpart-label="卖家" :counterpart-name="item.sellerNickname" :deal-price="item.dealPrice" :quantity="item.quantity" :create-time="item.createTime" :shipping-company="item.shippingCompany" :tracking-no="item.trackingNo" v-bind="readOrderActions(item)" />
         <div class="pagination-bar section-panel"><span class="chip chip-neutral font-numeric">第 {{ pagination.page }} / {{ totalPages }} 页</span><div class="flex gap-2"><button class="btn-default !h-9 px-3" type="button" :disabled="pagination.page <= 1 || loading" @click="changePage(pagination.page - 1)"><ChevronLeft class="h-4 w-4" />上一页</button><button class="btn-default !h-9 px-3" type="button" :disabled="pagination.page >= totalPages || loading" @click="changePage(pagination.page + 1)">下一页<ChevronRight class="h-4 w-4" /></button></div></div>
       </template>
     </section>

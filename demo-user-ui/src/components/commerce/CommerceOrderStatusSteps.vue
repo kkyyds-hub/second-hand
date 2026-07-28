@@ -21,6 +21,13 @@ const activeIndex = computed(() => {
 
 const isCancelled = computed(() => props.status === 'cancelled')
 const isUnknown = computed(() => activeIndex.value === -1 && !isCancelled.value)
+type StepState = 'completed' | 'current' | 'upcoming'
+const stepStates = computed<StepState[]>(() => steps.map((_, index) => {
+  if (props.status === 'completed') return 'completed'
+  if (index < activeIndex.value) return 'completed'
+  if (index === activeIndex.value) return 'current'
+  return 'upcoming'
+}))
 </script>
 
 <template>
@@ -31,12 +38,12 @@ const isUnknown = computed(() => activeIndex.value === -1 && !isCancelled.value)
     </template>
     <template v-else>
       <div v-for="(step, index) in steps" :key="step.key" class="order-status-step">
-        <span class="order-status-dot" :class="{ 'order-status-dot-active': index <= activeIndex }">
-          <CircleCheck v-if="index < activeIndex" class="h-4 w-4" aria-hidden="true" />
-          <Clock3 v-else class="h-4 w-4" aria-hidden="true" />
+        <span class="order-status-dot" :class="{ 'order-status-dot-active': stepStates[index] !== 'upcoming' }">
+          <CircleCheck v-if="stepStates[index] === 'completed'" class="h-4 w-4" aria-hidden="true" />
+          <Clock3 v-else-if="stepStates[index] === 'current'" class="h-4 w-4" aria-hidden="true" />
         </span>
-        <span class="order-status-label" :class="{ 'order-status-label-active': index <= activeIndex }">{{ step.label }}</span>
-        <span v-if="index < steps.length - 1" class="order-status-line" :class="{ 'order-status-line-active': index < activeIndex }"></span>
+        <span class="order-status-label" :class="{ 'order-status-label-active': stepStates[index] !== 'upcoming' }">{{ step.label }}</span>
+        <span v-if="index > 0" class="order-status-line" :class="{ 'order-status-line-active': stepStates[index] !== 'upcoming' }"></span>
       </div>
     </template>
   </div>
