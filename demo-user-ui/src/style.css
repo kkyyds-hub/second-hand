@@ -683,60 +683,80 @@
     @apply rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm shadow-gray-200/15 transition-all duration-200 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/25;
   }
 
-  .auth-shell {
-    @apply flex min-h-screen items-center justify-center bg-stone-50 px-4 py-8 sm:px-8;
+  .commerce-auth-shell {
+    @apply flex min-h-screen items-center justify-center px-4 py-5 sm:px-8 sm:py-8;
+    background: var(--commerce-canvas);
   }
 
-  .auth-card {
-    @apply w-full max-w-[468px] rounded-[28px] border border-gray-200/80 bg-white p-6 shadow-xl shadow-gray-200/35 sm:p-10;
+  .commerce-auth-frame {
+    @apply grid w-full max-w-[1120px] overflow-hidden border bg-white shadow-xl;
+    border-color: var(--commerce-border);
+    border-radius: var(--commerce-radius-lg);
+    box-shadow: var(--commerce-shadow-overlay);
   }
 
-  .auth-brand {
-    @apply relative mb-8 flex flex-col items-center text-center;
+  .commerce-auth-visual {
+    @apply relative hidden min-h-[640px] overflow-hidden lg:block;
+    background: #e8ddd0;
   }
 
-  .auth-logo {
-    @apply relative mb-5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 text-[18px] font-bold tracking-tight text-white shadow-md;
+  .commerce-auth-image {
+    @apply absolute inset-0 h-full w-full;
+    object-fit: cover;
   }
 
-  .auth-title {
-    @apply text-[28px] font-bold tracking-tight text-gray-900;
+  .commerce-auth-visual::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(180deg, rgb(37 28 20 / 0.05) 22%, rgb(37 28 20 / 0.62) 100%);
   }
 
-  .auth-desc {
-    @apply mt-2 text-[13px] leading-6 text-gray-500;
+  .commerce-auth-visual-fallback {
+    background: linear-gradient(145deg, #fff4ed 0%, #ead5c0 52%, #cf7355 100%);
   }
 
-  .auth-message {
-    @apply mb-5 flex items-start gap-2 rounded-2xl border px-4 py-3 text-[13px] leading-6;
+  .commerce-auth-visual-content {
+    @apply absolute bottom-0 left-0 z-10 max-w-md p-10 text-white;
   }
 
-  .auth-message-danger {
-    @apply border-red-200 bg-red-50 text-red-700;
+  .commerce-auth-brand-mark {
+    @apply mb-5 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/70 bg-white/90 text-[16px] font-bold;
+    color: var(--commerce-brand-strong);
   }
 
-  .auth-message-success {
-    @apply border-emerald-200 bg-emerald-50 text-emerald-700;
+  .commerce-auth-brand-name { @apply text-[14px] font-semibold; }
+  .commerce-auth-visual-content h2 { @apply mt-2 text-[30px] font-bold; }
+  .commerce-auth-visual-content p:last-child { @apply mt-3 text-[14px] leading-6 text-white/85; }
+
+  .commerce-auth-panel { @apply flex min-h-[640px] items-center justify-center p-6 sm:p-10 lg:p-14; }
+  .commerce-auth-form { @apply w-full max-w-[410px]; }
+  .commerce-auth-heading { @apply mb-7; }
+  .commerce-auth-kicker { @apply text-[13px] font-semibold; color: var(--commerce-brand-strong); }
+  .commerce-auth-heading h1 { @apply mt-2 text-[28px] font-bold text-gray-950; }
+  .commerce-auth-heading > p:last-child { @apply mt-2 text-[13px] leading-6 text-gray-500; }
+  .commerce-auth-fields { @apply space-y-5; }
+  .commerce-auth-message { @apply mb-5 rounded-md border px-4 py-3 text-[13px] leading-6; }
+  .commerce-auth-message-danger { @apply border-red-200 bg-red-50 text-red-700; }
+  .commerce-auth-message-success { @apply border-emerald-200 bg-emerald-50 text-emerald-700; }
+  .commerce-auth-footer { @apply mt-7 border-t pt-5 text-[13px] text-gray-500; border-color: var(--commerce-border); }
+  .commerce-auth-link-group { @apply mt-3 flex flex-wrap items-center gap-x-4 gap-y-2; }
+  .commerce-auth-link-group a, .commerce-auth-link-group button { @apply border-0 bg-transparent p-0 font-medium; color: var(--commerce-brand-strong); }
+  .commerce-auth-link-group a:hover, .commerce-auth-link-group button:hover { color: var(--commerce-brand); text-decoration: underline; }
+  .commerce-auth-textarea { min-height: 132px; resize: vertical; }
+  .commerce-activation-result { @apply grid gap-3 rounded-md border p-4; border-color: var(--commerce-border); background: #fbf9f6; }
+  .commerce-activation-result > div { @apply min-w-0 border-b pb-3 last:border-b-0 last:pb-0; border-color: var(--commerce-border); }
+  .commerce-activation-result p { @apply text-[12px] text-gray-500; }
+  .commerce-activation-result strong { @apply mt-1 block truncate text-[14px] text-gray-900; }
+
+  @media (min-width: 1024px) {
+    .commerce-auth-frame { grid-template-columns: minmax(0, 52%) minmax(0, 48%); }
   }
 
-  .auth-divider {
-    @apply mt-7 border-t border-gray-100 pt-6;
-  }
-
-  .auth-links {
-    @apply flex flex-wrap items-center justify-between gap-3 text-[13px] text-gray-500;
-  }
-
-  .auth-link-group {
-    @apply flex flex-wrap items-center gap-3;
-  }
-
-  .auth-link {
-    @apply font-medium text-gray-900 transition-colors hover:text-blue-700;
-  }
-
-  .auth-note {
-    @apply mt-7 rounded-2xl border border-gray-200/80 bg-gray-50/80 p-4 text-[12px] leading-6 text-gray-600;
+  @media (max-width: 639px) {
+    .commerce-auth-shell { align-items: flex-start; }
+    .commerce-auth-frame { min-height: 0; }
+    .commerce-auth-panel { min-height: 0; padding: 28px 20px; }
+    .commerce-auth-heading h1 { font-size: 25px; }
   }
 
   .inline-form-row {
@@ -1212,8 +1232,20 @@
 .asset-center-nav-item { flex: 0 0 auto; min-height: 36px; padding: 8px 16px; border-radius: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; }
 .asset-center-nav-item:hover { color: #c2410c; }
 .asset-center-nav-item-active { background: #fff; color: #c2410c; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
-.commerce-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgb(17 24 39 / 0.42); }
-.commerce-dialog { width: min(100%, 400px); border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 24px; box-shadow: 0 20px 50px rgb(17 24 39 / 0.2); }
+.skip-link { position: fixed; z-index: 80; left: 16px; top: 12px; transform: translateY(-160%); border-radius: 6px; background: var(--commerce-brand-strong); color: #fff; padding: 10px 14px; font-size: 14px; font-weight: 600; transition: transform var(--commerce-duration) var(--commerce-ease); }
+.skip-link:focus { transform: translateY(0); }
+.commerce-not-found { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: var(--commerce-canvas); }
+.commerce-not-found-card { width: min(100%, 520px); border: 1px solid var(--commerce-border); border-radius: var(--commerce-radius-lg); background: #fff; padding: 36px 28px; text-align: center; box-shadow: var(--commerce-shadow-card); }
+.commerce-not-found-card > .brand-mark { margin: 0 auto; }
+.commerce-not-found-code { margin: 24px 0 0; color: var(--commerce-brand-soft); font-size: 76px; font-weight: 800; line-height: 0.9; }
+.commerce-not-found-card h1 { margin-top: 18px; color: var(--commerce-text); font-size: 25px; font-weight: 700; }
+.commerce-not-found-card > p:not(.commerce-not-found-code) { margin-top: 10px; color: var(--commerce-muted); font-size: 14px; line-height: 1.7; }
+.commerce-not-found-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
+.commerce-logout { display: flex; min-height: 52vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.commerce-logout h1 { margin-top: 16px; color: var(--commerce-text); font-size: 20px; font-weight: 700; }
+.commerce-logout p { margin-top: 8px; color: var(--commerce-muted); font-size: 14px; }
+.commerce-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgb(49 34 22 / 0.42); }
+.commerce-dialog { width: min(100%, 400px); border: 1px solid var(--commerce-border); border-radius: var(--commerce-radius-md); background: #fff; padding: 24px; box-shadow: var(--commerce-shadow-overlay); }
 .commerce-dialog-title { color: #111827; font-size: 18px; font-weight: 700; }
 .commerce-dialog-desc { margin-top: 10px; color: #4b5563; font-size: 14px; line-height: 1.6; }
 .commerce-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }

@@ -196,6 +196,7 @@ onUnmounted(() => {
 
 <template>
   <div class="page-shell text-gray-800">
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
     <header class="user-site-header">
       <div class="commerce-utility-row">
         <div class="commerce-utility-inner">
@@ -285,6 +286,7 @@ onUnmounted(() => {
                     :to="item.to"
                     class="account-menu-link"
                     :class="item.active(route.path) ? 'account-menu-link-active' : ''"
+                    :aria-current="item.active(route.path) ? 'page' : undefined"
                     @click="closeMenus"
                   >
                     <component :is="item.icon" class="h-4 w-4" aria-hidden="true" />
@@ -328,6 +330,7 @@ onUnmounted(() => {
             :to="item.to"
             class="site-nav-link"
             :class="item.active(route.path) ? 'site-nav-link-active' : ''"
+            :aria-current="item.active(route.path) ? 'page' : undefined"
           >
             <span>{{ item.label }}</span>
           </router-link>
@@ -351,6 +354,7 @@ onUnmounted(() => {
                 :to="item.to"
                 class="account-menu-link"
                 :class="item.active(route.path) ? 'account-menu-link-active' : ''"
+                :aria-current="item.active(route.path) ? 'page' : undefined"
                 @click="closeMenus"
               >
                 <component :is="item.icon" class="h-4 w-4" aria-hidden="true" />
@@ -366,7 +370,7 @@ onUnmounted(() => {
       </transition>
     </header>
 
-    <main class="min-h-[calc(100vh-68px)] px-4 py-5 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-7 lg:pb-9">
+    <main id="main-content" tabindex="-1" class="min-h-[calc(100vh-68px)] px-4 py-5 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-7 lg:pb-9">
       <div class="site-container">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
@@ -390,6 +394,7 @@ onUnmounted(() => {
         :to="item.to"
         class="mobile-bottom-link"
         :class="item.active(route.path) ? 'mobile-bottom-link-active' : ''"
+        :aria-current="item.active(route.path) ? 'page' : undefined"
         @click="closeMenus"
       >
         <span class="relative inline-flex">

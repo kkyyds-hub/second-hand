@@ -2,8 +2,57 @@
 import UserLayout from '@/layouts/UserLayout.vue'
 import { buildLoginRedirectPath, readUserToken } from '@/utils/request'
 
+const pageTitles = {
+  UserLogin: '登录',
+  RegisterPhone: '手机号注册',
+  RegisterEmail: '邮箱注册',
+  ActivateEmail: '邮箱激活',
+  UserHome: '首页',
+  MarketList: '市场',
+  MarketDetail: '商品详情',
+  CartPage: '购物车',
+  FavoriteList: '收藏',
+  BuyerOrders: '买家订单',
+  SellerOrders: '卖家订单',
+  AccountCenter: '账户中心',
+  AccountAddressList: '地址管理',
+  AccountAddressCreate: '新增地址',
+  AccountAddressEdit: '编辑地址',
+  AssetWallet: '钱包',
+  AssetPoints: '积分',
+  AssetCredit: '信用',
+  SellerWorkbench: '卖家工作台',
+  SellerProductList: '我的商品',
+  SellerProductCreate: '发布商品',
+  SellerProductEdit: '编辑商品',
+  SellerProductDetail: '商品详情',
+  BuyerCheckout: '订单结算',
+  BuyerOrderDetail: '订单详情',
+  BuyerOrderPayment: '确认支付',
+  SellerOrderDetail: '卖家订单详情',
+  SellerAfterSaleDecision: '售后处理',
+  AccountPassword: '账户安全',
+  AccountEmailBinding: '邮箱绑定',
+  AccountPhoneBinding: '手机号绑定',
+  AccountProfileEdit: '编辑资料',
+  AccountAvatarUpload: '更换头像',
+  SellerShop: '店铺',
+  MyReviews: '我的评价',
+  UserLogout: '退出登录',
+  NotFound: '页面没有找到',
+} as const
+
+const getDocumentTitle = (routeName: unknown) => {
+  if (routeName === 'UserHome') return '拾光集 - 让闲置继续被需要'
+  const pageTitle = typeof routeName === 'string' ? pageTitles[routeName as keyof typeof pageTitles] : undefined
+  return pageTitle ? `${pageTitle} - 拾光集` : '拾光集'
+}
+
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition || { top: 0 }
+  },
   routes: [
     {
       path: '/login',
@@ -316,7 +365,8 @@ const router = createRouter({
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: () => (readUserToken() ? '/' : '/login'),
+      name: 'NotFound',
+      component: () => import('@/pages/NotFoundPage.vue'),
     },
   ],
 })
@@ -343,6 +393,10 @@ router.beforeEach((to) => {
   }
 
   return true
+})
+
+router.afterEach((to) => {
+  document.title = getDocumentTitle(to.name)
 })
 
 export default router
