@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Loader2, Package, PackagePlus, PackageSearch } from 'lucide-vue-next'
 import SellerProductActionDialog from '@/pages/seller/components/SellerProductActionDialog.vue'
 import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
 import sellerProductsEmptyImage from '@/assets/commerce/seller-products-empty.webp'
+import {
+  canDeleteUserProduct,
+  canEditUserProduct,
+  isValidUserProductId,
+} from '@/pages/seller/user-product-capabilities'
 import {
   createEmptyUserProductPage,
   deleteUserProduct,
@@ -52,7 +57,6 @@ const runningActionKey = ref('')
 const pendingAction = ref<PendingAction | null>(null)
 const feedback = ref<{ tone: 'success' | 'warning' | 'error'; message: string } | null>(null)
 const routeNotice = ref('')
-const filterDraft = reactive({ status: '', pageSize: 10 })
 
 const appliedState = computed(() => readAppliedState(route.query))
 const list = computed<UserProductSummary[]>(() => pageData.value.list)
@@ -226,18 +230,17 @@ async function replaceAndReloadList(targetState: AppliedListState): Promise<List
   }
 }
 
-function applyFilters() {
-  const nextState = {
-    status: filterDraft.status,
-    page: 1,
-    pageSize: filterDraft.pageSize,
-  }
-  void router.push({ query: buildQuery(nextState) })
-}
-
 function selectStatus(status: string) {
   if (isMutating.value || appliedState.value.status === status) return
   void router.push({ query: buildQuery({ status, page: 1, pageSize: appliedState.value.pageSize }) })
+}
+
+function applyPageSize(event: Event) {
+  if (isMutating.value) return
+  const target = event.target as HTMLSelectElement
+  const pageSize = readPositiveInteger(target.value, appliedState.value.pageSize)
+  if (!validPageSizes.has(pageSize) || pageSize === appliedState.value.pageSize) return
+  void router.push({ query: buildQuery({ ...appliedState.value, page: 1, pageSize }) })
 }
 
 function resetFilters() {
@@ -254,13 +257,13 @@ function reloadList() {
 }
 
 function openDeleteDialog(item: UserProductSummary) {
-  if (item.id !== null && !isMutating.value) {
+  if (isValidUserProductId(item.id) && canDeleteUserProduct(item.status) && !isMutating.value) {
     pendingAction.value = { kind: 'delete', item }
   }
 }
 
 function openStatusActionDialog(item: UserProductSummary, actionMeta: UserProductStatusActionMeta) {
-  if (item.id !== null && !isMutating.value) {
+  if (isValidUserProductId(item.id) && !isMutating.value) {
     pendingAction.value = { kind: 'status', item, actionMeta }
   }
 }
@@ -271,7 +274,7 @@ function closeActionDialog() {
 
 async function confirmAction() {
   const action = pendingAction.value
-  if (!action || action.item.id === null || isMutating.value) return
+  if (!action || !isValidUserProductId(action.item.id) || isMutating.value) return
 
   const actionName = action.kind === 'delete' ? 'delete' : action.actionMeta.action
   const successMessage = actionSuccessMessage(actionName)
@@ -334,8 +337,6 @@ watch(
       return
     }
 
-    filterDraft.status = state.status
-    filterDraft.pageSize = state.pageSize
     if (stateKey(state) === explicitRouteReloadKey.value) return
     await loadList(state)
   },
@@ -388,31 +389,19 @@ onBeforeUnmount(() => {
       <div class="seller-center-nav mb-4" aria-label="商品状态筛选">
         <button v-for="option in statusOptions" :key="option.value" type="button" class="seller-center-nav-item" :class="{ 'seller-center-nav-item-active': appliedState.status === option.value }" :disabled="isMutating" @click="selectStatus(option.value)">{{ option.label }}</button>
       </div>
-      <form class="w-full" @submit.prevent="applyFilters">
-        <div class="flex flex-col gap-4 md:flex-row md:items-end">
-          <div class="toolbar-field max-w-[280px]">
-            <label class="form-label" for="status-filter">商品状态</label>
-            <select id="status-filter" v-model="filterDraft.status" class="input-standard" :disabled="isMutating">
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-            </select>
-          </div>
+      <div class="flex flex-col gap-4 md:flex-row md:items-end">
           <div class="w-full md:w-36">
             <label class="form-label" for="page-size-filter">每页条数</label>
-            <select id="page-size-filter" v-model.number="filterDraft.pageSize" class="input-standard" :disabled="isMutating">
+            <select id="page-size-filter" :value="appliedState.pageSize" class="input-standard" :disabled="isMutating" @change="applyPageSize">
               <option :value="10">10</option>
               <option :value="20">20</option>
               <option :value="50">50</option>
             </select>
           </div>
           <div class="toolbar-group md:pl-2">
-            <button class="btn-primary" type="submit" :disabled="isMutating">
-              <Loader2 v-if="loading" class="h-4 w-4 animate-spin" aria-hidden="true" />
-              <span>{{ loading ? '加载中' : '应用筛选' }}</span>
-            </button>
             <button class="btn-default" type="button" :disabled="isMutating" @click="resetFilters">重置</button>
           </div>
-        </div>
-      </form>
+      </div>
     </section>
 
     <section v-if="listError" class="notice-banner notice-banner-danger">
@@ -472,20 +461,20 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="flex shrink-0 flex-wrap gap-2 border-t border-gray-100 pt-4 lg:max-w-[360px] lg:justify-end lg:border-t-0 lg:pt-0">
-                <router-link v-if="item.id !== null" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}`">查看详情</router-link>
-                <router-link v-if="item.id !== null && item.status !== 'sold'" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}/edit`">编辑</router-link>
+                <router-link v-if="isValidUserProductId(item.id)" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}`">查看详情</router-link>
+                <router-link v-if="isValidUserProductId(item.id) && canEditUserProduct(item.status)" class="btn-default !h-9 px-3" :to="`/seller/products/${item.id}/edit`">编辑</router-link>
                 <button
                   v-for="actionMeta in readStatusActions(item.status)"
                   :key="`${item.id}-${actionMeta.action}`"
                   :class="readStatusActionButtonClass(actionMeta.tone)"
                   type="button"
-                  :disabled="item.id === null || isMutating"
+                  :disabled="!isValidUserProductId(item.id) || isMutating"
                   @click="openStatusActionDialog(item, actionMeta)"
                 >
                   <Loader2 v-if="isRunningAction(item.id, actionMeta.action)" class="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   <span>{{ actionMeta.label }}</span>
                 </button>
-                <button v-if="item.id !== null" class="btn-danger !h-9 px-3" type="button" :disabled="isMutating" @click="openDeleteDialog(item)">
+                <button v-if="isValidUserProductId(item.id) && canDeleteUserProduct(item.status)" class="btn-danger !h-9 px-3" type="button" :disabled="isMutating" @click="openDeleteDialog(item)">
                   <Loader2 v-if="isRunningAction(item.id, 'delete')" class="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   <span>删除</span>
                 </button>

@@ -2,9 +2,10 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
-import { getUserProductDetail, updateUserProduct } from '@/api/userProducts'
+import { getUserProductDetail, getUserProductStatusMeta, updateUserProduct } from '@/api/userProducts'
 import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
 import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
+import { canEditUserProduct } from '@/pages/seller/user-product-capabilities'
 import {
   collectUserProductValidationErrors,
   createEmptyUserProductFormModel,
@@ -43,7 +44,21 @@ const productId = computed(() => {
 })
 const validationErrors = computed(() => collectUserProductValidationErrors(productForm, { includeCategory: false }))
 const visibleErrors = computed(() => Object.fromEntries(Object.entries(validationErrors.value).filter(([field]) => submitAttempted.value || touched[field as UserProductFormField])) as Partial<Record<UserProductFormField, string>>)
-const canEdit = computed(() => ['on_sale', 'under_review', 'off_shelf'].includes(productStatus.value))
+const canEdit = computed(() => canEditUserProduct(productStatus.value))
+const statusMeta = computed(() => getUserProductStatusMeta(productStatus.value))
+const statusChipClass = computed(() => {
+  if (statusMeta.value.tone === 'accent') return 'chip chip-accent'
+  if (statusMeta.value.tone === 'success') return 'chip chip-success'
+  if (statusMeta.value.tone === 'warning') return 'chip chip-warning'
+  return 'chip chip-neutral'
+})
+const statusDescription = computed(() => {
+  if (productStatus.value === 'on_sale') return '商品正在市场和公开小店中展示，保存修改后将重新进入审核。'
+  if (productStatus.value === 'under_review') return '商品正在审核，保存修改后将重新进入审核。'
+  if (productStatus.value === 'off_shelf') return '商品当前已下架，保存修改后将重新进入审核。'
+  if (productStatus.value === 'sold') return '商品已售出，不能继续编辑。'
+  return '当前商品状态暂不能编辑。'
+})
 
 function clearForm() {
   Object.assign(productForm, createEmptyUserProductFormModel())
@@ -136,9 +151,8 @@ onBeforeUnmount(() => { active = false; requestSequence += 1 })
       <SellerCenterNav current="edit" />
       <section v-if="loadError" class="notice-banner notice-banner-danger" role="alert"><span class="notice-dot bg-red-500"></span><div class="flex-1"><p>{{ loadError }}</p><div class="mt-3 flex gap-2"><button class="btn-default" type="button" :disabled="loading" @click="loadProduct">重新加载</button><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>
       <section v-else-if="loading" class="section-panel"><div class="section-body flex min-h-[300px] items-center justify-center"><Loader2 class="h-5 w-5 animate-spin text-gray-400" /><span class="ml-3 text-[13px] text-gray-500">正在加载商品信息...</span></div></section>
-      <section v-else-if="productStatus === 'sold'" class="section-panel"><div class="section-body space-y-4"><h2 class="section-heading">该商品已售出，不能继续编辑。</h2><div class="flex flex-wrap gap-3"><router-link class="btn-primary" :to="`/seller/products/${productId}`">返回详情</router-link><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>
-      <section v-else-if="!canEdit" class="section-panel"><div class="section-body space-y-4"><h2 class="section-heading">当前商品暂不能编辑。</h2><div class="flex flex-wrap gap-3"><router-link class="btn-primary" :to="productId ? `/seller/products/${productId}` : '/seller/products'">返回详情</router-link><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>
-      <form v-else class="space-y-6" @submit.prevent="submitEditForm"><SellerProductForm :model="productForm" mode="edit" :category-label="categoryLabel" :disabled="submitting" :errors="visibleErrors" @blur="markTouched" @change="clearSubmitMessage" /><section v-if="submitMessage" class="notice-banner" :class="submitMessage === '商品信息尚未修改' ? 'notice-banner-warning' : 'notice-banner-danger'" role="alert"><span class="notice-dot" :class="submitMessage === '商品信息尚未修改' ? 'bg-orange-500' : 'bg-red-500'"></span><span>{{ submitMessage }}</span></section><div class="flex flex-wrap gap-3"><button class="btn-primary" type="submit" :disabled="submitting"><Loader2 v-if="submitting" class="h-4 w-4 animate-spin" /><span>{{ submitting ? '保存中...' : '保存并重新提交审核' }}</span></button><router-link class="btn-default" :to="`/seller/products/${productId}`">取消</router-link></div></form>
+      <section v-else-if="!canEdit" class="section-panel"><div class="section-body space-y-4"><div><span :class="statusChipClass">{{ statusMeta.label }}</span><h2 class="section-heading mt-3">{{ statusDescription }}</h2></div><div class="flex flex-wrap gap-3"><router-link class="btn-primary" :to="productId ? `/seller/products/${productId}` : '/seller/products'">返回详情</router-link><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>
+      <form v-else class="space-y-6" @submit.prevent="submitEditForm"><section class="section-panel-muted"><div class="section-body"><span :class="statusChipClass">{{ statusMeta.label }}</span><p class="mt-3 text-[13px] leading-6 text-gray-600">{{ statusDescription }}</p></div></section><SellerProductForm :model="productForm" mode="edit" :category-label="categoryLabel" :disabled="submitting" :errors="visibleErrors" @blur="markTouched" @change="clearSubmitMessage" /><section v-if="submitMessage" class="notice-banner" :class="submitMessage === '商品信息尚未修改' ? 'notice-banner-warning' : 'notice-banner-danger'" role="alert"><span class="notice-dot" :class="submitMessage === '商品信息尚未修改' ? 'bg-orange-500' : 'bg-red-500'"></span><span>{{ submitMessage }}</span></section><div class="flex flex-wrap gap-3"><button class="btn-primary" type="submit" :disabled="submitting"><Loader2 v-if="submitting" class="h-4 w-4 animate-spin" /><span>{{ submitting ? '保存中...' : '保存并重新提交审核' }}</span></button><router-link class="btn-default" :to="`/seller/products/${productId}`">取消</router-link></div></form>
     </template>
   </main>
 </template>

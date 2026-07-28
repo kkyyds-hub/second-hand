@@ -136,8 +136,8 @@ onMounted(() => {
           </button>
         </div>
         <div class="section-body">
-          <div v-if="loading && !hasLoadedOnce" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="正在加载经营概览">
-            <div v-for="index in 5" :key="index" class="h-[126px] animate-pulse rounded-lg bg-gray-100"></div>
+          <div v-if="loading && !hasLoadedOnce" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="正在加载经营概览">
+            <div v-for="index in 4" :key="index" class="h-[126px] animate-pulse rounded-lg bg-gray-100"></div>
           </div>
           <div v-else-if="!errorMessage" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <article v-for="metric in primaryMetrics" :key="metric.label" class="rounded-lg border border-gray-200/80 bg-white p-4">

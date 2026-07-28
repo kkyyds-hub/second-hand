@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { readCurrentUser } from '@/utils/request'
 
-defineProps<{
+const props = defineProps<{
   current: 'workbench' | 'products' | 'create' | 'edit' | 'detail'
 }>()
 
@@ -15,6 +15,12 @@ const items = [
   { key: 'orders', label: '卖家订单', to: '/orders/seller' },
   { key: 'after-sales', label: '售后处理', to: '/orders/seller/after-sales/decision' },
 ] as const
+
+function isItemActive(itemKey: typeof items[number]['key']) {
+  return itemKey === 'products'
+    ? ['products', 'create', 'edit', 'detail'].includes(props.current)
+    : props.current === itemKey
+}
 </script>
 
 <template>
@@ -23,9 +29,9 @@ const items = [
       v-for="item in items"
       :key="item.key"
       class="seller-center-nav-item"
-      :class="{ 'seller-center-nav-item-active': current === item.key || (item.key === 'products' && ['create', 'edit', 'detail'].includes(current)) }"
+      :class="{ 'seller-center-nav-item-active': isItemActive(item.key) }"
       :to="item.to"
-      :aria-current="current === item.key ? 'page' : undefined"
+      :aria-current="isItemActive(item.key) ? 'page' : undefined"
     >{{ item.label }}</router-link>
     <router-link v-if="shopId" class="seller-center-nav-item" :to="`/shop/${shopId}`">公开小店</router-link>
   </nav>

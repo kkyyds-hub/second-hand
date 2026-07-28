@@ -5,6 +5,7 @@ import { ChevronLeft, Loader2, PencilLine, Trash2 } from 'lucide-vue-next'
 import ProductImageGallery from '@/pages/market/components/ProductImageGallery.vue'
 import SellerProductActionDialog from '@/pages/seller/components/SellerProductActionDialog.vue'
 import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
+import { canDeleteUserProduct, canEditUserProduct } from '@/pages/seller/user-product-capabilities'
 import {
   createEmptyUserProductDetail,
   deleteUserProduct,
@@ -43,8 +44,8 @@ const productId = computed(() => {
 })
 const statusMeta = computed(() => getUserProductStatusMeta(detail.value.status))
 const statusActions = computed(() => getUserProductStatusActions(detail.value.status))
-const canEdit = computed(() => ['on_sale', 'under_review', 'off_shelf'].includes(detail.value.status))
-const canDelete = computed(() => ['under_review', 'off_shelf'].includes(detail.value.status))
+const canEdit = computed(() => canEditUserProduct(detail.value.status))
+const canDelete = computed(() => canDeleteUserProduct(detail.value.status))
 const dialogTitle = computed(() => pendingAction.value?.kind === 'delete' ? '删除商品' : pendingAction.value?.meta.label || '')
 const dialogDescription = computed(() => pendingAction.value?.kind === 'delete'
   ? `确认删除商品「${detail.value.title || '未命名商品'}」吗？该操作不可恢复。`
