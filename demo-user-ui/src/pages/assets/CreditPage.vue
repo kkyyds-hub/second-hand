@@ -8,6 +8,7 @@ import {
   getMyCreditOverview,
   type UserCreditLogItem,
 } from '@/api/credit'
+import AssetCenterNav from '@/components/commerce/AssetCenterNav.vue'
 
 const overview = ref(createEmptyCreditOverview())
 const logs = ref(createEmptyCreditLogPage())
@@ -90,11 +91,9 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">资产中心</p>
           <h1 class="page-title">信用概览与流水</h1>
-          <p class="page-desc">集中展示当前信用分、信用等级与信用分变更流水；本页只做用户端信用资产视图，不承接后台调分或风控规则配置。</p>
+          <p class="page-desc">查看当前信用分、信用等级和变化记录。</p>
         </div>
         <div class="page-actions">
-          <router-link class="btn-default" to="/assets/wallet">钱包</router-link>
-          <router-link class="btn-default" to="/assets/points">积分</router-link>
           <button class="btn-default" type="button" :disabled="loading" @click="loadCredit(currentPage)">
             <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
@@ -103,6 +102,7 @@ onMounted(() => {
         </div>
       </div>
     </section>
+    <AssetCenterNav current="credit" />
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
@@ -117,7 +117,6 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">信用概览</h2>
-            <p class="section-subtitle">接口：GET /user/credit</p>
           </div>
           <ShieldCheck class="h-5 w-5 text-gray-400" />
         </div>
@@ -133,14 +132,7 @@ onMounted(() => {
               <span class="detail-label">更新时间</span>
               <span class="detail-value">{{ overview.creditUpdatedAt || '待确认' }}</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">用户 ID</span>
-              <span class="detail-value">{{ overview.userId ?? '-' }}</span>
-            </div>
           </div>
-          <p class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-[12px] leading-6 text-gray-600">
-            信用等级文案由前端按已知等级值做展示映射。
-          </p>
         </div>
       </section>
 
@@ -148,7 +140,6 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">信用流水</h2>
-            <p class="section-subtitle">接口：GET /user/credit/logs?page={{ currentPage }}&pageSize={{ pageSize }}</p>
           </div>
           <span class="chip chip-neutral">共 {{ logs.total }} 条</span>
         </div>
@@ -160,7 +151,7 @@ onMounted(() => {
           <div v-else-if="!hasLogs" class="empty-state">
             <ShieldCheck class="empty-state-icon" />
             <p class="empty-state-title">暂无信用流水</p>
-            <p class="empty-state-text">信用分发生调整后会在这里展示原因、分值变化与关联业务。</p>
+            <p class="empty-state-text">信用分发生变化后会在这里展示原因和分值变化。</p>
           </div>
           <div v-else class="space-y-3">
             <article v-for="item in logs.list" :key="item.id ?? `${item.reasonType}-${item.refId}-${item.createTime}`" class="list-card-item">
@@ -168,7 +159,7 @@ onMounted(() => {
                 <div>
                   <p class="text-[14px] font-semibold text-gray-900">{{ item.reasonText }}</p>
                   <p class="mt-1 text-[12px] text-gray-500">{{ item.reasonNote || '无补充说明' }}</p>
-                  <p class="mt-2 text-[11px] text-gray-400">关联 ID：{{ item.refId ?? '-' }} · {{ item.createTime || '时间待确认' }}</p>
+                  <p class="mt-2 text-[11px] text-gray-400">{{ item.createTime || '时间待确认' }}</p>
                 </div>
                 <div class="text-left md:text-right">
                   <p class="font-numeric text-[18px] font-bold" :class="getDeltaTone(item)">{{ formatDelta(item) }}</p>

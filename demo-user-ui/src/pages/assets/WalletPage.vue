@@ -9,6 +9,7 @@ import {
   type WalletBalance,
   type WalletTransaction,
 } from '@/api/wallet'
+import AssetCenterNav from '@/components/commerce/AssetCenterNav.vue'
 
 const DEFAULT_BALANCE: WalletBalance = {
   balance: '0.00',
@@ -142,11 +143,9 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">资产中心</p>
           <h1 class="page-title">钱包余额与流水</h1>
-          <p class="page-desc">查看当前钱包余额、钱包交易流水，并提交演示版提现申请。提现只记录申请，不代表真实银行或支付渠道出金已打通。</p>
+          <p class="page-desc">查看钱包余额和流水，并提交提现申请记录。</p>
         </div>
         <div class="page-actions">
-          <router-link class="btn-default" to="/assets/points">积分</router-link>
-          <router-link class="btn-default" to="/assets/credit">信用</router-link>
           <button class="btn-default" type="button" :disabled="loading" @click="loadWallet(currentPage)">
             <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
@@ -155,6 +154,7 @@ onMounted(() => {
         </div>
       </div>
     </section>
+    <AssetCenterNav current="wallet" />
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
@@ -175,15 +175,14 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">钱包余额</h2>
-            <p class="section-subtitle">余额接口：GET /user/wallet/balance</p>
           </div>
           <Wallet class="h-5 w-5 text-gray-400" />
         </div>
         <div class="section-body">
           <p class="text-[13px] text-gray-500">当前可用余额</p>
           <p class="mt-3 font-numeric text-[34px] font-bold tracking-tight text-gray-900">{{ formatCurrency(balance.balance) }}</p>
-          <div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-[12px] leading-6 text-blue-800">
-            说明：提现功能提交的是演示申请记录，不涉及真实金融出金。
+          <div class="mt-5 rounded-lg border border-orange-100 bg-orange-50/70 p-4 text-[12px] leading-6 text-orange-900">
+            提现申请仅用于演示记录，不会产生真实银行转账。
           </div>
         </div>
       </section>
@@ -192,7 +191,6 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">提现申请</h2>
-            <p class="section-subtitle">表单字段对齐 amount / bankCardNo，失败态在页面内展示。</p>
           </div>
           <CreditCard class="h-5 w-5 text-gray-400" />
         </div>
@@ -204,7 +202,6 @@ onMounted(() => {
           <div>
             <label class="form-label" for="bankCardNo">银行卡号</label>
             <input id="bankCardNo" v-model="withdrawForm.bankCardNo" class="input-standard" maxlength="32" placeholder="请输入 4~32 位银行卡号" />
-            <p class="form-helper">当前不接真实银行通道，只提交提现申请记录。</p>
           </div>
           <div v-if="withdrawError" class="notice-banner notice-banner-danger !mb-0">
             <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
@@ -223,7 +220,6 @@ onMounted(() => {
       <div class="section-header">
         <div>
           <h2 class="section-heading">钱包流水</h2>
-          <p class="section-subtitle">流水接口：GET /user/wallet/transactions?page={{ currentPage }}&pageSize={{ pageSize }}</p>
         </div>
         <span class="chip chip-neutral">共 {{ transactions.total }} 条</span>
       </div>
@@ -243,7 +239,7 @@ onMounted(() => {
               <div>
                 <p class="text-[14px] font-semibold text-gray-900">{{ formatBizType(item.bizType) }}</p>
                 <p class="mt-1 text-[12px] text-gray-500">{{ item.remark || '无备注' }}</p>
-                <p class="mt-2 text-[11px] text-gray-400">业务 ID：{{ item.bizId ?? '-' }} · {{ item.createTime || '时间待确认' }}</p>
+                <p class="mt-2 text-[11px] text-gray-400">{{ item.createTime || '时间待确认' }}</p>
               </div>
               <div class="text-left md:text-right">
                 <p class="font-numeric text-[18px] font-bold" :class="getAmountTone(item)">{{ formatSignedCurrency(item) }}</p>

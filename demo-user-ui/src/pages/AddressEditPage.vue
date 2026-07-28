@@ -90,7 +90,7 @@ async function loadAddressDetail() {
   const currentAddressId = addressId.value
   if (!currentAddressId) {
     loadingDetail.value = false
-    loadErrorMessage.value = '地址 ID 无效，无法进入编辑页。'
+    loadErrorMessage.value = '该收货地址暂不可编辑。'
     return
   }
 
@@ -121,7 +121,7 @@ async function submitEditForm() {
   const currentAddressId = addressId.value
   if (!currentAddressId) {
     submitStatus.value = 'error'
-    submitMessage.value = '地址 ID 无效，无法提交编辑。'
+    submitMessage.value = '该收货地址暂不可保存。'
     return
   }
 

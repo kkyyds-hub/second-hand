@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Loader2, MapPinHouse, Plus, RefreshCw } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 import { createEmptyAddressListResult, deleteMyAddress, getMyAddressList, setMyDefaultAddress, type UserAddressItem } from '@/api/address'
+import CommerceConfirmDialog from '@/components/commerce/CommerceConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +17,7 @@ const defaultActionStatus = ref<'idle' | 'success' | 'error'>('idle')
 const defaultActionMessage = ref('')
 const deleteActionStatus = ref<'idle' | 'success' | 'error'>('idle')
 const deleteActionMessage = ref('')
+const pendingDeleteAddress = ref<UserAddressItem | null>(null)
 
 const addressList = computed<UserAddressItem[]>(() => addressPage.value.list)
 const hasCreatedNotice = computed(() => route.query.created === '1')
@@ -166,6 +168,22 @@ async function handleDelete(item: UserAddressItem) {
   }
 }
 
+function requestDelete(item: UserAddressItem) {
+  if (!canDeleteFor(item)) {
+    return
+  }
+  pendingDeleteAddress.value = item
+}
+
+async function confirmDelete() {
+  const item = pendingDeleteAddress.value
+  if (!item) {
+    return
+  }
+  await handleDelete(item)
+  pendingDeleteAddress.value = null
+}
+
 onMounted(() => {
   reloadAddressList()
 })
@@ -178,7 +196,7 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">地址</p>
           <h1 class="page-title">收货地址</h1>
-          <p class="page-desc">列表、新增、编辑、删除与默认地址操作统一放在同一种壳层里，减少地址域的样式割裂。</p>
+          <p class="page-desc">管理常用收货地址，方便下单时快速选择。</p>
         </div>
         <div class="page-actions">
           <router-link class="btn-default" to="/account">返回账户中心</router-link>
@@ -279,7 +297,6 @@ onMounted(() => {
                   <span v-if="item.isDefault" class="chip chip-success">默认地址</span>
                 </div>
                 <p class="mt-3 text-[13px] leading-6 text-gray-700">{{ item.fullAddress || '地址信息缺失' }}</p>
-                <p class="mt-2 text-[12px] font-numeric text-gray-400">地址 ID：{{ item.id ?? '-' }}</p>
               </div>
 
               <div class="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 md:border-0 md:pt-0">
@@ -299,17 +316,25 @@ onMounted(() => {
                     编辑
                   </router-link>
 
-                  <button class="btn-danger !h-9 px-3" type="button" :disabled="!canDeleteFor(item)" @click="handleDelete(item)">
+                  <button class="btn-danger !h-9 px-3" type="button" :disabled="!canDeleteFor(item)" @click="requestDelete(item)">
                     <Loader2 v-if="isDeletingFor(item.id)" class="h-3.5 w-3.5 animate-spin" />
                     <span>删除</span>
                   </button>
                 </template>
-                <p v-else class="text-[12px] text-gray-400">ID 缺失，不可操作</p>
+                <p v-else class="text-[12px] text-gray-400">该地址暂不可编辑或删除。</p>
               </div>
             </div>
           </article>
         </div>
       </div>
     </section>
+    <CommerceConfirmDialog
+      :open="pendingDeleteAddress !== null"
+      title="删除收货地址"
+      description="确认删除该收货地址吗？"
+      :confirming="pendingDeleteAddress !== null && isDeletingFor(pendingDeleteAddress.id)"
+      @cancel="pendingDeleteAddress = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

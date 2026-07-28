@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ChevronLeft, ChevronRight, Loader2, MessageSquare, RefreshCw } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Loader2, MessageSquare, RefreshCw, Star } from 'lucide-vue-next'
 import { createEmptyMyReviewPage, getMyReviews } from '@/api/review'
 
 const loading = ref(false)
@@ -16,6 +16,14 @@ const totalPages = computed(() => Math.max(1, Math.ceil(pageData.value.total / p
 const hasPrevPage = computed(() => pagination.page > 1)
 const hasNextPage = computed(() => pagination.page < totalPages.value)
 const hasEmptyState = computed(() => !loading.value && hasLoadedOnce.value && !errorMessage.value && pageData.value.list.length === 0)
+
+function validId(value: number | null | undefined) {
+  return typeof value === 'number' && value > 0
+}
+
+function ratingStars(rating: number) {
+  return Array.from({ length: 5 }, (_, index) => index < Math.max(0, Math.min(5, Math.round(rating))))
+}
 
 function readErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -66,7 +74,7 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">评价</p>
           <h1 class="page-title">我的评价记录</h1>
-          <p class="page-desc">评价列表页与市场、收藏页统一采用相同的壳层和卡片语言，提升整体成品感。</p>
+          <p class="page-desc">在这里回顾你对已购商品留下的真实评价。</p>
         </div>
         <div class="page-actions">
           <router-link class="btn-default" to="/market">
@@ -107,7 +115,8 @@ onMounted(() => {
         <div v-else-if="hasEmptyState" class="empty-state min-h-[320px]">
           <MessageSquare class="empty-state-icon" />
           <p class="empty-state-title">暂无评价记录</p>
-          <p class="empty-state-text">先去看看买过的商品，再留下第一条评价吧。</p>
+          <p class="empty-state-text">完成订单后可以在商品或订单页面留下评价。</p>
+          <router-link class="btn-primary mt-5" to="/orders/buyer">查看我的订单</router-link>
         </div>
         <div v-else class="grid gap-4">
           <article v-for="item in pageData.list" :key="item.id ?? `${item.orderId}-${item.createdAt}`" class="soft-panel p-5">
@@ -118,15 +127,17 @@ onMounted(() => {
                 </div>
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="chip chip-accent font-numeric">评分 {{ item.rating }}.0</span>
-                    <p class="max-w-[320px] truncate text-[15px] font-semibold text-gray-900" :title="item.productTitle || `商品 #${item.productId ?? '-'}`">
-                      {{ item.productTitle || `商品 #${item.productId ?? '-'}` }}
-                    </p>
+                    <span class="review-stars" :aria-label="`${item.rating} 星`">
+                      <Star v-for="(active, index) in ratingStars(item.rating)" :key="index" class="h-4 w-4" :class="active ? 'fill-orange-400 text-orange-400' : 'text-gray-300'" />
+                    </span>
+                    <router-link v-if="validId(item.productId)" class="max-w-[320px] truncate text-[15px] font-semibold text-gray-900 hover:text-orange-600" :to="`/market/${item.productId}`" :title="item.productTitle || '商品信息待补充'">
+                      {{ item.productTitle || '商品信息待补充' }}
+                    </router-link>
+                    <p v-else class="max-w-[320px] truncate text-[15px] font-semibold text-gray-900">{{ item.productTitle || '商品信息待补充' }}</p>
                   </div>
                   <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                    <span class="chip chip-neutral">{{ item.isAnonymous ? '匿名评价' : '实名评价' }}</span>
-                    <span v-if="item.buyerDisplayName" class="chip chip-neutral">展示名 {{ item.buyerDisplayName }}</span>
-                    <span class="font-numeric text-gray-400">订单 ID：{{ item.orderId ?? '-' }}</span>
+                    <span class="chip chip-neutral">{{ item.isAnonymous ? '匿名评价' : '公开评价' }}</span>
+                    <router-link v-if="validId(item.orderId)" class="text-[12px] font-medium text-orange-700 hover:text-orange-800" :to="`/orders/buyer/${item.orderId}`">查看关联订单</router-link>
                   </div>
                 </div>
               </div>

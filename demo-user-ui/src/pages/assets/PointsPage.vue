@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Coins, Loader2, RefreshCw } from 'lucide-vue-next'
 import { createEmptyPointsLedgerPage, getPointsLedger, getPointsTotal, type PointsLedgerItem } from '@/api/points'
+import AssetCenterNav from '@/components/commerce/AssetCenterNav.vue'
 
 const totalPoints = ref(0)
 const ledger = ref(createEmptyPointsLedgerPage())
@@ -94,11 +95,9 @@ onMounted(() => {
         <div class="page-header-main">
           <p class="page-kicker">资产中心</p>
           <h1 class="page-title">积分总额与流水</h1>
-          <p class="page-desc">独立展示当前积分总额与积分流水，避免把积分资产混入口袋余额或订单履约页面。</p>
+          <p class="page-desc">查看当前积分和每一次积分变化。</p>
         </div>
         <div class="page-actions">
-          <router-link class="btn-default" to="/assets/wallet">钱包</router-link>
-          <router-link class="btn-default" to="/assets/credit">信用</router-link>
           <button class="btn-default" type="button" :disabled="loading" @click="loadPoints(currentPage)">
             <Loader2 v-if="loading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
@@ -107,6 +106,7 @@ onMounted(() => {
         </div>
       </div>
     </section>
+    <AssetCenterNav current="points" />
 
     <section v-if="errorMessage" class="notice-banner notice-banner-danger">
       <span class="notice-dot bg-red-500"></span>
@@ -122,16 +122,12 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">积分总额</h2>
-            <p class="section-subtitle">接口：GET /user/points/total</p>
           </div>
           <Coins class="h-5 w-5 text-gray-400" />
         </div>
         <div class="section-body">
           <p class="text-[13px] text-gray-500">当前可用积分</p>
           <p class="mt-3 font-numeric text-[34px] font-bold tracking-tight text-gray-900">{{ formatPoints(totalPoints) }}</p>
-          <p class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-[12px] leading-6 text-gray-600">
-            积分口径独立于钱包余额；本页只承接积分资产展示，不代表订单完成、退款或履约链路重新验收。
-          </p>
         </div>
       </section>
 
@@ -139,7 +135,6 @@ onMounted(() => {
         <div class="section-header">
           <div>
             <h2 class="section-heading">积分流水</h2>
-            <p class="section-subtitle">接口：GET /user/points/ledger?page={{ currentPage }}&pageSize={{ pageSize }}</p>
           </div>
           <span class="chip chip-neutral">共 {{ ledger.total }} 条</span>
         </div>
@@ -158,7 +153,7 @@ onMounted(() => {
               <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p class="text-[14px] font-semibold text-gray-900">{{ formatBizType(item.bizType) }}</p>
-                  <p class="mt-2 text-[11px] text-gray-400">业务 ID：{{ item.bizId ?? '-' }} · {{ item.createTime || '时间待确认' }}</p>
+                <p class="mt-2 text-[11px] text-gray-400">{{ item.createTime || '时间待确认' }}</p>
                 </div>
                 <p class="font-numeric text-[18px] font-bold" :class="getPointsTone(item)">{{ formatSignedPoints(item) }}</p>
               </div>

@@ -36,13 +36,13 @@ function formatAccountStatus(status: string | null | undefined) {
 const hasSessionProfile = computed(() => hasUserProfileSnapshot(currentUser.value))
 const displayName = computed(() => getUserDisplayName(currentUser.value))
 const primaryContact = computed(() => getUserPrimaryContact(currentUser.value))
-const roleTags = computed(() => [isSellerUser(currentUser.value) ? '卖家账号' : '普通账号', formatAccountStatus(currentUser.value?.status)])
+const roleTags = computed(() => [isSellerUser(currentUser.value) ? '卖家' : '普通用户', formatAccountStatus(currentUser.value?.status)])
 const avatarInitial = computed(() => displayName.value.slice(0, 1).toUpperCase() || '客')
-const sessionRoleText = computed(() => (isSellerUser(currentUser.value) ? '卖家账号' : '普通账号'))
+const avatarFailed = ref(false)
+const validUserId = computed(() => typeof currentUser.value?.id === 'number' && currentUser.value.id > 0)
 
-const identityRows = computed(() => {
+const profileRows = computed(() => {
   return [
-    { label: '用户 ID', value: currentUser.value?.id ?? '-' },
     { label: '登录名', value: currentUser.value?.loginName || '-' },
     { label: '昵称', value: currentUser.value?.nickname || '-' },
     { label: '注册时间', value: currentUser.value?.registerTime || '-' },
@@ -54,14 +54,12 @@ const contactRows = computed(() => {
     { label: '手机号', value: currentUser.value?.mobile || '-' },
     { label: '邮箱', value: currentUser.value?.email || '-' },
     { label: '所在地区', value: currentUser.value?.region || '-' },
-    { label: '最近登录 IP', value: currentUser.value?.lastLoginIp || '-' },
   ]
 })
 
 const accountRows = computed(() => {
   return [
     { label: '信用分', value: currentUser.value?.creditScore ?? '-' },
-    { label: '商品数量', value: currentUser.value?.productCount ?? '-' },
     { label: '账户状态', value: formatAccountStatus(currentUser.value?.status) },
     { label: '个人简介', value: currentUser.value?.bio || '暂未填写' },
   ]
@@ -75,7 +73,7 @@ const accountRows = computed(() => {
         <div class="page-header-main">
           <p class="page-kicker">账户</p>
           <h1 class="page-title">账户中心</h1>
-          <p class="page-desc">统一展示账户概览、会话快照与设置入口，让总览页与其他用户端页面保持同一视觉语言。</p>
+          <p class="page-desc">管理个人资料、账户联系方式和常用购物服务。</p>
         </div>
         <div class="page-actions">
           <span v-for="tag in roleTags" :key="tag" class="chip chip-neutral">{{ tag }}</span>
@@ -85,18 +83,18 @@ const accountRows = computed(() => {
 
     <section v-if="!hasSessionProfile" class="notice-banner notice-banner-warning">
       <span class="notice-dot bg-orange-500"></span>
-      <span>当前没有可用的本地账户快照，请重新登录后继续管理账户信息。</span>
+      <span>账户信息暂时无法读取，请重新登录后再试。</span>
     </section>
 
-    <section class="grid gap-6 lg:grid-cols-[1.2fr_0.85fr]">
       <section class="section-panel">
         <div class="section-body">
           <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
             <img
-              v-if="currentUser?.avatar"
+              v-if="currentUser?.avatar && !avatarFailed"
               :src="currentUser.avatar"
-              :alt="`${displayName} avatar`"
+              :alt="`${displayName}的头像`"
               class="h-[72px] w-[72px] rounded-full border border-gray-200/80 object-cover shadow-sm"
+              @error="avatarFailed = true"
             />
             <div
               v-else
@@ -113,44 +111,14 @@ const accountRows = computed(() => {
             </div>
           </div>
 
-          <div class="meta-item mt-6">
-            <p class="meta-label">总览说明</p>
-            <p class="meta-value">总览页继续保持轻量，只展示状态与入口，不把更细的账户操作重新堆回这个页面。</p>
-          </div>
         </div>
-      </section>
-
-      <section class="section-panel-muted">
-        <div class="section-header section-header-plain">
-          <div>
-            <h2 class="section-heading">会话快照</h2>
-            <p class="section-subtitle">保留对当前登录快照来源和作用范围的简洁说明。</p>
-          </div>
-        </div>
-        <div class="section-body pt-0">
-          <div class="detail-grid">
-            <div class="detail-row">
-              <span class="detail-label">角色</span>
-              <span class="detail-value">{{ sessionRoleText }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">来源</span>
-              <span class="detail-value">本地快照</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">作用范围</span>
-              <span class="detail-value">当前总览与入口卡</span>
-            </div>
-          </div>
-        </div>
-      </section>
     </section>
 
     <section class="section-panel">
       <div class="section-header">
         <div>
-          <h2 class="section-heading">设置与操作</h2>
-          <p class="section-subtitle">入口卡片统一为一套中性风格，按钮尺寸与描述层级保持一致。</p>
+          <h2 class="section-heading">常用功能</h2>
+          <p class="section-subtitle">个人服务和账户设置都在这里快速进入。</p>
         </div>
       </div>
       <div class="section-body">
@@ -158,52 +126,62 @@ const accountRows = computed(() => {
           <div class="link-card">
             <div class="flex-1">
               <h3 class="link-card-title">资料编辑</h3>
-              <p class="link-card-desc">继续沿用昵称与个人简介编辑链路。</p>
+              <p class="link-card-desc">完善昵称和个人简介。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/profile">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
               <h3 class="link-card-title">头像上传</h3>
-              <p class="link-card-desc">单独页面处理头像选择、预览与上传。</p>
+              <p class="link-card-desc">更新你的个人头像。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/avatar">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
-              <h3 class="link-card-title">密码管理</h3>
-              <p class="link-card-desc">保留独立的安全切片修改流程。</p>
+              <h3 class="link-card-title">密码设置</h3>
+              <p class="link-card-desc">修改登录密码。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/security/password">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
               <h3 class="link-card-title">邮箱绑定</h3>
-              <p class="link-card-desc">单独处理邮箱绑定与解绑，不与其他安全表单混排。</p>
+              <p class="link-card-desc">绑定或更换邮箱。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/security/email">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
               <h3 class="link-card-title">手机绑定</h3>
-              <p class="link-card-desc">统一移动端重要联络链路的绑定与解绑。</p>
+              <p class="link-card-desc">绑定或更换手机号。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/security/phone">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
-              <h3 class="link-card-title">地址簿</h3>
-              <p class="link-card-desc">查看地址列表、新增与编辑收货地址。</p>
+              <h3 class="link-card-title">收货地址</h3>
+              <p class="link-card-desc">管理常用收货地址。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/account/addresses">进入页面</router-link>
           </div>
           <div class="link-card">
             <div class="flex-1">
               <h3 class="link-card-title">资产中心</h3>
-              <p class="link-card-desc">查看钱包、积分与信用资产视图。</p>
+              <p class="link-card-desc">查看钱包、积分和信用。</p>
             </div>
             <router-link class="btn-default mt-4 w-full" to="/assets/wallet">进入页面</router-link>
           </div>
+          <div class="link-card"><div class="flex-1"><h3 class="link-card-title">我的买家订单</h3><p class="link-card-desc">查看购买订单。</p></div><router-link class="btn-default mt-4 w-full" to="/orders/buyer">查看订单</router-link></div>
+          <div class="link-card"><div class="flex-1"><h3 class="link-card-title">我的收藏</h3><p class="link-card-desc">回顾收藏的商品。</p></div><router-link class="btn-default mt-4 w-full" to="/favorites">查看收藏</router-link></div>
+          <div class="link-card"><div class="flex-1"><h3 class="link-card-title">购物车</h3><p class="link-card-desc">管理待购买商品。</p></div><router-link class="btn-default mt-4 w-full" to="/cart">打开购物车</router-link></div>
+          <div class="link-card"><div class="flex-1"><h3 class="link-card-title">我的评价</h3><p class="link-card-desc">回顾已提交的评价。</p></div><router-link class="btn-default mt-4 w-full" to="/reviews/mine">查看评价</router-link></div>
+          <template v-if="isSellerUser(currentUser)">
+            <div class="link-card"><div class="flex-1"><h3 class="link-card-title">卖家工作台</h3></div><router-link class="btn-default mt-4 w-full" to="/seller">进入工作台</router-link></div>
+            <div class="link-card"><div class="flex-1"><h3 class="link-card-title">我的商品</h3></div><router-link class="btn-default mt-4 w-full" to="/seller/products">管理商品</router-link></div>
+            <div class="link-card"><div class="flex-1"><h3 class="link-card-title">我的卖家订单</h3></div><router-link class="btn-default mt-4 w-full" to="/orders/seller">查看订单</router-link></div>
+            <div v-if="validUserId" class="link-card"><div class="flex-1"><h3 class="link-card-title">我的公开小店</h3></div><router-link class="btn-default mt-4 w-full" :to="`/shop/${currentUser!.id}`">查看小店</router-link></div>
+          </template>
         </div>
       </div>
     </section>
@@ -212,12 +190,12 @@ const accountRows = computed(() => {
       <section class="section-panel">
         <div class="section-header section-header-plain">
           <div>
-            <h2 class="section-heading">身份信息</h2>
+            <h2 class="section-heading">基础资料</h2>
           </div>
         </div>
         <div class="section-body pt-0">
           <div class="detail-grid">
-            <div v-for="row in identityRows" :key="row.label" class="detail-row">
+            <div v-for="row in profileRows" :key="row.label" class="detail-row">
               <span class="detail-label">{{ row.label }}</span>
               <span class="detail-value">{{ row.value }}</span>
             </div>
@@ -259,4 +237,3 @@ const accountRows = computed(() => {
     </section>
   </div>
 </template>
-
