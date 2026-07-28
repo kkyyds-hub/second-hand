@@ -25,6 +25,7 @@ const previewImage = computed(() => props.model.imageUrls.map((url) => url.trim(
 const previewImageFailed = ref(false)
 const previewTitle = computed(() => props.model.title.trim() || '商品标题')
 const previewCategory = computed(() => props.model.category.trim() || props.categoryLabel || '未填写分类')
+const previewDescription = computed(() => props.model.description.trim() || '商品描述会显示在这里。')
 const previewPrice = computed(() => {
   const price = Number(props.model.price.trim())
   return Number.isFinite(price) && price > 0 ? `¥${price.toFixed(2)}` : '价格待填写'
@@ -78,7 +79,7 @@ watch(previewImage, () => { previewImageFailed.value = false })
     </div>
 
     <aside class="section-panel lg:sticky lg:top-6">
-      <div class="section-header section-header-plain"><div><h2 class="section-heading">实时商品预览</h2><p class="section-subtitle">预览仅使用当前填写的信息。</p></div></div>
+      <div class="section-header section-header-plain"><div><span class="chip chip-neutral">预览</span><h2 class="section-heading mt-3">商品发布预览</h2><p class="section-subtitle">预览仅使用当前填写的信息。</p></div></div>
       <div class="section-body space-y-4 pt-0">
         <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
           <img v-if="previewImage && !previewImageFailed" :src="previewImage" :alt="previewTitle" class="h-full w-full object-contain" @error="previewImageFailed = true" />
@@ -88,6 +89,7 @@ watch(previewImage, () => { previewImageFailed.value = false })
           <p class="break-words text-[17px] font-semibold text-gray-900">{{ previewTitle }}</p>
           <p class="font-numeric text-[22px] font-bold text-gray-900">{{ previewPrice }}</p>
           <p class="break-words text-[13px] text-gray-500">{{ previewCategory }}</p>
+          <p class="line-clamp-3 break-words text-[13px] leading-6 text-gray-600">{{ previewDescription }}</p>
           <p class="text-[13px] leading-6 text-gray-600">提交后进入审核中</p>
         </div>
       </div>

@@ -71,7 +71,7 @@ function markImageFailed(index: number) {
     <div class="section-header section-header-plain">
       <div>
         <h2 class="section-heading">商品图片</h2>
-        <p class="section-subtitle">添加商品图片链接，第一张有效图片将作为主图。</p>
+        <p class="section-subtitle">当前通过图片链接添加商品图片，第一张有效图片会作为主图。</p>
       </div>
       <button class="btn-default !h-9 px-3" type="button" :disabled="disabled" @click="addImage">
         <Plus class="h-4 w-4" aria-hidden="true" />
@@ -94,7 +94,7 @@ function markImageFailed(index: number) {
                 class="input-standard min-w-0 flex-1"
                 type="text"
                 inputmode="url"
-                placeholder="https://example.com/product.jpg"
+                placeholder="粘贴可公开访问的图片链接"
                 :disabled="disabled"
                 @input="updateImage(index, ($event.target as HTMLInputElement).value)"
                 @blur="emit('blur')"

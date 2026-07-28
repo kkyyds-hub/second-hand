@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Loader2, Package, PackagePlus, PackageSearch } from 'lucide-vue-next'
 import SellerProductActionDialog from '@/pages/seller/components/SellerProductActionDialog.vue'
+import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
+import sellerProductsEmptyImage from '@/assets/commerce/seller-products-empty.webp'
 import {
   createEmptyUserProductPage,
   deleteUserProduct,
@@ -233,6 +235,11 @@ function applyFilters() {
   void router.push({ query: buildQuery(nextState) })
 }
 
+function selectStatus(status: string) {
+  if (isMutating.value || appliedState.value.status === status) return
+  void router.push({ query: buildQuery({ status, page: 1, pageSize: appliedState.value.pageSize }) })
+}
+
 function resetFilters() {
   void router.push({ path: '/seller/products' })
 }
@@ -359,6 +366,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+    <SellerCenterNav current="products" />
 
     <section
       v-if="feedback"
@@ -377,6 +385,9 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="toolbar">
+      <div class="seller-center-nav mb-4" aria-label="商品状态筛选">
+        <button v-for="option in statusOptions" :key="option.value" type="button" class="seller-center-nav-item" :class="{ 'seller-center-nav-item-active': appliedState.status === option.value }" :disabled="isMutating" @click="selectStatus(option.value)">{{ option.label }}</button>
+      </div>
       <form class="w-full" @submit.prevent="applyFilters">
         <div class="flex flex-col gap-4 md:flex-row md:items-end">
           <div class="toolbar-field max-w-[280px]">
@@ -425,10 +436,20 @@ onBeforeUnmount(() => {
           <div v-for="index in 3" :key="index" class="h-36 animate-pulse rounded-lg bg-gray-100"></div>
         </div>
         <div v-else-if="hasEmptyState" class="empty-state min-h-[320px]">
-          <PackageSearch class="empty-state-icon" aria-hidden="true" />
-          <p class="empty-state-title">当前条件下暂无商品</p>
-          <p class="empty-state-text">可以切换状态筛选，或发布一件新的闲置商品。</p>
-          <router-link class="btn-primary mt-5" to="/seller/products/new">发布闲置</router-link>
+          <img :src="sellerProductsEmptyImage" alt="尚未发布商品插画" class="seller-empty-image" @error="($event.currentTarget as HTMLImageElement).style.display = 'none'" />
+          <PackageSearch class="empty-state-icon seller-empty-fallback" aria-hidden="true" />
+          <template v-if="!appliedState.status">
+            <p class="empty-state-title">还没有发布商品</p>
+            <p class="empty-state-text">发布第一件闲置商品，审核通过后会在市场和你的小店中展示。</p>
+          </template>
+          <template v-else>
+            <p class="empty-state-title">当前状态下暂无商品</p>
+            <p class="empty-state-text">可以查看全部商品，或发布一件新的闲置商品。</p>
+          </template>
+          <div class="mt-5 flex flex-wrap justify-center gap-3">
+            <button v-if="appliedState.status" class="btn-default" type="button" @click="resetFilters">查看全部商品</button>
+            <router-link class="btn-primary" to="/seller/products/new">发布闲置</router-link>
+          </div>
         </div>
         <div v-else class="space-y-3">
           <article v-for="item in list" :key="item.id ?? item.title" class="rounded-lg border border-gray-200/80 bg-white p-4 sm:p-5">

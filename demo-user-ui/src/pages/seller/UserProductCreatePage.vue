@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { createUserProduct } from '@/api/userProducts'
 import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
+import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
 import {
   collectUserProductValidationErrors,
   createEmptyUserProductFormModel,
@@ -88,13 +89,14 @@ onBeforeUnmount(() => {
 <template>
   <main class="page-body">
     <section v-if="!sellerEnabled" class="section-panel">
-      <div class="section-body space-y-4"><h1 class="page-title">当前账号尚未开通卖家功能</h1><p class="page-desc">开通卖家功能后，才能发布和管理闲置商品。</p><div class="flex flex-wrap gap-3"><router-link class="btn-primary" to="/market">返回市场</router-link><router-link class="btn-default" to="/">返回首页</router-link></div></div>
+      <div class="section-body space-y-4"><h1 class="page-title">当前账号暂未启用卖家功能</h1><p class="page-desc">卖家功能开通后，可以发布闲置商品并管理交易。</p><div class="flex flex-wrap gap-3"><router-link class="btn-primary" to="/market">返回市场</router-link><router-link class="btn-default" to="/">返回首页</router-link></div></div>
     </section>
     <template v-else>
       <section class="page-header"><div class="page-header-main"><p class="page-kicker">卖家中心</p><h1 class="page-title">发布闲置</h1><p class="page-desc">补充商品信息并提交审核，审核通过后即可在市场展示。</p></div><router-link class="btn-default" to="/seller/products"><ArrowLeft class="h-4 w-4" /><span>返回商品管理</span></router-link></section>
+      <SellerCenterNav current="create" />
       <form class="space-y-6" @submit.prevent="submitCreateForm">
         <SellerProductForm :model="productForm" mode="create" :disabled="submitting" :errors="visibleErrors" @blur="markTouched" @change="clearSubmitMessage" />
-        <section class="section-panel-muted"><div class="section-body"><h2 class="section-heading">发布说明</h2><p class="mt-2 text-[13px] leading-6 text-gray-600">商品提交后会进入审核中，审核通过后才会在市场展示。</p></div></section>
+        <section class="section-panel-muted"><div class="section-body"><h2 class="section-heading">发布说明</h2><p class="mt-2 text-[13px] leading-6 text-gray-600">商品提交后将进入审核，审核通过后会在市场和公开小店中展示。</p></div></section>
         <section v-if="submitMessage" class="notice-banner notice-banner-danger" role="alert"><span class="notice-dot bg-red-500"></span><span>{{ submitMessage }}</span></section>
         <div class="flex flex-wrap items-center gap-3"><button class="btn-primary" type="submit" :disabled="submitting"><Loader2 v-if="submitting" class="h-4 w-4 animate-spin" /><span>{{ submitting ? '提交中...' : '发布并提交审核' }}</span></button><router-link class="btn-default" to="/seller/products">取消</router-link></div>
       </form>

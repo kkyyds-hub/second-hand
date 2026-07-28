@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { getUserProductDetail, updateUserProduct } from '@/api/userProducts'
 import SellerProductForm from '@/pages/seller/components/SellerProductForm.vue'
+import SellerCenterNav from '@/components/commerce/SellerCenterNav.vue'
 import {
   collectUserProductValidationErrors,
   createEmptyUserProductFormModel,
@@ -78,7 +79,7 @@ async function loadProduct() {
   clearForm()
   submitMessage.value = ''
   loadError.value = ''
-  if (!id) { loading.value = false; loadError.value = '商品编号无效，请从商品管理重新进入。'; return }
+  if (!id) { loading.value = false; loadError.value = '商品信息无效，请从商品管理重新进入。'; return }
   if (!sellerEnabled.value) return
   loading.value = true
   try {
@@ -129,9 +130,10 @@ onBeforeUnmount(() => { active = false; requestSequence += 1 })
 
 <template>
   <main class="page-body">
-    <section v-if="!sellerEnabled" class="section-panel"><div class="section-body space-y-4"><h1 class="page-title">当前账号尚未开通卖家功能</h1><p class="page-desc">开通卖家功能后，才能发布和管理闲置商品。</p><div class="flex flex-wrap gap-3"><router-link class="btn-primary" to="/market">返回市场</router-link><router-link class="btn-default" to="/">返回首页</router-link></div></div></section>
+    <section v-if="!sellerEnabled" class="section-panel"><div class="section-body space-y-4"><h1 class="page-title">当前账号暂未启用卖家功能</h1><p class="page-desc">卖家功能开通后，可以发布闲置商品并管理交易。</p><div class="flex flex-wrap gap-3"><router-link class="btn-primary" to="/market">返回市场</router-link><router-link class="btn-default" to="/">返回首页</router-link></div></div></section>
     <template v-else>
       <section class="page-header"><div class="page-header-main"><p class="page-kicker">卖家中心</p><h1 class="page-title">编辑商品</h1><p class="page-desc">保存修改后，商品将重新进入审核流程。</p></div><router-link class="btn-default" :to="productId ? `/seller/products/${productId}` : '/seller/products'"><ArrowLeft class="h-4 w-4" /><span>返回商品详情</span></router-link></section>
+      <SellerCenterNav current="edit" />
       <section v-if="loadError" class="notice-banner notice-banner-danger" role="alert"><span class="notice-dot bg-red-500"></span><div class="flex-1"><p>{{ loadError }}</p><div class="mt-3 flex gap-2"><button class="btn-default" type="button" :disabled="loading" @click="loadProduct">重新加载</button><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>
       <section v-else-if="loading" class="section-panel"><div class="section-body flex min-h-[300px] items-center justify-center"><Loader2 class="h-5 w-5 animate-spin text-gray-400" /><span class="ml-3 text-[13px] text-gray-500">正在加载商品信息...</span></div></section>
       <section v-else-if="productStatus === 'sold'" class="section-panel"><div class="section-body space-y-4"><h2 class="section-heading">该商品已售出，不能继续编辑。</h2><div class="flex flex-wrap gap-3"><router-link class="btn-primary" :to="`/seller/products/${productId}`">返回详情</router-link><router-link class="btn-default" to="/seller/products">返回商品管理</router-link></div></div></section>

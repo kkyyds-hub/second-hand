@@ -1221,3 +1221,11 @@
 .favorites-empty-fallback { display: none; }
 .favorites-empty-image[style*="display: none"] + .favorites-empty-fallback { display: block; }
 .review-stars { display: inline-flex; align-items: center; gap: 2px; }
+
+.seller-center-nav { display: flex; gap: 6px; overflow-x: auto; padding: 4px; border: 1px solid rgb(229 231 235 / 0.9); border-radius: 8px; background: rgb(249 250 251 / 0.85); scrollbar-width: thin; }
+.seller-center-nav-item { flex: 0 0 auto; min-height: 36px; padding: 8px 16px; border-radius: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; }
+.seller-center-nav-item:hover { color: #c2410c; }
+.seller-center-nav-item-active { background: #fff; color: #c2410c; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
+.seller-empty-image { display: block; width: min(100%, 440px); max-height: 280px; margin: 0 auto 12px; object-fit: contain; }
+.seller-empty-fallback { display: none; }
+.seller-empty-image[style*="display: none"] + .seller-empty-fallback { display: block; }
