@@ -1,5 +1,4 @@
 import request from '../utils/request'
-import { getAuditOverview, type AuditTicketItem } from '@/api/audit'
 
 /**
  * Dashboard 页面顶部指标卡的数据结构。
@@ -63,55 +62,10 @@ export interface DashboardData {
   reviewQueue: ReviewItem[]
   disputeQueue: DisputeItem[]
   riskAlerts: RiskAlert[]
-  disputeQueueSource?: 'overview' | 'audit-overview'
 }
 
 interface DashboardDataPayload extends Omit<DashboardData, 'reviewQueue'> {
   reviewQueue?: ReviewItemPayload[]
-}
-
-const buildAuditTicketMeta = (ticket: AuditTicketItem) => {
-  const typeLabelMap: Record<AuditTicketItem['type'], string> = {
-    DISPUTE: '交易纠纷',
-    REPORT: '违规举报',
-    RISK: '风控线索',
-  }
-
-  const statusLabelMap: Record<AuditTicketItem['status'], string> = {
-    PENDING: '待处理',
-    PROCESSING: '处理中',
-    CLOSED: '已关闭',
-  }
-
-  const typeLabel = typeLabelMap[ticket.type] || '审计工单'
-  const statusLabel = statusLabelMap[ticket.status] || '未知状态'
-  return `${typeLabel} · ${statusLabel}`
-}
-
-const shortenText = (value?: string, maxLength = 28) => {
-  const text = value?.trim()
-  if (!text) return ''
-  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
-}
-
-const mapAuditTicketToDisputeItem = (ticket: AuditTicketItem): DisputeItem => ({
-  id: ticket.id,
-  reason: ticket.title?.trim() || '—',
-  target: ticket.target?.trim() || '—',
-  user: shortenText(ticket.description, 24) || buildAuditTicketMeta(ticket),
-  level: ticket.riskLevel === 'HIGH' ? '紧急' : '—',
-})
-
-const buildFallbackDisputeQueue = (tickets?: AuditTicketItem[]) => {
-  if (!Array.isArray(tickets) || !tickets.length) {
-    return []
-  }
-
-  return tickets
-    .filter((ticket) => ticket.status !== 'CLOSED')
-    .filter((ticket) => ticket.riskLevel === 'HIGH' || ticket.type === 'DISPUTE' || ticket.type === 'REPORT')
-    .slice(0, 3)
-    .map(mapAuditTicketToDisputeItem)
 }
 
 /**
@@ -164,30 +118,5 @@ export async function fetchDashboardData(date?: string): Promise<DashboardData> 
     params: date ? { date } : undefined,
   }) as Promise<DashboardDataPayload>))
 
-  if (Array.isArray(overview?.disputeQueue) && overview.disputeQueue.length > 0) {
-    return {
-      ...overview,
-      disputeQueueSource: 'overview',
-    }
-  }
-
-  try {
-    const auditOverview = await getAuditOverview({ riskLevel: 'HIGH' })
-    const fallbackDisputeQueue = buildFallbackDisputeQueue(auditOverview?.tickets)
-
-    if (fallbackDisputeQueue.length > 0) {
-      return {
-        ...overview,
-        disputeQueue: fallbackDisputeQueue,
-        disputeQueueSource: 'audit-overview',
-      }
-    }
-  } catch (error) {
-    console.warn('Dashboard dispute queue audit fallback failed.', error)
-  }
-
-  return {
-    ...overview,
-    disputeQueueSource: 'overview',
-  }
+  return overview
 }

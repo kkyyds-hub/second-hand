@@ -1,5 +1,6 @@
 ﻿import axios from 'axios'
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { createAdminLoginPath, getCurrentAdminPath } from './adminRoute'
 
 /**
  * 这是后端统一返回结果的类型声明。
@@ -40,6 +41,15 @@ const ADMIN_USER_KEY = 'admin_user'
  * 这里保留兼容，可以减少你联调时“明明有 token 却读不到”的问题。
  */
 const LEGACY_TOKEN_KEYS = ['jwt_token', 'token']
+const STORAGE_ORDER = [sessionStorage, localStorage]
+
+const getAdminStorage = (remember: boolean) => remember ? localStorage : sessionStorage
+
+const clearStorage = (storage: Storage) => {
+  storage.removeItem(ADMIN_TOKEN_KEY)
+  storage.removeItem(ADMIN_USER_KEY)
+  LEGACY_TOKEN_KEYS.forEach((key) => storage.removeItem(key))
+}
 
 /**
  * 读取本地 token。
@@ -51,26 +61,14 @@ const LEGACY_TOKEN_KEYS = ['jwt_token', 'token']
  * 这样做的目的是让联调过渡更平滑。
  */
 export function readAdminToken() {
-  // 先尝试读取当前规范使用的 key。
-  const direct = localStorage.getItem(ADMIN_TOKEN_KEY)
-
-  // 如果新 key 已经有值，直接返回。
-  if (direct) {
-    return direct
-  }
-
-  // 如果新 key 没有值，就回退读取旧 key。
-  for (const key of LEGACY_TOKEN_KEYS) {
-    // 逐个尝试读取旧 key。
-    const value = localStorage.getItem(key)
-
-    // 只要某个旧 key 有值，就立刻返回。
-    if (value) {
-      return value
+  for (const storage of STORAGE_ORDER) {
+    const direct = storage.getItem(ADMIN_TOKEN_KEY)
+    if (direct) return direct
+    for (const key of LEGACY_TOKEN_KEYS) {
+      const value = storage.getItem(key)
+      if (value) return value
     }
   }
-
-  // 如果都没读到，返回空字符串。
   return ''
 }
 
@@ -81,11 +79,11 @@ export function readAdminToken() {
  * 这里除了存 `admin_token`，也顺手存一份 `token`，
  * 是为了兼容当前项目里可能还依赖旧命名的逻辑。
  */
-export function saveAdminToken(token: string) {
-  // 保存到我们现在推荐的新 key。
-  localStorage.setItem(ADMIN_TOKEN_KEY, token)
-  // 同时兼容一份旧 key，降低联调期间的断层风险。
-  localStorage.setItem('token', token)
+export function saveAdminToken(token: string, remember = false) {
+  clearAdminToken()
+  const storage = getAdminStorage(remember)
+  storage.setItem(ADMIN_TOKEN_KEY, token)
+  storage.setItem('token', token)
 }
 
 export interface StoredAdminUser {
@@ -97,22 +95,26 @@ export interface StoredAdminUser {
   avatar?: string
 }
 
-export function saveAdminUser(user?: StoredAdminUser | null) {
+export function saveAdminUser(user?: StoredAdminUser | null, remember = false) {
+  const storage = getAdminStorage(remember)
   if (!user) {
-    localStorage.removeItem(ADMIN_USER_KEY)
+    storage.removeItem(ADMIN_USER_KEY)
     return
   }
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user))
+  storage.setItem(ADMIN_USER_KEY, JSON.stringify(user))
 }
 
 export function readAdminUser(): StoredAdminUser | null {
-  const raw = localStorage.getItem(ADMIN_USER_KEY)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as StoredAdminUser
-  } catch {
-    return null
+  for (const storage of STORAGE_ORDER) {
+    const raw = storage.getItem(ADMIN_USER_KEY)
+    if (!raw) continue
+    try {
+      return JSON.parse(raw) as StoredAdminUser
+    } catch {
+      storage.removeItem(ADMIN_USER_KEY)
+    }
   }
+  return null
 }
 
 /**
@@ -124,13 +126,7 @@ export function readAdminUser(): StoredAdminUser | null {
  * 3. 联调时手动清理旧状态
  */
 export function clearAdminToken() {
-  // 删除当前规范 key。
-  localStorage.removeItem(ADMIN_TOKEN_KEY)
-  // 删除 Gemini 早期生成代码里可能留下的 key。
-  localStorage.removeItem('jwt_token')
-  // 删除兼容使用的 key。
-  localStorage.removeItem('token')
-  localStorage.removeItem(ADMIN_USER_KEY)
+  STORAGE_ORDER.forEach(clearStorage)
 }
 
 /**
@@ -223,11 +219,13 @@ service.interceptors.response.use(
     // 那就原样返回，兼容文件导出或其他特殊接口。
     return res
   },
-  (error: any) => {
+  (error: unknown) => {
+    const axiosError = axios.isAxiosError(error) ? error : undefined
     // 读取 HTTP 状态码，例如 401 / 403 / 500。
-    const status = error.response?.status
+    const status = axiosError?.response?.status
     // 优先读取后端返回的业务错误信息，没有再回退到 Axios 自己的错误信息。
-    const message = error.response?.data?.msg || error.response?.data?.message || error.message
+    const responseData = axiosError?.response?.data as { msg?: string; message?: string } | undefined
+    const message = responseData?.msg || responseData?.message || (error instanceof Error ? error.message : '请求失败')
 
     // 按常见状态码分类处理，方便联调时快速定位问题。
     switch (status) {
@@ -244,7 +242,7 @@ service.interceptors.response.use(
         clearAdminToken()
         // 如果当前不在登录页，直接拉回登录页，避免页面停留在“已进入但无权限”的假状态。
         if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
+          window.location.assign(createAdminLoginPath(getCurrentAdminPath()))
         }
         break
       case 403:
@@ -253,7 +251,7 @@ service.interceptors.response.use(
         break
       case 404:
         // 404 说明接口路径不对，是联调时很常见的问题。
-        console.error(`Not Found (404): ${error.config?.url || 'unknown url'}`)
+        console.error(`Not Found (404): ${axiosError?.config?.url || 'unknown url'}`)
         break
       case 500:
         // 500 说明请求到达后端了，但后端内部执行异常。
