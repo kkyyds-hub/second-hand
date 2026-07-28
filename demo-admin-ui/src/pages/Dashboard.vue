@@ -23,9 +23,10 @@ const homeStats = ref({ dau: 0, orderCount: 0, gmv: 0, publishTotal: 0 })
 
 const isValidStatisticsDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= getCurrentLocalDate() && !Number.isNaN(new Date(`${value}T00:00:00`).valueOf())
 const sourceState = computed(() => {
-  const statsReady = Object.values(statsAvailability.value).some(Boolean)
-  if (overviewSynced.value && statsReady) return '已同步'
-  if (overviewSynced.value || statsReady) return '部分同步'
+  const allStatisticsSynced = statsAvailability.value.dau && statsAvailability.value.orderGmv && statsAvailability.value.productPublish
+  const anyStatisticsSynced = Object.values(statsAvailability.value).some(Boolean)
+  if (overviewSynced.value && allStatisticsSynced) return '已同步'
+  if (overviewSynced.value || anyStatisticsSynced) return '部分同步'
   return '暂未同步'
 })
 const formatMetricValue = (value: number) => value.toLocaleString('zh-CN')
@@ -33,7 +34,7 @@ const formatCurrencyValue = (value: number) => Math.abs(value) >= 10000 ? `¥${(
 const statsOverviewItems = computed(() => [
   { label: '日活用户', value: statsAvailability.value.dau ? formatMetricValue(homeStats.value.dau) : '—', state: statsAvailability.value.dau ? '' : '暂未同步' },
   { label: '支付订单', value: statsAvailability.value.orderGmv ? formatMetricValue(homeStats.value.orderCount) : '—', state: statsAvailability.value.orderGmv ? '' : '暂未同步' },
-  { label: '今日 GMV', value: statsAvailability.value.orderGmv ? formatCurrencyValue(homeStats.value.gmv) : '—', state: statsAvailability.value.orderGmv ? '' : '暂未同步' },
+  { label: '支付 GMV', value: statsAvailability.value.orderGmv ? formatCurrencyValue(homeStats.value.gmv) : '—', state: statsAvailability.value.orderGmv ? '' : '暂未同步' },
   { label: '新增发布', value: statsAvailability.value.productPublish ? formatMetricValue(homeStats.value.publishTotal) : '—', state: statsAvailability.value.productPublish ? '' : '暂未同步' },
 ])
 const hasReviewQueue = computed(() => overviewSynced.value && reviewQueue.value.length > 0)
@@ -41,32 +42,57 @@ const hasDisputeQueue = computed(() => overviewSynced.value && disputeQueue.valu
 const hasRiskAlerts = computed(() => overviewSynced.value && riskAlerts.value.length > 0)
 const dashboardErrorTitle = computed(() => dashboardErrorLevel.value === 'warning' ? '看板部分同步' : '看板暂未同步')
 
+const resetDashboardQueryState = () => {
+  overviewSynced.value = false
+  coreMetrics.value = []
+  reviewQueue.value = []
+  disputeQueue.value = []
+  riskAlerts.value = []
+  statsAvailability.value = { dau: false, orderGmv: false, productPublish: false }
+  homeStats.value = { dau: 0, orderCount: 0, gmv: 0, publishTotal: 0 }
+  lastUpdated.value = '暂未同步'
+  hasLoaded.value = false
+}
+
 const refreshDashboardData = async () => {
   if (!isValidStatisticsDate(statisticsDate.value)) { dashboardErrorLevel.value = 'danger'; dashboardError.value = '请选择今天或更早的有效日期。'; return }
+  resetDashboardQueryState()
   loading.value = true
   dashboardError.value = ''
   const failures: string[] = []
-  const [overviewResult, statsResult] = await Promise.allSettled([fetchDashboardData(statisticsDate.value), fetchHomeStatisticsBundle(statisticsDate.value)])
-  let hasSuccess = false
-  if (overviewResult.status === 'fulfilled') {
-    const overview = overviewResult.value
-    coreMetrics.value = Array.isArray(overview.coreMetrics) ? overview.coreMetrics : []
-    reviewQueue.value = Array.isArray(overview.reviewQueue) ? overview.reviewQueue : []
-    disputeQueue.value = Array.isArray(overview.disputeQueue) ? overview.disputeQueue : []
-    riskAlerts.value = Array.isArray(overview.riskAlerts) ? overview.riskAlerts : []
-    overviewSynced.value = true
-    hasSuccess = true
-  } else failures.push('经营概览与工作队列')
-  if (statsResult.status === 'fulfilled') {
-    const bundle = statsResult.value
-    statsAvailability.value = bundle.availability
-    if (bundle.hasAnySuccess) { homeStats.value = { dau: Number(bundle.snapshot.dau ?? 0), orderCount: Number(bundle.snapshot.orderGmv?.orderCount ?? 0), gmv: Number(bundle.snapshot.orderGmv?.gmv ?? 0), publishTotal: Number(bundle.snapshot.productPublish?.total ?? 0) }; hasSuccess = true }
-    if (bundle.failureSummary) failures.push(bundle.failureSummary)
-  } else failures.push('统计快照')
-  if (hasSuccess) lastUpdated.value = new Date().toLocaleString('zh-CN', { hour12: false })
-  if (failures.length) { dashboardErrorLevel.value = hasSuccess ? 'warning' : 'danger'; dashboardError.value = hasSuccess ? `部分数据暂未同步：${[...new Set(failures)].join('、')}。已保留本次同步成功的内容。` : `暂未同步：${[...new Set(failures)].join('、')}。请稍后重新加载。` }
-  hasLoaded.value = true
-  loading.value = false
+  try {
+    const [overviewResult, statsResult] = await Promise.allSettled([fetchDashboardData(statisticsDate.value), fetchHomeStatisticsBundle(statisticsDate.value)])
+    let hasSuccess = false
+    if (overviewResult.status === 'fulfilled') {
+      const overview = overviewResult.value
+      coreMetrics.value = Array.isArray(overview.coreMetrics) ? overview.coreMetrics : []
+      reviewQueue.value = Array.isArray(overview.reviewQueue) ? overview.reviewQueue : []
+      disputeQueue.value = Array.isArray(overview.disputeQueue) ? overview.disputeQueue : []
+      riskAlerts.value = Array.isArray(overview.riskAlerts) ? overview.riskAlerts : []
+      overviewSynced.value = true
+      hasSuccess = true
+    } else failures.push('经营概览与工作队列')
+    if (statsResult.status === 'fulfilled') {
+      const bundle = statsResult.value
+      statsAvailability.value = bundle.availability
+      if (bundle.hasAnySuccess) {
+        homeStats.value = { dau: Number(bundle.snapshot.dau ?? 0), orderCount: Number(bundle.snapshot.orderGmv?.orderCount ?? 0), gmv: Number(bundle.snapshot.orderGmv?.gmv ?? 0), publishTotal: Number(bundle.snapshot.productPublish?.total ?? 0) }
+        hasSuccess = true
+      }
+      if (bundle.failureSummary) failures.push(bundle.failureSummary)
+    } else failures.push('统计快照')
+    if (hasSuccess) lastUpdated.value = new Date().toLocaleString('zh-CN', { hour12: false })
+    if (failures.length) {
+      dashboardErrorLevel.value = hasSuccess ? 'warning' : 'danger'
+      dashboardError.value = hasSuccess ? `部分数据暂未同步：${[...new Set(failures)].join('、')}。本次查询只展示成功同步的内容。` : `暂未同步：${[...new Set(failures)].join('、')}。请稍后重新加载。`
+    }
+  } catch {
+    dashboardErrorLevel.value = 'danger'
+    dashboardError.value = '暂未同步：本次查询未能完成。请稍后重新加载。'
+  } finally {
+    hasLoaded.value = true
+    loading.value = false
+  }
 }
 onMounted(refreshDashboardData)
 </script>
